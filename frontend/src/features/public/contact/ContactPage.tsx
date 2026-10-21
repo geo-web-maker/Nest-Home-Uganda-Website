@@ -16,6 +16,7 @@ import { BookingForm } from '../booking/BookingForm';
 import { trackClick } from '../booking/bookingApi';
 import { submitEnquiryViaClient } from '../booking/enquirySubmit';
 import type { AreaPublic } from '../areas/types';
+import { Reveal } from '../../../components/ui/Reveal';
 import styles from './ContactPage.module.css';
 
 /** Contact and book (spec 5.11). No CTA band: the page is the call to action. */
@@ -48,7 +49,7 @@ export function ContactPage() {
       />
       <section className={styles.section}>
         <div className={`container ${styles.columns}`}>
-          <div className={styles.left}>
+          <Reveal className={styles.left}>
             <div className={styles.actions}>
               <Button href={`tel:${dial}`} onClick={() => trackClick('call', pathname, baseUrl)}>
                 {t('contact.callBig', { phone })}
@@ -71,8 +72,8 @@ export function ContactPage() {
               label={t('contact.mapLabel')}
               description={t('contact.mapDescription')}
             />
-          </div>
-          <div className={styles.right}>
+          </Reveal>
+          <Reveal className={styles.right} index={1}>
             <BookingForm
               copy={bookingCopyEn}
               services={(services.data ?? []).map((item) => ({ id: item.id, name: item.name }))}
@@ -83,7 +84,7 @@ export function ContactPage() {
               submit={submitEnquiryViaClient}
               onContactClick={(channel) => trackClick(channel, pathname, baseUrl)}
             />
-          </div>
+          </Reveal>
         </div>
       </section>
     </>

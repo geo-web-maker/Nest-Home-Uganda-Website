@@ -7,6 +7,7 @@ import { Seo } from '../../../components/site/Seo';
 import { Steps } from '../../../components/site/Steps';
 import { apiClient } from '../../../lib/api/client';
 import type { PricingBlockPublic } from './types';
+import { Reveal } from '../../../components/ui/Reveal';
 import styles from './HowItWorksPage.module.css';
 
 export function HowItWorksPage() {
@@ -52,7 +53,10 @@ export function HowItWorksPage() {
       />
       <section className={styles.steps}>
         <div className="container">
-          <Steps items={steps} label={t('howItWorks.stepsLabel')} />
+          <h2 className={styles.srOnly}>{t('howItWorks.stepsLabel')}</h2>
+          <Reveal>
+            <Steps items={steps} label={t('howItWorks.stepsLabel')} />
+          </Reveal>
         </div>
       </section>
       <section className={styles.pricing}>
@@ -67,7 +71,7 @@ export function HowItWorksPage() {
               </button>
             </div>
           ) : pricing.data ? (
-            <div className={styles.cards}>
+            <Reveal className={styles.cards}>
               {pricing.data.map((block) => (
                 <PriceCard
                   key={block.id}
@@ -77,7 +81,7 @@ export function HowItWorksPage() {
                   featured={block.key === 'assessment'}
                 />
               ))}
-            </div>
+            </Reveal>
           ) : (
             <p aria-busy="true">{t('howItWorks.loading')}</p>
           )}

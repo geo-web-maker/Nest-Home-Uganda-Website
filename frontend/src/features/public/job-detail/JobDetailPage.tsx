@@ -9,6 +9,7 @@ import { apiClient } from '../../../lib/api/client';
 import type { JobPublic } from '../careers/types';
 import { ApplicationForm } from '../careers/ApplicationForm';
 import type { JobPublicDetail } from './types';
+import { Reveal } from '../../../components/ui/Reveal';
 import styles from './JobDetailPage.module.css';
 
 export function JobDetailPage() {
@@ -99,13 +100,15 @@ export function JobDetailPage() {
           <h2>{t('careers.descriptionHeading')}</h2>
           <p>{job.data.description}</p>
           <h2>{t('careers.requirementsHeading')}</h2>
-          <CheckList
-            label={t('careers.requirementsHeading')}
-            items={job.data.requirements
-              .split('\n')
-              .filter(Boolean)
-              .map((text, index) => ({ id: String(index), text }))}
-          />
+          <Reveal>
+            <CheckList
+              label={t('careers.requirementsHeading')}
+              items={job.data.requirements
+                .split('\n')
+                .filter(Boolean)
+                .map((text, index) => ({ id: String(index), text }))}
+            />
+          </Reveal>
           <div id="application" className={styles.application}>
             <h2>{t('careers.applicationHeading')}</h2>
             <p>{t('careers.applicationNote')}</p>

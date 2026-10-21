@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { AccentText } from '../../../components/ui/AccentText';
 import { Button } from '../../../components/ui/Button';
+import { Reveal } from '../../../components/ui/Reveal';
 import { CtaBand } from '../../../components/site/CtaBand';
 import { Rings } from '../../../components/site/Rings';
 import { ServiceCard } from '../../../components/site/ServiceCard';
@@ -92,10 +93,10 @@ export function HomePage() {
             <p role="alert">{t('services.error')}</p>
           ) : services.data?.length ? (
             <ul className={styles.serviceGrid}>
-              {services.data.map((service) => (
-                <li key={service.id}>
+              {services.data.map((service, index) => (
+                <Reveal as="li" index={index % 4} key={service.id}>
                   <ServiceCard service={service} />
-                </li>
+                </Reveal>
               ))}
             </ul>
           ) : (
@@ -114,7 +115,9 @@ export function HomePage() {
           <h2>
             {t('home.promiseTitleBefore')} <AccentText>{t('home.promiseTitleAccent')}</AccentText>
           </h2>
-          <Rings items={promise} label={t('home.promiseRule')} />
+          <Reveal>
+            <Rings items={promise} label={t('home.promiseRule')} />
+          </Reveal>
         </div>
       </section>
       <section className={styles.how}>
@@ -123,7 +126,9 @@ export function HomePage() {
           <h2>
             {t('home.stepsTitleBefore')} <AccentText>{t('home.stepsTitleAccent')}</AccentText>
           </h2>
-          <Steps items={steps} label={t('home.stepsRule')} />
+          <Reveal>
+            <Steps items={steps} label={t('home.stepsRule')} />
+          </Reveal>
         </div>
       </section>
       {settings.data?.home?.show_testimonials === true && testimonials.data?.length ? (
@@ -132,13 +137,13 @@ export function HomePage() {
             <p className={styles.rule}>{t('home.testimonialsRule')}</p>
             <h2>{t('home.testimonialsTitle')}</h2>
             <ul className={styles.testimonialGrid}>
-              {testimonials.data.slice(0, 3).map((item) => (
-                <li key={item.id}>
+              {testimonials.data.slice(0, 3).map((item, index) => (
+                <Reveal as="li" index={index} key={item.id}>
                   <blockquote>{item.quote}</blockquote>
                   <p>
                     {item.first_name}, {item.area}
                   </p>
-                </li>
+                </Reveal>
               ))}
             </ul>
           </div>
@@ -152,14 +157,14 @@ export function HomePage() {
               {t('home.teamTitleBefore')} <AccentText>{t('home.teamTitleAccent')}</AccentText>
             </h2>
             <ul className={styles.teamGrid}>
-              {team.data.slice(0, 4).map((member) => (
-                <li key={member.id}>
+              {team.data.slice(0, 4).map((member, index) => (
+                <Reveal as="li" index={index} key={member.id}>
                   <TeamCard
                     name={member.name}
                     role={[member.role, member.qualification].filter(Boolean).join(' · ')}
                     placeholderLabel={t('team.photoPlaceholder')}
                   />
-                </li>
+                </Reveal>
               ))}
             </ul>
             <div className={styles.center}>

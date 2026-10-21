@@ -42,6 +42,7 @@
   gap: 0.75rem;
 }
 .eggs {
+  container-type: inline-size;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
@@ -52,7 +53,7 @@
   flex-direction: column;
   justify-content: center;
   min-height: 10rem;
-  padding: 0.9rem 0.65rem;
+  padding: 0.9rem 0.4rem;
   border-radius: 50% 50% 44% 44%;
   background: var(--mint);
   color: var(--forest);
@@ -61,7 +62,10 @@
 }
 .egg span {
   font-family: var(--serif);
-  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-size: clamp(0.8rem, 3vw, 1.5rem);
+  /* Scale with the row of eggs, not the screen, so the longest title always fits its egg. */
+  font-size: clamp(0.8rem, 5cqi, 1.5rem);
+  overflow-wrap: break-word;
   font-weight: 600;
 }
 .egg small {
@@ -182,5 +186,49 @@
   }
   .testimonialGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Hero entrance: copy first, then the eggs. Runs once on load. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes home-hero-in {
+    from {
+      opacity: 0;
+      translate: 0 var(--reveal-distance);
+    }
+
+    to {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+
+  .heroCopy > *,
+  .egg {
+    animation: home-hero-in var(--dur-slow) var(--ease-out) both;
+  }
+
+  .heroCopy > :nth-child(2) {
+    animation-delay: var(--stagger-step);
+  }
+
+  .heroCopy > :nth-child(3) {
+    animation-delay: calc(var(--stagger-step) * 2);
+  }
+
+  .heroCopy > :nth-child(4) {
+    animation-delay: calc(var(--stagger-step) * 3);
+  }
+
+  .egg:nth-child(1) {
+    animation-delay: calc(var(--stagger-step) * 3);
+  }
+
+  .egg:nth-child(2) {
+    animation-delay: calc(var(--stagger-step) * 4);
+  }
+
+  .egg:nth-child(3) {
+    animation-delay: calc(var(--stagger-step) * 5);
   }
 }

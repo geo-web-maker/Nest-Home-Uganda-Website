@@ -7,6 +7,7 @@ import { PageHero } from '../../../components/site/PageHero';
 import { Seo } from '../../../components/site/Seo';
 import { apiClient } from '../../../lib/api/client';
 import type { ArticlePublic, FaqPublic } from './types';
+import { Reveal } from '../../../components/ui/Reveal';
 import styles from './FaqPage.module.css';
 
 export function FaqPage() {
@@ -36,13 +37,15 @@ export function FaqPage() {
             {faqs.isError ? (
               <p role="alert">{t('faq.error')}</p>
             ) : faqs.data?.length ? (
-              <Accordion
-                items={faqs.data.map((item) => ({
-                  id: item.id,
-                  summary: item.question,
-                  content: item.answer,
-                }))}
-              />
+              <Reveal>
+                <Accordion
+                  items={faqs.data.map((item) => ({
+                    id: item.id,
+                    summary: item.question,
+                    content: item.answer,
+                  }))}
+                />
+              </Reveal>
             ) : (
               <p aria-busy={!faqs.data}>{faqs.data ? t('faq.clientToSupply') : t('faq.loading')}</p>
             )}
@@ -53,10 +56,10 @@ export function FaqPage() {
               <p role="alert">{t('faq.articlesError')}</p>
             ) : articles.data?.length ? (
               <ul className={styles.articles}>
-                {articles.data.map((article) => (
-                  <li key={article.id}>
+                {articles.data.map((article, index) => (
+                  <Reveal as="li" index={index} key={article.id}>
                     <Link to={`/faq/${article.slug}`}>{article.title}</Link>
-                  </li>
+                  </Reveal>
                 ))}
               </ul>
             ) : (

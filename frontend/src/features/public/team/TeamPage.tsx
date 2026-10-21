@@ -7,6 +7,7 @@ import { TeamCard } from '../../../components/site/TeamCard';
 import { Button } from '../../../components/ui/Button';
 import { apiClient } from '../../../lib/api/client';
 import type { TeamMemberPublic } from './types';
+import { Reveal } from '../../../components/ui/Reveal';
 import styles from './TeamPage.module.css';
 
 export function TeamPage() {
@@ -37,14 +38,14 @@ export function TeamPage() {
           ) : team.data ? (
             team.data.length ? (
               <ul className={styles.grid}>
-                {team.data.map((member) => (
-                  <li key={member.id}>
+                {team.data.map((member, index) => (
+                  <Reveal as="li" index={index % 4} key={member.id}>
                     <TeamCard
                       name={member.name}
                       role={[member.role, member.qualification].filter(Boolean).join(' · ')}
                       placeholderLabel={t('team.photoPlaceholder')}
                     />
-                  </li>
+                  </Reveal>
                 ))}
               </ul>
             ) : (

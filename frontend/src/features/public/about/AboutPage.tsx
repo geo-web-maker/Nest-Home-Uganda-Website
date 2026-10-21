@@ -9,6 +9,7 @@ import { CheckList } from '../../../components/ui/CheckList';
 import { Button } from '../../../components/ui/Button';
 import { apiClient } from '../../../lib/api/client';
 import type { PublicPageContent } from './types';
+import { Reveal } from '../../../components/ui/Reveal';
 import styles from './AboutPage.module.css';
 
 export function AboutPage() {
@@ -50,7 +51,7 @@ export function AboutPage() {
       />
       <section className={styles.story}>
         <div className={`container ${styles.storyGrid}`}>
-          <div>
+          <Reveal>
             <h2>{t('about.storyHeading')}</h2>
             {story.isError ? (
               <div role="alert">
@@ -62,14 +63,18 @@ export function AboutPage() {
             ) : (
               <p>{story.data?.body || t('about.clientToSupply')}</p>
             )}
-          </div>
-          <MapPlaceholder label={t('about.teamPhotoPlaceholder')} />
+          </Reveal>
+          <Reveal index={1}>
+            <MapPlaceholder label={t('about.teamPhotoPlaceholder')} />
+          </Reveal>
         </div>
       </section>
       <section className={styles.promise}>
         <div className="container">
           <h2>{t('about.promiseHeading')}</h2>
-          <Rings items={rings} label={t('about.promiseHeading')} />
+          <Reveal>
+            <Rings items={rings} label={t('about.promiseHeading')} />
+          </Reveal>
         </div>
       </section>
       <section className={styles.credentials}>
@@ -85,15 +90,17 @@ export function AboutPage() {
           ) : (
             <p>{credentials.data?.body || t('about.clientToSupply')}</p>
           )}
-          <CheckList
-            label={t('about.credentialsHeading')}
-            items={[
-              { id: 'registration', text: t('about.credentialBusiness') },
-              { id: 'council', text: t('about.credentialCouncil') },
-              { id: 'insurance', text: t('about.credentialInsurance') },
-              { id: 'training', text: t('about.credentialTraining') },
-            ]}
-          />
+          <Reveal>
+            <CheckList
+              label={t('about.credentialsHeading')}
+              items={[
+                { id: 'registration', text: t('about.credentialBusiness') },
+                { id: 'council', text: t('about.credentialCouncil') },
+                { id: 'insurance', text: t('about.credentialInsurance') },
+                { id: 'training', text: t('about.credentialTraining') },
+              ]}
+            />
+          </Reveal>
         </div>
       </section>
       <CtaBand

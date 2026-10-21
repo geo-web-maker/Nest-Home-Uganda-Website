@@ -4,6 +4,7 @@ import { PageHero } from '../../../components/site/PageHero';
 import { Seo } from '../../../components/site/Seo';
 import { apiClient } from '../../../lib/api/client';
 import type { PublicPageContent } from './types';
+import { Reveal } from '../../../components/ui/Reveal';
 import styles from './PrivacyPage.module.css';
 
 const PLACEHOLDER = 'client to supply';
@@ -45,10 +46,10 @@ export function PrivacyPage() {
           <div className={styles.body}>
             {page.isError && <p role="alert">{t('privacy.error')}</p>}
             {blocks.map((block) => (
-              <section className={styles.block} key={block.heading}>
+              <Reveal as="section" className={styles.block} key={block.heading}>
                 <h2>{block.heading}</h2>
                 <p>{block.body}</p>
-              </section>
+              </Reveal>
             ))}
             <p className={styles.notice}>{t('privacy.reviewNotice')}</p>
           </div>
