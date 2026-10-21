@@ -112,7 +112,9 @@ describe('ServicesPage', () => {
     expect(list).toHaveAttribute('aria-busy', 'true');
     expect(screen.queryAllByRole('heading', { level: 3 })).toHaveLength(0);
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Not sure which care you need?' }),
+    ).toBeInTheDocument();
   });
 
   it('shows an alert with a retry button on failure, and the cards after a successful retry', async () => {
