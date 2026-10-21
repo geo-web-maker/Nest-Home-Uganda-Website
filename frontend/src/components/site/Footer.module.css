@@ -42,7 +42,8 @@
   }
 }
 
-.link:focus-visible {
+.link:focus-visible,
+.link[aria-current='page'] {
   color: var(--gold);
   opacity: 1;
 }

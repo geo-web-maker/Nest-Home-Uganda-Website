@@ -1,0 +1,26 @@
+.page {
+  display: grid;
+  min-height: 42dvh;
+  align-items: center;
+  padding-block: var(--space-9);
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.content {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-5);
+  max-width: 42rem;
+  margin-inline: auto;
+}
+
+.title {
+  max-width: 14ch;
+}
+
+@media (min-width: 700px) {
+  .page {
+    min-height: 48dvh;
+  }
+}

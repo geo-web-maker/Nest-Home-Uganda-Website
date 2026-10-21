@@ -1,0 +1,55 @@
+name: format-fix
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        description: Branch to format
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_branch }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install locked frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Format frontend files
+        working-directory: frontend
+        run: npm run format
+
+      - name: Confirm formatter output
+        working-directory: frontend
+        run: npm run format:check
+
+      - name: Create formatting pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/frontend-prettier-format
+          base: ${{ inputs.source_branch }}
+          delete-branch: true
+          add-paths: frontend/
+          commit-message: 'style(frontend): apply Prettier formatting'
+          title: 'style(frontend): apply Prettier formatting'
+          body: >-
+            This pull request applies the repository's configured Prettier formatting so the
+            existing frontend format check can verify a consistent baseline.

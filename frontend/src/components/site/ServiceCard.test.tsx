@@ -36,6 +36,8 @@ describe('ServiceCard', () => {
     const img = container.querySelector('img');
     expect(img).toHaveAttribute('src', '/images/services/service-1-postnatal.jpg');
     expect(img).toHaveAttribute('alt', '');
+    expect(img).toHaveAttribute('loading', 'lazy');
+    expect(img).toHaveAttribute('decoding', 'async');
     expect(screen.queryByTestId('service-tile')).toBeNull();
   });
 

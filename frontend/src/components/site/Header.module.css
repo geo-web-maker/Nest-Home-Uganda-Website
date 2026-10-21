@@ -134,6 +134,12 @@
     opacity var(--dur-fast) var(--ease-standard);
 }
 
+.link[aria-current='page'],
+.menuLink[aria-current='page'] {
+  color: var(--gold);
+  opacity: 1;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .link:hover,
   .menuLink:hover {
@@ -226,7 +232,8 @@
     transition: transform var(--dur-base) var(--ease-out);
   }
 
-  .link:focus-visible::after {
+  .link:focus-visible::after,
+  .link[aria-current='page']::after {
     transform: scaleX(1);
   }
 

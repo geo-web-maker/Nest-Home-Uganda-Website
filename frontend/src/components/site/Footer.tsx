@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { cx } from '../../lib/cx';
 import { normaliseUgPhone } from '../../lib/phone';
 import { useSiteSettings } from '../../lib/queries/site';
@@ -19,8 +19,13 @@ const COMPANY = [
   { to: '/privacy', label: 'site:footer.privacy' },
 ] as const;
 
+function isCurrentLink(to: string, pathname: string): boolean {
+  return pathname === to || (to === '/services' && pathname.startsWith('/services/'));
+}
+
 export function Footer() {
   const { t } = useTranslation(['common', 'site']);
+  const { pathname } = useLocation();
   const { data: site } = useSiteSettings();
   const { phone, office } = site.business;
   const tel = `tel:${normaliseUgPhone(phone) ?? phone.replace(/\s/g, '')}`;
@@ -45,7 +50,11 @@ export function Footer() {
           <ul className={styles.list}>
             {EXPLORE.map((item) => (
               <li key={item.to}>
-                <Link to={item.to} className={styles.link}>
+                <Link
+                  to={item.to}
+                  className={styles.link}
+                  aria-current={isCurrentLink(item.to, pathname) ? 'page' : undefined}
+                >
                   {t(item.label)}
                 </Link>
               </li>
@@ -59,7 +68,11 @@ export function Footer() {
           <ul className={styles.list}>
             {COMPANY.map((item) => (
               <li key={item.to}>
-                <Link to={item.to} className={styles.link}>
+                <Link
+                  to={item.to}
+                  className={styles.link}
+                  aria-current={isCurrentLink(item.to, pathname) ? 'page' : undefined}
+                >
                   {t(item.label)}
                 </Link>
               </li>

@@ -16,7 +16,13 @@ export function ServiceCard({ service, photoUrl }: ServiceCardProps) {
     <Link to={`/services/${service.slug}`} className={styles.card}>
       <span className={styles.thumb}>
         {photoUrl ? (
-          <img className={styles.photo} src={photoUrl} alt="" loading="lazy" />
+          <img
+            className={styles.photo}
+            src={photoUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           <span className={styles.tile} data-testid="service-tile">
             {icon ?? <span className={styles.number}>{service.number}</span>}
