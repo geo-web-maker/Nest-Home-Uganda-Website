@@ -1,0 +1,36 @@
+.section {
+  padding-block: 52px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.section h2 {
+  margin: 0 0 20px;
+  font-family: var(--serif);
+  font-size: clamp(1.7rem, 6vw, 2.8rem);
+  line-height: 1.1;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 28px;
+  padding: 0;
+  list-style: none;
+}
+.chip {
+  padding: 9px 16px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--surf);
+  color: var(--ink);
+  font-weight: 500;
+}
+.note {
+  margin: 18px 0 0;
+  color: var(--mut);
+}
+@media (min-width: 1040px) {
+  .section {
+    padding-block: 84px;
+  }
+}

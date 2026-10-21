@@ -1,0 +1,30 @@
+.section {
+  padding-block: 52px;
+  background: var(--bg);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.state {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+@media (min-width: 700px) {
+  .section {
+    padding-block: 64px;
+  }
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1040px) {
+  .section {
+    padding-block: 84px;
+  }
+}

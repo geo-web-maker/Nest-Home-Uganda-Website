@@ -1,0 +1,146 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 9;
+  padding-top: env(safe-area-inset-top);
+  background: var(--forest);
+  color: var(--onf);
+  border-bottom: 1px solid rgba(199, 154, 59, 0.4);
+}
+
+.inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 62px;
+}
+
+.brand {
+  display: inline-flex;
+  color: inherit;
+  text-decoration: none;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menuButton {
+  width: 44px;
+  height: 40px;
+  border: 2px solid var(--gold);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--gold);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* Phone: the nav is the toggled panel under the bar. */
+.nav {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding: 6px 20px 14px;
+  background: var(--forest);
+  border-top: 1px solid rgba(199, 154, 59, 0.3);
+}
+
+.navOpen {
+  display: block;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link,
+.menuLink {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 46px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--onf);
+  font: 500 1rem var(--sans);
+  text-align: start;
+  text-decoration: none;
+  opacity: 0.9;
+  cursor: pointer;
+}
+
+.link:hover,
+.menuLink:hover {
+  color: var(--gold);
+  opacity: 1;
+}
+
+.hasMenu {
+  position: relative;
+}
+
+.menu {
+  display: none;
+  margin: 0;
+  padding: 0 0 0 16px;
+  list-style: none;
+}
+
+.menuOpen .menu {
+  display: block;
+}
+
+@media (min-width: 700px) {
+  .menuButton {
+    display: none;
+  }
+
+  .nav,
+  .navOpen {
+    position: static;
+    display: block;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
+  .list {
+    flex-direction: row;
+    gap: 22px;
+  }
+
+  .link {
+    width: auto;
+    min-height: 44px;
+  }
+
+  .menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 10;
+    min-width: 230px;
+    padding: 8px 14px;
+    background: var(--forest);
+    border: 1px solid rgba(199, 154, 59, 0.4);
+    border-radius: 14px;
+  }
+}
+
+/* Desktop: hover also opens the dropdown. Click and keyboard focus always work. */
+@media (min-width: 1040px) {
+  .hasMenu:hover .menu {
+    display: block;
+  }
+}

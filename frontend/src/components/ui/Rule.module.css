@@ -1,0 +1,21 @@
+.rule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: var(--gold);
+  font: 600 0.74rem var(--sans);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.centered {
+  justify-content: center;
+}
+
+.line {
+  flex: none;
+  width: 30px;
+  height: 1px;
+  background: var(--gold);
+}

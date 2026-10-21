@@ -1,0 +1,29 @@
+.section {
+  padding-block: 3rem 5rem;
+}
+.body {
+  max-width: 62ch;
+  margin-inline: auto;
+}
+.block {
+  margin-block: 0 2rem;
+}
+.block h2 {
+  margin-bottom: 0.6rem;
+  font-family: var(--serif);
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+}
+.block p {
+  line-height: 1.7;
+  white-space: pre-line;
+}
+.notice {
+  border-left: 3px solid var(--gold);
+  padding-inline-start: 1rem;
+  color: var(--mut);
+}
+@media (min-width: 700px) {
+  .section {
+    padding-block: 4rem 6rem;
+  }
+}

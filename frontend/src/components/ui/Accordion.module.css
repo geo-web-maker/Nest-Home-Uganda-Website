@@ -1,0 +1,37 @@
+.row {
+  margin-top: 10px;
+  padding-inline: 18px;
+  background: var(--surf);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 54px;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary::after {
+  content: '+';
+  color: var(--gold);
+  font-size: 1.5rem;
+}
+
+.row[open] > .summary::after {
+  content: '\2212';
+}
+
+.answer {
+  padding-bottom: 16px;
+  color: var(--mut);
+}

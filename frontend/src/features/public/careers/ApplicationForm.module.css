@@ -1,0 +1,60 @@
+.form {
+  display: grid;
+  gap: 0.85rem;
+}
+.hint {
+  margin-top: -0.45rem;
+  color: var(--mut);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  min-height: 44px;
+  line-height: 1.55;
+}
+.consent input {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+  margin-block-start: 0.25rem;
+}
+.consent a {
+  text-underline-offset: 0.2em;
+}
+.honeypot {
+  position: absolute;
+  inset-inline-start: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.error {
+  padding: 0.75rem;
+  border-left: 3px solid var(--danger);
+  color: var(--danger);
+}
+.success {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surf);
+}
+.success h3 {
+  margin-block-end: 0.7rem;
+  font-family: var(--serif);
+  font-size: 1.35rem;
+}
+.success p + p {
+  margin-block-start: 0.7rem;
+}
+@media (min-width: 700px) {
+  .form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .form > :nth-child(n + 9) {
+    grid-column: 1/-1;
+  }
+}

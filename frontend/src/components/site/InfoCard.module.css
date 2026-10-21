@@ -1,0 +1,29 @@
+.card {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surf);
+}
+.label {
+  margin: 0 0 5px;
+  color: var(--gold);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.value {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.98rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+a.value {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+a.value:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 3px;
+}

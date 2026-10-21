@@ -1,0 +1,31 @@
+.card {
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  background: var(--surf);
+}
+.featured {
+  border: 2px solid var(--gold);
+}
+.tag {
+  margin: 0 0 12px;
+  color: var(--leaf);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.title {
+  margin: 0 0 12px;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  line-height: 1.15;
+}
+.text {
+  margin: 0;
+  color: var(--mut);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}

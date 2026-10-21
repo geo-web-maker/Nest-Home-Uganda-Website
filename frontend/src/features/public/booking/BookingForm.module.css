@@ -1,0 +1,96 @@
+.card {
+  background: var(--surf);
+  border: 1px solid rgba(199, 154, 59, 0.4);
+  border-radius: 28px;
+  padding: 24px 20px;
+}
+
+.title {
+  margin: 0 0 16px;
+  font-size: 1.4rem;
+}
+
+.or {
+  margin: 14px 0;
+  text-align: center;
+  color: var(--mut);
+  font-size: 0.92rem;
+}
+
+.care {
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hint {
+  margin: -6px 0 12px;
+  color: var(--mut);
+  font-size: 0.85rem;
+}
+
+.consent {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 8px 0 12px;
+  font-size: 0.92rem;
+}
+
+.consent input {
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  flex: none;
+}
+
+.error {
+  margin: 4px 0 12px;
+  color: var(--danger);
+  font-size: 0.88rem;
+}
+
+.failure {
+  margin: 8px 0 14px;
+  padding: 12px;
+  border: 2px solid var(--danger);
+  border-radius: 14px;
+}
+
+.failure p {
+  margin: 0 0 10px;
+}
+
+.fallbacks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reference {
+  margin: 14px 0 0;
+  text-align: center;
+  color: var(--mut);
+}
+
+/* Off screen rather than display:none, because some bots skip hidden fields. */
+.trap {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}

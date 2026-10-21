@@ -1,0 +1,56 @@
+"""Migrations and seed against a real MongoDB (needs TEST_MONGODB_URI)."""
+
+import pytest
+from pymongo.errors import DuplicateKeyError
+
+from app.migrate import discover, run_migrations
+from app.modules.auth.models import User
+from app.seed import seed_first_superadmin
+
+
+def test_migration_scripts_are_numbered_and_discoverable() -> None:
+    names = [p.stem for p in discover()]
+    assert names and names[0] == "0001_indexes"
+    assert names == sorted(names)
+
+
+async def test_migrations_run_once_then_change_nothing(mongo) -> None:
+    assert await run_migrations(mongo) == []  # the fixture already ran them
+    names = {d["_id"] async for d in mongo["migrations"].find()}
+    assert "0001_indexes" in names
+
+
+async def test_indexes_exist_with_ttls(mongo) -> None:
+    users = await mongo["users"].index_information()
+    assert users["email_unique"]["unique"] is True
+    services = await mongo["services"].index_information()
+    assert services["slug_unique"]["unique"] is True
+    audit = await mongo["audit_log"].index_information()
+    assert audit["at_ttl_24_months"]["expireAfterSeconds"] == 730 * 86400
+    tokens = await mongo["refresh_tokens"].index_information()
+    assert tokens["expires_ttl"]["expireAfterSeconds"] == 0
+
+
+async def test_duplicate_email_is_rejected_by_the_index(mongo) -> None:
+    await User(name="A", email="a@example.com", password_hash="x").insert()
+    with pytest.raises(DuplicateKeyError):
+        await User(name="B", email="a@example.com", password_hash="y").insert()
+
+
+async def test_seed_superadmin_is_created_once_and_password_is_hashed(mongo) -> None:
+    assert await seed_first_superadmin("Boss@Example.com", "a-long-enough-password") is True
+    assert await seed_first_superadmin("boss@example.com", "a-long-enough-password") is False
+    user = await User.find_one(User.email == "boss@example.com")
+    assert user is not None and user.is_superadmin and user.scopes == []
+    assert "a-long-enough-password" not in user.password_hash
+
+
+@pytest.mark.parametrize(("email", "password"), [("", "a-long-enough-password"), ("a@b.co", "")])
+async def test_seed_fails_when_env_values_are_empty(mongo, email: str, password: str) -> None:
+    with pytest.raises(SystemExit):
+        await seed_first_superadmin(email, password)
+
+
+async def test_seed_rejects_a_short_password(mongo) -> None:
+    with pytest.raises(SystemExit):
+        await seed_first_superadmin("a@b.co", "short")

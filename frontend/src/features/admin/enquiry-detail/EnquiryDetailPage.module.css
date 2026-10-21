@@ -1,0 +1,93 @@
+.state {
+  padding: 1rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin-block: 1.25rem;
+}
+.panel {
+  min-width: 0;
+  padding: 1.1rem;
+  background: var(--surf);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+}
+.panel h2 {
+  margin-block: 0 1rem;
+  font-size: 1.15rem;
+}
+.details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.8rem;
+}
+.details dt {
+  color: var(--mut);
+  font-size: 0.85rem;
+}
+.details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.noteText {
+  padding: 1rem;
+  background: var(--bg);
+  border-radius: 0.7rem;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-block-start: 1.2rem;
+}
+.form {
+  display: grid;
+  gap: 0.8rem;
+}
+.timeline {
+  display: grid;
+  gap: 1rem;
+  padding-inline-start: 1.25rem;
+  border-inline-start: 2px solid var(--line);
+}
+.timeline li {
+  position: relative;
+}
+.timeline li::before {
+  position: absolute;
+  inset-inline-start: -1.6rem;
+  top: 0.28rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--gold);
+  content: '';
+}
+.timeline time {
+  color: var(--mut);
+  font-size: 0.85rem;
+}
+.timeline p {
+  margin-block: 0.3rem 0;
+}
+@media (min-width: 700px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .panel {
+    padding: 1.35rem;
+  }
+  .details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .noteText {
+    grid-column: 1/-1;
+  }
+}
+@media (min-width: 1040px) {
+  .grid {
+    align-items: start;
+  }
+}

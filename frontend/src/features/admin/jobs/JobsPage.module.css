@@ -1,0 +1,38 @@
+.error {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+}
+.editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  max-width: 56rem;
+  margin-block: 1.5rem;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 44px;
+}
+.check input {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-block-start: 0.75rem;
+}
+@media (min-width: 700px) {
+  .editor {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .editor > :nth-child(6),
+  .editor > :nth-child(7),
+  .editor > .actions {
+    grid-column: 1/-1;
+  }
+}

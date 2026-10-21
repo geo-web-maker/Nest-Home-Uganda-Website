@@ -1,0 +1,39 @@
+.state {
+  max-width: 48rem;
+  margin-inline: auto;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+.content {
+  padding-block: 3rem 5rem;
+}
+.content > .container {
+  max-width: 62rem;
+}
+.content h2 {
+  margin-block: 0 0.8rem;
+  font-family: var(--serif);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+}
+.content p {
+  line-height: 1.7;
+  white-space: pre-line;
+}
+.content h2:not(:first-child) {
+  margin-block-start: 2rem;
+}
+.application {
+  margin-block-start: 3rem;
+  padding: 1.5rem;
+  background: var(--surf);
+  border: 1px solid var(--line);
+  border-radius: 1.5rem;
+}
+@media (min-width: 700px) {
+  .content {
+    padding-block: 4rem 6rem;
+  }
+  .application {
+    padding: 2rem;
+  }
+}

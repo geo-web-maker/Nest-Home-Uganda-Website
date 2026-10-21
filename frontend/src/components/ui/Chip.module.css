@@ -1,0 +1,33 @@
+.chip {
+  composes: pill from '../../design/shapes.module.css';
+  display: inline-flex;
+  align-items: center;
+  border: 2px solid var(--line);
+  font-weight: 500;
+}
+
+.care {
+  min-height: 44px;
+  padding-inline: 14px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.care[aria-pressed='true'] {
+  background: var(--moss);
+  border-color: var(--moss);
+  color: #fff;
+}
+
+.care:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.area {
+  padding: 9px 16px;
+  background: var(--surf);
+  color: var(--ink);
+}

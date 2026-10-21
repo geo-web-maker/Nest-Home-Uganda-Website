@@ -1,0 +1,17 @@
+:root{
+  --bg:#F3F8F1; --mint:#DFF0E6; --surf:#FFFFFF;
+  --ink:#123524; --mut:#4A6354; --forest:#123524;
+  --leaf:#1F8A5B; --moss:#2F6B4A; --gold:#C79A3B;
+  --straw:#E9DDB8; --line:#CBD8C6; --onf:#F4F1DF;
+  --wa:#25D366; --on-wa:#06260F; --on-gold:#1B1706; --on-straw:#2A2410; --danger:#B3261E;
+  --serif:"Fraunces",Georgia,serif;
+  --sans:"Figtree",system-ui,sans-serif;
+  --script:"Cormorant Garamond",Georgia,serif;
+  --egg:50% 50% 50% 50%/62% 62% 38% 38%;
+  --arch:999px 999px 18px 18px;
+  --container:1180px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0C1A12; --mint:#12281D; --surf:#14271C; --ink:#E8EFE2; --mut:#9DB5A4; --line:#244233; --straw:#3A3620; --forest:#091410;}}
+:root[data-theme="dark"]{--bg:#0C1A12; --mint:#12281D; --surf:#14271C; --ink:#E8EFE2; --mut:#9DB5A4; --line:#244233; --straw:#3A3620; --forest:#091410}
+/* breakpoints: tablet @media (min-width:700px), desktop @media (min-width:1040px) */

@@ -1,0 +1,29 @@
+/* Admin is light only, so these are fixed values (spec 2.2). */
+.badge {
+  composes: pill from '../../design/shapes.module.css';
+  display: inline-block;
+  padding: 3px 10px;
+  background: #e3eee6;
+  color: #1b5e3b;
+  font: 700 0.72rem var(--sans);
+}
+
+.new {
+  background: #fff1cc;
+  color: #7a5a00;
+}
+
+.blue {
+  background: #dceafa;
+  color: #1b4f8a;
+}
+
+.purple {
+  background: #ede6f7;
+  color: #4b2e83;
+}
+
+.red {
+  background: #f4e1df;
+  color: #8a2c24;
+}

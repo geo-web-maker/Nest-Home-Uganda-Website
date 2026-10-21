@@ -1,0 +1,55 @@
+.section {
+  padding-block: 3rem 5rem;
+}
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem;
+}
+.columns h2 {
+  margin-block: 0 1rem;
+  font-family: var(--serif);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+}
+.jobs {
+  display: grid;
+  gap: 0.8rem;
+  margin: 0 0 2rem;
+  padding: 0;
+  list-style: none;
+}
+.general {
+  margin-block-start: 1.5rem;
+}
+.form {
+  align-self: start;
+  padding: 1.25rem;
+  background: var(--surf);
+  border: 1px solid var(--line);
+  border-radius: 1.5rem;
+}
+.form p {
+  line-height: 1.6;
+}
+.applicationLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--forest);
+  text-underline-offset: 0.2em;
+}
+@media (min-width: 700px) {
+  .columns {
+    gap: 2.5rem;
+  }
+  .form {
+    padding: 1.75rem;
+  }
+}
+@media (min-width: 1040px) {
+  .columns {
+    grid-template-columns: minmax(0, 1.1fr) minmax(19rem, 0.9fr);
+    gap: 3.5rem;
+  }
+}

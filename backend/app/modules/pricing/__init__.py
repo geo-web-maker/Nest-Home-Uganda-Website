@@ -1,0 +1,1 @@
+"""PricingBlock content module."""

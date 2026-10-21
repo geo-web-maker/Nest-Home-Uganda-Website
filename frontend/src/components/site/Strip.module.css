@@ -1,0 +1,24 @@
+.strip {
+  background: var(--gold);
+  color: var(--on-gold);
+  padding: 11px 16px;
+  text-align: center;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+.strip p {
+  margin: 0;
+}
+.strip ul {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.strip li {
+  line-height: 1.4;
+}

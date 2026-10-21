@@ -1,0 +1,29 @@
+.screen {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: var(--forest);
+}
+
+.card {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  max-width: 400px;
+  padding: 28px 24px;
+  background: var(--surf);
+  border: 1px solid var(--gold);
+  border-radius: 28px;
+  color: var(--ink);
+}
+
+.title {
+  font-size: 1.5rem;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.95rem;
+  font-weight: 600;
+}

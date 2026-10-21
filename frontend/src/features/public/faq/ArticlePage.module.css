@@ -1,0 +1,23 @@
+.state {
+  max-width: 48rem;
+  margin-inline: auto;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+.article {
+  padding-block: 3rem 4rem;
+}
+.body {
+  max-width: 62ch;
+  margin-inline: auto;
+  color: var(--ink);
+  line-height: 1.75;
+}
+.body p + p {
+  margin-top: 1rem;
+}
+@media (min-width: 700px) {
+  .article {
+    padding-block: 4rem 5rem;
+  }
+}

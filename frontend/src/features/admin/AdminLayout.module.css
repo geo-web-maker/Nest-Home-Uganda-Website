@@ -1,0 +1,307 @@
+.shell {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.skip {
+  position: absolute;
+  inset-inline-start: 8px;
+  top: -60px;
+  z-index: 100;
+  padding: 10px 16px;
+  background: var(--gold);
+  color: var(--on-gold);
+  font-weight: 700;
+  border-radius: 12px;
+}
+
+.skip:focus {
+  top: 8px;
+}
+
+/* Sidebar: hidden below 700px, icon-only 700 to 1039px, labelled from 1040px (spec 4.19). */
+.sidebar {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 10px;
+  background: var(--forest);
+}
+
+.sidebarNav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.groupLabel {
+  display: none;
+  padding: 12px 12px 4px;
+  color: var(--gold);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding-inline: 12px;
+  border-radius: 12px;
+  color: var(--onf);
+  font: 600 0.9rem var(--sans);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.item svg {
+  flex: none;
+}
+
+.current,
+.current:hover {
+  background: var(--gold);
+  color: var(--on-gold);
+}
+
+.signOut {
+  margin-top: auto;
+  width: 100%;
+  text-align: start;
+}
+
+/* Labels stay in the DOM for screen readers when the sidebar is icon-only. */
+.itemLabel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100vh;
+}
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 58px;
+  padding-inline: 16px;
+  background: var(--surf);
+  border-bottom: 1px solid var(--line);
+}
+
+.title {
+  font: 600 1.1rem var(--serif);
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.userText {
+  display: none;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+.userName {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.userNote {
+  color: var(--mut);
+  font-size: 0.75rem;
+}
+
+.initial {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--on-gold);
+  font-weight: 700;
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  /* Room for the phone bottom nav (54px plus the safe area). */
+  padding: 18px 16px calc(28px + 54px + env(safe-area-inset-bottom, 0px));
+}
+
+.main:focus {
+  outline: none;
+}
+
+/* Phone bottom nav. */
+.bottomNav {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--forest);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 54px;
+  padding: 4px 2px;
+  color: var(--onf);
+  font: 600 0.68rem var(--sans);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.tabCurrent {
+  background: var(--gold);
+  color: var(--on-gold);
+}
+
+.moreList {
+  position: fixed;
+  inset-inline: 10px;
+  bottom: calc(54px + 8px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  background: var(--surf);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.moreItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding-inline: 12px;
+  border-radius: 12px;
+  color: var(--ink);
+  font: 600 0.95rem var(--sans);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  text-align: start;
+  cursor: pointer;
+}
+
+.moreItem:hover {
+  background: var(--mint);
+}
+
+.moreCurrent,
+.moreCurrent:hover {
+  background: var(--gold);
+  color: var(--on-gold);
+}
+
+@media (min-width: 700px) {
+  .shell {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+
+  .item {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .bottomNav,
+  .moreList {
+    display: none;
+  }
+
+  .topBar {
+    padding-inline: 28px;
+  }
+
+  .userText {
+    display: flex;
+  }
+
+  .main {
+    padding: 24px 28px 36px;
+  }
+}
+
+@media (min-width: 1040px) {
+  .shell {
+    grid-template-columns: 244px minmax(0, 1fr);
+  }
+
+  .groupLabel {
+    display: block;
+  }
+
+  .item {
+    justify-content: flex-start;
+    padding-inline: 12px;
+  }
+
+  .itemLabel {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+}

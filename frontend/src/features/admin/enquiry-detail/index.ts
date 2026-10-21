@@ -1,0 +1,1 @@
+export { EnquiryDetailPage } from './EnquiryDetailPage';

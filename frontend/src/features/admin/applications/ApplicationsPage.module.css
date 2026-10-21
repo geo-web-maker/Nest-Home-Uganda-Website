@@ -1,0 +1,60 @@
+.detailGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin-block: 1.25rem;
+}
+.panel {
+  min-width: 0;
+  padding: 1.1rem;
+  background: var(--surf);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+}
+.panel h2 {
+  margin-block: 0 1rem;
+  font-size: 1.15rem;
+}
+.details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.8rem;
+  margin-block: 0 1.2rem;
+}
+.details dt {
+  color: var(--mut);
+  font-size: 0.85rem;
+}
+.details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.form {
+  display: grid;
+  gap: 0.8rem;
+  margin-block-end: 1rem;
+}
+.timeline {
+  display: grid;
+  gap: 0.8rem;
+  padding-inline-start: 1.2rem;
+  border-inline-start: 2px solid var(--line);
+}
+.timeline time {
+  color: var(--mut);
+  font-size: 0.85rem;
+}
+.timeline p {
+  margin-block: 0.3rem;
+}
+@media (min-width: 700px) {
+  .detailGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .panel {
+    padding: 1.35rem;
+  }
+  .details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -1,0 +1,41 @@
+.button {
+  composes: pill from '../../design/shapes.module.css';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding-inline: 22px;
+  border: 2px solid var(--gold);
+  background: var(--gold);
+  color: var(--on-gold);
+  font: 600 0.98rem var(--sans);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  filter: brightness(1.07);
+}
+
+.outline {
+  background: transparent;
+  color: inherit;
+  border-color: currentColor;
+}
+
+.whatsapp {
+  background: var(--wa);
+  border-color: var(--wa);
+  color: var(--on-wa);
+}
+
+.header {
+  min-height: 40px;
+  padding-inline: 14px;
+  font-size: 0.88rem;
+}
+
+.full {
+  width: 100%;
+}

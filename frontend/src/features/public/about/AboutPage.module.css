@@ -1,0 +1,49 @@
+.story,
+.credentials {
+  padding-block: 52px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.storyGrid {
+  display: grid;
+  gap: 28px;
+  align-items: start;
+}
+.story h2,
+.promise h2,
+.credentials h2 {
+  margin: 0 0 18px;
+  font-family: var(--serif);
+  font-size: clamp(1.7rem, 6vw, 2.8rem);
+  line-height: 1.1;
+}
+.story p,
+.credentials p {
+  max-width: 62ch;
+  color: var(--mut);
+  line-height: 1.6;
+}
+.promise {
+  padding-block: 52px;
+  background: var(--forest);
+  color: var(--onf);
+  text-align: center;
+}
+.promise h2 {
+  max-width: 20ch;
+  margin-inline: auto;
+}
+.credentials {
+  background: var(--mint);
+}
+@media (min-width: 1040px) {
+  .story,
+  .credentials,
+  .promise {
+    padding-block: 84px;
+  }
+  .storyGrid {
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 60px;
+  }
+}

@@ -1,0 +1,38 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  /* Room for the fixed Call and WhatsApp bar so it never covers the footer. */
+  padding-bottom: 84px;
+}
+
+.main {
+  flex: 1;
+}
+
+.main:focus {
+  outline: none;
+}
+
+.skip {
+  position: absolute;
+  top: 0;
+  left: 12px;
+  z-index: 20;
+  padding: 10px 16px;
+  border-radius: 0 0 12px 12px;
+  background: var(--gold);
+  color: var(--on-gold);
+  font: 600 0.95rem var(--sans);
+  transform: translateY(-120%);
+}
+
+.skip:focus {
+  transform: none;
+}
+
+@media (min-width: 1040px) {
+  .shell {
+    padding-bottom: 0;
+  }
+}

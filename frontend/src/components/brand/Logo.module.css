@@ -1,0 +1,27 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font: 700 1rem/1.05 var(--serif);
+  text-align: start;
+}
+
+.text {
+  display: block;
+}
+
+.sub {
+  display: block;
+  font: 500 0.68rem var(--sans);
+  color: var(--gold);
+}
+
+.admin {
+  gap: 8px;
+  font-size: 0.95rem;
+  line-height: 1.1;
+}
+
+.admin .sub {
+  font-size: 0.66rem;
+}

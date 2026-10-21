@@ -1,0 +1,27 @@
+.band {
+  padding: 52px 0;
+  background: var(--forest);
+  color: var(--onf);
+  text-align: center;
+}
+
+.heading {
+  max-width: 20ch;
+  margin-inline: auto;
+  font-size: clamp(1.7rem, 6vw, 2.8rem);
+  line-height: 1.1;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+@media (min-width: 1040px) {
+  .band {
+    padding: 84px 0;
+  }
+}

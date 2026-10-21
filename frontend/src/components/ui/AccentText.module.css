@@ -1,0 +1,7 @@
+.accent {
+  font-family: var(--script);
+  font-style: italic;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 0;
+}

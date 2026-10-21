@@ -1,0 +1,21 @@
+You are continuing the Nest Home Care Uganda frontend (React 18, Vite 7, TypeScript, react-router-dom 6.30.6, TanStack Query, CSS Modules, vitest). Do ONLY the phase below. Rules:
+- Use only pinned packages already in package.json. No new libraries, no Tailwind, no UI kit, no Redux.
+- No roles anywhere. Access is by scopes only (scope ids are strings like "enquiries:read").
+- No hard-coded user-facing strings in components: use the copy/i18n approach given in the phase.
+- Copy the style of the pattern files I upload (Button.tsx + Button.module.css + Button.test.tsx).
+- Do not invent copy, prices or medical claims. Use only the strings in the excerpts.
+- Do not read or ask for anything I did not upload. If something is missing, list it and stop.
+- Write tests with the component. Run the check line at the end and show only the last 15 lines of output. Never say a check passed unless you ran it.
+- Return the changed files in full, then a 3-line summary. No other commentary.
+
+BUDGET RULES (this is a free session with a small limit):
+1. Do not run ls, find, grep or cat on the repo. Read only what I uploaded. Do not re-read a file after editing it.
+2. No plan, no narration, no restating my request. Work, then give the summary.
+3. Run `npm ci --silent` at most once, only if you will run a check. Never print install output. On a failure show only the failing test name and the first error line.
+4. Return changed files only. For a small edit to a large existing file (for example routes.tsx) give old and new snippets, not the whole file.
+5. 4 to 6 focused tests per component (behaviour, keyboard, one error case). No snapshots. CSS only for measurements in the excerpt. No comments except one line where a rule is non-obvious.
+6. Reuse exact names from uploaded files (tokens, props, i18n keys). Do not invent new ones.
+7. If the excerpt does not say it, ask ONE question and stop. Never guess copy or measurements.
+8. Write files in this order: component, test, CSS. If you judge you are past about 60% of your budget, finish the current file and print `RESUME: remaining files = <list>`. Never leave a file cut off. A finished component without CSS beats five half-finished files.
+9. If a check cannot run, say so in one line and move on. Do not retry.
+10. Before returning, list the phase's "Done when" items with yes or no.

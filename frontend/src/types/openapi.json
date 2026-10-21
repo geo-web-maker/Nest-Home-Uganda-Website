@@ -1,0 +1,2821 @@
+{
+  "components": {
+    "schemas": {
+      "ClickIn": {
+        "properties": {
+          "channel": {
+            "enum": [
+              "call",
+              "whatsapp"
+            ],
+            "title": "Channel",
+            "type": "string"
+          },
+          "page": {
+            "default": "/",
+            "maxLength": 120,
+            "pattern": "^/[A-Za-z0-9/_\\-.]*$",
+            "title": "Page",
+            "type": "string"
+          }
+        },
+        "required": [
+          "channel"
+        ],
+        "title": "ClickIn",
+        "type": "object"
+      },
+      "EnquiryCreate": {
+        "properties": {
+          "area": {
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Area",
+            "type": "string"
+          },
+          "consent": {
+            "title": "Consent",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 30,
+            "title": "Phone",
+            "type": "string"
+          },
+          "preferred_start": {
+            "anyOf": [
+              {
+                "enum": [
+                  "today",
+                  "this_week",
+                  "later",
+                  "not_sure"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Start"
+          },
+          "relationship": {
+            "enum": [
+              "self",
+              "parent",
+              "spouse",
+              "child",
+              "other"
+            ],
+            "title": "Relationship",
+            "type": "string"
+          },
+          "service_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Service Ids",
+            "type": "array"
+          },
+          "website": {
+            "default": "",
+            "maxLength": 200,
+            "title": "Website",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "phone",
+          "relationship",
+          "service_ids",
+          "area",
+          "consent"
+        ],
+        "title": "EnquiryCreate",
+        "type": "object"
+      },
+      "EnquiryCreated": {
+        "properties": {
+          "reference": {
+            "title": "Reference",
+            "type": "string"
+          },
+          "whatsapp_url": {
+            "title": "Whatsapp Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reference",
+          "whatsapp_url"
+        ],
+        "title": "EnquiryCreated",
+        "type": "object"
+      },
+      "EnquiryDetail": {
+        "properties": {
+          "area": {
+            "title": "Area",
+            "type": "string"
+          },
+          "assigned_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
+          "consent": {
+            "title": "Consent",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/EnquiryEventOut"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "first_contacted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Contacted At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "not_proceeding_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Not Proceeding Reason"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "phone_e164": {
+            "title": "Phone E164",
+            "type": "string"
+          },
+          "phone_raw": {
+            "title": "Phone Raw",
+            "type": "string"
+          },
+          "preferred_start": {
+            "anyOf": [
+              {
+                "enum": [
+                  "today",
+                  "this_week",
+                  "later",
+                  "not_sure"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Start"
+          },
+          "reference": {
+            "title": "Reference",
+            "type": "string"
+          },
+          "relationship": {
+            "enum": [
+              "self",
+              "parent",
+              "spouse",
+              "child",
+              "other"
+            ],
+            "title": "Relationship",
+            "type": "string"
+          },
+          "services": {
+            "items": {
+              "$ref": "#/components/schemas/EnquiryServiceOut"
+            },
+            "title": "Services",
+            "type": "array"
+          },
+          "source": {
+            "enum": [
+              "form",
+              "whatsapp_button",
+              "call_button",
+              "manual"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "new",
+              "contacted",
+              "assessment_booked",
+              "care_started",
+              "not_proceeding",
+              "spam"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "reference",
+          "name",
+          "phone_e164",
+          "services",
+          "area",
+          "status",
+          "source",
+          "assigned_to",
+          "created_at",
+          "phone_raw",
+          "relationship",
+          "preferred_start",
+          "note",
+          "not_proceeding_reason",
+          "consent",
+          "language",
+          "first_contacted_at",
+          "closed_at",
+          "events"
+        ],
+        "title": "EnquiryDetail",
+        "type": "object"
+      },
+      "EnquiryEventOut": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          }
+        },
+        "required": [
+          "at",
+          "user_id",
+          "kind",
+          "data",
+          "text"
+        ],
+        "title": "EnquiryEventOut",
+        "type": "object"
+      },
+      "EnquiryListItem": {
+        "properties": {
+          "area": {
+            "title": "Area",
+            "type": "string"
+          },
+          "assigned_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "phone_e164": {
+            "title": "Phone E164",
+            "type": "string"
+          },
+          "reference": {
+            "title": "Reference",
+            "type": "string"
+          },
+          "services": {
+            "items": {
+              "$ref": "#/components/schemas/EnquiryServiceOut"
+            },
+            "title": "Services",
+            "type": "array"
+          },
+          "source": {
+            "enum": [
+              "form",
+              "whatsapp_button",
+              "call_button",
+              "manual"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "new",
+              "contacted",
+              "assessment_booked",
+              "care_started",
+              "not_proceeding",
+              "spam"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "reference",
+          "name",
+          "phone_e164",
+          "services",
+          "area",
+          "status",
+          "source",
+          "assigned_to",
+          "created_at"
+        ],
+        "title": "EnquiryListItem",
+        "type": "object"
+      },
+      "EnquiryManualIn": {
+        "description": "Entered by staff from a phone call. No consent box, so no visitor SMS is sent.",
+        "properties": {
+          "area": {
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Area",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Note",
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 30,
+            "title": "Phone",
+            "type": "string"
+          },
+          "preferred_start": {
+            "anyOf": [
+              {
+                "enum": [
+                  "today",
+                  "this_week",
+                  "later",
+                  "not_sure"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Start"
+          },
+          "relationship": {
+            "enum": [
+              "self",
+              "parent",
+              "spouse",
+              "child",
+              "other"
+            ],
+            "title": "Relationship",
+            "type": "string"
+          },
+          "service_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Service Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "phone",
+          "relationship",
+          "service_ids",
+          "area"
+        ],
+        "title": "EnquiryManualIn",
+        "type": "object"
+      },
+      "EnquiryServiceOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "service_id": {
+            "title": "Service Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "service_id",
+          "name"
+        ],
+        "title": "EnquiryServiceOut",
+        "type": "object"
+      },
+      "EnquiryUpdate": {
+        "description": "Only fields that are present change. `assigned_to: null` un-assigns.",
+        "properties": {
+          "assigned_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "new",
+                  "contacted",
+                  "assessment_booked",
+                  "care_started",
+                  "not_proceeding",
+                  "spam"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "EnquiryUpdate",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "type": "object"
+      },
+      "NoteIn": {
+        "properties": {
+          "text": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "NoteIn",
+        "type": "object"
+      },
+      "Page_EnquiryListItem_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EnquiryListItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "Page[EnquiryListItem]",
+        "type": "object"
+      },
+      "Page_ServiceAdminOut_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceAdminOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "Page[ServiceAdminOut]",
+        "type": "object"
+      },
+      "ScopeOut": {
+        "properties": {
+          "group": {
+            "title": "Group",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "group",
+          "label"
+        ],
+        "title": "ScopeOut",
+        "type": "object"
+      },
+      "ServiceAdminOut": {
+        "description": "Admin read: full LocalizedText objects, plus the 'Content needed' flag.",
+        "properties": {
+          "content_needed": {
+            "title": "Content Needed",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "facts": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "maxItems": 3,
+            "title": "Facts",
+            "type": "array"
+          },
+          "hero_headline": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Hero Headline",
+            "type": "object"
+          },
+          "hero_label": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Hero Label",
+            "type": "object"
+          },
+          "hero_lead": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Hero Lead",
+            "type": "object"
+          },
+          "how_often": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "How Often",
+            "type": "object"
+          },
+          "icon_key": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Key"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "includes": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "maxItems": 12,
+            "title": "Includes",
+            "type": "array"
+          },
+          "name": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Name",
+            "type": "object"
+          },
+          "number": {
+            "default": 0,
+            "maximum": 99.0,
+            "minimum": 0.0,
+            "title": "Number",
+            "type": "integer"
+          },
+          "photo_media_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Media Id"
+          },
+          "published": {
+            "default": false,
+            "title": "Published",
+            "type": "boolean"
+          },
+          "related": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Related",
+            "type": "array"
+          },
+          "seo_description": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Seo Description",
+            "type": "object"
+          },
+          "seo_title": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Seo Title",
+            "type": "object"
+          },
+          "slug": {
+            "maxLength": 80,
+            "minLength": 2,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "title": "Slug",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "maximum": 999.0,
+            "minimum": 0.0,
+            "title": "Sort Order",
+            "type": "integer"
+          },
+          "summary": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Summary",
+            "type": "object"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "who_for": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "maxItems": 8,
+            "title": "Who For",
+            "type": "array"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "id",
+          "content_needed",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ServiceAdminOut",
+        "type": "object"
+      },
+      "ServiceIn": {
+        "description": "Fields an admin can set. Every text field is a LocalizedText ({lang: text}).",
+        "properties": {
+          "facts": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "maxItems": 3,
+            "title": "Facts",
+            "type": "array"
+          },
+          "hero_headline": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Hero Headline",
+            "type": "object"
+          },
+          "hero_label": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Hero Label",
+            "type": "object"
+          },
+          "hero_lead": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Hero Lead",
+            "type": "object"
+          },
+          "how_often": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "How Often",
+            "type": "object"
+          },
+          "icon_key": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Key"
+          },
+          "includes": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "maxItems": 12,
+            "title": "Includes",
+            "type": "array"
+          },
+          "name": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Name",
+            "type": "object"
+          },
+          "number": {
+            "default": 0,
+            "maximum": 99.0,
+            "minimum": 0.0,
+            "title": "Number",
+            "type": "integer"
+          },
+          "photo_media_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Media Id"
+          },
+          "published": {
+            "default": false,
+            "title": "Published",
+            "type": "boolean"
+          },
+          "related": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Related",
+            "type": "array"
+          },
+          "seo_description": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Seo Description",
+            "type": "object"
+          },
+          "seo_title": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Seo Title",
+            "type": "object"
+          },
+          "slug": {
+            "maxLength": 80,
+            "minLength": 2,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "title": "Slug",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "maximum": 999.0,
+            "minimum": 0.0,
+            "title": "Sort Order",
+            "type": "integer"
+          },
+          "summary": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Summary",
+            "type": "object"
+          },
+          "who_for": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "maxItems": 8,
+            "title": "Who For",
+            "type": "array"
+          }
+        },
+        "required": [
+          "slug",
+          "name"
+        ],
+        "title": "ServiceIn",
+        "type": "object"
+      },
+      "ServicePublicCard": {
+        "description": "What the Services overview needs. Text is already resolved to one language.",
+        "properties": {
+          "icon_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Key"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "photo_media_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Media Id"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "summary",
+          "number",
+          "icon_key",
+          "photo_media_id"
+        ],
+        "title": "ServicePublicCard",
+        "type": "object"
+      },
+      "ServicePublicDetail": {
+        "properties": {
+          "facts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Facts",
+            "type": "array"
+          },
+          "hero_headline": {
+            "title": "Hero Headline",
+            "type": "string"
+          },
+          "hero_label": {
+            "title": "Hero Label",
+            "type": "string"
+          },
+          "hero_lead": {
+            "title": "Hero Lead",
+            "type": "string"
+          },
+          "how_often": {
+            "title": "How Often",
+            "type": "string"
+          },
+          "icon_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Key"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "includes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Includes",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "photo_media_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Media Id"
+          },
+          "related": {
+            "items": {
+              "$ref": "#/components/schemas/ServicePublicCard"
+            },
+            "title": "Related",
+            "type": "array"
+          },
+          "seo_description": {
+            "title": "Seo Description",
+            "type": "string"
+          },
+          "seo_title": {
+            "title": "Seo Title",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "who_for": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Who For",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "summary",
+          "number",
+          "icon_key",
+          "photo_media_id",
+          "hero_label",
+          "hero_headline",
+          "hero_lead",
+          "facts",
+          "who_for",
+          "includes",
+          "how_often",
+          "seo_title",
+          "seo_description",
+          "related"
+        ],
+        "title": "ServicePublicDetail",
+        "type": "object"
+      },
+      "ServiceUpdate": {
+        "description": "PATCH body: only the fields sent are changed. Same rules as ServiceIn.",
+        "properties": {
+          "facts": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "maxItems": 3,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facts"
+          },
+          "hero_headline": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hero Headline"
+          },
+          "hero_label": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hero Label"
+          },
+          "hero_lead": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hero Lead"
+          },
+          "how_often": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "How Often"
+          },
+          "icon_key": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon Key"
+          },
+          "includes": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "maxItems": 12,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Includes"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "number": {
+            "anyOf": [
+              {
+                "maximum": 99.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number"
+          },
+          "photo_media_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Media Id"
+          },
+          "published": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published"
+          },
+          "related": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 3,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related"
+          },
+          "seo_description": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seo Description"
+          },
+          "seo_title": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seo Title"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 2,
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "maximum": 999.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "who_for": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "maxItems": 8,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Who For"
+          }
+        },
+        "title": "ServiceUpdate",
+        "type": "object"
+      },
+      "TokenResponse": {
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "csrf_token": {
+            "title": "Csrf Token",
+            "type": "string"
+          },
+          "expires_in": {
+            "title": "Expires In",
+            "type": "integer"
+          },
+          "token_type": {
+            "default": "bearer",
+            "title": "Token Type",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserPublic"
+          }
+        },
+        "required": [
+          "access_token",
+          "expires_in",
+          "csrf_token",
+          "user"
+        ],
+        "title": "TokenResponse",
+        "type": "object"
+      },
+      "UserPublic": {
+        "properties": {
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_superadmin": {
+            "title": "Is Superadmin",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "scopes",
+          "is_superadmin"
+        ],
+        "title": "UserPublic",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "title": "Nest Home Care Uganda API",
+    "version": "0.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/admin/enquiries": {
+      "get": {
+        "operationId": "admin_list_api_v1_admin_enquiries_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "new",
+                    "contacted",
+                    "assessment_booked",
+                    "care_started",
+                    "not_proceeding",
+                    "spam"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 24,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Service"
+            }
+          },
+          {
+            "in": "query",
+            "name": "assigned_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 24,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Assigned To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "-created_at",
+              "enum": [
+                "-created_at",
+                "created_at"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 10000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_EnquiryListItem_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin List",
+        "tags": [
+          "admin-enquiries"
+        ]
+      },
+      "post": {
+        "operationId": "admin_create_api_v1_admin_enquiries_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnquiryManualIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnquiryDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Create",
+        "tags": [
+          "admin-enquiries"
+        ]
+      }
+    },
+    "/api/v1/admin/enquiries/{enquiry_id}": {
+      "get": {
+        "operationId": "admin_get_api_v1_admin_enquiries__enquiry_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "enquiry_id",
+            "required": true,
+            "schema": {
+              "title": "Enquiry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnquiryDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Get",
+        "tags": [
+          "admin-enquiries"
+        ]
+      },
+      "patch": {
+        "operationId": "admin_update_api_v1_admin_enquiries__enquiry_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "enquiry_id",
+            "required": true,
+            "schema": {
+              "title": "Enquiry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnquiryUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnquiryDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Update",
+        "tags": [
+          "admin-enquiries"
+        ]
+      }
+    },
+    "/api/v1/admin/enquiries/{enquiry_id}/notes": {
+      "post": {
+        "operationId": "admin_add_note_api_v1_admin_enquiries__enquiry_id__notes_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "enquiry_id",
+            "required": true,
+            "schema": {
+              "title": "Enquiry Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnquiryDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Add Note",
+        "tags": [
+          "admin-enquiries"
+        ]
+      }
+    },
+    "/api/v1/admin/scopes": {
+      "get": {
+        "description": "The one list of scopes. The frontend loads it from here (12.1.4).",
+        "operationId": "list_scopes_api_v1_admin_scopes_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ScopeOut"
+                  },
+                  "title": "Response List Scopes Api V1 Admin Scopes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Scopes",
+        "tags": [
+          "admin-auth"
+        ]
+      }
+    },
+    "/api/v1/admin/services": {
+      "get": {
+        "operationId": "admin_list_api_v1_admin_services_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "published",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Published"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 10000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ServiceAdminOut_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin List",
+        "tags": [
+          "admin-services"
+        ]
+      },
+      "post": {
+        "operationId": "admin_create_api_v1_admin_services_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceAdminOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Create",
+        "tags": [
+          "admin-services"
+        ]
+      }
+    },
+    "/api/v1/admin/services/{service_id}": {
+      "delete": {
+        "operationId": "admin_delete_api_v1_admin_services__service_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "service_id",
+            "required": true,
+            "schema": {
+              "title": "Service Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Delete",
+        "tags": [
+          "admin-services"
+        ]
+      },
+      "get": {
+        "operationId": "admin_get_api_v1_admin_services__service_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "service_id",
+            "required": true,
+            "schema": {
+              "title": "Service Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceAdminOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Get",
+        "tags": [
+          "admin-services"
+        ]
+      },
+      "patch": {
+        "operationId": "admin_update_api_v1_admin_services__service_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "service_id",
+            "required": true,
+            "schema": {
+              "title": "Service Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceAdminOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Update",
+        "tags": [
+          "admin-services"
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "logout_api_v1_auth_logout_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "nhc_refresh",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Nhc Refresh"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "nhc_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Nhc Csrf"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Logout",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "operationId": "me_api_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPublic"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Me",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "refresh_api_v1_auth_refresh_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "nhc_refresh",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Nhc Refresh"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "nhc_csrf",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Nhc Csrf"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refresh",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "operationId": "health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/public/clicks": {
+      "post": {
+        "operationId": "record_click_api_v1_public_clicks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClickIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record Click",
+        "tags": [
+          "public-clicks"
+        ]
+      }
+    },
+    "/api/v1/public/enquiries": {
+      "post": {
+        "operationId": "public_create_api_v1_public_enquiries_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 16,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lang"
+            }
+          },
+          {
+            "in": "header",
+            "name": "user-agent",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 400,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User-Agent"
+            }
+          },
+          {
+            "in": "header",
+            "name": "accept-language",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnquiryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnquiryCreated"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Create",
+        "tags": [
+          "public-enquiries"
+        ]
+      }
+    },
+    "/api/v1/public/services": {
+      "get": {
+        "operationId": "public_list_api_v1_public_services_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 16,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lang"
+            }
+          },
+          {
+            "in": "header",
+            "name": "accept-language",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ServicePublicCard"
+                  },
+                  "title": "Response Public List Api V1 Public Services Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public List",
+        "tags": [
+          "public-services"
+        ]
+      }
+    },
+    "/api/v1/public/services/{slug}": {
+      "get": {
+        "operationId": "public_detail_api_v1_public_services__slug__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 16,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lang"
+            }
+          },
+          {
+            "in": "header",
+            "name": "accept-language",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServicePublicDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Detail",
+        "tags": [
+          "public-services"
+        ]
+      }
+    }
+  }
+}

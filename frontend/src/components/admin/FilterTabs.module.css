@@ -1,0 +1,27 @@
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding-bottom: 4px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.tab {
+  composes: pill from '../../design/shapes.module.css';
+  flex: none;
+  min-height: 38px;
+  padding: 0 14px;
+  background: var(--surf);
+  border: 2px solid var(--line);
+  color: var(--ink);
+  font: 600 0.9rem var(--sans);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.selected {
+  background: var(--forest);
+  border-color: var(--forest);
+  color: var(--onf);
+}

@@ -1,0 +1,31 @@
+.list {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.item {
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surf);
+  color: var(--ink);
+  line-height: 1.5;
+}
+.diamond {
+  width: 9px;
+  height: 9px;
+  margin-top: 7px;
+  border: 2px solid var(--gold);
+  transform: rotate(45deg);
+}
+@media (min-width: 700px) {
+  .list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

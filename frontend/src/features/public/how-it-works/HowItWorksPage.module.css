@@ -1,0 +1,63 @@
+.steps {
+  padding-block: 52px;
+  background: var(--bg);
+}
+.pricing {
+  padding-block: 52px;
+  background: var(--mint);
+  color: var(--ink);
+}
+.rule {
+  margin: 0 0 12px;
+  color: var(--leaf);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.pricing h2 {
+  max-width: 20ch;
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(1.7rem, 6vw, 2.8rem);
+  line-height: 1.1;
+}
+.cards {
+  display: grid;
+  gap: 14px;
+  margin-top: 28px;
+}
+.payment {
+  margin: 22px 0 0;
+  color: var(--mut);
+  font-size: 0.94rem;
+}
+.retry {
+  min-height: 44px;
+  padding-inline: 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surf);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.retry:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 3px;
+}
+@media (min-width: 700px) {
+  .steps,
+  .pricing {
+    padding-block: 64px;
+  }
+  .cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1040px) {
+  .steps,
+  .pricing {
+    padding-block: 84px;
+  }
+}
