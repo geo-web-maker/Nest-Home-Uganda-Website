@@ -207,12 +207,14 @@ for (const { width, height } of VIEWPORTS) {
         }
 
         // 4. The page container sits dead centre: same gap left and right.
-        const screenWidth = document.documentElement.clientWidth;
+        // html has scrollbar-gutter: stable, so a classic scrollbar (headless Chrome, Windows) is reserved
+        // space the page never uses. Measure inside the body, not the full screen width.
+        const bodyRect = document.body.getBoundingClientRect();
         for (const el of Array.from(document.querySelectorAll('[class*="container"]'))) {
           if (ignored(el) || !el.checkVisibility()) continue;
           const r = el.getBoundingClientRect();
-          const left = r.left;
-          const right = screenWidth - r.right;
+          const left = r.left - bodyRect.left;
+          const right = bodyRect.right - r.right;
           if (Math.abs(left - right) > 1.5) {
             found.push(
               `${name(el)} is off-centre: ${Math.round(left)}px left, ${Math.round(right)}px right`,
@@ -231,6 +233,11 @@ for (const { width, height } of VIEWPORTS) {
           const signature = (kid: HTMLElement) => `${kid.tagName}.${kid.className}`;
           const same = kids.every((kid) => signature(kid) === signature(kids[0] as HTMLElement));
           if (!same) continue; // unlike children (e.g. a text column and an image) are not meant to match
+          // A deliberately lopsided grid (for example 1.1fr 0.9fr) is not meant to match either.
+          const tracks = getComputedStyle(grid)
+            .gridTemplateColumns.split(' ')
+            .map((track) => parseFloat(track));
+          if (Math.max(...tracks) - Math.min(...tracks) > 1.5) continue;
           const rows = new Map<number, HTMLElement[]>();
           for (const kid of kids) {
             const row = rows.get(kid.offsetTop) ?? [];

@@ -35,6 +35,7 @@ export function ServicesPage() {
       />
       <section className={styles.section}>
         <div className="container">
+          <h2 className={styles.srOnly}>{t('services.listLabel')}</h2>
           {services.isError ? (
             <div className={styles.error} role="alert">
               <p>{t('services.error')}</p>

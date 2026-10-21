@@ -28,6 +28,7 @@ export function TeamPage() {
       />
       <section className={styles.section}>
         <div className="container">
+          <h2 className={styles.srOnly}>{t('team.listLabel')}</h2>
           {team.isError ? (
             <div className={styles.state} role="alert">
               <p>{t('team.error')}</p>
