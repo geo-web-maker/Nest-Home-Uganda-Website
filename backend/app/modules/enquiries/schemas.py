@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Annotated
 
 from beanie import PydanticObjectId
-from pydantic import AfterValidator, BaseModel, Field, field_validator
+from pydantic import BaseModel, BeforeValidator, Field, field_validator
 
 from app.core.phone import normalise_e164
 from app.modules.enquiries.models import PreferredStart, Relationship, Source, Status
@@ -18,7 +18,7 @@ def _clean(value: str) -> str:
     return _CONTROL.sub("", value).strip()
 
 
-Clean = Annotated[str, AfterValidator(_clean)]
+Clean = Annotated[str, BeforeValidator(lambda v: _clean(v) if isinstance(v, str) else v)]
 
 
 class EnquiryFields(BaseModel):

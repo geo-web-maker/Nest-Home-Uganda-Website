@@ -2,13 +2,13 @@ from datetime import datetime
 from typing import Annotated, Literal
 
 from beanie import PydanticObjectId
-from pydantic import AfterValidator, BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, BeforeValidator, EmailStr, Field, field_validator
 
 from app.core.phone import normalise_e164
 from app.modules.applications import rules
 from app.modules.applications.models import Stage
 
-Clean = Annotated[str, AfterValidator(rules.clean)]
+Clean = Annotated[str, BeforeValidator(lambda v: rules.clean(v) if isinstance(v, str) else v)]
 
 
 class ApplicationCreate(BaseModel):

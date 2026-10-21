@@ -47,4 +47,4 @@ def test_theme_rejects_colours_that_fail_contrast() -> None:
     with pytest.raises(ValidationFailed):
         _check_theme({"theme.forest": "#FFFFFF", "theme.gold": "#C79A3B"})
     with pytest.raises(ValidationFailed):
-        _check_theme({"theme.forest": "#123524", "theme.gold": "#FFFF00"})
+        _check_theme({"theme.forest": "#123524", "theme.gold": "#3A3000"})

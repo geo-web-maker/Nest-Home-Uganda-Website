@@ -1,14 +1,14 @@
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, BaseModel, EmailStr, Field
+from pydantic import BaseModel, BeforeValidator, EmailStr, Field
 
 
 def _clean(value: str) -> str:
     return "".join(ch for ch in value if ch >= " " and ch != "\x7f").strip()
 
 
-Clean = Annotated[str, AfterValidator(_clean)]
+Clean = Annotated[str, BeforeValidator(lambda v: _clean(v) if isinstance(v, str) else v)]
 
 
 class AdminUserOut(BaseModel):
