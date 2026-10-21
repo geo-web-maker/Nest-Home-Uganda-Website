@@ -55,7 +55,11 @@ export function Header() {
   return (
     <header ref={headerRef} className={styles.header} onKeyDown={onKeyDown}>
       <div className={cx('container', styles.inner)}>
-        <Link to="/" className={styles.brand}>
+        <Link
+          to="/"
+          className={styles.brand}
+          aria-current={pathname === '/' ? 'page' : undefined}
+        >
           <Logo name={t('site:brand.name')} subtitle={t('site:brand.subtitle')} />
         </Link>
 
@@ -93,13 +97,23 @@ export function Header() {
               </button>
               <ul id="services-menu" className={styles.menu}>
                 <li>
-                  <Link to="/services" className={styles.menuLink}>
+                  <Link
+                    to="/services"
+                    className={styles.menuLink}
+                    aria-current={pathname === '/services' ? 'page' : undefined}
+                  >
                     {t('common:nav.services')}
                   </Link>
                 </li>
                 {services?.map((service) => (
                   <li key={service.id}>
-                    <Link to={`/services/${service.slug}`} className={styles.menuLink}>
+                    <Link
+                      to={`/services/${service.slug}`}
+                      className={styles.menuLink}
+                      aria-current={
+                        pathname === `/services/${service.slug}` ? 'page' : undefined
+                      }
+                    >
                       {service.name}
                     </Link>
                   </li>
@@ -108,7 +122,11 @@ export function Header() {
             </li>
             {NAV.map((item) => (
               <li key={item.key}>
-                <Link to={item.to} className={styles.link}>
+                <Link
+                  to={item.to}
+                  className={styles.link}
+                  aria-current={pathname === item.to ? 'page' : undefined}
+                >
                   {t(`common:nav.${item.key}`)}
                 </Link>
               </li>

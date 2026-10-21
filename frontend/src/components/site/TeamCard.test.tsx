@@ -20,7 +20,10 @@ describe('TeamCard', () => {
   });
   it('renders an image with meaningful alternative text', () => {
     render(<TeamCard {...props} photoUrl="/portrait.jpg" />);
-    expect(screen.getByRole('img', { name: `${props.name}, ${props.role}` })).toBeInTheDocument();
+    const image = screen.getByRole('img', { name: `${props.name}, ${props.role}` });
+    expect(image).toBeInTheDocument();
+    expect(image).toHaveAttribute('loading', 'lazy');
+    expect(image).toHaveAttribute('decoding', 'async');
   });
   it('uses the supplied image alt text when available', () => {
     render(<TeamCard {...props} photoUrl="/portrait.jpg" photoAlt="Portrait description" />);

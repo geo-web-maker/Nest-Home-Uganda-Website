@@ -57,5 +57,9 @@ describe('PageHero', () => {
       'src',
       '/images/a.jpg',
     );
+    expect(screen.getByRole('img', { name: 'A nurse with a baby' })).toHaveAttribute(
+      'decoding',
+      'async',
+    );
   });
 });

@@ -55,7 +55,31 @@
   border: 2px solid var(--gold);
   border-radius: var(--arch);
   background: var(--moss);
-  box-shadow: 0 0 0 10px rgba(199, 154, 59, 0.16);
+  box-shadow: var(--shadow-1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes hero-photo-enter {
+    from {
+      opacity: 0;
+      transform: translateY(var(--reveal-distance));
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .photo {
+    animation: hero-photo-enter var(--dur-slow) var(--ease-out) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo {
+    animation: none;
+  }
 }
 
 @media (min-width: 700px) {

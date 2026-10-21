@@ -55,4 +55,13 @@ describe('PublicLayout', () => {
     expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
     expect(screen.getByRole('main')).toHaveFocus();
   });
+
+  it('updates the route content marker when navigation changes the path', async () => {
+    setup();
+    expect(screen.getByRole('main').querySelector('[data-route-path="/"]')).not.toBeNull();
+
+    await userEvent.click(screen.getByRole('link', { name: 'next' }));
+
+    expect(screen.getByRole('main').querySelector('[data-route-path="/next"]')).not.toBeNull();
+  });
 });

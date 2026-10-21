@@ -19,6 +19,7 @@ export function TeamCard({ name, role, photoUrl, photoAlt, placeholderLabel }: T
             src={photoUrl}
             alt={photoAlt ?? `${name}, ${role}`}
             loading="lazy"
+            decoding="async"
           />
         ) : (
           <span className={styles.placeholder} aria-label={placeholderLabel}>

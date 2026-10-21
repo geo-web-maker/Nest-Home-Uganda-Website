@@ -34,7 +34,9 @@ export function PublicLayout() {
       </a>
       <Header />
       <main id="main" ref={mainRef} tabIndex={-1} className={styles.main}>
-        <Outlet />
+        <div key={pathname} className={styles.routeContent} data-route-path={pathname}>
+          <Outlet />
+        </div>
       </main>
       <Footer />
       <StickyBar />

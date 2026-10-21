@@ -19,10 +19,10 @@ function Go() {
   return <button onClick={() => void navigate('/about')}>go</button>;
 }
 
-function setup() {
+function setup(initialEntry = '/') {
   render(
     <QueryClientProvider client={createQueryClient()}>
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <Header />
         <Routes>
           <Route path="*" element={<Go />} />
@@ -56,6 +56,17 @@ describe('Header', () => {
       '/services/elderly-care',
     );
     expect(within(nav).getByRole('link', { name: 'Postnatal care' })).toBeInTheDocument();
+  });
+
+  it('marks the current navigation destination', () => {
+    const { nav } = setup('/about');
+    expect(within(nav).getByRole('link', { name: 'About' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(within(nav).getByRole('link', { name: 'Contact' })).not.toHaveAttribute(
+      'aria-current',
+    );
   });
 
   it('toggles the phone menu and closes it on Escape and on route change', async () => {
