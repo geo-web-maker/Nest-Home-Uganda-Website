@@ -26,4 +26,7 @@ test('the admin area loads and asks for a sign-in', async ({ page }) => {
   await page.goto('/admin');
   await expect(page.getByLabel(/email/i).first()).toBeVisible();
   await expect(page.getByLabel(/password/i).first()).toBeVisible();
+  // The admin shell must not carry the pre-rendered home page underneath it.
+  await expect(page.locator('h1')).toHaveCount(1);
+  await expect(page.locator('[data-server-rendered]')).toHaveCount(0);
 });
