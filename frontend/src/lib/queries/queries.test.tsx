@@ -84,19 +84,16 @@ describe('useService', () => {
 });
 
 describe('useSiteSettings', () => {
-  it(
-    'shows deterministic defaults first and refreshes them from the public site endpoint',
-    async () => {
-      const { wrapper, get, client } = setup();
-      get.mockResolvedValue(DEFAULT_SITE);
-      const { result } = renderHook(() => useSiteSettings(client), { wrapper });
-      expect(result.current.data).toEqual(DEFAULT_SITE);
-      expect(result.current.data.business.phone).toBe('0787 499 988');
-      await waitFor(() =>
-        expect(get).toHaveBeenCalledWith('/public/site', { params: { lang: 'en' } }),
-      );
-    },
-  );
+  it('shows deterministic defaults first and refreshes them from the public site endpoint', async () => {
+    const { wrapper, get, client } = setup();
+    get.mockResolvedValue(DEFAULT_SITE);
+    const { result } = renderHook(() => useSiteSettings(client), { wrapper });
+    expect(result.current.data).toEqual(DEFAULT_SITE);
+    expect(result.current.data.business.phone).toBe('0787 499 988');
+    await waitFor(() =>
+      expect(get).toHaveBeenCalledWith('/public/site', { params: { lang: 'en' } }),
+    );
+  });
 });
 
 describe('createQueryClient', () => {

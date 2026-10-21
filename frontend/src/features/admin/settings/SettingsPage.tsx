@@ -124,9 +124,7 @@ export function SettingsPage() {
   const data = useQuery({
     queryKey: ['admin', 'settings', canReadSettings ? 'all' : 'sms'],
     queryFn: () =>
-      apiClient.get<SettingEntry[]>(
-        canReadSettings ? '/admin/settings' : '/admin/settings/sms',
-      ),
+      apiClient.get<SettingEntry[]>(canReadSettings ? '/admin/settings' : '/admin/settings/sms'),
   });
   const byKey = useMemo(
     () => Object.fromEntries((data.data ?? []).map((entry) => [entry.key, entry.value])),
@@ -181,9 +179,7 @@ export function SettingsPage() {
       <PageHeader title={t('nav.settings')} subtitle={t('settings.subtitle')} />
       <div className={styles.tabs} role="tablist" aria-label={t('settings.tabsLabel')}>
         {tabs
-          .filter(
-          (item) => (canReadSettings || item.id === 'sms') && (item.id !== 'sms' || canSms),
-        )
+          .filter((item) => (canReadSettings || item.id === 'sms') && (item.id !== 'sms' || canSms))
           .map((item) => (
             <button
               type="button"
