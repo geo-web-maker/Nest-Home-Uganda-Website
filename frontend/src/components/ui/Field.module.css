@@ -18,7 +18,15 @@
   border-radius: 14px;
   background: var(--bg);
   color: var(--ink);
-  font: 400 1rem var(--sans);
+  font: 400 1rem var(--sans); /* 16px: stops iOS zooming on focus */
+  transition:
+    border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.control:focus-visible {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 35%, transparent);
 }
 
 .textarea {
@@ -34,4 +42,12 @@
   margin-top: 4px;
   color: var(--danger);
   font-size: 0.88rem;
+  animation: field-error-in var(--dur-base) var(--ease-out) both;
+}
+
+@keyframes field-error-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }

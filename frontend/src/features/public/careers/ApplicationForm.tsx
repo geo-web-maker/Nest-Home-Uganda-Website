@@ -258,7 +258,7 @@ export function ApplicationForm({ jobs, selectedJobId = null }: ApplicationFormP
           {t('careers.form.failed')}
         </p>
       )}
-      <Button type="submit" disabled={phase === 'sending'}>
+      <Button type="submit" disabled={phase === 'sending'} aria-busy={phase === 'sending'}>
         {phase === 'sending' ? t('careers.form.sending') : t('careers.form.submit')}
       </Button>
     </form>

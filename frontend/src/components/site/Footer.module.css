@@ -30,11 +30,25 @@
   color: inherit;
   opacity: 0.85;
   text-decoration: none;
+  transition:
+    color var(--dur-fast) var(--ease-standard),
+    opacity var(--dur-fast) var(--ease-standard);
 }
 
-.link:hover {
+@media (hover: hover) and (pointer: fine) {
+  .link:hover {
+    color: var(--gold);
+    opacity: 1;
+  }
+}
+
+.link:focus-visible {
   color: var(--gold);
   opacity: 1;
+}
+
+.link:active {
+  opacity: 0.7;
 }
 
 .legal {

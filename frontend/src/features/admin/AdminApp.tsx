@@ -3,6 +3,7 @@ import { AdminLayout } from './AdminLayout';
 import { AuthProvider } from './auth/useAuth';
 import { RequireAuth, RequireScopes } from './auth/guards';
 import { LoginPage } from './auth/LoginPage';
+import { SetPasswordPage } from './auth/SetPasswordPage';
 import { ApplicantDetailPage } from './applications/ApplicantDetailPage';
 import { EnquiryDetailPage } from './enquiry-detail';
 import { JobEditorPage } from './jobs/JobEditorPage';
@@ -18,6 +19,7 @@ export function Component() {
     <AuthProvider>
       <Routes>
         <Route path="login" element={<LoginPage />} />
+        <Route path="set-password" element={<SetPasswordPage />} />
         <Route element={<RequireAuth />}>
           <Route element={<AdminLayout />}>
             {ADMIN_NAV.map((item) => {

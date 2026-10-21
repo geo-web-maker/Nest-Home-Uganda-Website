@@ -1,0 +1,43 @@
+/*
+ * Motion policy (Step 2A).
+ * 1. Everything is VISIBLE by default. Hidden states are only ever applied by
+ *    useReveal in the browser after hydration, so pre-rendered HTML is complete.
+ * 2. Hover effects live ONLY inside @media (hover: hover) and (pointer: fine).
+ * 3. Animate transform and opacity only. Never transition every property.
+ * 4. Durations and easings come from tokens.css, no raw ms or cubic-bezier here.
+ * 5. Reduced motion: content is shown instantly, no movement (block at the end).
+ */
+
+[data-reveal='hidden'] {
+  opacity: 0;
+  transform: translateY(var(--reveal-distance));
+}
+
+[data-reveal='shown'] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--dur-reveal) var(--ease-out),
+    transform var(--dur-reveal) var(--ease-out);
+  transition-delay: calc(var(--i, 0) * var(--stagger-step));
+}
+
+/* Children of a staggered group set --i inline (style={{ '--i': n }}). */
+.stagger > * {
+  transition-delay: calc(var(--i, 0) * var(--stagger-step));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  [data-reveal='hidden'],
+  [data-reveal='shown'] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    transition-delay: 0ms;
+  }
+
+  .stagger > * {
+    transition-delay: 0ms;
+  }
+}

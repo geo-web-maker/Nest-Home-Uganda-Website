@@ -37,6 +37,7 @@
   color: var(--danger);
 }
 .success {
+  animation: success-in var(--dur-slow) var(--ease-out) both;
   padding: 1rem;
   border: 1px solid var(--line);
   border-radius: 1rem;
@@ -56,5 +57,18 @@
   }
   .form > :nth-child(n + 9) {
     grid-column: 1/-1;
+  }
+}
+
+@keyframes success-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .success {
+    animation: none;
   }
 }

@@ -105,6 +105,23 @@ export const adminEn = {
       failed: 'We could not sign you in just now. Please try again.',
     },
   },
+  setPassword: {
+    title: 'Set your password',
+    hint: 'Choose a password of at least 12 characters.',
+    password: 'New password',
+    confirm: 'Confirm password',
+    submit: 'Save password',
+    submitting: 'Saving…',
+    done: 'Your password is set. You can now sign in.',
+    toLogin: 'Go to sign in',
+    errors: {
+      short: 'Use at least 12 characters.',
+      mismatch: 'The two passwords do not match.',
+      link: 'This link has expired or was already used. Ask an administrator for a new one.',
+      noToken: 'This link is not valid. Open the link from your email again.',
+      failed: 'We could not save your password just now. Please try again.',
+    },
+  },
   dashboard: {
     subtitle: 'An overview of current work.',
     loading: 'Loading dashboard',

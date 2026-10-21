@@ -119,7 +119,7 @@ export function BookingForm({
 
   if (phase === 'sent' && result) {
     return (
-      <section className={styles.card} aria-labelledby="booking-thanks">
+      <section className={styles.card} data-state="success" aria-labelledby="booking-thanks">
         <h2 id="booking-thanks" ref={thanksRef} tabIndex={-1} className={styles.title}>
           {copy.thanksHeading}
         </h2>

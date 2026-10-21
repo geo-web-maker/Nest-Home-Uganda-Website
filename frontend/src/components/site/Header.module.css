@@ -1,3 +1,4 @@
+/* Phone: the nav is a panel under the bar. Closed state is visibility:hidden, so links leave the tab order. */
 .header {
   position: sticky;
   top: 0;
@@ -6,6 +7,22 @@
   background: var(--forest);
   color: var(--onf);
   border-bottom: 1px solid rgba(199, 154, 59, 0.4);
+}
+
+/* Scrolled shadow: opacity of a pseudo-element, set by data-scrolled from Header.tsx. */
+.header::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  box-shadow: var(--shadow-2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+
+.header[data-scrolled='true']::after {
+  opacity: 1;
 }
 
 .inner {
@@ -37,34 +54,68 @@
   color: var(--gold);
   font-size: 1.1rem;
   cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
-/* Phone: the nav is the toggled panel under the bar. */
+.menuButton span {
+  display: inline-block;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.menuButton[aria-expanded='true'] span {
+  transform: rotate(90deg);
+}
+
+.menuButton:active {
+  transform: scale(0.96);
+}
+
+/* Panel height animates through grid rows (0fr to 1fr); the list clips itself. */
 .nav {
-  display: none;
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
-  padding: 6px 20px 14px;
+  display: grid;
+  grid-template-rows: 0fr;
+  padding-inline: 20px;
   background: var(--forest);
-  border-top: 1px solid rgba(199, 154, 59, 0.3);
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--dur-base) var(--ease-out),
+    visibility 0s linear var(--dur-base);
 }
 
 .navOpen {
-  display: block;
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition:
+    grid-template-rows var(--dur-base) var(--ease-out),
+    visibility 0s;
 }
 
 .list {
   display: flex;
   flex-direction: column;
+  min-height: 0;
   margin: 0;
   padding: 0;
+  overflow: hidden;
   list-style: none;
+}
+
+/* Spacing sits on the items, so a closed panel is exactly 0px tall. */
+.list > li:first-child {
+  padding-top: 6px;
+}
+
+.list > li:last-child {
+  padding-bottom: 14px;
 }
 
 .link,
 .menuLink {
+  position: relative;
   display: flex;
   align-items: center;
   width: 100%;
@@ -78,27 +129,56 @@
   text-decoration: none;
   opacity: 0.9;
   cursor: pointer;
+  transition:
+    color var(--dur-fast) var(--ease-standard),
+    opacity var(--dur-fast) var(--ease-standard);
 }
 
-.link:hover,
-.menuLink:hover {
+@media (hover: hover) and (pointer: fine) {
+  .link:hover,
+  .menuLink:hover {
+    color: var(--gold);
+    opacity: 1;
+  }
+}
+
+.link:focus-visible,
+.menuLink:focus-visible {
   color: var(--gold);
   opacity: 1;
 }
 
+/* Phone: the services submenu opens inside the panel (grid rows again). */
 .hasMenu {
   position: relative;
+  display: grid;
+  grid-template-rows: auto 0fr;
+  transition: grid-template-rows var(--dur-base) var(--ease-out);
+}
+
+.menuOpen {
+  grid-template-rows: auto 1fr;
 }
 
 .menu {
-  display: none;
+  min-height: 0;
   margin: 0;
   padding: 0 0 0 16px;
+  overflow: hidden;
   list-style: none;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    visibility 0s linear var(--dur-base);
 }
 
 .menuOpen .menu {
-  display: block;
+  visibility: visible;
+  opacity: 1;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    visibility 0s;
 }
 
 @media (min-width: 700px) {
@@ -113,11 +193,19 @@
     padding: 0;
     border: 0;
     background: none;
+    visibility: visible;
+    transition: none;
   }
 
   .list {
     flex-direction: row;
     gap: 22px;
+    overflow: visible;
+  }
+
+  .list > li:first-child,
+  .list > li:last-child {
+    padding-block: 0;
   }
 
   .link {
@@ -125,6 +213,29 @@
     min-height: 44px;
   }
 
+  /* Underline grows from the left with scaleX (hover is gated below). */
+  .link::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: 8px;
+    height: 2px;
+    background: var(--gold);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+
+  .link:focus-visible::after {
+    transform: scaleX(1);
+  }
+
+  .hasMenu {
+    display: block;
+    transition: none;
+  }
+
+  /* Dropdown: opacity + transform + visibility, never display. */
   .menu {
     position: absolute;
     top: 100%;
@@ -132,15 +243,41 @@
     z-index: 10;
     min-width: 230px;
     padding: 8px 14px;
+    overflow: visible;
     background: var(--forest);
     border: 1px solid rgba(199, 154, 59, 0.4);
     border-radius: 14px;
+    transform: translateY(-6px);
+    transition:
+      opacity var(--dur-fast) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out),
+      visibility 0s linear var(--dur-fast);
+  }
+
+  .menuOpen .menu {
+    transform: none;
+    transition:
+      opacity var(--dur-fast) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out),
+      visibility 0s;
+  }
+}
+
+@media (min-width: 700px) and (hover: hover) and (pointer: fine) {
+  .link:hover::after {
+    transform: scaleX(1);
   }
 }
 
 /* Desktop: hover also opens the dropdown. Click and keyboard focus always work. */
-@media (min-width: 1040px) {
+@media (min-width: 1040px) and (hover: hover) and (pointer: fine) {
   .hasMenu:hover .menu {
-    display: block;
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity var(--dur-fast) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out),
+      visibility 0s;
   }
 }

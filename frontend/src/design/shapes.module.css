@@ -12,7 +12,7 @@
 }
 
 .pill {
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 
 /* Diamond: section label end (6px, 1.5px border). */

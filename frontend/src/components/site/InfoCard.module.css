@@ -1,9 +1,29 @@
 .card {
+  position: relative;
   min-width: 0;
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 18px;
   background: var(--surf);
+  transition: border-color var(--dur-base) var(--ease-standard);
+}
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--shadow-1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    border-color: var(--gold);
+  }
+  .card:hover::after {
+    opacity: 1;
+  }
 }
 .label {
   margin: 0 0 5px;

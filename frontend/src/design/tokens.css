@@ -15,3 +15,45 @@
   --bg:#0C1A12; --mint:#12281D; --surf:#14271C; --ink:#E8EFE2; --mut:#9DB5A4; --line:#244233; --straw:#3A3620; --forest:#091410;}}
 :root[data-theme="dark"]{--bg:#0C1A12; --mint:#12281D; --surf:#14271C; --ink:#E8EFE2; --mut:#9DB5A4; --line:#244233; --straw:#3A3620; --forest:#091410}
 /* breakpoints: tablet @media (min-width:700px), desktop @media (min-width:1040px) */
+
+/* Motion tokens (Step 2A). Only these may carry raw ms or cubic-bezier values. */
+:root{
+  --dur-instant:100ms; --dur-fast:160ms; --dur-base:240ms; --dur-slow:400ms; --dur-reveal:560ms; --dur-hero:700ms;
+  --ease-out:cubic-bezier(0.22,1,0.36,1);
+  --ease-in-out:cubic-bezier(0.65,0,0.35,1);
+  --ease-standard:cubic-bezier(0.2,0,0,1);
+  --reveal-distance:16px;
+  --stagger-step:70ms;
+}
+
+/* Type scale (Step 3A). Fluid between 360px and 1180px viewports. */
+:root{
+  --fs-display:clamp(2.5rem,1.7rem + 3.6vw,4.5rem);
+  --fs-h1:clamp(2rem,1.45rem + 2.4vw,3.25rem);
+  --fs-h2:clamp(1.625rem,1.3rem + 1.4vw,2.375rem);
+  --fs-h3:clamp(1.25rem,1.12rem + 0.6vw,1.625rem);
+  --fs-lead:clamp(1.0625rem,1rem + 0.35vw,1.3125rem);
+  --fs-body:1rem;
+  --fs-small:0.875rem;
+  --fs-eyebrow:0.75rem;
+  --lh-tight:1.1; --lh-snug:1.25; --lh-body:1.55;
+  --ls-display:-0.025em; --ls-heading:-0.015em; --ls-body:0; --ls-eyebrow:0.14em;
+}
+
+/* Spacing, radii and depth (Step 3B). */
+:root{
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px;
+  --space-6:32px; --space-7:48px; --space-8:64px; --space-9:80px; --space-10:104px;
+  --r-xs:8px; --r-sm:12px; --r-md:18px; --r-lg:24px; --r-xl:28px; --r-pill:999px;
+  --shadow-1:0 1px 2px rgba(18,53,36,0.06),0 2px 8px rgba(18,53,36,0.06);
+  --shadow-2:0 2px 4px rgba(18,53,36,0.06),0 12px 32px rgba(18,53,36,0.12);
+  --highlight-inset:inset 0 0 0 0 transparent;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --shadow-1:0 1px 2px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.3);
+  --shadow-2:0 2px 4px rgba(0,0,0,0.4),0 12px 32px rgba(0,0,0,0.45);
+  --highlight-inset:inset 0 1px 0 rgba(232,239,226,0.06);}}
+:root[data-theme="dark"]{
+  --shadow-1:0 1px 2px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.3);
+  --shadow-2:0 2px 4px rgba(0,0,0,0.4),0 12px 32px rgba(0,0,0,0.45);
+  --highlight-inset:inset 0 1px 0 rgba(232,239,226,0.06)}
