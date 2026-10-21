@@ -64,9 +64,7 @@ describe('Header', () => {
       'aria-current',
       'page',
     );
-    expect(within(nav).getByRole('link', { name: 'Contact' })).not.toHaveAttribute(
-      'aria-current',
-    );
+    expect(within(nav).getByRole('link', { name: 'Contact' })).not.toHaveAttribute('aria-current');
   });
 
   it('toggles the phone menu and closes it on Escape and on route change', async () => {
