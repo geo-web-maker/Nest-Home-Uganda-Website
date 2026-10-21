@@ -44,6 +44,7 @@ export function ApplicationForm({ jobs, selectedJobId = null }: ApplicationFormP
     'editing',
   );
   const [fieldError, setFieldError] = useState('');
+  const [honeypot, setHoneypot] = useState('');
   const headingRef = useRef<HTMLHeadingElement>(null);
   const selectedJob = jobs.find((job) => job.id === values.job_id);
   const registrationRequired = selectedJob?.registration_required === true;
@@ -82,6 +83,7 @@ export function ApplicationForm({ jobs, selectedJobId = null }: ApplicationFormP
       else if (key !== 'job_id') body.append(key, String(value));
     });
     if (values.job_id) body.append('job_id', values.job_id);
+    body.append('website', honeypot);
     body.append('cv', file);
     try {
       const response = await fetch(
@@ -217,6 +219,19 @@ export function ApplicationForm({ jobs, selectedJobId = null }: ApplicationFormP
         maxLength={1000}
         rows={4}
       />
+      <div className={styles.honeypot} aria-hidden="true">
+        <label>
+          {t('careers.form.website')}
+          <input
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            value={honeypot}
+            onChange={(event) => setHoneypot(event.target.value)}
+          />
+        </label>
+      </div>
       <label className={styles.consent}>
         <input
           type="checkbox"

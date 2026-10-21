@@ -33,9 +33,8 @@ async def admin_list(
     _: CanRead,
     page: Annotated[PageParams, Depends(page_params)],
     q: Annotated[str | None, Query(max_length=100)] = None,
-    active: None = None,
 ) -> Page[AreaAdminOut]:
-    return await service.list_admin(page, q, active)
+    return await service.list_admin(page, q)
 
 
 @admin_router.post("", response_model=AreaAdminOut, status_code=201)

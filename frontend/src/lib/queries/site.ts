@@ -8,7 +8,10 @@ export type SiteSettings = {
     /** Digits only, for wa.me links (lib/whatsapp.ts). */
     whatsapp: string;
     office: string;
+    /** Opening hours; "Add opening hours" until supplied (spec 12.2). */
+    hours?: string;
   };
+  forms?: { open_whatsapp_after?: boolean };
 };
 
 export const DEFAULT_SITE: SiteSettings = {

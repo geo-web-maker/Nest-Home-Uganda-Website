@@ -49,6 +49,7 @@ describe('registered public routes', () => {
     ['/faq', 'Answers for worried families.'],
     ['/privacy', 'Your information is safe with us.'],
     ['/careers', 'Join the team that cares for Uganda’s families.'],
+    ['/contact', 'Talk to us today.'],
   ])('renders %s with its own h1', (path, title) => {
     renderAt(path);
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(title);

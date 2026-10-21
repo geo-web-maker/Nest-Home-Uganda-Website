@@ -1,0 +1,34 @@
+.section {
+  padding-block: 52px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.columns {
+  display: grid;
+  gap: 32px;
+}
+.left,
+.right {
+  min-width: 0;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.cards {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+@media (min-width: 1040px) {
+  .section {
+    padding-block: 84px;
+  }
+  .columns {
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 60px;
+    align-items: start;
+  }
+}

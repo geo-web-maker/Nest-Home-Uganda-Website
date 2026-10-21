@@ -71,5 +71,5 @@ async def get_public(job_id: str) -> Job | None:
 
 
 async def applicants_count(job_id: PydanticObjectId) -> int:
-    # The applications module lands in S5.18. Count from its collection without importing it.
+    # Counted from the applications collection directly so jobs never imports that module.
     return await db.get_database()["applications"].count_documents({"job_id": job_id})

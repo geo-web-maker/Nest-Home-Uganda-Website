@@ -1,7 +1,8 @@
 /** Public site copy. Client-supplied content stays marked with the specified placeholder. */
 export const siteEn = {
   brand: { name: 'Nest Home Care', subtitle: 'Uganda · Kampala' },
-  header: { servicesMenu: 'Services' },
+  header: { servicesMenu: 'Services', mainNav: 'Main' },
+  breadcrumb: { label: 'Breadcrumb' },
   footer: {
     tagline: 'Trusted · Reliable · Compassionate.',
     office: 'Office: {{office}}',
@@ -154,6 +155,19 @@ export const siteEn = {
     notListed: 'Not listed? Call us. We may still be able to help.',
     ctaHeading: 'Is your area covered? Ask us.',
     ctaBook: 'Ask about your area',
+  },
+  contact: {
+    seoTitle: 'Contact and Book a Home Visit | Nest Home Care Uganda',
+    seoDescription: 'Call, WhatsApp or send a request. A nurse will reply shortly.',
+    rule: 'Contact and book',
+    title: 'Talk to us today.',
+    lead: 'Call, WhatsApp or send a request. A nurse will reply shortly.',
+    callBig: 'Call {{phone}}',
+    whatsappUs: 'WhatsApp us',
+    officeLabel: 'Office',
+    hoursLabel: 'Hours',
+    mapLabel: 'Map of our office',
+    mapDescription: 'Map location to be confirmed by the client.',
   },
   faq: {
     seoTitle: 'FAQ and Care Tips | Nest Home Care Uganda',

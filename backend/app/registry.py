@@ -10,6 +10,8 @@ from fastapi import APIRouter
 from fastapi.routing import APIRoute
 
 from app.modules.activity import router as activity_router
+from app.modules.applications import router as applications_router
+from app.modules.applications.models import Application
 from app.modules.areas import router as areas_router
 from app.modules.areas.models import Area
 from app.modules.articles import router as articles_router
@@ -42,6 +44,7 @@ from app.modules.team import router as team_router
 from app.modules.team.models import TeamMember
 from app.modules.testimonials import router as testimonials_router
 from app.modules.testimonials.models import Testimonial
+from app.modules.users import router as users_router
 
 API_PREFIX = "/api/v1"
 
@@ -64,6 +67,7 @@ DOCUMENT_MODELS: list[type[Document]] = [
     ContentPage,
     Media,
     Job,
+    Application,
     SiteSetting,
 ]
 
@@ -92,11 +96,15 @@ ROUTERS: list[APIRouter] = [
     media_router.router,
     jobs_router.public_router,
     jobs_router.admin_router,
+    applications_router.public_router,
+    applications_router.admin_router,
     settings_router.public_router,
     settings_router.admin_router,
     dashboard_router.router,
     reports_router.router,
     activity_router.router,
+    users_router.public_router,
+    users_router.admin_router,
 ]
 
 

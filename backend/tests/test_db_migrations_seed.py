@@ -5,6 +5,14 @@ from pymongo.errors import DuplicateKeyError
 
 from app.migrate import discover, run_migrations
 from app.modules.auth.models import User
+from app.modules.areas.models import Area
+from app.modules.areas.seed import seed_areas
+from app.modules.faqs.models import Faq
+from app.modules.faqs.seed import seed_faqs
+from app.modules.jobs.models import Job
+from app.modules.jobs.seed import seed_jobs
+from app.modules.pricing.models import PricingBlock
+from app.modules.pricing.seed import seed_pricing
 from app.seed import seed_first_superadmin
 
 
@@ -54,3 +62,27 @@ async def test_seed_fails_when_env_values_are_empty(mongo, email: str, password:
 async def test_seed_rejects_a_short_password(mongo) -> None:
     with pytest.raises(SystemExit):
         await seed_first_superadmin("a@b.co", "short")
+
+
+async def test_content_seeds_run_once_and_keep_admin_edits(mongo) -> None:
+    assert (await seed_areas(), await seed_faqs(), await seed_pricing()) == (12, 6, 3)
+    assert await seed_jobs(Job) == 3
+    # Rename one of each and delete another: a second run must add nothing back.
+    area = await Area.find_one({"name": "Kololo"})
+    faq = await Faq.find_one({"question.en": "How much does it cost?"})
+    job = await Job.find_one({"title.en": "Midwife"})
+    assert area is not None and faq is not None and job is not None
+    area.name = "Kololo Hill"
+    await area.save()
+    faq.question = {"en": "What does it cost?"}
+    await faq.save()
+    job.title = {"en": "Senior Midwife"}
+    await job.save()
+    other = await Area.find_one({"name": "Wakiso"})
+    assert other is not None
+    other.deleted_at = other.created_at
+    await other.save()
+    assert (await seed_areas(), await seed_faqs(), await seed_pricing()) == (0, 0, 0)
+    assert await seed_jobs(Job) == 0
+    assert await Area.count() == 12 and await Faq.count() == 6 and await Job.count() == 3
+    assert await PricingBlock.count() == 3

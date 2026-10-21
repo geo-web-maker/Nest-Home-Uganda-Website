@@ -48,7 +48,7 @@ export function Header() {
 
         <nav
           id="site-nav"
-          aria-label="Main"
+          aria-label={t('site:header.mainNav')}
           className={cx(styles.nav, menuOpen && styles.navOpen)}
           data-open={menuOpen}
         >

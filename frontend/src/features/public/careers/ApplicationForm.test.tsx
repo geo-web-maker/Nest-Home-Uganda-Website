@@ -73,4 +73,39 @@ describe('ApplicationForm', () => {
     await waitFor(() => expect(screen.getByText(/Application received/)).toBeInTheDocument());
     vi.unstubAllGlobals();
   });
+  it('sends the hidden honeypot field with the application', async () => {
+    const file = new File(['cv'], 'cv.pdf', { type: 'application/pdf' });
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 422 }));
+    vi.stubGlobal('fetch', fetchMock);
+    setup();
+    fireEvent.change(screen.getByLabelText('Leave this field empty'), {
+      target: { value: 'http://spam.example' },
+    });
+    fireEvent.change(screen.getByLabelText(/^Professional registration number/), {
+      target: { value: 'RN-1' },
+    });
+    fireEvent.change(screen.getByLabelText(/^CV/), { target: { files: [file] } });
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Send application' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const sent = fetchMock.mock.calls[0]?.[1]?.body as FormData;
+    expect(sent.get('website')).toBe('http://spam.example');
+    expect(await screen.findByRole('alert')).toHaveTextContent(/could not send the application/);
+    vi.unstubAllGlobals();
+  });
+  it('sends an empty honeypot for a real visitor', async () => {
+    const file = new File(['cv'], 'cv.pdf', { type: 'application/pdf' });
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 201 }));
+    vi.stubGlobal('fetch', fetchMock);
+    setup();
+    fireEvent.change(screen.getByLabelText(/^Professional registration number/), {
+      target: { value: 'RN-1' },
+    });
+    fireEvent.change(screen.getByLabelText(/^CV/), { target: { files: [file] } });
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: 'Send application' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect((fetchMock.mock.calls[0]?.[1]?.body as FormData).get('website')).toBe('');
+    vi.unstubAllGlobals();
+  });
 });

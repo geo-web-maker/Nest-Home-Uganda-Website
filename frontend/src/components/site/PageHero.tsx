@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { cx } from '../../lib/cx';
 import { Rule } from '../ui/Rule';
@@ -18,11 +19,12 @@ type PageHeroProps = {
 };
 
 export function PageHero({ rule, title, lead, breadcrumb, photo }: PageHeroProps) {
+  const { t } = useTranslation('site');
   return (
     <section className={cx(styles.hero, photo && styles.withPhoto)}>
       <div className={cx('container', styles.inner)}>
         <div className={styles.text}>
-          <nav aria-label="Breadcrumb">
+          <nav aria-label={t('breadcrumb.label')}>
             <ol className={styles.crumbs}>
               {breadcrumb.map((crumb, index) => {
                 const last = index === breadcrumb.length - 1;

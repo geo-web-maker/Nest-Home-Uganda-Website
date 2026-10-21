@@ -29,10 +29,11 @@ def seed_data() -> list[dict[str, Any]]:
 
 
 async def seed_jobs(job_model: Any) -> int:
-    """Insert each sample draft once, regardless of its later publication state."""
+    """Seed the three drafts once. A retitled, closed or deleted job must not bring them back."""
+    if await job_model.find_all().count() > 0:
+        return 0
     created = 0
     for data in seed_data():
-        if await job_model.find_one({"title.en": data["title"]["en"]}) is None:
-            await job_model(**data).insert()
-            created += 1
+        await job_model(**data).insert()
+        created += 1
     return created

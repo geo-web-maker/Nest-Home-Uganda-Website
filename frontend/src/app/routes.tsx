@@ -1,6 +1,7 @@
 import type { RouteRecord } from 'vite-react-ssg';
 import { aboutRoute } from '../features/public/about';
 import { areasRoute } from '../features/public/areas';
+import { contactRoute } from '../features/public/contact';
 import { careersRoute, jobDetailRoute } from '../features/public/careers';
 import { articleRoute, faqRoute } from '../features/public/faq';
 import { homeRoute } from '../features/public/home';
@@ -39,6 +40,7 @@ export const routes: RouteRecord[] = [
           articleRoute,
           privacyRoute,
           careersRoute,
+          contactRoute,
           jobDetailRoute,
           { path: '*', Component: NotFoundPage },
         ],

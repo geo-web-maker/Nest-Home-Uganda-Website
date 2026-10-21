@@ -30,11 +30,11 @@ def seed_data() -> list[dict[str, object]]:
 
 
 async def seed_faqs() -> int:
-    """Insert missing defaults without overwriting content that has been edited."""
+    """Seed the six questions once. An edited or deleted question must not come back."""
+    if await Faq.find_all().count() > 0:
+        return 0
     created = 0
     for data in seed_data():
-        question = data["question"]
-        if await Faq.find_one({"question.en": question["en"], "deleted_at": None}) is None:
-            await Faq(**data).insert()
-            created += 1
+        await Faq(**data).insert()
+        created += 1
     return created

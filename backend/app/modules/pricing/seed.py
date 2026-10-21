@@ -31,7 +31,7 @@ def seed_data() -> list[dict[str, object]]:
             "tag": {"en": item["tag"]},
             "title": {"en": item["title"]},
             "text": {"en": item["text"]},
-            "price_text": {"en": "client to supply"},
+            "price_text": {},  # spec 5.6: no prices at launch; the price line stays empty
             "show": True,
             "sort_order": index,
         }

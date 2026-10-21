@@ -1,6 +1,7 @@
 """Seed the default service areas from spec Section 12.3.
 
-The client must confirm this default list. Existing records are not overwritten.
+The client must confirm this default list. Seeded once: when any area exists (even a
+deleted one) nothing is added, so administrator edits and deletions stay.
 """
 
 from app.modules.areas.models import Area
@@ -29,10 +30,11 @@ def seed_data() -> list[dict[str, object]]:
 
 
 async def seed_areas() -> int:
-    """Insert missing defaults and leave administrator edits untouched."""
+    """Seed the default list once. A renamed or deleted area must not come back on a later run."""
+    if await Area.find_all().count() > 0:
+        return 0
     created = 0
     for data in seed_data():
-        if await Area.find_one({"name": data["name"], "deleted_at": None}) is None:
-            await Area(**data).insert()
-            created += 1
+        await Area(**data).insert()
+        created += 1
     return created

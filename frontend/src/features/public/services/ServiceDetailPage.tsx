@@ -11,11 +11,10 @@ import { ServiceCard } from '../../../components/site/ServiceCard';
 import { Steps } from '../../../components/site/Steps';
 import { Strip } from '../../../components/site/Strip';
 import { BookingForm } from '../booking/BookingForm';
-import { BookingError } from '../booking/bookingApi';
-import type { BookingResult } from '../booking/bookingApi';
-import type { BookingPayload } from '../booking/bookingSchema';
+import { submitEnquiryViaClient } from '../booking/enquirySubmit';
 import { bookingCopyEn } from '../../../locales/en/booking';
 import { apiClient } from '../../../lib/api/client';
+import { normaliseUgPhone } from '../../../lib/phone';
 import { useService, useServices } from '../../../lib/queries/services';
 import { useSiteSettings } from '../../../lib/queries/site';
 import type { ServicePublicDetail } from '../../../types';
@@ -35,28 +34,8 @@ export function ServiceDetailPage() {
       apiClient.get<FaqPublic[]>('/public/faqs', { params: { lang: 'en', service_slug: slug } }),
   });
   const matchingFaqs = useMemo(() => (faqs.data ?? []).slice(0, 6), [faqs.data]);
-  const submit = async (payload: BookingPayload): Promise<BookingResult> => {
-    try {
-      const result = await apiClient.post<{ reference: string; whatsapp_url: string }>(
-        '/public/enquiries',
-        { ...payload, preferred_start: payload.preferred_start || null },
-        { params: { lang: 'en' } },
-      );
-      return { reference: result.reference, whatsappUrl: result.whatsapp_url };
-    } catch (error) {
-      if (error && typeof error === 'object' && 'status' in error && error.status === 429)
-        throw new BookingError('rate_limited');
-      if (
-        error &&
-        typeof error === 'object' &&
-        'status' in error &&
-        error.status === 422 &&
-        'fields' in error
-      )
-        throw new BookingError('validation', error.fields as Record<string, string>);
-      throw new BookingError('failed');
-    }
-  };
+  const phone = site.business.phone;
+  const callHref = `tel:${normaliseUgPhone(phone) ?? phone.replace(/\s/g, '')}`;
   if (detail.isError)
     return (
       <section className={styles.state} role="alert">
@@ -145,8 +124,8 @@ export function ServiceDetailPage() {
             services={(services.data ?? []).map((item) => ({ id: item.id, name: item.name }))}
             preselectedServiceIds={[service.id]}
             whatsappDigits={site.business.whatsapp}
-            callHref="tel:+256787499988"
-            submit={submit}
+            callHref={callHref}
+            submit={submitEnquiryViaClient}
           />
         </aside>
       </div>

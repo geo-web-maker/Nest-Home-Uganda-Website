@@ -38,8 +38,8 @@ def _require_publish(principal: Principal) -> None:
         raise Forbidden("You can save drafts but not publish.")
 
 
-async def list_admin(page: PageParams, q: str | None, active: bool | None) -> Page[AreaAdminOut]:
-    items, total = await repo.list_admin(page, q, active)
+async def list_admin(page: PageParams, q: str | None) -> Page[AreaAdminOut]:
+    items, total = await repo.list_admin(page, q)
     return Page(
         items=[to_admin(item) for item in items],
         total=total,
