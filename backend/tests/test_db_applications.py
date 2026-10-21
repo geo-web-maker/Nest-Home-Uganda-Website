@@ -112,6 +112,7 @@ async def test_closed_unpublished_and_unknown_jobs_are_refused(
     closed = await make_job(closed_at=datetime.now(UTC))
     expired = await make_job(closes_on="2020-01-01")
     for job_id in (str(draft.id), str(closed.id), str(expired.id), str(PydanticObjectId())):
+        limiter.reset()  # 4 applications from one IP would trip the 3 per day limit
         r = await apply(client, job_id=job_id)
         assert r.status_code == 422, job_id
         assert r.json()["error"]["fields"] == {"job_id": "not open"}
