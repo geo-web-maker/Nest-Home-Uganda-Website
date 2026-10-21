@@ -5,3 +5,5 @@ coverage
 src/design/tokens.css
 src/types/openapi.json
 src/types/api.d.ts
+playwright-report
+test-results
