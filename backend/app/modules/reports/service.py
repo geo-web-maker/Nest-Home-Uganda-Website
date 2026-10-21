@@ -1,6 +1,7 @@
 """Read-only report summaries and CSV/XLSX export helpers."""
 
 import csv
+import inspect
 import io
 from datetime import date, datetime
 from typing import Any, Literal
@@ -32,6 +33,9 @@ def _obj_id(value: Any) -> str:
 
 async def _aggregate(collection: Any, pipeline: list[dict]) -> list[dict]:
     cursor = collection.aggregate(pipeline)
+    # PyMongo async: aggregate() is a coroutine that resolves to the cursor.
+    if inspect.isawaitable(cursor):
+        cursor = await cursor
     return [item async for item in cursor]
 
 

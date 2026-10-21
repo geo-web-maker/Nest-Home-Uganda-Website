@@ -1,5 +1,6 @@
 """Read-only dashboard aggregates backed by enquiries, applications and jobs."""
 
+import inspect
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -23,6 +24,9 @@ _PENDING_APPLICATION_STAGES = ["received", "shortlisted", "interview", "checks",
 
 async def _aggregate(collection: Any, pipeline: list[dict]) -> list[dict]:
     cursor = collection.aggregate(pipeline)
+    # PyMongo async: aggregate() is a coroutine that resolves to the cursor.
+    if inspect.isawaitable(cursor):
+        cursor = await cursor
     return [item async for item in cursor]
 
 

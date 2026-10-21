@@ -5,8 +5,8 @@ import httpx
 from app.modules.audit.models import AuditLog
 from tests.conftest import auth, make_token
 
-ADMIN = "/api/v1/admin/pricing_blocks"
-PUBLIC = "/api/v1/public/pricing_blocks"
+ADMIN = "/api/v1/admin/pricing"
+PUBLIC = "/api/v1/public/pricing"
 
 
 def editor() -> dict[str, str]:
