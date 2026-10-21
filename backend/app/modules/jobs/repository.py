@@ -45,14 +45,18 @@ async def list_admin(
 
 async def list_public() -> list[Job]:
     today = local_today()
-    return await Job.find(
-        {
-            "published": True,
-            "closed_at": None,
-            "deleted_at": None,
-            "$or": [{"closes_on": None}, {"closes_on": {"$gte": today}}],
-        }
-    ).sort("-created_at", "_id").to_list()
+    return (
+        await Job.find(
+            {
+                "published": True,
+                "closed_at": None,
+                "deleted_at": None,
+                "$or": [{"closes_on": None}, {"closes_on": {"$gte": today}}],
+            }
+        )
+        .sort("-created_at", "_id")
+        .to_list()
+    )
 
 
 async def get_public(job_id: str) -> Job | None:

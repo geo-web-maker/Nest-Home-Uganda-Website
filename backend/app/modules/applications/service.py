@@ -245,9 +245,7 @@ async def add_note(
     principal: Principal, application_id: str, text: str, ip_hash: str | None
 ) -> ApplicationDetail:
     doc = await _get(application_id)
-    await repo.push_event(
-        doc.id, ApplicationEvent(user_id=_uid(principal), kind="note", text=text)
-    )
+    await repo.push_event(doc.id, ApplicationEvent(user_id=_uid(principal), kind="note", text=text))
     # The note text stays out of the audit log: it can hold personal opinions about a person.
     await audit.record(
         principal, "application.note", ITEM_TYPE, str(doc.id), doc.name, ip_hash=ip_hash

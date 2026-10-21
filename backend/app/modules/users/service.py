@@ -5,8 +5,8 @@ Invites and password resets email a one-time link; no password is ever chosen or
 """
 
 import logging
-from html import escape
 from datetime import UTC, datetime, timedelta
+from html import escape
 
 from beanie import PydanticObjectId
 from pymongo.errors import DuplicateKeyError

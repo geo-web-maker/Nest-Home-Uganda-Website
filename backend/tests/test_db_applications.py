@@ -201,7 +201,8 @@ async def test_declining_needs_a_reason_and_leaving_declined_clears_it(
     )
     assert blank.status_code == 422
     declined = await client.patch(
-        url, json={"stage": "declined", "decline_reason": "Not enough experience"},
+        url,
+        json={"stage": "declined", "decline_reason": "Not enough experience"},
         headers=reviewer(),
     )
     assert declined.status_code == 200

@@ -37,9 +37,7 @@ def _values_with_defaults(
 def _luminance(colour: str) -> float:
     channels = [int(colour[i : i + 2], 16) / 255 for i in (1, 3, 5)]
     linear = [
-        channel / 12.92
-        if channel <= 0.04045
-        else ((channel + 0.055) / 1.055) ** 2.4
+        channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
         for channel in channels
     ]
     return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
@@ -146,9 +144,7 @@ async def patch_group(
     if group == "sms":
         if not principal.has("system:manage"):
             raise Forbidden("SMS settings require system:manage.")
-        principal.authorised_by = tuple(
-            dict.fromkeys((*principal.authorised_by, "system:manage"))
-        )
+        principal.authorised_by = tuple(dict.fromkeys((*principal.authorised_by, "system:manage")))
     persisted = await repo.get_values()
     values = _values_with_defaults(persisted)
     before: dict[str, Any] = {}
@@ -158,32 +154,38 @@ async def patch_group(
         if key not in values:
             raise ValidationFailed("This setting cannot be changed.", {suffix: "unknown setting"})
         if key == "sms.provider":
-            raise ValidationFailed("The SMS provider is set in deployment configuration.",
-                                   {suffix: "read only"})
+            raise ValidationFailed(
+                "The SMS provider is set in deployment configuration.", {suffix: "read only"}
+            )
         if not _same_kind(values[key], value):
             raise ValidationFailed("The value has the wrong type.", {suffix: "invalid type"})
         if isinstance(value, str):
             value = value.strip()
         if key == "sms.sender_id" and len(value) > 11:
-            raise ValidationFailed("Sender ID must be 11 characters or fewer.",
-                                   {suffix: "too long"})
-        if key == "sms.message_category" and value not in {
-            "non_customised", "info", "customised"
-        }:
-            raise ValidationFailed("Choose a supported message category.",
-                                   {suffix: "invalid category"})
+            raise ValidationFailed(
+                "Sender ID must be 11 characters or fewer.", {suffix: "too long"}
+            )
+        if key == "sms.message_category" and value not in {"non_customised", "info", "customised"}:
+            raise ValidationFailed(
+                "Choose a supported message category.", {suffix: "invalid category"}
+            )
         if key == "sms.daily_limit" and not 1 <= value <= 10000:
-            raise ValidationFailed("Daily SMS limit must be between 1 and 10000.",
-                                   {suffix: "out of range"})
+            raise ValidationFailed(
+                "Daily SMS limit must be between 1 and 10000.", {suffix: "out of range"}
+            )
         if key == "notify.reminder_minutes" and not 1 <= value <= 1440:
-            raise ValidationFailed("Reminder minutes must be between 1 and 1440.",
-                                   {suffix: "out of range"})
+            raise ValidationFailed(
+                "Reminder minutes must be between 1 and 1440.", {suffix: "out of range"}
+            )
         if key == "business.whatsapp" and (not value.isdigit() or len(value) < 8):
-            raise ValidationFailed("WhatsApp must contain digits only, including the country code.",
-                                   {suffix: "invalid number"})
+            raise ValidationFailed(
+                "WhatsApp must contain digits only, including the country code.",
+                {suffix: "invalid number"},
+            )
         if key == "business.phone_dial" and (not value.startswith("+") or not value[1:].isdigit()):
-            raise ValidationFailed("Use an international phone number beginning with +.",
-                                   {suffix: "invalid number"})
+            raise ValidationFailed(
+                "Use an international phone number beginning with +.", {suffix: "invalid number"}
+            )
         if key in _EDITABLE_THEME_KEYS:
             _check_colour(suffix, value)
         before[key] = values[key]

@@ -77,9 +77,7 @@ async def test_an_empty_file_is_rejected(client: httpx.AsyncClient) -> None:
 
 async def test_the_fourth_request_in_a_day_is_rate_limited(client: httpx.AsyncClient) -> None:
     for _ in range(3):
-        assert (
-            await client.post(URL, data=fields(website="x"), files=cv())
-        ).status_code == 422
+        assert (await client.post(URL, data=fields(website="x"), files=cv())).status_code == 422
     r = await client.post(URL, data=fields(website="x"), files=cv())
     assert r.status_code == 429
     assert r.json()["error"]["code"] == "rate_limited" and "Retry-After" in r.headers

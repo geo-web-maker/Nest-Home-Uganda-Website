@@ -39,9 +39,7 @@ async def make_enquiry(status: str, reference: str, *, contacted_minutes_ago: in
         phone_e164="+256787499988",
         relationship="self",
         services=[
-            EnquiryService(
-                service_id=PydanticObjectId("a" * 24), name_snapshot="Home nursing"
-            )
+            EnquiryService(service_id=PydanticObjectId("a" * 24), name_snapshot="Home nursing")
         ],
         area="Kampala",
         status=status,
@@ -60,16 +58,18 @@ async def test_dashboard_and_report_summaries_use_live_aggregates(
     job = Job(title={"en": "Registered Nurse"}, location="Kampala", department="clinical")
     await job.insert()
     now = datetime.now(UTC)
-    await mongo["applications"].insert_one({
-        "name": "Applicant One",
-        "email": "applicant@example.test",
-        "phone_e164": "+256701000111",
-        "job_id": job.id,
-        "stage": "received",
-        "area": "Kampala",
-        "created_at": now,
-        "experience_years": 4,
-    })
+    await mongo["applications"].insert_one(
+        {
+            "name": "Applicant One",
+            "email": "applicant@example.test",
+            "phone_e164": "+256701000111",
+            "job_id": job.id,
+            "stage": "received",
+            "area": "Kampala",
+            "created_at": now,
+            "experience_years": 4,
+        }
+    )
 
     dashboard = await client.get(DASHBOARD, headers=scoped("dashboard:view"))
     assert dashboard.status_code == 200
@@ -123,7 +123,5 @@ async def test_date_filters_reject_reversed_ranges(
     mongo: object, client: httpx.AsyncClient
 ) -> None:
     headers = scoped("activity:read")
-    response = await client.get(
-        f"{ACTIVITY}?from=2026-10-20&to=2026-10-01", headers=headers
-    )
+    response = await client.get(f"{ACTIVITY}?from=2026-10-20&to=2026-10-01", headers=headers)
     assert response.status_code == 422

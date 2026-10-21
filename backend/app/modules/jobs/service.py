@@ -80,7 +80,12 @@ async def create(principal: Principal, body: JobIn, ip_hash: str | None) -> JobA
     doc = Job(**data)
     await doc.insert()
     await audit.record(
-        principal, "job.create", ITEM_TYPE, str(doc.id), _label(doc), after=_snapshot(doc),
+        principal,
+        "job.create",
+        ITEM_TYPE,
+        str(doc.id),
+        _label(doc),
+        after=_snapshot(doc),
         ip_hash=ip_hash,
     )
     return await to_admin(doc)
@@ -99,10 +104,16 @@ async def update(
             {"published": "use publish action"},
         )
     for key in (
-        "title", "location", "department", "type", "description", "requirements",
-        "registration_required", "show_closing", "published",
+        "title",
+        "location",
+        "department",
+        "type",
+        "description",
+        "requirements",
+        "registration_required",
+        "show_closing",
+        "published",
     ):
-
         if key in changes and changes[key] is None and key not in _TEXT_FIELDS:
             raise ValidationFailed("This field cannot be empty.", {key: "required"})
     if "title" in changes and changes["title"] is None:
@@ -119,8 +130,14 @@ async def update(
     # remains hidden from the public query regardless.
     await doc.save()
     await audit.record(
-        principal, "job.update", ITEM_TYPE, str(doc.id), _label(doc), before=before,
-        after=_snapshot(doc), ip_hash=ip_hash,
+        principal,
+        "job.update",
+        ITEM_TYPE,
+        str(doc.id),
+        _label(doc),
+        before=before,
+        after=_snapshot(doc),
+        ip_hash=ip_hash,
     )
     return await to_admin(doc)
 
@@ -140,8 +157,14 @@ async def publish(principal: Principal, job_id: str, ip_hash: str | None) -> Job
     doc.closed_at = None
     await doc.save()
     await audit.record(
-        principal, "job.publish", ITEM_TYPE, str(doc.id), _label(doc), before=before,
-        after=_snapshot(doc), ip_hash=ip_hash,
+        principal,
+        "job.publish",
+        ITEM_TYPE,
+        str(doc.id),
+        _label(doc),
+        before=before,
+        after=_snapshot(doc),
+        ip_hash=ip_hash,
     )
     return await to_admin(doc)
 
@@ -156,8 +179,14 @@ async def close(principal: Principal, job_id: str, ip_hash: str | None) -> JobAd
     doc.published = False
     await doc.save()
     await audit.record(
-        principal, "job.close", ITEM_TYPE, str(doc.id), _label(doc), before=before,
-        after=_snapshot(doc), ip_hash=ip_hash,
+        principal,
+        "job.close",
+        ITEM_TYPE,
+        str(doc.id),
+        _label(doc),
+        before=before,
+        after=_snapshot(doc),
+        ip_hash=ip_hash,
     )
     return await to_admin(doc)
 
@@ -174,6 +203,11 @@ async def delete(principal: Principal, job_id: str, ip_hash: str | None) -> None
         doc.closed_at = datetime.now(UTC)
     await doc.save()
     await audit.record(
-        principal, "job.delete", ITEM_TYPE, str(doc.id), _label(doc), before=before,
+        principal,
+        "job.delete",
+        ITEM_TYPE,
+        str(doc.id),
+        _label(doc),
+        before=before,
         ip_hash=ip_hash,
     )

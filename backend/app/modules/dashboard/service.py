@@ -42,17 +42,19 @@ async def get_dashboard(now: datetime | None = None) -> DashboardOut:
     new_this_week = await Enquiry.find(
         {"status": "new", "created_at": {"$gte": week_start}}
     ).count()
-    unanswered = await Enquiry.find(
-        {"status": "new", "created_at": {"$lte": cutoff}}
-    ).count()
+    unanswered = await Enquiry.find({"status": "new", "created_at": {"$lte": cutoff}}).count()
     care_started = await Enquiry.find(
         {
             "$or": [
-                {"events": {"$elemMatch": {
-                    "kind": "status_change",
-                    "data.to": "care_started",
-                    "at": {"$gte": month_start, "$lt": next_month_start},
-                }}},
+                {
+                    "events": {
+                        "$elemMatch": {
+                            "kind": "status_change",
+                            "data.to": "care_started",
+                            "at": {"$gte": month_start, "$lt": next_month_start},
+                        }
+                    }
+                },
                 {
                     "status": "care_started",
                     "updated_at": {"$gte": month_start, "$lt": next_month_start},
@@ -76,18 +78,25 @@ async def get_dashboard(now: datetime | None = None) -> DashboardOut:
                     "status": {"$ne": "spam"},
                 }
             },
-            {"$group": {"_id": {"$dateToString": {
-                "format": "%Y-%m-%d", "date": "$created_at", "timezone": str(tz)
-            }}, "count": {"$sum": 1}}},
+            {
+                "$group": {
+                    "_id": {
+                        "$dateToString": {
+                            "format": "%Y-%m-%d",
+                            "date": "$created_at",
+                            "timezone": str(tz),
+                        }
+                    },
+                    "count": {"$sum": 1},
+                }
+            },
         ],
     )
     by_day = {str(item["_id"]): int(item["count"]) for item in day_counts}
     chart = [
         EnquiriesPerDay(
             date=(seven_days_ago + timedelta(days=offset)).isoformat(),
-            count=by_day.get(
-                (seven_days_ago + timedelta(days=offset)).isoformat(), 0
-            ),
+            count=by_day.get((seven_days_ago + timedelta(days=offset)).isoformat(), 0),
         )
         for offset in range(7)
     ]
