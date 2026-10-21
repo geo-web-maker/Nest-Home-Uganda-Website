@@ -5,7 +5,8 @@ import { ApiError, type ApiClient } from '../api/client';
 import type { ServicePublic, ServicePublicDetail } from '../../types';
 import { createQueryClient } from './queryClient';
 import { useService, useServices } from './services';
-import { DEFAULT_SITE, useSiteSettings } from './site';
+
+const { DEFAULT_SITE, useSiteSettings } = await vi.importActual<typeof import('./site')>('./site');
 
 const CARD: ServicePublic = {
   id: 'a'.repeat(24),

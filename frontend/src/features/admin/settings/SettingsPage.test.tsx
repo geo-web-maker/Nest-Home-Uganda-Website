@@ -70,7 +70,9 @@ describe('SettingsPage', () => {
     );
     expect(screen.queryByRole('tab', { name: 'Business details' })).not.toBeInTheDocument();
     expect(apiClient.get).toHaveBeenCalledWith('/admin/settings/sms');
-    expect(await screen.findByRole('checkbox')).toBeEnabled();
+    const boxes = await screen.findAllByRole('checkbox');
+    expect(boxes).toHaveLength(2);
+    boxes.forEach((box) => expect(box).toBeEnabled());
     expect(screen.getByRole('button', { name: 'Save settings' })).toBeEnabled();
   });
 });
