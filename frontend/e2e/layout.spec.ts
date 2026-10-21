@@ -34,9 +34,7 @@ const VIEWPORTS = [
 ];
 
 // The viewport is set per test, so run once on the desktop project instead of once per project.
-test.beforeEach((_args, testInfo) => {
-  test.skip(testInfo.project.name !== 'desktop', 'viewports are set inside this spec');
-});
+test.skip(({ isMobile }) => isMobile, 'viewports are set inside this spec');
 
 // Realistic and deliberately awkward content (long names, long words) so cards and lists are laid out
 // with data in them, not just empty states.
