@@ -19,6 +19,7 @@ import { useService, useServices } from '../../../lib/queries/services';
 import { useSiteSettings } from '../../../lib/queries/site';
 import type { ServicePublicDetail } from '../../../types';
 import type { FaqPublic } from '../faq/types';
+import { Reveal } from '../../../components/ui/Reveal';
 import styles from './ServiceDetailPage.module.css';
 
 export function ServiceDetailPage() {
@@ -77,7 +78,7 @@ export function ServiceDetailPage() {
       <Strip items={service.facts} label={t('serviceDetail.factsLabel')} />
       <div className={styles.layout}>
         <div className={styles.content}>
-          <section className={styles.block}>
+          <Reveal as="section" className={styles.block}>
             <h2>{t('serviceDetail.whoHeading')}</h2>
             <p>{t('serviceDetail.whoLead', { service: service.name })}</p>
             <ul className={styles.whoGrid}>
@@ -85,15 +86,15 @@ export function ServiceDetailPage() {
                 <li key={`${index}-${item}`}>{item}</li>
               ))}
             </ul>
-          </section>
-          <section className={styles.block}>
+          </Reveal>
+          <Reveal as="section" className={styles.block}>
             <h2>{t('serviceDetail.includesHeading')}</h2>
             <CheckList
               label={t('serviceDetail.includesHeading')}
               items={service.includes.map((text, index) => ({ id: `${index}-${text}`, text }))}
             />
-          </section>
-          <section className={styles.block}>
+          </Reveal>
+          <Reveal as="section" className={styles.block}>
             <h2>{t('serviceDetail.howHeading')}</h2>
             <p>{service.how_often}</p>
             <Steps
@@ -105,8 +106,8 @@ export function ServiceDetailPage() {
                 text: t(`serviceDetail.steps.${index}.text`),
               }))}
             />
-          </section>
-          <section className={styles.block}>
+          </Reveal>
+          <Reveal as="section" className={styles.block}>
             <h2>{t('serviceDetail.faqHeading')}</h2>
             {faqs.isError ? (
               <p role="alert">{t('serviceDetail.faqError')}</p>
@@ -116,7 +117,7 @@ export function ServiceDetailPage() {
               <p>{t('serviceDetail.clientToSupply')}</p>
             )}
             <Link to="/faq">{t('serviceDetail.allFaqs')}</Link>
-          </section>
+          </Reveal>
         </div>
         <aside className={styles.booking} aria-label={t('serviceDetail.bookingLabel')}>
           <BookingForm
@@ -134,10 +135,10 @@ export function ServiceDetailPage() {
           <div className="container">
             <h2>{t('serviceDetail.relatedHeading')}</h2>
             <ul className={styles.relatedGrid}>
-              {service.related.map((related) => (
-                <li key={related.id}>
+              {service.related.map((related, index) => (
+                <Reveal as="li" index={index} key={related.id}>
                   <ServiceCard service={related} />
-                </li>
+                </Reveal>
               ))}
             </ul>
           </div>

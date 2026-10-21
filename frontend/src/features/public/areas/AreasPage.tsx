@@ -7,6 +7,7 @@ import { Seo } from '../../../components/site/Seo';
 import { Button } from '../../../components/ui/Button';
 import { apiClient } from '../../../lib/api/client';
 import type { AreaPublic } from './types';
+import { Reveal } from '../../../components/ui/Reveal';
 import styles from './AreasPage.module.css';
 
 export function AreasPage() {
@@ -38,10 +39,10 @@ export function AreasPage() {
           ) : areas.data ? (
             areas.data.length ? (
               <ul className={styles.chips}>
-                {areas.data.map((area) => (
-                  <li key={area.id} className={styles.chip}>
+                {areas.data.map((area, index) => (
+                  <Reveal as="li" index={index % 6} key={area.id} className={styles.chip}>
                     {area.name}
-                  </li>
+                  </Reveal>
                 ))}
               </ul>
             ) : (
@@ -50,7 +51,9 @@ export function AreasPage() {
           ) : (
             <p aria-busy="true">{t('areas.loading')}</p>
           )}
-          <MapPlaceholder label={t('areas.mapLabel')} description={t('areas.mapDescription')} />
+          <Reveal>
+            <MapPlaceholder label={t('areas.mapLabel')} description={t('areas.mapDescription')} />
+          </Reveal>
           <p className={styles.note}>{t('areas.notListed')}</p>
         </div>
       </section>

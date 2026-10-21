@@ -9,6 +9,7 @@ import { Seo } from '../../../components/site/Seo';
 import { CheckList } from '../../../components/ui/CheckList';
 import { apiClient } from '../../../lib/api/client';
 import type { JobPublic } from './types';
+import { Reveal } from '../../../components/ui/Reveal';
 import styles from './CareersPage.module.css';
 
 export function CareersPage() {
@@ -40,8 +41,8 @@ export function CareersPage() {
             ) : jobs.data ? (
               jobs.data.length ? (
                 <ul className={styles.jobs}>
-                  {jobs.data.map((job) => (
-                    <li key={job.id}>
+                  {jobs.data.map((job, index) => (
+                    <Reveal as="li" index={index} key={job.id}>
                       <JobCard
                         title={job.title}
                         location={job.location}
@@ -51,7 +52,7 @@ export function CareersPage() {
                         closesOn={job.closes_on}
                         closingLabel={t('careers.closes')}
                       />
-                    </li>
+                    </Reveal>
                   ))}
                 </ul>
               ) : (
@@ -61,13 +62,15 @@ export function CareersPage() {
               <p aria-busy="true">{t('careers.loading')}</p>
             )}
             <h2>{t('careers.processHeading')}</h2>
-            <CheckList
-              label={t('careers.processHeading')}
-              items={[0, 1, 2, 3, 4].map((i) => ({
-                id: String(i),
-                text: t(`careers.process.${i}`),
-              }))}
-            />
+            <Reveal>
+              <CheckList
+                label={t('careers.processHeading')}
+                items={[0, 1, 2, 3, 4].map((i) => ({
+                  id: String(i),
+                  text: t(`careers.process.${i}`),
+                }))}
+              />
+            </Reveal>
             <p className={styles.general}>
               <Link to="/careers/general#application">{t('careers.generalInterest')}</Link>
             </p>

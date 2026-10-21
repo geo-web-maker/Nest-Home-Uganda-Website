@@ -5,6 +5,7 @@ import { Seo } from '../../../components/site/Seo';
 import { Button } from '../../../components/ui/Button';
 import { useServices } from '../../../lib/queries/services';
 import { ServiceCard } from '../../../components/site/ServiceCard';
+import { Reveal } from '../../../components/ui/Reveal';
 import styles from './ServicesPage.module.css';
 import { servicePhotoUrl } from './servicePhotos';
 
@@ -44,10 +45,10 @@ export function ServicesPage() {
           ) : services.data ? (
             services.data.length > 0 && (
               <ul className={styles.grid}>
-                {services.data.map((service) => (
-                  <li key={service.id}>
+                {services.data.map((service, index) => (
+                  <Reveal as="li" index={index % 4} key={service.id}>
                     <ServiceCard service={service} photoUrl={servicePhotoUrl(service)} />
-                  </li>
+                  </Reveal>
                 ))}
               </ul>
             )

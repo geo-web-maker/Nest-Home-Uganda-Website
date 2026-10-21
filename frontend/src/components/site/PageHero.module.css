@@ -73,11 +73,41 @@
 
   .photo {
     animation: hero-photo-enter var(--dur-slow) var(--ease-out) both;
+    animation-delay: calc(var(--stagger-step) * 2);
+  }
+
+  @keyframes hero-text-in {
+    from {
+      opacity: 0;
+      translate: 0 var(--reveal-distance);
+    }
+
+    to {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+
+  .text > * {
+    animation: hero-text-in var(--dur-slow) var(--ease-out) both;
+  }
+
+  .text > :nth-child(2) {
+    animation-delay: var(--stagger-step);
+  }
+
+  .text > :nth-child(3) {
+    animation-delay: calc(var(--stagger-step) * 2);
+  }
+
+  .text > :nth-child(4) {
+    animation-delay: calc(var(--stagger-step) * 3);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .photo {
+  .photo,
+  .text > * {
     animation: none;
   }
 }

@@ -1,0 +1,34 @@
+name: layout
+
+# Fast visual-structure guard: builds the site and runs e2e/layout.spec.ts only.
+# Fails on sideways scrolling, text spilling out of its box or off the screen, and broken
+# page structure (h1 count, landmarks, heading order, images without alt).
+on:
+  pull_request:
+  push:
+    branches: [main, "batch-*"]
+
+jobs:
+  layout:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npx playwright test layout.spec.ts --project=desktop
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: layout-report
+          path: |
+            frontend/test-results
+            frontend/playwright-report

@@ -10,16 +10,18 @@
 .ring {
   display: grid;
   place-items: center;
-  width: 180px;
-  min-height: 180px;
+  width: min(220px, 100%);
+  min-height: 220px;
   aspect-ratio: 1;
   border: 2px solid var(--gold);
   border-radius: 50%;
   outline: 1px solid rgba(199, 154, 59, 0.35);
   outline-offset: 7px;
-  padding: 16px;
+  padding: 20px;
   text-align: center;
   color: var(--onf);
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 .content {
   display: grid;
@@ -29,7 +31,7 @@
 .title {
   margin: 0;
   font-family: var(--serif);
-  font-size: 1.4rem;
+  font-size: clamp(1.15rem, 5.4vw, 1.4rem);
   line-height: 1.1;
   font-weight: 700;
 }

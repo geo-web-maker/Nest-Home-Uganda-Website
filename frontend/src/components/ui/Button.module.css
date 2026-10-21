@@ -46,11 +46,12 @@
 @media (hover: hover) and (pointer: fine) {
   .button:not(:disabled):hover {
     background-color: var(--btn-hover);
+    transform: translateY(-1px);
   }
 }
 
 .button:not(:disabled):active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .button:disabled {
