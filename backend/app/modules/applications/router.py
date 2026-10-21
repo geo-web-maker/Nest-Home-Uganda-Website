@@ -76,9 +76,7 @@ async def public_create(
     except ValidationError as exc:
         raise RequestValidationError(exc.errors(include_context=False)) from exc
     data = await cv.read(rules.CV_MAX_BYTES + 1)
-    return await service.create_public(
-        body, cv.filename or "", data, hash_ip(client_ip(request))
-    )
+    return await service.create_public(body, cv.filename or "", data, hash_ip(client_ip(request)))
 
 
 @admin_router.get("", response_model=Page[ApplicationItem])

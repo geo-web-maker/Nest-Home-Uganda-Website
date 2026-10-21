@@ -109,7 +109,8 @@ async def test_invite_refuses_a_duplicate_email(
 ) -> None:
     await make_user()
     r = await client.post(
-        ADMIN, json={"name": "Grace Two", "email": "grace@gmail.com", "scopes": []},
+        ADMIN,
+        json={"name": "Grace Two", "email": "grace@gmail.com", "scopes": []},
         headers=manager(),
     )
     assert r.status_code == 409 and not outbox.sent
@@ -121,18 +122,21 @@ async def test_escalation_is_refused(
     target = await make_user()
     # cannot grant a scope the manager does not hold
     r = await client.patch(
-        f"{ADMIN}/{target.id}", json={"scopes": ["content:read", "settings:write"]},
+        f"{ADMIN}/{target.id}",
+        json={"scopes": ["content:read", "settings:write"]},
         headers=manager("content:read"),
     )
     assert r.status_code == 403
     # cannot grant system:manage, even holding it
     r = await client.patch(
-        f"{ADMIN}/{target.id}", json={"scopes": ["system:manage"]},
+        f"{ADMIN}/{target.id}",
+        json={"scopes": ["system:manage"]},
         headers=manager("system:manage", "content:read"),
     )
     assert r.status_code == 403
     invite = await client.post(
-        ADMIN, json={"name": "Hugo Opio", "email": "hugo@gmail.com", "scopes": ["system:manage"]},
+        ADMIN,
+        json={"name": "Hugo Opio", "email": "hugo@gmail.com", "scopes": ["system:manage"]},
         headers=manager("system:manage"),
     )
     assert invite.status_code == 403 and await User.find({"email": "hugo@gmail.com"}).count() == 0
@@ -168,7 +172,8 @@ async def test_a_scope_change_signs_the_user_out_and_is_audited(
     )
     await token.insert()
     r = await client.patch(
-        f"{ADMIN}/{target.id}", json={"scopes": ["content:read", "content:write"]},
+        f"{ADMIN}/{target.id}",
+        json={"scopes": ["content:read", "content:write"]},
         headers=manager("content:read", "content:write"),
     )
     assert r.status_code == 200
@@ -179,7 +184,8 @@ async def test_a_scope_change_signs_the_user_out_and_is_audited(
     assert entry.after["scopes"] == ["content:read", "content:write"]
     # an unchanged scope list is not a change: nothing is revoked or logged again
     again = await client.patch(
-        f"{ADMIN}/{target.id}", json={"scopes": ["content:write", "content:read"]},
+        f"{ADMIN}/{target.id}",
+        json={"scopes": ["content:write", "content:read"]},
         headers=manager("content:read", "content:write"),
     )
     assert again.status_code == 200 and (await actions()).count("user.update") == 1
@@ -267,12 +273,12 @@ async def test_sign_out_revokes_every_session(mongo: object, client: httpx.Async
     assert missing.status_code == 404
 
 
-
 async def test_the_emailed_link_sets_a_password_once(
     mongo: object, client: httpx.AsyncClient, outbox: Outbox
 ) -> None:
     await client.post(
-        ADMIN, json={"name": "Grace Okello", "email": "grace@gmail.com", "scopes": []},
+        ADMIN,
+        json={"name": "Grace Okello", "email": "grace@gmail.com", "scopes": []},
         headers=manager(),
     )
     match = re.search(r"token=(\S+)", outbox.sent[0][2])
@@ -293,7 +299,8 @@ async def test_expired_unknown_and_deactivated_links_are_refused(
 ) -> None:
     user = await make_user()
     past = PasswordReset(
-        user_id=user.id, token_hash=hash_token("e" * 40),
+        user_id=user.id,
+        token_hash=hash_token("e" * 40),
         expires_at=datetime.now(UTC) - timedelta(minutes=1),
     )
     await past.insert()
@@ -302,7 +309,8 @@ async def test_expired_unknown_and_deactivated_links_are_refused(
         r = await client.post(url, json={"token": token, "password": "a brand new passphrase"})
         assert r.status_code == 422
     live = PasswordReset(
-        user_id=user.id, token_hash=hash_token("l" * 40),
+        user_id=user.id,
+        token_hash=hash_token("l" * 40),
         expires_at=datetime.now(UTC) + timedelta(hours=1),
     )
     await live.insert()

@@ -69,9 +69,7 @@ async def test_admin_read_filters_sms_and_business_update_is_public_and_audited(
 async def test_sms_and_theme_validation(mongo: object, client: httpx.AsyncClient) -> None:
     denied = await client.patch(f"{ADMIN}/sms", json={"staff_enabled": False}, headers=editor())
     assert denied.status_code == 403
-    allowed = await client.patch(
-        f"{ADMIN}/sms", json={"staff_enabled": False}, headers=sms_admin()
-    )
+    allowed = await client.patch(f"{ADMIN}/sms", json={"staff_enabled": False}, headers=sms_admin())
     assert allowed.status_code == 200
     sms_audit = await AuditLog.find_one(AuditLog.action == "settings.update")
     assert sms_audit is not None and sms_audit.scope == "system:manage"

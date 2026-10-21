@@ -48,11 +48,15 @@ async def summary(now: datetime | None = None) -> ReportsSummary:
         **month_filter,
         "$or": [
             {"status": {"$in": ["assessment_booked", "care_started"]}},
-            {"events": {"$elemMatch": {
-                "kind": "status_change",
-                "data.to": {"$in": ["assessment_booked", "care_started"]},
-                "at": {"$gte": month_start, "$lt": next_month_start},
-            }}},
+            {
+                "events": {
+                    "$elemMatch": {
+                        "kind": "status_change",
+                        "data.to": {"$in": ["assessment_booked", "care_started"]},
+                        "at": {"$gte": month_start, "$lt": next_month_start},
+                    }
+                }
+            },
         ],
     }
     reached = await enquiries.count_documents(reached_filter)
@@ -62,9 +66,19 @@ async def summary(now: datetime | None = None) -> ReportsSummary:
         enquiries,
         [
             {"$match": {**month_filter, "first_contacted_at": {"$ne": None}}},
-            {"$group": {"_id": None, "minutes": {"$avg": {
-                "$divide": [{"$subtract": ["$first_contacted_at", "$created_at"]}, 60000]
-            }}}},
+            {
+                "$group": {
+                    "_id": None,
+                    "minutes": {
+                        "$avg": {
+                            "$divide": [
+                                {"$subtract": ["$first_contacted_at", "$created_at"]},
+                                60000,
+                            ]
+                        }
+                    },
+                }
+            },
         ],
     )
     average = (
@@ -112,13 +126,10 @@ def _excel_column(number: int) -> str:
 
 def _xlsx(headers: list[str], rows: list[list[Any]]) -> bytes:
     """Create a minimal valid .xlsx workbook using the standard library only."""
+
     def cell(reference: str, value: Any) -> str:
         text = (
-            ""
-            if value is None
-            else _utc_iso(value)
-            if isinstance(value, datetime)
-            else str(value)
+            "" if value is None else _utc_iso(value) if isinstance(value, datetime) else str(value)
         )
         return (
             f'<c r="{reference}" t="inlineStr"><is><t xml:space="preserve">{escape(text)}'
@@ -136,7 +147,7 @@ def _xlsx(headers: list[str], rows: list[list[Any]]) -> bytes:
     sheet = (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-        f'<sheetData>{"".join(row_xml)}</sheetData></worksheet>'
+        f"<sheetData>{''.join(row_xml)}</sheetData></worksheet>"
     )
     files = {
         "[Content_Types].xml": (
@@ -151,7 +162,7 @@ def _xlsx(headers: list[str], rows: list[list[Any]]) -> bytes:
             '<Override PartName="/xl/worksheets/sheet1.xml" '
             'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.'
             'worksheet+xml"/>'
-            '</Types>'
+            "</Types>"
         ),
         "_rels/.rels": (
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -159,7 +170,7 @@ def _xlsx(headers: list[str], rows: list[list[Any]]) -> bytes:
             '<Relationship Id="rId1" '
             'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/'
             'officeDocument" Target="xl/workbook.xml"/>'
-            '</Relationships>'
+            "</Relationships>"
         ),
         "xl/workbook.xml": (
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -173,7 +184,7 @@ def _xlsx(headers: list[str], rows: list[list[Any]]) -> bytes:
             '<Relationship Id="rId1" '
             'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" '
             'Target="worksheets/sheet1.xml"/>'
-            '</Relationships>'
+            "</Relationships>"
         ),
         "xl/worksheets/sheet1.xml": sheet,
     }
@@ -199,7 +210,14 @@ async def export_rows(
         query = {**filters, "status": {"$ne": "spam"}}
         docs = await Enquiry.find(query).sort("-created_at").to_list()
         headers = [
-            "Reference", "Name", "Phone", "Relationship", "Services", "Area", "Status", "Created"
+            "Reference",
+            "Name",
+            "Phone",
+            "Relationship",
+            "Services",
+            "Area",
+            "Status",
+            "Created",
         ]
         rows = [
             [
@@ -218,10 +236,7 @@ async def export_rows(
 
     if report_type == "applications":
         docs = (
-            await db.get_database()["applications"]
-            .find(filters)
-            .sort("created_at", -1)
-            .to_list()
+            await db.get_database()["applications"].find(filters).sort("created_at", -1).to_list()
         )
         headers = ["Name", "Email", "Phone", "Job ID", "Stage", "Area", "Applied"]
         rows = [
@@ -286,8 +301,13 @@ async def export_report(
         "report",
         report_type,
         f"{report_type}.{fmt}",
-        after={"type": report_type, "format": fmt, "from": str(start) if start else None,
-               "to": str(end) if end else None, "rows": len(rows)},
+        after={
+            "type": report_type,
+            "format": fmt,
+            "from": str(start) if start else None,
+            "to": str(end) if end else None,
+            "rows": len(rows),
+        },
         ip_hash=ip_hash,
     )
     return content, media_type, f"{report_type}.{fmt}"

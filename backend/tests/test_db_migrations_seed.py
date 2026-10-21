@@ -4,9 +4,9 @@ import pytest
 from pymongo.errors import DuplicateKeyError
 
 from app.migrate import discover, run_migrations
-from app.modules.auth.models import User
 from app.modules.areas.models import Area
 from app.modules.areas.seed import seed_areas
+from app.modules.auth.models import User
 from app.modules.faqs.models import Faq
 from app.modules.faqs.seed import seed_faqs
 from app.modules.jobs.models import Job

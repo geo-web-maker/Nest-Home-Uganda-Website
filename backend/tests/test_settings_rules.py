@@ -32,7 +32,8 @@ def test_public_localisation_uses_requested_language_then_english() -> None:
     assert _localise({"en": "Hello", "lg": "Gyebale"}, "lg") == "Gyebale"
     assert _localise({"en": "Hello"}, "sw") == "Hello"
     assert _localise({"title": "Hello", "caption": "World"}, "lg") == {
-        "title": "Hello", "caption": "World"
+        "title": "Hello",
+        "caption": "World",
     }
 
 

@@ -19,9 +19,12 @@ def test_date_range_uses_inclusive_local_calendar_days() -> None:
 
 
 def test_activity_actions_are_human_readable() -> None:
-    assert display_action(
-        "enquiry.update", "enquiry", {"status": "new"}, {"status": "contacted"}, "Mary"
-    ) == "Changed status to Contacted"
+    assert (
+        display_action(
+            "enquiry.update", "enquiry", {"status": "new"}, {"status": "contacted"}, "Mary"
+        )
+        == "Changed status to Contacted"
+    )
     assert display_action("settings.update", "settings") == "Changed site settings"
     assert display_action("job.publish", "job") == "Published job"
 

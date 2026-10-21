@@ -57,6 +57,13 @@ def test_public_job_contract_contains_only_visitor_fields() -> None:
         registration_required=True,
     )
     assert set(item.model_dump()) == {
-        "id", "title", "department", "location", "type", "description", "requirements",
-        "closes_on", "registration_required",
+        "id",
+        "title",
+        "department",
+        "location",
+        "type",
+        "description",
+        "requirements",
+        "closes_on",
+        "registration_required",
     }

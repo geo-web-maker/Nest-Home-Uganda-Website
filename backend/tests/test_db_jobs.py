@@ -47,7 +47,8 @@ async def test_create_update_publish_close_and_audit(
     assert bypass_publish.status_code == 422
 
     updated = await client.patch(
-        f"{ADMIN}/{item['id']}", json={"location": "Entebbe", "closes_on": "2027-02-28"},
+        f"{ADMIN}/{item['id']}",
+        json={"location": "Entebbe", "closes_on": "2027-02-28"},
         headers=editor(),
     )
     assert updated.status_code == 200
@@ -76,9 +77,11 @@ async def test_public_list_hides_drafts_closed_jobs_and_expired_jobs(
 ) -> None:
     draft = (await client.post(ADMIN, json=body(title={"en": "Draft"}), headers=editor())).json()
     old_date = "2000-01-01"
-    expired = (await client.post(
-        ADMIN, json=body(title={"en": "Expired"}, closes_on=old_date), headers=editor()
-    )).json()
+    expired = (
+        await client.post(
+            ADMIN, json=body(title={"en": "Expired"}, closes_on=old_date), headers=editor()
+        )
+    ).json()
     valid = (await client.post(ADMIN, json=body(title={"en": "Current"}), headers=editor())).json()
     assert draft["published"] is False
     assert (

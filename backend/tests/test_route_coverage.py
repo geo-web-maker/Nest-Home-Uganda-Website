@@ -57,9 +57,7 @@ def test_every_route_is_public_auth_or_admin() -> None:
 
 def test_public_routes_only_read_or_are_allow_listed() -> None:
     writes = {
-        (m, p)
-        for m, p in all_cases()
-        if m in WRITE_METHODS and not p.startswith("/api/v1/admin")
+        (m, p) for m, p in all_cases() if m in WRITE_METHODS and not p.startswith("/api/v1/admin")
     }
     assert writes == set(PUBLIC_WRITES), (
         f"unexpected public writes: {sorted(writes - PUBLIC_WRITES)}; "
