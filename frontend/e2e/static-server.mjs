@@ -31,7 +31,9 @@ function resolveFile(urlPath) {
   if (existsSync(target) && statSync(target).isFile()) return target;
   const index = join(target, 'index.html');
   if (existsSync(index)) return index;
-  return extname(clean) ? null : join(root, 'index.html');
+  if (extname(clean)) return null;
+  // Same as the vercel.json rewrite: /admin/* gets the clean shell, everything else the home page.
+  return join(root, /^[/\\]admin([/\\]|$)/.test(clean) ? 'admin-shell.html' : 'index.html');
 }
 
 createServer((req, res) => {
