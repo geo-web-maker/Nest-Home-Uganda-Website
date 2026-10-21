@@ -1,5 +1,6 @@
 .button {
   composes: pill from '../../design/shapes.module.css';
+  --btn-hover: color-mix(in srgb, var(--gold) 86%, var(--onf));
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -12,19 +13,20 @@
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-}
-
-.button:hover {
-  filter: brightness(1.07);
+  transition:
+    background-color var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-out);
 }
 
 .outline {
+  --btn-hover: color-mix(in srgb, currentColor 12%, transparent);
   background: transparent;
   color: inherit;
   border-color: currentColor;
 }
 
 .whatsapp {
+  --btn-hover: color-mix(in srgb, var(--wa) 88%, var(--onf));
   background: var(--wa);
   border-color: var(--wa);
   color: var(--on-wa);
@@ -38,4 +40,43 @@
 
 .full {
   width: 100%;
+}
+
+/* Hover only for real pointers (motion.css rule 2). */
+@media (hover: hover) and (pointer: fine) {
+  .button:not(:disabled):hover {
+    background-color: var(--btn-hover);
+  }
+}
+
+.button:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Pending state (Step 4I): set aria-busy="true" on the button; the label stays, a ring spins after it. */
+.button[aria-busy='true'] {
+  cursor: progress;
+}
+
+.button[aria-busy='true']::after {
+  content: '';
+  flex: none;
+  width: 1em;
+  height: 1em;
+  margin-inline-start: 0.6em;
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  animation: button-spin calc(var(--dur-slow) * 2) linear infinite;
+}
+
+@keyframes button-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

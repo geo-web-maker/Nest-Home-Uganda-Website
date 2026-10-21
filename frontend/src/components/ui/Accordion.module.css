@@ -21,17 +21,46 @@
   display: none;
 }
 
+/* Chevron, rotated when open. */
 .summary::after {
-  content: '+';
-  color: var(--gold);
-  font-size: 1.5rem;
+  content: '';
+  flex: none;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-inline-end: 4px;
+  border-inline-end: 2px solid var(--gold);
+  border-block-end: 2px solid var(--gold);
+  transform: rotate(45deg);
+  transition: transform var(--dur-base) var(--ease-out);
 }
 
 .row[open] > .summary::after {
-  content: '\2212';
+  transform: rotate(-135deg);
 }
 
 .answer {
   padding-bottom: 16px;
   color: var(--mut);
+}
+
+/* Smooth open and close where supported; elsewhere the answer shows instantly. */
+@supports (interpolate-size: allow-keywords) and selector(::details-content) {
+  .row {
+    interpolate-size: allow-keywords;
+  }
+
+  .row::details-content {
+    block-size: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition:
+      block-size var(--dur-base) var(--ease-out),
+      opacity var(--dur-base) var(--ease-out),
+      content-visibility var(--dur-base) allow-discrete;
+  }
+
+  .row[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+  }
 }

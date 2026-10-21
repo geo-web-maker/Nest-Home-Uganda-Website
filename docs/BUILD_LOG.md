@@ -603,3 +603,8 @@ New tests: `ContactPage.test.tsx` (one h1, call and WhatsApp links from settings
 Not built: the Leaflet map (placeholder only), the `StickyBar` hiding on Contact (see STATE), the Contact page pre-render check (S6.3).
 Checks: NOT RUN (no `node_modules`). Files were formatted by hand to 100 columns; run `npm run format` before `format:check`. Run `cd frontend && npx tsc --noEmit && npx eslint src --max-warnings=0 && npx vitest run src/features/public src/app 2>&1 | tail -15`.
 
+
+## S5 close-out (2026-10-21)
+Ran the checks that earlier S5 sessions could not. `scripts/gen-types.sh` regenerated `openapi.json` and `api.d.ts`. Backend: ruff format and check clean, pytest 919 passed, 119 skipped (MongoDB). Frontend: tsc, eslint, 387 vitest tests (382 before the new page), build and format:check all pass after `prettier --write` on `src` and `POLISH_REPORT.md`. No source fixes were needed beyond formatting.
+Built the `/admin/set-password` page (S5.20 deviation 3): `SetPasswordPage.tsx`, route in `AdminApp.tsx` outside the sign-in guard, `setPassword` copy in `locales/en/admin.ts`, `SetPasswordPage.test.tsx` (no token, short, mismatch, success, expired link). It reads `?token=` and posts to `/auth/set-password` (12 characters minimum, same as the backend). Wording is mine, owner to confirm.
+Not done: replacing `TODO(gen-types)` types with generated aliases (17 files, optional tidy-up), Docker, MongoDB tests, CI, Playwright, browser checks.

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import { normaliseUgPhone } from '../../lib/phone';
@@ -26,6 +26,19 @@ export function Header() {
   const [servicesAt, setServicesAt] = useState<string | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const pointerDown = useRef(false);
+  const headerRef = useRef<HTMLElement>(null);
+
+  // Scrolled shadow: one passive listener that sets an attribute, so there is no React state per scroll.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const update = () => {
+      el.dataset.scrolled = window.scrollY > 8 ? 'true' : 'false';
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    return () => window.removeEventListener('scroll', update);
+  }, []);
 
   const menuOpen = menuAt === pathname;
   const servicesOpen = servicesAt === pathname;
@@ -40,7 +53,7 @@ export function Header() {
   }
 
   return (
-    <header className={styles.header} onKeyDown={onKeyDown}>
+    <header ref={headerRef} className={styles.header} onKeyDown={onKeyDown}>
       <div className={cx('container', styles.inner)}>
         <Link to="/" className={styles.brand}>
           <Logo name={t('site:brand.name')} subtitle={t('site:brand.subtitle')} />

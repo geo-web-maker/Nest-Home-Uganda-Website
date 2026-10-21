@@ -18,6 +18,12 @@
   height: 100%;
   object-fit: cover;
   object-position: center 30%;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .card:hover .photo {
+    transform: scale(1.03);
+  }
 }
 .placeholder {
   display: grid;

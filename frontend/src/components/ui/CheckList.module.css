@@ -29,3 +29,26 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* The bullet pops in once as the item enters view. Browsers without scroll timelines
+   (and reduced motion) show it static, so pre-rendered HTML is complete. */
+@keyframes diamond-in {
+  from {
+    opacity: 0;
+    transform: rotate(45deg) scale(0.6);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  .diamond {
+    animation: diamond-in linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 60%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .diamond {
+      animation: none;
+    }
+  }
+}

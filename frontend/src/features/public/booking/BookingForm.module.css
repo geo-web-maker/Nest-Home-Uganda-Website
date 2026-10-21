@@ -94,3 +94,21 @@
   height: 1px;
   overflow: hidden;
 }
+
+/* Success card fades in once (data-state is set on the thank-you section). */
+.card[data-state='success'] {
+  animation: success-in var(--dur-slow) var(--ease-out) both;
+}
+
+@keyframes success-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card[data-state='success'] {
+    animation: none;
+  }
+}
