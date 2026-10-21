@@ -27,7 +27,10 @@ def setting_defaults(runtime: Settings | None = None) -> dict[str, Any]:
         "home.accent": "comes home",
         "home.btn1": "Book a home visit",
         "home.btn2": "Our services",
-        "home.lead": "Trained, caring nurses for your parents, your newborn and your recovery, in your own home across Kampala.",
+        "home.lead": (
+            "Trained, caring nurses for your parents, your newborn and your recovery, "
+            "in your own home across Kampala."
+        ),
         "home.eggs": [
             {"title": "Elders", "caption": "with dignity"},
             {"title": "Newborns", "caption": "and mothers"},

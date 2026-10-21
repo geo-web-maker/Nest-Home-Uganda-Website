@@ -33,6 +33,6 @@ def test_xlsx_export_is_a_well_formed_workbook_with_escaped_text() -> None:
     payload = _xlsx(["Name", "Created"], [["Nurse & carer", datetime(2026, 10, 20, 12, 0)]])
     with ZipFile(io.BytesIO(payload)) as archive:
         assert archive.testzip() is None
-        worksheet = ElementTree.fromstring(archive.read("xl/worksheets/sheet1.xml"))
+        worksheet = ElementTree.fromstring(archive.read("xl/worksheets/sheet1.xml"))  # noqa: S314
     texts = [node.text for node in worksheet.iter() if node.tag.endswith("}t")]
     assert texts == ["Name", "Created", "Nurse & carer", "2026-10-20T12:00:00"]
