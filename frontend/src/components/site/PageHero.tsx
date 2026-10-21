@@ -51,14 +51,7 @@ export function PageHero({ rule, title, lead, breadcrumb, photo }: PageHeroProps
           <h1 className={styles.title}>{title}</h1>
           {lead && <p className={styles.lead}>{lead}</p>}
         </div>
-        {photo && (
-          <img
-            className={styles.photo}
-            src={photo.src}
-            alt={photo.alt}
-            decoding="async"
-          />
-        )}
+        {photo && <img className={styles.photo} src={photo.src} alt={photo.alt} decoding="async" />}
       </div>
     </section>
   );
