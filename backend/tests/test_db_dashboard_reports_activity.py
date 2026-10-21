@@ -20,7 +20,7 @@ def scoped(*scopes: str) -> dict[str, str]:
     return auth(make_token(list(scopes)))
 
 
-async def make_enquiry(status: str, reference: str, *, contacted_minutes_ago: int) -> Enquiry:
+async def make_enquiry(status: str, reference: str, *, reply_minutes: int) -> Enquiry:
     now = datetime.now(UTC)
     events = []
     if status == "care_started":
@@ -43,18 +43,20 @@ async def make_enquiry(status: str, reference: str, *, contacted_minutes_ago: in
         ],
         area="Kampala",
         status=status,
-        first_contacted_at=now - timedelta(minutes=contacted_minutes_ago),
         events=events,
     )
     await item.insert()
+    # Insert hook stamps created_at=now, so set the first reply after it.
+    item.first_contacted_at = item.created_at + timedelta(minutes=reply_minutes)
+    await item.save()
     return item
 
 
 async def test_dashboard_and_report_summaries_use_live_aggregates(
     mongo: object, client: httpx.AsyncClient
 ) -> None:
-    new = await make_enquiry("new", "NH-TEST-001", contacted_minutes_ago=10)
-    await make_enquiry("care_started", "NH-TEST-002", contacted_minutes_ago=20)
+    new = await make_enquiry("new", "NH-TEST-001", reply_minutes=10)
+    await make_enquiry("care_started", "NH-TEST-002", reply_minutes=20)
     job = Job(title={"en": "Registered Nurse"}, location="Kampala", department="clinical")
     await job.insert()
     now = datetime.now(UTC)
@@ -97,7 +99,7 @@ async def test_dashboard_and_report_summaries_use_live_aggregates(
 async def test_report_exports_are_downloadable_and_appear_in_activity(
     mongo: object, client: httpx.AsyncClient
 ) -> None:
-    await make_enquiry("new", "NH-EXPORT-001", contacted_minutes_ago=4)
+    await make_enquiry("new", "NH-EXPORT-001", reply_minutes=4)
     headers = scoped("reports:export")
     csv_response = await client.get(f"{EXPORT}?type=enquiries&format=csv", headers=headers)
     assert csv_response.status_code == 200
