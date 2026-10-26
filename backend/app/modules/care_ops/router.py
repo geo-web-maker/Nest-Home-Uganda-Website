@@ -101,8 +101,8 @@ async def _timesheet_in_reach(sheet: CareTimesheet, ctx: ReachContext) -> bool:
 
 @router.get("/dashboard")
 async def care_dashboard(
-    ctx: ReachContext = Depends(get_care_actor),
     _: Principal = Depends(require_scopes("dashboard:view")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     visits = await Visit.find().to_list()
     visits = [v for v in visits if await _visit_in_reach(v, ctx)]
@@ -164,8 +164,8 @@ async def register_admin_device(
 
 @router.get("/photos")
 async def list_photos(
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("photos:read")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     rows = await VisitPhoto.find().sort("-created_at").to_list()
     visits = {v.id: v for v in await Visit.find().to_list()}
@@ -211,8 +211,8 @@ async def list_photos(
 @router.get("/visits/{visit_id}/photos")
 async def visit_photos(
     visit_id: str,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("photos:read")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     visit = await Visit.find_one(Visit.id == visit_id)
     if not await _visit_in_reach(visit, ctx):
@@ -344,8 +344,8 @@ async def stream_visit_photo(
 @router.get("/alerts")
 async def alerts(
     status: str = "open",
-    ctx: ReachContext = Depends(get_care_actor),
     _: Principal = Depends(require_scopes("alerts:read")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     rows = await CareAlert.find(CareAlert.status == status).sort("-raised_at").to_list()
     visits = {v.id: v for v in await Visit.find().to_list()}
@@ -368,8 +368,8 @@ async def alerts(
 @router.post("/alerts/{alert_id}/acknowledge")
 async def acknowledge_alert(
     alert_id: str,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("alerts:write")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await CareAlert.find_one(CareAlert.id == alert_id)
     if not row or not await _alert_in_reach(row, ctx):
@@ -391,8 +391,8 @@ async def acknowledge_alert(
 async def resolve_alert(
     alert_id: str,
     body: NoteBody,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("alerts:write")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await CareAlert.find_one(CareAlert.id == alert_id)
     if not row or not await _alert_in_reach(row, ctx):
@@ -422,8 +422,8 @@ async def resolve_alert(
 
 @router.get("/timesheets")
 async def timesheets(
-    ctx: ReachContext = Depends(get_care_actor),
     _: Principal = Depends(require_scopes("timesheets:read")),
+    ctx: ReachContext = Depends(get_care_actor),
     nurse_id: str | None = None,
     status: str | None = None,
 ):
@@ -467,8 +467,8 @@ async def submit_timesheet(
 @router.post("/timesheets/{sheet_id}/approve")
 async def approve_timesheet(
     sheet_id: str,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("timesheets:write")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await CareTimesheet.find_one(CareTimesheet.id == sheet_id)
     if not row or not await _timesheet_in_reach(row, ctx):
@@ -494,8 +494,8 @@ async def approve_timesheet(
 async def send_back_timesheet(
     sheet_id: str,
     body: NoteBody,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("timesheets:write")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await CareTimesheet.find_one(CareTimesheet.id == sheet_id)
     if not row or not await _timesheet_in_reach(row, ctx):
@@ -520,8 +520,8 @@ async def send_back_timesheet(
 async def adjust_timesheet(
     sheet_id: str,
     body: AdjustmentBody,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("timesheets:write")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await CareTimesheet.find_one(CareTimesheet.id == sheet_id)
     if not row or not await _timesheet_in_reach(row, ctx):
@@ -552,8 +552,8 @@ async def adjust_timesheet(
 @router.get("/timesheets/{sheet_id}/export")
 async def export_timesheet(
     sheet_id: str,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("timesheets:read")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await CareTimesheet.find_one(CareTimesheet.id == sheet_id)
     if not row or not await _timesheet_in_reach(row, ctx):
@@ -578,8 +578,8 @@ async def export_timesheet(
 async def hide_photo(
     photo_id: str,
     body: NoteBody,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("photos:hide")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     photo = await VisitPhoto.find_one(VisitPhoto.id == photo_id)
     visit = await Visit.find_one(Visit.id == photo.visit_id) if photo else None
@@ -668,8 +668,8 @@ async def create_sos(body: SOSBody, principal: Principal = Depends(require_scope
 
 @router.get("/sos")
 async def list_sos(
-    ctx: ReachContext = Depends(get_care_actor),
     _: Principal = Depends(require_scopes("alerts:read")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     cases = await SOSCase.find().sort("-created_at").to_list()
     return {
@@ -690,8 +690,8 @@ async def list_sos(
 @router.post("/sos/{case_id}/acknowledge")
 async def acknowledge_sos(
     case_id: str,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("alerts:write")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     case = await SOSCase.find_one(SOSCase.id == case_id)
     if not case or not (

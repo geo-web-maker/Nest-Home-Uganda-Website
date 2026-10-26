@@ -230,8 +230,8 @@ async def reset_setting(key: str, principal: Principal = Depends(require_scopes(
 
 @router.get("/clients")
 async def clients(
-    ctx: ReachContext = Depends(get_care_actor),
     _: Principal = Depends(require_scopes("clients:read")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     rows = await CareClient.find().to_list()
     rows = [c for c in rows if await _client_reachable(c, ctx)]
@@ -251,8 +251,8 @@ async def create_client(
 @router.get("/clients/{client_id}")
 async def get_client(
     client_id: str,
-    ctx: ReachContext = Depends(get_care_actor),
     _: Principal = Depends(require_scopes("clients:read")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await CareClient.find_one(CareClient.id == client_id)
     if not row or not await _client_reachable(row, ctx):
@@ -264,8 +264,8 @@ async def get_client(
 async def patch_client(
     client_id: str,
     body: dict,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("clients:write")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await CareClient.find_one(CareClient.id == client_id)
     if not row or not await _client_reachable(row, ctx):
@@ -293,8 +293,8 @@ async def patch_client(
 @router.get("/clients/{client_id}/places")
 async def client_places(
     client_id: str,
-    ctx: ReachContext = Depends(get_care_actor),
     _: Principal = Depends(require_scopes("places:read")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     client = await CareClient.find_one(CareClient.id == client_id)
     if not client or not await _client_reachable(client, ctx):
@@ -306,8 +306,8 @@ async def client_places(
 async def create_place(
     client_id: str,
     body: PlaceIn,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("places:write")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     client = await CareClient.find_one(CareClient.id == client_id)
     if not client or not await _client_reachable(client, ctx):
@@ -327,8 +327,8 @@ async def create_place(
 async def patch_place(
     place_id: str,
     body: dict,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("clients:write")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await CarePlace.find_one(CarePlace.id == place_id)
     if not row:
@@ -349,8 +349,8 @@ async def patch_place(
 @router.get("/clients/{client_id}/stays")
 async def client_stays(
     client_id: str,
-    ctx: ReachContext = Depends(get_care_actor),
     _: Principal = Depends(require_scopes("clients:read")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     client = await CareClient.find_one(CareClient.id == client_id)
     if not client or not await _client_reachable(client, ctx):
@@ -362,8 +362,8 @@ async def client_stays(
 async def move_client(
     client_id: str,
     body: StayIn,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("clients:write")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     client = await CareClient.find_one(CareClient.id == client_id)
     if not client or not await _client_reachable(client, ctx):
@@ -401,8 +401,8 @@ async def move_client(
 
 @router.get("/visits")
 async def visits(
-    ctx: ReachContext = Depends(get_care_actor),
     _: Principal = Depends(require_scopes("visits:read")),
+    ctx: ReachContext = Depends(get_care_actor),
     status: str | None = None,
     nurse_id: str | None = None,
     client_id: str | None = None,
@@ -433,8 +433,8 @@ async def visits(
 @router.post("/visits", status_code=201)
 async def create_visit(
     body: VisitIn,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("visits:write")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     client = await CareClient.find_one(CareClient.id == body.client_id)
     place = await CarePlace.find_one(CarePlace.id == body.place_id)
@@ -492,8 +492,8 @@ async def create_visit(
 @router.get("/visits/{visit_id}")
 async def visit_detail(
     visit_id: str,
-    ctx: ReachContext = Depends(get_care_actor),
     _: Principal = Depends(require_scopes("visits:read")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await Visit.find_one(Visit.id == visit_id)
     if not row or not await _visit_reachable(row, ctx):
@@ -513,8 +513,8 @@ async def visit_detail(
 async def patch_visit(
     visit_id: str,
     body: dict,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("visits:write")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await Visit.find_one(Visit.id == visit_id)
     if not row or not await _visit_reachable(row, ctx):
@@ -567,8 +567,8 @@ async def patch_visit(
 async def cancel_visit(
     visit_id: str,
     body: ReasonIn,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("visits:write")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await Visit.find_one(Visit.id == visit_id)
     if not row or not await _visit_reachable(row, ctx):
@@ -605,8 +605,8 @@ async def cancel_visit(
 async def annotate(
     visit_id: str,
     body: AnnotateIn,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("visits:write")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await Visit.find_one(Visit.id == visit_id)
     if not row or not await _visit_reachable(row, ctx):
@@ -626,8 +626,8 @@ async def annotate(
 
 @router.get("/flags")
 async def flags(
-    ctx: ReachContext = Depends(get_care_actor),
     _: Principal = Depends(require_scopes("flags:read")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     rows = await VisitFlag.find(VisitFlag.status == "open").sort("-raised_at").to_list()
     ids = {v.id for v in await Visit.find().to_list() if await _visit_reachable(v, ctx)}
@@ -638,8 +638,8 @@ async def flags(
 async def resolve_flag(
     flag_id: str,
     body: ReasonIn,
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("flags:write")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await VisitFlag.find_one(VisitFlag.id == flag_id)
     if not row:
@@ -657,8 +657,8 @@ async def resolve_flag(
 
 @router.get("/team")
 async def team(
-    ctx: ReachContext = Depends(get_care_actor),
     _: Principal = Depends(require_scopes("visits:read")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     profiles = await NurseProfile.find().to_list()
     allowed = [
@@ -686,8 +686,8 @@ async def team(
 
 @router.get("/reports/visits")
 async def visit_report(
-    ctx: ReachContext = Depends(get_care_actor),
     principal: Principal = Depends(require_scopes("care-reports:read")),
+    ctx: ReachContext = Depends(get_care_actor),
     format: str = Query(default="json", pattern="^(json|csv)$"),
     nurse_id: str | None = Query(default=None, alias="nurse", max_length=160),
     client_id: str | None = Query(default=None, alias="client", max_length=160),
