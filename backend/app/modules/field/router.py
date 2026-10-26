@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from app.core.db import get_care_database
+from app.core.db import get_care_database, start_session
 from app.core.deps import Principal, require_scopes
 from app.modules.audit.models import AuditLog
 from app.modules.care_clients.models import CareClient
@@ -247,7 +247,7 @@ async def create_adhoc_visit(payload: AdhocVisitIn, principal: Principal = CanUs
         details={"client_op_id": payload.client_op_id, "verification": verification},
     )
     db = get_care_database()
-    async with await db.client.start_session() as session:
+    async with await start_session(db) as session:
 
         async def write_transaction(active_session):
             await visit.insert(session=active_session)
@@ -266,7 +266,7 @@ async def create_adhoc_visit(payload: AdhocVisitIn, principal: Principal = CanUs
 
 @router.get("/visits/{visit_id}")
 async def visit_detail(visit_id: str, principal: Principal = CanUse):
-    v = await Visit.find_one(Visit.id == visit_id, nurse_id=principal.user_id)
+    v = await Visit.find_one(Visit.id == visit_id, Visit.nurse_id == principal.user_id)
     if not v:
         raise HTTPException(404, detail="Visit not found")
     client = await CareClient.find_one(CareClient.id == v.client_id)

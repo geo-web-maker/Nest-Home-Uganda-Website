@@ -194,7 +194,7 @@ async def revoke_device(
 ):
     if not _nurse_is_in_reach(user_id, ctx):
         raise HTTPException(status_code=404, detail="Nurse profile not found")
-    device = await Device.find_one(Device.device_id == body.device_id, user_id=user_id)
+    device = await Device.find_one(Device.device_id == body.device_id, Device.user_id == user_id)
     if not device:
         raise HTTPException(404, detail="Device not found")
     device.revoked_at = datetime.now(UTC)

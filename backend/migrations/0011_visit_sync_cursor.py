@@ -17,14 +17,18 @@ async def up(db):
         ],
     )
     await db["visits"].create_index(
-        [("nurse_id", ASCENDING), ("updated_at", ASCENDING), ("id", ASCENDING)],
+        [("nurse_id", ASCENDING), ("updated_at", ASCENDING), ("_id", ASCENDING)],
         name="ix_visits_nurse_updated_id",
     )
     await db["visit_sync_tombstones"].create_index(
-        [("id", ASCENDING)], unique=True, name="uq_visit_sync_tombstones_id"
+        [("id", ASCENDING)],
+        unique=True,
+        name="uq_visit_sync_tombstones_id",
+        # Same shape migration 0013 rebuilds it to; Beanie keeps the id in `_id`.
+        partialFilterExpression={"id": {"$type": "string"}},
     )
     await db["visit_sync_tombstones"].create_index(
-        [("nurse_id", ASCENDING), ("updated_at", ASCENDING), ("id", ASCENDING)],
+        [("nurse_id", ASCENDING), ("updated_at", ASCENDING), ("_id", ASCENDING)],
         name="ix_visit_sync_tombstones_nurse_updated_id",
     )
 

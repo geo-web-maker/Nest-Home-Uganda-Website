@@ -46,7 +46,7 @@ async def test_data_subject_note_purge_clears_free_text_without_removing_the_eve
     )
     await note.insert()
     changed = await purge_notes_for_data_request(["visit-data-request-001"])
-    stored = await db.get_care_database()["visit_notes"].find_one({"id": note.id})
+    stored = await db.get_care_database()["visit_notes"].find_one({"_id": note.id})
     assert changed == 1
     assert stored["body"] == ""
-    assert stored["id"] == note.id
+    assert stored["_id"] == note.id

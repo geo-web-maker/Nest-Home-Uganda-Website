@@ -180,7 +180,7 @@ async def me(principal: Annotated[Principal, Depends(get_principal)]) -> UserPub
 
 @admin_router.get("/scope-presets")
 async def list_scope_presets(_: Annotated[Principal, Depends(require_scopes("users:read"))]):
-    """Named role presets are transparent data, not an implicit permission hierarchy."""
+    """Named scope presets are transparent data, not an implicit permission hierarchy."""
     return {name: sorted(scopes) for name, scopes in sorted(SCOPE_PRESETS.items())}
 
 

@@ -444,7 +444,9 @@ async def submit_timesheet(
     body: ExplainBody,
     principal: Principal = Depends(require_scopes("timesheets:write")),
 ):
-    row = await CareTimesheet.find_one(CareTimesheet.id == sheet_id, nurse_id=principal.user_id)
+    row = await CareTimesheet.find_one(
+        CareTimesheet.id == sheet_id, CareTimesheet.nurse_id == principal.user_id
+    )
     if not row:
         raise HTTPException(404, detail="Timesheet not found")
     if row.status not in {"draft", "sent_back"}:

@@ -86,7 +86,7 @@ it('opens a visit review with its timeline and keeps photo records collapsed unt
 
   expect(await screen.findByRole('heading', { name: 'Visit timeline' })).toBeInTheDocument();
   expect(screen.getByText('Care completed.')).toBeInTheDocument();
-  expect(screen.getByText('care.visit.create')).toBeInTheDocument();
+  expect(screen.getByText(/care\.visit\.create/)).toBeInTheDocument();
   expect(screen.queryByText('Image preview is unavailable until the audited private image endpoint is implemented.')).not.toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'Open photo records (1)' }));

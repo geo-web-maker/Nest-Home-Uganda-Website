@@ -44,7 +44,7 @@ async def test_move_client_closes_previous_stay_and_creates_new_stay_atomically(
         principal,
     )
 
-    saved_old = await get_care_database()["place_stays"].find_one({"id": old_stay.id})
+    saved_old = await get_care_database()["place_stays"].find_one({"_id": old_stay.id})
     assert saved_old["ends_on"] == (starts_on - timedelta(days=1)).isoformat()
     assert created.place_id == new_place_id
     assert created.starts_on == starts_on.isoformat()

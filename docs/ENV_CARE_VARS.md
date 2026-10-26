@@ -31,7 +31,6 @@ Generated from `backend/app/modules/settings/care_keys.py`. Empty values use the
 | `CARE_MODULE_B_ENABLED` | `care.module_b_enabled` | boolean | `False` | No | care |
 | `CARE_MODULE_C_ENABLED` | `care.module_c_enabled` | boolean | `False` | No | care |
 | `CARE_MODULE_D_ENABLED` | `care.module_d_enabled` | boolean | `False` | No | care |
-| `CARE_PRIVACY_NOTICE_VERSION` | `care.privacy_notice_version` | text | `''` | No | care |
 | `CARE_FIELD_ADHOC_ALLOWED` | `field.adhoc_allowed` | boolean | `False` | No | field |
 | `CARE_FIELD_CHECKIN_FIX_WAIT_S` | `field.checkin_fix_wait_s` | integer | `10` | No | field |
 | `CARE_FIELD_GEO_SNAP_WAIT_S` | `field.geo_snap_wait_s` | integer | `3` | No | field |

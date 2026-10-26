@@ -327,7 +327,7 @@ async def sync_pull(
         visit_after = [{"updated_at": {"$gt": cursor_time}}]
         if not cursor_key or cursor_key.startswith("visit:"):
             last_visit_id = cursor_key.removeprefix("visit:") if cursor_key else ""
-            visit_after.append({"updated_at": cursor_time, "id": {"$gt": last_visit_id}})
+            visit_after.append({"updated_at": cursor_time, "_id": {"$gt": last_visit_id}})
         visit_query["$or"] = visit_after
 
         tombstone_after = [{"updated_at": {"$gt": cursor_time}}]
@@ -335,7 +335,7 @@ async def sync_pull(
             tombstone_after.append({"updated_at": cursor_time})
         elif cursor_key.startswith("zremoved:"):
             tombstone_after.append(
-                {"updated_at": cursor_time, "id": {"$gt": cursor_key.removeprefix("zremoved:")}}
+                {"updated_at": cursor_time, "_id": {"$gt": cursor_key.removeprefix("zremoved:")}}
             )
         tombstone_query["$or"] = tombstone_after
     else:
@@ -346,21 +346,21 @@ async def sync_pull(
     visit_docs = (
         await database["visits"]
         .find(visit_query)
-        .sort([("updated_at", 1), ("id", 1)])
+        .sort([("updated_at", 1), ("_id", 1)])
         .limit(limit + 1)
         .to_list(length=limit + 1)
     )
     tombstone_docs = (
         await database["visit_sync_tombstones"]
         .find(tombstone_query)
-        .sort([("updated_at", 1), ("id", 1)])
+        .sort([("updated_at", 1), ("_id", 1)])
         .limit(limit + 1)
         .to_list(length=limit + 1)
     )
     records: list[dict] = []
     for visit in visit_docs:
         updated_at = visit.get("updated_at") or visit.get("created_at") or now
-        key = f"visit:{visit['id']}"
+        key = f"visit:{visit['_id']}"
         client = await CareClient.find_one(CareClient.id == visit["client_id"])
         snapshot = visit.get("place_snapshot") or {}
         records.append(
@@ -369,7 +369,7 @@ async def sync_pull(
                 "key": key,
                 "kind": "visit",
                 "item": {
-                    "id": visit["id"],
+                    "id": visit["_id"],
                     "client_display_name": client.display_name if client else "Client",
                     "place_address_text": snapshot.get("address_text", ""),
                     "scheduled_start": visit["scheduled_start"],
@@ -390,7 +390,7 @@ async def sync_pull(
         records.append(
             {
                 "updated_at": updated_at,
-                "key": f"zremoved:{tombstone['id']}",
+                "key": f"zremoved:{tombstone['_id']}",
                 "kind": "removed",
                 "visit_id": tombstone["visit_id"],
             }
@@ -429,7 +429,7 @@ async def sign_photo(body: PhotoSign, principal: Principal = CanUse):
         or not settings.cloudinary_api_secret
     ):
         raise HTTPException(503, detail="Photo storage is not configured")
-    visit = await Visit.find_one(Visit.id == body.visit_id, nurse_id=principal.user_id)
+    visit = await Visit.find_one(Visit.id == body.visit_id, Visit.nurse_id == principal.user_id)
     if not visit:
         raise HTTPException(404, detail="Visit not found")
     client = await CareClient.find_one(CareClient.id == visit.client_id)
@@ -519,7 +519,7 @@ async def send_sos(body: SOSIn, principal: Principal = Depends(require_sos_acces
 @router.post("/device/revoke")
 async def revoke_device(body: dict, principal: Principal = CanUseBasic):
     device = await Device.find_one(
-        Device.device_id == body.get("device_id"), user_id=principal.user_id
+        Device.device_id == body.get("device_id"), Device.user_id == principal.user_id
     )
     if not device:
         raise HTTPException(404, detail="Device not found")

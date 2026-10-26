@@ -99,7 +99,7 @@ async def test_invite_creates_an_unusable_account_and_emails_a_one_time_link(
     assert link is not None
     assert timedelta(days=6, hours=23) < link.expires_at - datetime.now(UTC) <= timedelta(days=7)
     assert len(outbox.sent) == 1 and outbox.sent[0][0] == ["grace@gmail.com"]
-    token = re.search(r"token=(\S+)", outbox.sent[0][2])
+    token = re.search(r"token=([^&\s]+)", outbox.sent[0][2])
     assert token and hash_token(token.group(1)) == link.token_hash
     assert "user.invite" in await actions()
 
@@ -281,7 +281,7 @@ async def test_the_emailed_link_sets_a_password_once(
         json={"name": "Grace Okello", "email": "grace@gmail.com", "scopes": []},
         headers=manager(),
     )
-    match = re.search(r"token=(\S+)", outbox.sent[0][2])
+    match = re.search(r"token=([^&\s]+)", outbox.sent[0][2])
     assert match
     raw = match.group(1)
     url = "/api/v1/auth/set-password"
