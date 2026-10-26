@@ -154,7 +154,7 @@ async def test_exact_scopes_and_superadmin_pass_authorisation(
 
 
 def test_signed_photo_stream_is_the_only_admin_path_without_a_scope_dependency() -> None:
-    paths = {path for _, path in iter_api_routes() if path.startswith("/api/v1/admin")}
+    paths = {path for path, _ in iter_api_routes() if path.startswith("/api/v1/admin")}
     assert SIGNED_PHOTO_STREAM in paths
     unscoped = [
         path
