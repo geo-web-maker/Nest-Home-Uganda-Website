@@ -68,6 +68,7 @@ async def _main() -> None:
         "0010_care_client_consents",
         "0011_visit_sync_cursor",
         "0012_care_track_c",
+        "0013_partial_id_indexes",
     }
     try:
         main_ran = await run_migrations(client[settings.mongodb_db], exclude=care_names)

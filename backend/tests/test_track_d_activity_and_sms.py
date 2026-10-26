@@ -17,6 +17,6 @@ def test_track_d_activity_has_cursor_and_filters():
 
 def test_track_d_test_sms_does_not_create_sos_case():
     source = Path("app/modules/care_ops/router.py").read_text()
-    assert "'/sos/test-sms'" in source
-    assert "require_scopes('carecfg:write')" in source
+    assert '"/sos/test-sms"' in source
+    assert 'require_scopes("carecfg:write")' in source
     assert "send_test_sos_sms" in source

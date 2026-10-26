@@ -16,7 +16,8 @@ import styles from './EnquiryDetailPage.module.css';
 
 type EnquiryDetail = components['schemas']['EnquiryDetail'];
 type EnquiryUpdate = components['schemas']['EnquiryUpdate'];
-type NoteIn = components['schemas']['NoteIn'];
+// Mirrors the backend NoteIn body; kept local so typecheck does not depend on a generated schema name.
+type NoteIn = { text: string };
 const statusValues: EnquiryUpdate['status'][] = [
   'new',
   'contacted',

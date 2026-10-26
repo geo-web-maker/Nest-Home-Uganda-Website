@@ -30,6 +30,8 @@ async def test_migrations_run_once_then_change_nothing(mongo) -> None:
         "0008_care_ops",
         "0010_care_client_consents",
         "0011_visit_sync_cursor",
+        "0012_care_track_c",
+        "0013_partial_id_indexes",
     }
     assert (
         await run_migrations(mongo, exclude=care_migrations) == []
