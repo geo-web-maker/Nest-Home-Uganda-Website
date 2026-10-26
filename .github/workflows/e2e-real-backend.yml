@@ -66,14 +66,16 @@ jobs:
           docker exec mongo mongosh --quiet --eval "rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]})"
           sleep 5
 
-      - name: Start MinIO
+      - name: Start an S3-compatible server (moto)
         run: |
-          docker run -d --name minio -p 9000:9000 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z server /data
+          python -m venv /tmp/moto-venv
+          /tmp/moto-venv/bin/pip install --quiet "moto[server]"
+          nohup /tmp/moto-venv/bin/moto_server -H 127.0.0.1 -p 9000 > /tmp/moto.log 2>&1 &
           for i in $(seq 1 30); do
-            curl -fsS http://127.0.0.1:9000/minio/health/live && exit 0
+            curl -fsS http://127.0.0.1:9000/moto-api/ > /dev/null && exit 0
             sleep 2
           done
-          docker logs minio
+          cat /tmp/moto.log
           exit 1
 
       - name: Install the backend
@@ -82,7 +84,7 @@ jobs:
           pip install -r requirements.lock
           pip install -e . --no-deps
 
-      - name: Create the MinIO buckets
+      - name: Create the S3 buckets
         working-directory: backend
         run: |
           python - <<'PY'

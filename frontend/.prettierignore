@@ -1,4 +1,5 @@
 dist
+dist-admin-native
 node_modules
 package-lock.json
 coverage
