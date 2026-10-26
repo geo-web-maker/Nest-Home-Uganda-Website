@@ -74,6 +74,7 @@ async def mongo() -> AsyncIterator[object]:
         "0010_care_client_consents",
         "0011_visit_sync_cursor",
         "0012_care_track_c",
+        "0013_partial_id_indexes",
     }
     await run_migrations(database, exclude=care_migrations)
     await run_migrations(care_database, only=care_migrations)
