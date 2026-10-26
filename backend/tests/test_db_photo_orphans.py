@@ -43,7 +43,7 @@ async def test_abandoned_pending_uploads_are_deleted_and_marked_expired(mongo, m
     await uploaded.insert()
     deleted: list[str] = []
 
-    async def fake_delete(settings, public_id):
+    async def fake_delete(settings, public_id, delivery_type="upload"):
         deleted.append(public_id)
         return True
 
@@ -54,9 +54,9 @@ async def test_abandoned_pending_uploads_are_deleted_and_marked_expired(mongo, m
     assert await retention.purge_abandoned_photo_uploads(now, settings) == 1
     assert deleted == [old.cloudinary_public_id]
     care = db.get_care_database()
-    assert (await care["visit_photos"].find_one({"id": old.id}))["status"] == "expired"
-    assert (await care["visit_photos"].find_one({"id": recent.id}))["status"] == "pending"
-    assert (await care["visit_photos"].find_one({"id": uploaded.id}))["status"] == "uploaded"
+    assert (await care["visit_photos"].find_one({"_id": old.id}))["status"] == "expired"
+    assert (await care["visit_photos"].find_one({"_id": recent.id}))["status"] == "pending"
+    assert (await care["visit_photos"].find_one({"_id": uploaded.id}))["status"] == "uploaded"
 
 
 async def test_abandoned_upload_delete_failure_remains_retryable(mongo, monkeypatch):
@@ -71,7 +71,7 @@ async def test_abandoned_upload_delete_failure_remains_retryable(mongo, monkeypa
     )
     await photo.insert()
 
-    async def fail_delete(settings, public_id):
+    async def fail_delete(settings, public_id, delivery_type="upload"):
         raise RuntimeError("provider unavailable")
 
     monkeypatch.setattr(retention, "delete_asset", fail_delete)
@@ -79,5 +79,5 @@ async def test_abandoned_upload_delete_failure_remains_retryable(mongo, monkeypa
         cloudinary_cloud_name="test", cloudinary_api_key="key", cloudinary_api_secret="secret"
     )
     assert await retention.purge_abandoned_photo_uploads(now, settings) == 0
-    saved = await db.get_care_database()["visit_photos"].find_one({"id": photo.id})
+    saved = await db.get_care_database()["visit_photos"].find_one({"_id": photo.id})
     assert saved["status"] == "pending"

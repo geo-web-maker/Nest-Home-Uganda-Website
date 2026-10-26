@@ -12,7 +12,7 @@ describe('Track E admin care table/form baseline', () => {
 
   it('exposes the operational screens needed for table/form coverage', () => {
     render(<MemoryRouter><CareWorkspace /></MemoryRouter>);
-    for (const label of ['Nurses', 'Clients', 'Places', 'Flags', 'Timesheets', 'Reports', 'Settings']) {
+    for (const label of ['Nurses', 'Clients', 'Places', 'Flags', 'Timesheets', 'Visit reports', 'Care settings']) {
       expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
     }
   });

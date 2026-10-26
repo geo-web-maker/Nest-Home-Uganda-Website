@@ -55,6 +55,13 @@ describe('SetPasswordPage', () => {
       { token: TOKEN, password: GOOD },
       { retryOn401: false },
     );
+    expect(await screen.findByRole('status')).toHaveTextContent('Your password is set');
+    expect(screen.getByRole('link', { name: 'Go to sign in' })).toHaveAttribute(
+      'href',
+      '/admin/login',
+    );
+  });
+
   it('redeems invite links through the purpose-specific endpoint', async () => {
     const post = vi.spyOn(apiClient, 'post').mockResolvedValue({ status: 'password_set' });
     setup(`/admin/set-password?token=${TOKEN}&purpose=invite`);
@@ -63,13 +70,6 @@ describe('SetPasswordPage', () => {
       '/auth/accept-invite',
       { token: TOKEN, password: GOOD },
       { retryOn401: false },
-    );
-  });
-
-    expect(await screen.findByRole('status')).toHaveTextContent('Your password is set');
-    expect(screen.getByRole('link', { name: 'Go to sign in' })).toHaveAttribute(
-      'href',
-      '/admin/login',
     );
   });
 

@@ -11,7 +11,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
-from app.core.db import get_care_database
+from app.core.db import get_care_database, start_session
 from app.core.deps import Principal, ReachContext, get_care_actor, require_scopes
 from app.modules.audit.models import AuditLog
 from app.modules.care_clients.models import CareClient
@@ -384,7 +384,7 @@ async def move_client(
         id=body.id, client_id=client_id, place_id=body.place_id, starts_on=starts_on, ends_on=None
     )
     db = get_care_database()
-    async with await db.client.start_session() as session:
+    async with await start_session(db) as session:
 
         async def write_transaction(active_session):
             for stay in open_stays:
@@ -550,7 +550,7 @@ async def patch_visit(
             updated_at=row.updated_at,
         )
         database = get_care_database()
-        async with await database.client.start_session() as session:
+        async with await start_session(database) as session:
 
             async def write_transaction(active_session):
                 await row.save(session=active_session)
@@ -583,7 +583,7 @@ async def cancel_visit(
         id=uuid4().hex, nurse_id=row.nurse_id, visit_id=visit_id, reason="cancelled", updated_at=now
     )
     database = get_care_database()
-    async with await database.client.start_session() as session:
+    async with await start_session(database) as session:
 
         async def write_transaction(active_session):
             await row.save(session=active_session)

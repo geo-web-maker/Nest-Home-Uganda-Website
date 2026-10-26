@@ -108,7 +108,14 @@ describe('AdminLayout phone navigation', () => {
       within(list)
         .getAllByRole('link')
         .map((a) => a.textContent),
-    ).toEqual(['Content', 'Site settings', 'Users and scopes', 'Reports', 'Activity log']);
+    ).toEqual([
+      'Content',
+      'Site settings',
+      'Users and scopes',
+      'Care operations',
+      'Reports',
+      'Activity log',
+    ]);
     await user.click(within(list).getByRole('button', { name: 'Sign out' }));
     expect(logout).toHaveBeenCalledTimes(1);
     expect(document.getElementById('admin-more')).toBeNull();

@@ -13,7 +13,7 @@ def test_haversine_zero_and_symmetry():
 
 def test_kampala_to_entebbe_distance_is_reasonable():
     distance = haversine_m(0.3476, 32.6130, 0.0510, 32.4637)
-    assert 31_000 < distance < 34_000
+    assert 36_000 < distance < 38_000
 
 
 def test_geo_cases_fixture():

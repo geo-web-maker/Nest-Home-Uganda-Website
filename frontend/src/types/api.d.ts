@@ -1293,7 +1293,11 @@ export interface paths {
         };
         /**
          * List Scope Presets
+<<<<<<< HEAD
          * @description Named role presets are transparent data, not an implicit permission hierarchy.
+=======
+         * @description Named scope presets are transparent data, not an implicit permission hierarchy.
+>>>>>>> 12f86f5 (overhaul including nurse app among others part ten)
          */
         get: operations["list_scope_presets_api_v1_admin_scope_presets_get"];
         put?: never;

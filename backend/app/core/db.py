@@ -1,7 +1,10 @@
 """MongoDB setup for the public site database and the separate care database."""
 
+import inspect
+
 from beanie import Document, init_beanie
 from pymongo import AsyncMongoClient
+from pymongo.asynchronous.client_session import AsyncClientSession
 
 _client: AsyncMongoClient | None = None
 _care_client: AsyncMongoClient | None = None
@@ -77,3 +80,16 @@ async def ping_care() -> bool:
     except Exception:
         return False
     return True
+
+
+async def start_session(database) -> AsyncClientSession:
+    """Start a client session for a transaction on the database's client.
+
+    PyMongo's async ``start_session`` returns the session directly in current releases,
+    but earlier async releases returned a coroutine. Accept both so callers can write
+    ``async with await start_session(db) as session``.
+    """
+    started = database.client.start_session()
+    if inspect.isawaitable(started):
+        started = await started
+    return started

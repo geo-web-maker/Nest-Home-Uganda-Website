@@ -66,5 +66,14 @@ def test_the_scheduler_has_the_reminder_and_retention_jobs() -> None:
     from app.jobs import build_scheduler
 
     jobs = {job.id: job for job in build_scheduler().get_jobs()}
-    assert set(jobs) == {"enquiry_reminders", "retention"}
+    assert set(jobs) == {
+        "enquiry_reminders",
+        "retention",
+        "care_alerts",
+        "sos_escalation",
+        "care_timesheets",
+        "push_delivery_retry",
+        "care_retention",
+        "photo_orphans",
+    }
     assert all(job.max_instances == 1 and job.coalesce for job in jobs.values())

@@ -75,7 +75,7 @@ async def test_adhoc_visit_is_created_once_with_checkin_and_flag(mongo, monkeypa
     assert result["status"] == "accepted"
     assert duplicate["status"] == "duplicate"
     care = get_care_database()
-    assert await care["visits"].count_documents({"id": payload.id}) == 1
+    assert await care["visits"].count_documents({"_id": payload.id}) == 1
     assert await care["visit_events"].count_documents({"client_op_id": payload.client_op_id}) == 1
     assert (
         await care["visit_flags"].count_documents({"visit_id": payload.id, "type": "adhoc_visit"})
@@ -133,5 +133,5 @@ async def test_adhoc_transaction_rolls_back_visit_and_event_if_flag_insert_fails
         await create_adhoc_visit(payload, principal)
 
     care = get_care_database()
-    assert await care["visits"].count_documents({"id": payload.id}) == 0
+    assert await care["visits"].count_documents({"_id": payload.id}) == 0
     assert await care["visit_events"].count_documents({"client_op_id": payload.client_op_id}) == 0

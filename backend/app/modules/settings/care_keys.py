@@ -89,7 +89,6 @@ for row in [
     ("photos.max_mb", "integer", 5, False, ("org",), "photos", 1, 20),
     ("photos.max_per_visit", "integer", 5, False, ("org",), "photos", 0, 20),
     ("care.map_tile_url", "text", ""),
-    ("care.privacy_notice_version", "text", ""),
     ("care.min_app_version", "text", "0.1.0"),
     ("alerts.sms_after_unacked_min", "integer", 15, False, ("org",), "alerts", 1, 240),
     ("alerts.quiet_hours", "text", "22:00-07:00"),

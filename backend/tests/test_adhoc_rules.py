@@ -17,7 +17,8 @@ def test_active_stay_uses_inclusive_start_and_end_dates_and_latest_start():
         SimpleNamespace(id="future", starts_on="2026-10-26", ends_on=None),
     ]
     assert active_stay_for_date(stays, "2026-10-25").id == "current"
-    assert active_stay_for_date(stays, "2026-10-24") is None
+    assert active_stay_for_date(stays, "2026-10-24").id == "old"
+    assert active_stay_for_date(stays, "2025-12-31") is None
     assert active_stay_for_date(stays, "2026-10-26").id == "future"
 
 

@@ -10,7 +10,7 @@ from app.modules.visits.models import Visit
 async def test_visit_reach_isolated_for_own_and_team():
     own = ReachContext(user_id="nurse-a", reach="own")
     team = ReachContext(user_id="supervisor-a", reach="team", team_nurse_ids=("nurse-a",))
-    visit_a = Visit(
+    visit_a = Visit.model_construct(
         id="visit-0001",
         client_id="client-0001",
         nurse_id="nurse-a",
@@ -18,7 +18,7 @@ async def test_visit_reach_isolated_for_own_and_team():
         scheduled_start="2026-10-25T08:00:00Z",
         scheduled_end="2026-10-25T09:00:00Z",
     )
-    visit_b = Visit(
+    visit_b = Visit.model_construct(
         id="visit-0002",
         client_id="client-0002",
         nurse_id="nurse-b",
@@ -35,26 +35,27 @@ async def test_visit_reach_isolated_for_own_and_team():
 @pytest.mark.asyncio
 async def test_alert_reach_isolated_by_assigned_nurse():
     own = ReachContext(user_id="nurse-a", reach="own")
-    alert_a = CareAlert(
+    alert_a = CareAlert.model_construct(
         id="alert-0001", type="late_visit", nurse_id="nurse-a", message="Review needed"
     )
-    alert_b = CareAlert(
+    alert_b = CareAlert.model_construct(
         id="alert-0002", type="late_visit", nurse_id="nurse-b", message="Review needed"
     )
     assert await _alert_in_reach(alert_a, own)
     assert not await _alert_in_reach(alert_b, own)
 
 
-def test_timesheet_reach_isolated_for_own_and_team():
+@pytest.mark.asyncio
+async def test_timesheet_reach_isolated_for_own_and_team():
     own = ReachContext(user_id="nurse-a", reach="own")
     team = ReachContext(user_id="supervisor-a", reach="team", team_nurse_ids=("nurse-a",))
-    sheet_a = CareTimesheet(
+    sheet_a = CareTimesheet.model_construct(
         id="sheet-0001", nurse_id="nurse-a", period_start="2026-10-19", period_end="2026-10-25"
     )
-    sheet_b = CareTimesheet(
+    sheet_b = CareTimesheet.model_construct(
         id="sheet-0002", nurse_id="nurse-b", period_start="2026-10-19", period_end="2026-10-25"
     )
-    assert _timesheet_in_reach(sheet_a, own)
-    assert not _timesheet_in_reach(sheet_b, own)
-    assert _timesheet_in_reach(sheet_a, team)
-    assert not _timesheet_in_reach(sheet_b, team)
+    assert await _timesheet_in_reach(sheet_a, own)
+    assert not await _timesheet_in_reach(sheet_b, own)
+    assert await _timesheet_in_reach(sheet_a, team)
+    assert not await _timesheet_in_reach(sheet_b, team)

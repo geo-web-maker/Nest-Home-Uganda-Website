@@ -55,9 +55,9 @@ async def test_coordinate_purge_redacts_values_and_keeps_records(mongo):
         db.get_care_database(), datetime(2025, 1, 1, tzinfo=UTC)
     )
     care = db.get_care_database()
-    saved_event = await care["visit_events"].find_one({"id": event.id})
-    saved_note = await care["visit_notes"].find_one({"id": note.id})
-    saved_photo = await care["visit_photos"].find_one({"id": photo.id})
+    saved_event = await care["visit_events"].find_one({"_id": event.id})
+    saved_note = await care["visit_notes"].find_one({"_id": note.id})
+    saved_photo = await care["visit_photos"].find_one({"_id": photo.id})
 
     assert counts == {
         "event_coordinates_redacted": 1,
@@ -67,7 +67,7 @@ async def test_coordinate_purge_redacts_values_and_keeps_records(mongo):
     assert saved_event["lat"] is None and saved_event["lng"] is None
     assert saved_event["verification"] == "retention_redacted"
     assert saved_note["body"] == "Operational note" and saved_note["geo_snap"] == {}
-    assert saved_photo["geo_snap"] == {} and saved_photo["id"] == photo.id
+    assert saved_photo["geo_snap"] == {} and saved_photo["_id"] == photo.id
 
 
 async def test_photo_expiry_keeps_metadata_and_is_idempotent(mongo, monkeypatch):
@@ -82,7 +82,7 @@ async def test_photo_expiry_keeps_metadata_and_is_idempotent(mongo, monkeypatch)
     await photo.insert()
     deleted = []
 
-    async def fake_delete(settings, public_id):
+    async def fake_delete(settings, public_id, delivery_type="upload"):
         deleted.append(public_id)
         return True
 
@@ -92,7 +92,7 @@ async def test_photo_expiry_keeps_metadata_and_is_idempotent(mongo, monkeypatch)
     )
     assert await retention.purge_expired_photos(now, 1, settings) == 1
     assert await retention.purge_expired_photos(now, 1, settings) == 0
-    saved = await db.get_care_database()["visit_photos"].find_one({"id": photo.id})
+    saved = await db.get_care_database()["visit_photos"].find_one({"_id": photo.id})
     assert saved["status"] == "expired"
     assert len(deleted) == 1
 
@@ -108,7 +108,7 @@ async def test_photo_expiry_leaves_record_retryable_when_provider_fails(mongo, m
     )
     await photo.insert()
 
-    async def fail_delete(settings, public_id):
+    async def fail_delete(settings, public_id, delivery_type="upload"):
         raise RuntimeError("provider unavailable")
 
     monkeypatch.setattr(retention, "delete_asset", fail_delete)
@@ -116,5 +116,5 @@ async def test_photo_expiry_leaves_record_retryable_when_provider_fails(mongo, m
         cloudinary_cloud_name="test", cloudinary_api_key="key", cloudinary_api_secret="secret"
     )
     assert await retention.purge_expired_photos(now, 1, settings) == 0
-    saved = await db.get_care_database()["visit_photos"].find_one({"id": photo.id})
+    saved = await db.get_care_database()["visit_photos"].find_one({"_id": photo.id})
     assert saved["status"] == "pending"

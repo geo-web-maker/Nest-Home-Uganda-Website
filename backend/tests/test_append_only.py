@@ -41,4 +41,11 @@ def test_append_only_mutations_are_confined_to_named_retention_purge_functions()
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
     ]
     purge_functions = [name for name in functions if name.startswith("purge_")]
-    assert set(purge_functions) == {"purge_photo_for_data_request", "purge_notes_for_data_request"}
+    assert set(purge_functions) == {
+        "purge_photo_for_data_request",
+        "purge_notes_for_data_request",
+        "purge_coordinates",
+        "purge_sos_locations",
+        "purge_expired_photos",
+        "purge_abandoned_photo_uploads",
+    }

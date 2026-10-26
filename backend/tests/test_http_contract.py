@@ -34,7 +34,7 @@ async def test_forbidden_uses_error_shape(client: httpx.AsyncClient) -> None:
 
 
 async def test_validation_error_lists_fields(client: httpx.AsyncClient) -> None:
-    r = await client.post("/api/v1/auth/login", json={"email": "not-an-email", "password": ""})
+    r = await client.post("/api/v1/auth/login", json={"email": "", "password": ""})
     assert r.status_code == 422
     body = r.json()["error"]
     assert body["code"] == "validation_error"
