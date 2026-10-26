@@ -53,7 +53,8 @@ export function UsersPage() {
   };
   const matchesInvitePreset = (chosenScopes: string[], preset: string) => {
     const expected = presetScopes[preset];
-    return Boolean(expected) && [...chosenScopes].sort().join('|') === [...expected].sort().join('|');
+    if (!expected) return false;
+    return [...chosenScopes].sort().join('|') === [...expected].sort().join('|');
   };
   const invite = useMutation({
     mutationFn: (body: UserInvite) => apiClient.post<AdminUser>('/admin/users', body),
@@ -209,7 +210,7 @@ export function UsersPage() {
             onSubmit={(event) => {
               event.preventDefault();
               const presetMatches = matchesInvitePreset(chosen, invitePreset);
-              invite.mutate({ name: name.trim(), email: email.trim(), scopes: presetMatches ? [] : chosen, ...(presetMatches ? { preset: invitePreset } : {}), kind: inviteKind, reach: inviteReach });
+              invite.mutate({ name: name.trim(), email: email.trim(), scopes: presetMatches ? [] : chosen, ...(presetMatches ? { preset: invitePreset as NonNullable<UserInvite['preset']> } : {}), kind: inviteKind, reach: inviteReach });
             }}
           >
             <Field

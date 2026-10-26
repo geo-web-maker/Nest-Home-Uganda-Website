@@ -40,8 +40,8 @@ def _nurse_is_in_reach(user_id: str, ctx: ReachContext) -> bool:
 
 @router.get("", response_model=list[NurseProfileResponse])
 async def list_nurses(
-    ctx: ReachContext = Depends(get_care_actor),
     _: Principal = Depends(require_scopes("nurses:read")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     profiles = await NurseProfile.find().to_list()
     if not ctx.is_superadmin and ctx.reach != "all":
@@ -88,8 +88,8 @@ async def create_nurse(
 @router.get("/{user_id}", response_model=NurseProfileResponse)
 async def get_nurse_profile(
     user_id: str,
-    ctx: ReachContext = Depends(get_care_actor),
     _: Principal = Depends(require_scopes("nurses:read")),
+    ctx: ReachContext = Depends(get_care_actor),
 ):
     profile = await profile_for_user(user_id)
     if profile is None or (
