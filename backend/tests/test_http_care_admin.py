@@ -1,4 +1,4 @@
-from conftest import auth, make_token
+from tests.conftest import auth, make_token
 
 
 async def test_care_clients_requires_authentication(client):

@@ -1,4 +1,4 @@
-from conftest import app, auth, make_token
+from tests.conftest import app, auth, make_token
 
 from app.core.deps import ReachContext, get_care_actor
 
