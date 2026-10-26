@@ -30,9 +30,9 @@ export function VisitReviewPage() {
       setError(e instanceof Error ? e.message : 'Visit could not be loaded.');
     }
   }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
   if (!data)
     return (

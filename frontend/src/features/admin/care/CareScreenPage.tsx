@@ -208,9 +208,9 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
       setLoading(false);
     }
   }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen, filter, nurseId, clientId, reportFrom, reportTo, auditFilters.cursor]);
   const visibleRows = useMemo(
     () =>
