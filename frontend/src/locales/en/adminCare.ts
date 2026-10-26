@@ -1,0 +1,11 @@
+export const adminCareEn = {
+  title: 'Care operations',
+  subtitle: 'Set up care delivery and review visit activity.',
+  tabs: { clients: 'Clients', visits: 'Visits', flags: 'Flags', team: 'My team', settings: 'Care settings', readiness: 'Readiness' },
+  refresh: 'Refresh', loading: 'Loading care data', error: 'Care data could not be loaded.',
+  empty: 'No records are available for this view.',
+  columns: { name: 'Name', status: 'Status', nurse: 'Nurse', start: 'Scheduled start', address: 'Address', type: 'Type', raised: 'Raised' },
+  clientName: 'Client display name', clientNotes: 'Notes for the nurse', createClient: 'Create client', createPlace: 'Add place', address: 'Address', latitude: 'Latitude', longitude: 'Longitude', radius: 'Verification radius in metres',
+  visitId: 'Visit identifier', clientId: 'Client identifier', nurseId: 'Nurse identifier', placeId: 'Place identifier', start: 'Start time', end: 'End time', createVisit: 'Schedule visit',
+  resolve: 'Resolve', resolution: 'Resolution note', save: 'Save', saved: 'Saved.', failed: 'The request could not be completed.', blocking: 'Blocking', statusLabel: 'Status', detail: 'Detail',
+};

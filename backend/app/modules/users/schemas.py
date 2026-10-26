@@ -20,6 +20,8 @@ class AdminUserOut(BaseModel):
     last_login: datetime | None
     status: Literal["active", "invited"]
     active: bool
+    kind: str = "staff"
+    reach: str = "all"
 
 
 class UserInvite(BaseModel):
@@ -28,6 +30,9 @@ class UserInvite(BaseModel):
     name: Clean = Field(min_length=2, max_length=80)
     email: EmailStr = Field(max_length=254)
     scopes: list[str] = Field(default_factory=list, max_length=40)
+    preset: Literal["nurse", "supervisor", "admin", "executive", "super_admin"] | None = None
+    kind: Literal["staff", "nurse", "supervisor", "admin", "executive"] = "staff"
+    reach: Literal["own", "team", "all"] = "all"
 
 
 class UserUpdate(BaseModel):
@@ -35,6 +40,8 @@ class UserUpdate(BaseModel):
 
     scopes: list[str] | None = Field(default=None, max_length=40)
     active: bool | None = None
+    kind: Literal["staff", "nurse", "supervisor", "admin", "executive"] | None = None
+    reach: Literal["own", "team", "all"] | None = None
 
 
 class SetPasswordIn(BaseModel):

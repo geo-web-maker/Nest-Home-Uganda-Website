@@ -17,6 +17,7 @@ export function SetPasswordPage() {
   const { t } = useTranslation('admin');
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
+  const isInvite = params.get('purpose') === 'invite';
   const [formError, setFormError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
@@ -46,7 +47,8 @@ export function SetPasswordPage() {
   const onValid = async ({ password }: Values) => {
     setFormError(null);
     try {
-      await apiClient.post('/auth/set-password', { token, password }, { retryOn401: false });
+      const endpoint = isInvite ? '/auth/accept-invite' : '/auth/set-password';
+      await apiClient.post(endpoint, { token, password }, { retryOn401: false });
       setDone(true);
     } catch (error) {
       if (error instanceof ApiError && error.status === 429) {

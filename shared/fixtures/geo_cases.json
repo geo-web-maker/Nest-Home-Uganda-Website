@@ -1,0 +1,12 @@
+[
+  {"case":"exact","lat":0.3476,"lng":32.6130,"accuracy_m":10,"expect":"verified","distance_m":0.0},
+  {"case":"100 m, acc 20","lat":0.3484993,"lng":32.6130,"accuracy_m":20,"expect":"verified","distance_m":100.0},
+  {"case":"160 m, acc 20","lat":0.3490389,"lng":32.6130,"accuracy_m":20,"expect":"verified","distance_m":160.0},
+  {"case":"160 m, acc 5","lat":0.3490389,"lng":32.6130,"accuracy_m":5,"expect":"outside_radius","distance_m":160.0},
+  {"case":"195 m, acc 60","lat":0.3493537,"lng":32.6130,"accuracy_m":60,"expect":"verified","distance_m":195.0},
+  {"case":"205 m, acc 60","lat":0.3494436,"lng":32.6130,"accuracy_m":60,"expect":"outside_radius","distance_m":205.0},
+  {"case":"poor accuracy","lat":0.3476,"lng":32.6130,"accuracy_m":120,"expect":"low_accuracy","distance_m":0.0},
+  {"case":"accuracy at limit","lat":0.3476,"lng":32.6130,"accuracy_m":100,"expect":"verified","distance_m":0.0},
+  {"case":"far","lat":0.3513052,"lng":32.6130,"accuracy_m":18,"expect":"outside_radius","distance_m":412.0},
+  {"case":"no fix","lat":null,"lng":null,"accuracy_m":0,"expect":"no_location","distance_m":null}
+]

@@ -1,8 +1,11 @@
+import { Capacitor } from '@capacitor/core';
+import { clearNativeRefreshToken, readNativeRefreshToken, saveNativeRefreshToken } from '../../../admin-native/secureTokenStorage';
 import { ApiError, apiClient, setAuthHooks, type ApiClient } from '../../../lib/api/client';
 import type { TokenResponse } from '../../../types';
 import { authStore } from './authStore';
 
 let inFlight: Promise<boolean> | null = null;
+type NativeSession = { access_token: string; refresh_token: string; expires_in: number; user: TokenResponse['user'] };
 
 /**
  * Exchanges the refresh cookie for a new session (POST /auth/refresh).
@@ -13,6 +16,20 @@ let inFlight: Promise<boolean> | null = null;
 export function refreshSession(client: ApiClient = apiClient): Promise<boolean> {
   if (inFlight) return inFlight;
   inFlight = (async () => {
+    if (Capacitor.isNativePlatform()) {
+      const refreshToken=await readNativeRefreshToken();
+      if (!refreshToken) { authStore.clearSession(); return false; }
+      try {
+        const session=await client.post<NativeSession>('/auth/native/refresh',{refresh_token:refreshToken},{retryOn401:false,headers:{'X-Client':'native'}});
+        await saveNativeRefreshToken(session.refresh_token);
+        authStore.setSession({access_token:session.access_token,csrf_token:'',user:session.user});
+        return true;
+      } catch (error) {
+        if (error instanceof ApiError && (error.status===401 || error.status===403)) { await clearNativeRefreshToken(); authStore.clearSession(); }
+        else if (authStore.getState().status==='loading') authStore.markSignedOut();
+        return false;
+      }
+    }
     const csrf = authStore.getCsrf();
     if (!csrf) {
       authStore.clearSession();
@@ -51,16 +68,24 @@ export async function login(
   password: string,
   client: ApiClient = apiClient,
 ): Promise<void> {
-  const session = await client.post<TokenResponse>(
-    '/auth/login',
-    { email, password },
-    { retryOn401: false },
-  );
+  if (Capacitor.isNativePlatform()) {
+    const session=await client.post<NativeSession>('/auth/native/login',{email,password},{retryOn401:false,headers:{'X-Client':'native'}});
+    await saveNativeRefreshToken(session.refresh_token);
+    authStore.setSession({access_token:session.access_token,csrf_token:'',user:session.user});
+    return;
+  }
+  const session = await client.post<TokenResponse>('/auth/login',{ email, password },{ retryOn401: false });
   authStore.setSession(session);
 }
 
 /** Ends the session here even when the server cannot be reached. */
 export async function logout(client: ApiClient = apiClient): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    const refreshToken=await readNativeRefreshToken();
+    authStore.clearSession(); await clearNativeRefreshToken();
+    if (refreshToken) { try { await client.post('/auth/native/logout',{refresh_token:refreshToken},{retryOn401:false,headers:{'X-Client':'native'}}); } catch { /* Local sign-out still completes. */ } }
+    return;
+  }
   const csrf = authStore.getCsrf();
   authStore.clearSession();
   if (!csrf) return;

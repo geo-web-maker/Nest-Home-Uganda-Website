@@ -1,0 +1,17 @@
+name: restore-drill-operations-check
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 1 * *'
+permissions:
+  contents: read
+jobs:
+  remind-owner-restore-drill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm isolated restore procedure is documented
+        run: |
+          test -s docs/BACKUP_AND_RECOVERY_B2.md
+          grep -q 'RESTORE_TARGET_ISOLATED=yes' docs/BACKUP_AND_RECOVERY_B2.md
+          echo 'This workflow does not connect to MongoDB. Run the restore drill from a trusted host against an isolated target and record collection-count comparisons.'

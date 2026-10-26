@@ -3,6 +3,7 @@
 import pytest
 from pymongo.errors import DuplicateKeyError
 
+from app.core import db
 from app.migrate import discover, run_migrations
 from app.modules.areas.models import Area
 from app.modules.areas.seed import seed_areas
@@ -23,9 +24,20 @@ def test_migration_scripts_are_numbered_and_discoverable() -> None:
 
 
 async def test_migrations_run_once_then_change_nothing(mongo) -> None:
-    assert await run_migrations(mongo) == []  # the fixture already ran them
+    care_migrations = {
+        "0006_care_users",
+        "0007_care_core",
+        "0008_care_ops",
+        "0010_care_client_consents",
+        "0011_visit_sync_cursor",
+    }
+    assert (
+        await run_migrations(mongo, exclude=care_migrations) == []
+    )  # the fixture already ran them
     names = {d["_id"] async for d in mongo["migrations"].find()}
+    care_names = {d["_id"] async for d in db.get_care_database()["migrations"].find()}
     assert "0001_indexes" in names
+    assert care_migrations <= care_names
 
 
 async def test_indexes_exist_with_ttls(mongo) -> None:
@@ -37,6 +49,38 @@ async def test_indexes_exist_with_ttls(mongo) -> None:
     assert audit["at_ttl_24_months"]["expireAfterSeconds"] == 730 * 86400
     tokens = await mongo["refresh_tokens"].index_information()
     assert tokens["expires_ttl"]["expireAfterSeconds"] == 0
+
+
+async def test_visit_sync_migration_backfills_legacy_timestamp_and_indexes(mongo) -> None:
+    from datetime import UTC, datetime
+    from importlib.util import module_from_spec, spec_from_file_location
+    from pathlib import Path
+
+    care_database = db.get_care_database()
+    created_at = datetime(2026, 1, 2, 3, 4, tzinfo=UTC)
+    await care_database["visits"].insert_one(
+        {
+            "id": "legacy-sync-visit-0001",
+            "created_at": created_at,
+            "scheduled_start": created_at,
+            "nurse_id": "legacy-sync-nurse-0001",
+        }
+    )
+    migration_path = (
+        Path(__file__).resolve().parents[1] / "migrations" / "0011_visit_sync_cursor.py"  # noqa: ASYNC240
+    )
+    spec = spec_from_file_location("migration_0011_visit_sync_cursor_test", migration_path)
+    assert spec is not None and spec.loader is not None
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    await module.up(care_database)
+
+    saved = await care_database["visits"].find_one({"id": "legacy-sync-visit-0001"})
+    assert saved is not None and saved["updated_at"] == created_at
+    visit_indexes = await care_database["visits"].index_information()
+    tombstone_indexes = await care_database["visit_sync_tombstones"].index_information()
+    assert "ix_visits_nurse_updated_id" in visit_indexes
+    assert "ix_visit_sync_tombstones_nurse_updated_id" in tombstone_indexes
 
 
 async def test_duplicate_email_is_rejected_by_the_index(mongo) -> None:

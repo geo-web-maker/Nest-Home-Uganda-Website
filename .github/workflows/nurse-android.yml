@@ -1,0 +1,70 @@
+name: nurse-android
+
+# Builds an unsigned debug APK of the nurse app. The native project is generated here
+# (npx cap add android) and is not committed. Signing and distribution are a separate phase.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, nurse-module]
+    paths:
+      - nurse/**
+      - scripts/apply_android_overrides.mjs
+      - .github/workflows/nurse-android.yml
+  pull_request:
+    paths:
+      - nurse/**
+      - scripts/apply_android_overrides.mjs
+      - .github/workflows/nurse-android.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nurse-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  debug-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      NURSE_VERSION_CODE: ${{ github.run_number }}
+    defaults:
+      run:
+        working-directory: nurse
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require a committed lockfile
+        run: |
+          test -f package-lock.json || { echo "nurse/package-lock.json is missing. Run the nurse-lockfile workflow, review the result, and commit it."; exit 1; }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: nurse/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Install Android SDK components for Capacitor 7
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - name: Generate the native Android project
+        run: npx cap add android
+      - name: Apply Android overrides
+        working-directory: .
+        run: node scripts/apply_android_overrides.mjs
+      - run: npx cap sync android
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Assemble the debug APK
+        working-directory: nurse/android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nurse-debug-apk
+          path: nurse/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14

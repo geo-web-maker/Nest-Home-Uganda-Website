@@ -1,0 +1,10 @@
+import { copy } from '../copy';
+import type { CachedVisit } from '../offline/db';
+import { formatElapsed } from '../lib/time';
+
+type Props = { visit: CachedVisit; finalNote: string; busy: boolean; onFinalNote: (value: string) => void; onConfirm: () => void; onCancel: () => void; onAddPhoto: () => void; canAddRequiredPhoto?: boolean; requiredPhotoMissing?: boolean };
+export function LeaveSheet({ visit, finalNote, busy, onFinalNote, onConfirm, onCancel, onAddPhoto, canAddRequiredPhoto = true, requiredPhotoMissing = false }: Props) {
+  const start = visit.check_in_at ? Date.parse(visit.check_in_at) : NaN;
+  const elapsed = Number.isFinite(start) ? Math.max(0, Date.now() - start) : 0;
+  return <div className="sheet-backdrop"><section className="sheet" role="dialog" aria-modal="true" aria-labelledby="leave-title"><h2 id="leave-title">{copy.departure.title} {visit.client_display_name}?</h2><p>{copy.departure.timeOnVisit} {formatElapsed(elapsed)}</p><label htmlFor="leave-note">{copy.departure.finalNote}</label><textarea id="leave-note" value={finalNote} onChange={(event) => onFinalNote(event.target.value)} maxLength={1000} rows={3} placeholder={copy.departure.notePlaceholder}/><p>{requiredPhotoMissing ? (canAddRequiredPhoto ? copy.departure.requiredPhoto : copy.departure.requiredPhotoUnavailable) : copy.departure.savedOffline}</p><div className="sheet-actions">{requiredPhotoMissing && canAddRequiredPhoto && <button type="button" className="button-secondary" onClick={onAddPhoto} disabled={busy}>{copy.departure.addRequiredPhoto}</button>}<button type="button" onClick={onConfirm} disabled={busy || requiredPhotoMissing}>{busy ? copy.departure.saving : copy.departure.confirm}</button><button type="button" className="button-secondary" onClick={onCancel} disabled={busy}>{copy.generic.cancel}</button></div></section></div>;
+}

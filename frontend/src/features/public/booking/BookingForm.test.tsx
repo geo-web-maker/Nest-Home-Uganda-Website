@@ -46,6 +46,22 @@ async function fillValid(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('BookingForm', () => {
+  it('shows the medical-details warning and requires explicit contact consent', async () => {
+    const { submit, user } = setup();
+    expect(screen.getByText('Please do not enter medical details here')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /I agree that Nest Home Care may contact me/ })).not.toBeChecked();
+
+    await user.type(screen.getByLabelText(/Your name/), 'Mary Atim');
+    await user.type(screen.getByLabelText(/Phone number/), '0787 499 988');
+    await user.selectOptions(screen.getByLabelText(/Who needs care/), 'parent');
+    await user.click(screen.getByRole('button', { name: 'Postnatal care' }));
+    await user.type(screen.getByLabelText(/^Area/), 'Ntinda');
+    await user.click(screen.getByRole('button', { name: 'Send request' }));
+
+    expect(await screen.findByText(copy.errors.consent)).toBeInTheDocument();
+    expect(submit).not.toHaveBeenCalled();
+  });
+
   it('shows the plain WhatsApp button first with the spec text', () => {
     setup();
     const link = screen.getByRole('link', { name: 'Chat on WhatsApp' });

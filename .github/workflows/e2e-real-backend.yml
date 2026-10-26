@@ -1,0 +1,126 @@
+name: e2e-real-backend
+
+# Track E4. Runs the nurse app in a browser against the real FastAPI backend, a MongoDB replica set and
+# MinIO, all started inside the runner. Nothing here touches production, and no provider (SMS, FCM,
+# Cloudinary) is called: SMS_PROVIDER=console and PUSH_SENDER=fake.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, nurse-module]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-real-backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MONGODB_URI: mongodb://localhost:27017/?replicaSet=rs0&directConnection=true
+      MONGODB_DB: nhc_e2e
+      CARE_MONGODB_DB: nhc_e2e_care
+      SECRET_KEY: e2e-only-secret-key-not-used-anywhere-else-0123456789
+      IP_HASH_SALT: e2e-only-salt
+      CORS_ORIGINS: http://127.0.0.1:4173
+      FRONTEND_URL: http://127.0.0.1:4173
+      FIRST_SUPERADMIN_EMAIL: e2e-admin@example.test
+      FIRST_SUPERADMIN_PASSWORD: E2E-Only-Password-Change-Me!
+      SCHEDULER_ENABLED: "false"
+      SMS_PROVIDER: console
+      PUSH_SENDER: fake
+      S3_ENDPOINT: http://127.0.0.1:9000
+      S3_REGION: us-east-1
+      S3_BUCKET_PUBLIC: nest-public
+      S3_BUCKET_PRIVATE: nest-private
+      S3_KEY: minioadmin
+      S3_SECRET: minioadmin
+      E2E_BASE_URL: http://127.0.0.1:4173
+      E2E_API_URL: http://127.0.0.1:8000
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require the nurse lockfile
+        run: |
+          test -f nurse/package-lock.json || { echo "nurse/package-lock.json is missing. Run the nurse-lockfile workflow first."; exit 1; }
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: nurse/package-lock.json
+
+      - name: Start MongoDB replica set
+        run: |
+          docker run -d --name mongo -p 27017:27017 mongo:7 --replSet rs0 --bind_ip_all
+          for i in $(seq 1 30); do docker exec mongo mongosh --quiet --eval "db.runCommand({ping:1})" && break || sleep 2; done
+          docker exec mongo mongosh --quiet --eval "rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]})"
+          sleep 5
+
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin quay.io/minio/minio server /data
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:9000/minio/health/live && break || sleep 2; done
+
+      - name: Install the backend
+        working-directory: backend
+        run: |
+          pip install -r requirements.lock
+          pip install -e . --no-deps
+
+      - name: Create the MinIO buckets
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import boto3
+          s3 = boto3.client("s3", endpoint_url="http://127.0.0.1:9000", region_name="us-east-1",
+                            aws_access_key_id="minioadmin", aws_secret_access_key="minioadmin")
+          for name in ("nest-public", "nest-private"):
+              s3.create_bucket(Bucket=name)
+          PY
+
+      - name: Migrate, seed the E2E fixture and start the API
+        working-directory: backend
+        run: |
+          python -m app.migrate
+          python scripts/seed_e2e.py
+          nohup python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > ../backend.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/api/v1/health && break || sleep 2; done
+
+      - name: Build the nurse app against the local API
+        working-directory: nurse
+        env:
+          VITE_API_URL: http://127.0.0.1:8000
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Install Chromium
+        working-directory: nurse
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the real-backend suite
+        working-directory: nurse
+        run: npx playwright test e2e/real-backend.spec.ts
+
+      - name: Show the API log on failure
+        if: failure()
+        run: tail -n 200 backend.log || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-real-backend-report
+          path: |
+            nurse/test-results
+            nurse/playwright-report
+            backend.log

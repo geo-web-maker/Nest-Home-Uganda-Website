@@ -1,3 +1,6 @@
+import { Capacitor } from '@capacitor/core';
+import { registerAdminPush } from '../../../admin-native/push';
+import { apiClient } from '../../../lib/api/client';
 import {
   createContext,
   useContext,
@@ -29,6 +32,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void restoreSession();
   }, []);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform() || state.status !== 'signedIn') return;
+    let deviceId=window.localStorage.getItem('nhc.admin.device-id');
+    if (!deviceId) { deviceId=crypto.randomUUID(); window.localStorage.setItem('nhc.admin.device-id',deviceId); }
+    void registerAdminPush(async (pushToken) => {
+      await apiClient.post('/admin/care/devices',{device_id:deviceId,platform:Capacitor.getPlatform(),push_token:pushToken});
+    });
+  }, [state.status]);
 
   const value = useMemo<AuthValue>(
     () => ({

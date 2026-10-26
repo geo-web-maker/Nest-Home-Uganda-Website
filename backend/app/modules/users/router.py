@@ -27,6 +27,17 @@ async def set_password(body: SetPasswordIn, request: Request) -> Done:
     return await service.set_password(body.token, body.password, hash_ip(client_ip(request)))
 
 
+@public_router.post(
+    "/accept-invite",
+    response_model=Done,
+    dependencies=[Depends(rate_limit("accept_invite", 10, 900))],
+)
+async def accept_invite(body: SetPasswordIn, request: Request) -> Done:
+    return await service.set_password(
+        body.token, body.password, hash_ip(client_ip(request)), expected_purpose="invite"
+    )
+
+
 @admin_router.get("", response_model=Page[AdminUserOut])
 async def admin_list(
     _: CanRead,

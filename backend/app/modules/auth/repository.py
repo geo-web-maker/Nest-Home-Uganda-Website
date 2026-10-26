@@ -11,6 +11,10 @@ async def user_by_email(email: str) -> User | None:
     return await User.find_one(User.email == email.lower())
 
 
+async def user_by_phone(phone_e164: str) -> User | None:
+    return await User.find_one(User.phone_e164 == phone_e164)
+
+
 async def user_by_id(user_id: str) -> User | None:
     if not PydanticObjectId.is_valid(user_id):
         return None

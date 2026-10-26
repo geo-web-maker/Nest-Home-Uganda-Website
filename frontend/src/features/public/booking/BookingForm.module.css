@@ -36,6 +36,16 @@
   gap: 8px;
 }
 
+.medicalDetailsWarning {
+  margin: 12px 0 8px;
+  padding: 10px 12px;
+  border-left: 4px solid var(--danger);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--danger) 8%, var(--surf));
+  color: var(--ink);
+  font-weight: 700;
+}
+
 .hint {
   margin: -6px 0 12px;
   color: var(--mut);

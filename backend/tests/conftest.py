@@ -17,7 +17,7 @@ from app.core.security import create_access_token  # noqa: E402
 from app.main import app  # noqa: E402
 from app.migrate import run_migrations  # noqa: E402
 from app.modules.auth.scopes import ALL_SCOPE_IDS  # noqa: E402
-from app.registry import DOCUMENT_MODELS  # noqa: E402
+from app.registry import CARE_DOCUMENT_MODELS, DOCUMENT_MODELS  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -56,11 +56,30 @@ async def mongo() -> AsyncIterator[object]:
             pytest.fail("TEST_MONGODB_URI is required in CI")
         pytest.skip("TEST_MONGODB_URI is not set (needs a real MongoDB replica set)")
     name = f"nhc_test_{uuid.uuid4().hex[:12]}"
-    await db.connect(uri, name, DOCUMENT_MODELS)
+    care_name = f"{name}_care"
+    await db.connect(
+        uri,
+        name,
+        DOCUMENT_MODELS,
+        care_uri=uri,
+        care_db_name=care_name,
+        care_models=CARE_DOCUMENT_MODELS,
+    )
     database = db.get_database()
-    await run_migrations(database)
+    care_database = db.get_care_database()
+    care_migrations = {
+        "0006_care_users",
+        "0007_care_core",
+        "0008_care_ops",
+        "0010_care_client_consents",
+        "0011_visit_sync_cursor",
+        "0012_care_track_c",
+    }
+    await run_migrations(database, exclude=care_migrations)
+    await run_migrations(care_database, only=care_migrations)
     try:
         yield database
     finally:
         await database.client.drop_database(name)
+        await database.client.drop_database(care_name)
         await db.disconnect()

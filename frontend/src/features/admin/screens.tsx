@@ -1,3 +1,4 @@
+import { CareScreenRouter } from './care/CareScreenPage';
 import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityPage } from './activity';
@@ -25,6 +26,7 @@ export const adminScreens: Partial<Record<string, ComponentType>> = {
   '/admin/settings': SettingsPage,
   '/admin/users': UsersPage,
   '/admin/reports': ReportsPage,
+  '/admin/care': CareScreenRouter,
 };
 
 /** Title only. No copy is invented for screens that are not built yet. */

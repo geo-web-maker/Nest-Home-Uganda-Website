@@ -9,7 +9,9 @@ export type AdminUser = {
   last_login: string | null;
   status: 'active' | 'invited';
   active: boolean;
+  kind: string;
+  reach: 'own' | 'team' | 'all';
 };
 export type AdminUserPage = { items: AdminUser[]; total: number; page: number; page_size: number };
-export type UserInvite = { name: string; email: string; scopes: string[] };
-export type UserUpdate = { scopes?: string[]; active?: boolean };
+export type UserInvite = { name: string; email: string; scopes: string[]; preset?: 'nurse' | 'supervisor' | 'admin' | 'executive' | 'super_admin'; kind: 'staff' | 'nurse' | 'supervisor' | 'admin' | 'executive'; reach: 'own' | 'team' | 'all' };
+export type UserUpdate = { scopes?: string[]; active?: boolean; kind?: 'staff' | 'nurse' | 'supervisor' | 'admin' | 'executive'; reach?: 'own' | 'team' | 'all' };

@@ -10,7 +10,7 @@ from app.core import db
 from app.core.config import get_settings
 from app.core.errors import install_error_handlers
 from app.jobs import build_scheduler
-from app.registry import API_PREFIX, DOCUMENT_MODELS, ROUTERS
+from app.registry import API_PREFIX, CARE_DOCUMENT_MODELS, DOCUMENT_MODELS, ROUTERS
 
 
 @asynccontextmanager
@@ -19,7 +19,14 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     scheduler = None
     if settings.mongodb_uri:
-        await db.connect(settings.mongodb_uri, settings.mongodb_db, DOCUMENT_MODELS)
+        await db.connect(
+            settings.mongodb_uri,
+            settings.mongodb_db,
+            DOCUMENT_MODELS,
+            care_uri=settings.care_mongodb_uri or settings.mongodb_uri,
+            care_db_name=settings.care_mongodb_db,
+            care_models=CARE_DOCUMENT_MODELS,
+        )
         if settings.scheduler_enabled:
             scheduler = build_scheduler()
             scheduler.start()
@@ -48,7 +55,7 @@ def create_app() -> FastAPI:
         allow_origins=settings.cors_origin_list,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"],
-        allow_headers=["Authorization", "Content-Type", "X-CSRF-Token"],
+        allow_headers=["Authorization", "Content-Type", "X-CSRF-Token", "X-Client", "X-Device-ID"],
     )
 
     @app.middleware("http")
@@ -73,10 +80,18 @@ def create_app() -> FastAPI:
     async def health() -> JSONResponse:
         if not settings.mongodb_uri:
             return JSONResponse({"status": "ok", "env": settings.app_env, "database": "off"})
-        if await db.ping():
-            return JSONResponse({"status": "ok", "env": settings.app_env, "database": "ok"})
+        if await db.ping() and await db.ping_care():
+            return JSONResponse(
+                {"status": "ok", "env": settings.app_env, "database": "ok", "care_database": "ok"}
+            )
         return JSONResponse(
-            {"status": "degraded", "env": settings.app_env, "database": "down"}, status_code=503
+            {
+                "status": "degraded",
+                "env": settings.app_env,
+                "database": "down",
+                "care_database": "down",
+            },
+            status_code=503,
         )
 
     for router in ROUTERS:

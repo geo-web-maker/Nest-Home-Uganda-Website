@@ -254,6 +254,9 @@ export function BookingForm({
         ))}
       </Field>
 
+      <p className={styles.medicalDetailsWarning} role="note">
+        {copy.medicalDetailsWarning}
+      </p>
       <Field
         kind="textarea"
         label={copy.note}

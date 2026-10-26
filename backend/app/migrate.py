@@ -20,11 +20,20 @@ def discover(directory: Path = MIGRATIONS_DIR) -> list[Path]:
     return sorted(p for p in directory.glob("[0-9][0-9][0-9][0-9]_*.py"))
 
 
-async def run_migrations(db: AsyncDatabase, directory: Path = MIGRATIONS_DIR) -> list[str]:
+async def run_migrations(
+    db: AsyncDatabase,
+    directory: Path = MIGRATIONS_DIR,
+    exclude: set[str] | None = None,
+    only: set[str] | None = None,
+) -> list[str]:
     """Return the names of the scripts that ran this time."""
     ran: list[str] = []
     done = {doc["_id"] async for doc in db["migrations"].find({}, {"_id": 1})}
     for path in discover(directory):
+        if exclude and path.stem in exclude:
+            continue
+        if only is not None and path.stem not in only:
+            continue
         if path.stem in done:
             continue
         spec = importlib.util.spec_from_file_location(f"migration_{path.stem}", path)
@@ -47,10 +56,27 @@ async def _main() -> None:
     if not settings.mongodb_uri:
         raise SystemExit("MONGODB_URI is empty.")
     client = AsyncMongoClient(settings.mongodb_uri, tz_aware=True)
+    care_client = (
+        client
+        if (settings.care_mongodb_uri or settings.mongodb_uri) == settings.mongodb_uri
+        else AsyncMongoClient(settings.care_mongodb_uri, tz_aware=True)
+    )
+    care_names = {
+        "0006_care_users",
+        "0007_care_core",
+        "0008_care_ops",
+        "0010_care_client_consents",
+        "0011_visit_sync_cursor",
+        "0012_care_track_c",
+    }
     try:
-        ran = await run_migrations(client[settings.mongodb_db])
-        print("ran:", ", ".join(ran) if ran else "nothing to do")  # noqa: T201
+        main_ran = await run_migrations(client[settings.mongodb_db], exclude=care_names)
+        care_ran = await run_migrations(care_client[settings.care_mongodb_db], only=care_names)
+        print("main ran:", ", ".join(main_ran) if main_ran else "nothing to do")  # noqa: T201
+        print("care ran:", ", ".join(care_ran) if care_ran else "nothing to do")  # noqa: T201
     finally:
+        if care_client is not client:
+            await care_client.close()
         await client.close()
 
 

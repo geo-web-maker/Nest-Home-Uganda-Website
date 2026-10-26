@@ -18,7 +18,11 @@ class User(TimestampedDocument):
     last_failed_at: datetime | None = None
     locked_until: datetime | None = None
     last_login_at: datetime | None = None
+    invite_accepted_at: datetime | None = None
     preferred_language: str = "en"
+    kind: str = "staff"
+    reach: str = "all"
+    phone_e164: str | None = None
 
     class Settings:
         name = "users"
@@ -40,6 +44,7 @@ class PasswordReset(TimestampedDocument):
     token_hash: str
     expires_at: datetime  # TTL index (migration)
     used_at: datetime | None = None
+    purpose: str = "reset"  # reset | invite; used to prevent cross-purpose link redemption
 
     class Settings:
         name = "password_resets"

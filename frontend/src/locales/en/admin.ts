@@ -1,3 +1,4 @@
+import { adminCareEn } from './adminCare';
 /** English copy for the admin screens. Permission checks are based on scopes. */
 export const adminEn = {
   nav: {
@@ -10,8 +11,10 @@ export const adminEn = {
     users: 'Users and scopes',
     reports: 'Reports',
     activity: 'Activity log',
+    care: 'Care operations',
   },
   groups: { work: 'Work', manage: 'Manage' },
+  care: adminCareEn,
   layout: {
     sidebarLabel: 'Admin',
     shortcutsLabel: 'Admin shortcuts',

@@ -1,7 +1,8 @@
 name: ci
 on:
+  workflow_dispatch:
   push:
-    branches: [main, "batch-*"]
+    branches: [main, "batch-*", "nurse-module"]
   pull_request:
 
 jobs:
@@ -15,6 +16,15 @@ jobs:
       - name: Motor must not be used
         run: |
           if grep -rniE "^motor==|import motor|from motor" backend --include=*.py --include=*.lock --include=*.toml; then echo "Motor is forbidden (Beanie 2 uses PyMongo async)"; exit 1; fi
+      - name: Firebase is limited to approved push integration files
+        run: |
+          if git grep -nEi 'firebase|googleapis.com/oauth2|fcm.googleapis.com' -- '*.py' '*.ts' '*.tsx' '*.js' '*.mjs' ':!backend/app/modules/push/**' ':!nurse/src/platform/push.ts' ':!frontend/src/admin-native/push.ts' ':!docs/**' ':!reference/**' ':!.github/workflows/**' ':!.env.example'; then echo 'push provider code is outside the approved integration files'; exit 1; fi
+      - name: No remote fonts or CDN URLs
+        run: |
+          if git grep -nE 'fonts\.(googleapis|gstatic)\.com|unpkg\.com|cdn\.jsdelivr\.net' -- ':!docs/**' ':!reference/**'; then echo "remote font or CDN dependency is forbidden"; exit 1; fi
+      - name: No Google-hosted CSS
+        run: |
+          if git grep -nEi 'googleapis\.com/css|fonts\.googleapis\.com' -- ':!docs/**' ':!reference/**'; then echo "Google-hosted CSS or fonts are forbidden"; exit 1; fi
       - name: No roles in code (scope model only)
         run: |
           if grep -rnE "require_roles|user_role|UserRole" backend/app frontend/src; then echo "roles are forbidden, use scopes"; exit 1; fi
@@ -36,6 +46,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run test
       - run: npm run build
+      - run: npm run build:admin-native
       - run: npm run format:check
 
   backend:
@@ -110,3 +121,32 @@ jobs:
           path: |
             frontend/test-results
             frontend/playwright-report
+
+  ops-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install shellcheck-py
+      - name: Check owner-run scripts and environment docs
+        run: |
+          bash -n scripts/backup-mongodb-to-b2.sh
+          bash -n scripts/restore-mongodb-from-b2.sh
+          shellcheck scripts/backup-mongodb-to-b2.sh scripts/restore-mongodb-from-b2.sh
+          python scripts/gen_env_docs.py --check
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the backend image (not pushed)
+        run: docker build --tag nest-home-care-api:ci backend
+      - name: The image starts and /health answers without a database
+        run: |
+          docker run -d --name api -p 8000:8000 -e SCHEDULER_ENABLED=false --entrypoint sh nest-home-care-api:ci \
+            -c "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
+          for i in $(seq 1 20); do curl -s -o /dev/null http://127.0.0.1:8000/api/v1/health && break || sleep 2; done
+          curl -s -i http://127.0.0.1:8000/api/v1/health | head -n 1
+          docker logs api | tail -n 20

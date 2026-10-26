@@ -10,6 +10,8 @@ from fastapi import APIRouter
 from fastapi.routing import APIRoute
 
 from app.modules.activity import router as activity_router
+from app.modules.app_releases import router as app_releases_router
+from app.modules.app_releases.models import AppRelease
 from app.modules.applications import router as applications_router
 from app.modules.applications.models import Application
 from app.modules.areas import router as areas_router
@@ -19,6 +21,20 @@ from app.modules.articles.models import Article
 from app.modules.audit.models import AuditLog, ContentVersion
 from app.modules.auth import router as auth_router
 from app.modules.auth.models import PasswordReset, RefreshToken, User
+from app.modules.care_admin import router as care_admin_router
+from app.modules.care_clients.models import CareClient
+from app.modules.care_ops import router as care_ops_router
+from app.modules.care_ops.models import (
+    CareAlert,
+    CareConsent,
+    CareDataRequest,
+    CareInboxNotification,
+    CareSetting,
+    CareTimesheet,
+    PushDelivery,
+    SOSCase,
+    SOSEvent,
+)
 from app.modules.clicks import router as clicks_router
 from app.modules.clicks.models import ClickStat
 from app.modules.dashboard import router as dashboard_router
@@ -26,13 +42,20 @@ from app.modules.enquiries import router as enquiries_router
 from app.modules.enquiries.models import Enquiry
 from app.modules.faqs import router as faqs_router
 from app.modules.faqs.models import Faq
+from app.modules.field import router as field_router
+from app.modules.field_ops import router as field_ops_router
+from app.modules.field_ops.models import SyncPushReceipt
+from app.modules.flags.models import VisitFlag
 from app.modules.jobs import router as jobs_router
 from app.modules.jobs.models import Job
 from app.modules.media import router as media_router
 from app.modules.media.models import Media
 from app.modules.notifications.models import SmsLog
+from app.modules.nurses import router as nurses_router
+from app.modules.nurses.models import Device, NurseProfile
 from app.modules.pages import router as pages_router
 from app.modules.pages.models import ContentPage
+from app.modules.places.models import CarePlace, PlaceStay
 from app.modules.pricing import router as pricing_router
 from app.modules.pricing.models import PricingBlock
 from app.modules.reports import router as reports_router
@@ -45,6 +68,14 @@ from app.modules.team.models import TeamMember
 from app.modules.testimonials import router as testimonials_router
 from app.modules.testimonials.models import Testimonial
 from app.modules.users import router as users_router
+from app.modules.visits.models import (
+    Visit,
+    VisitAnnotation,
+    VisitEvent,
+    VisitNote,
+    VisitPhoto,
+    VisitSyncTombstone,
+)
 
 API_PREFIX = "/api/v1"
 
@@ -71,9 +102,36 @@ DOCUMENT_MODELS: list[type[Document]] = [
     SiteSetting,
 ]
 
+CARE_DOCUMENT_MODELS: list[type[Document]] = [
+    NurseProfile,
+    Device,
+    CareClient,
+    CarePlace,
+    PlaceStay,
+    Visit,
+    VisitEvent,
+    VisitNote,
+    VisitPhoto,
+    VisitAnnotation,
+    VisitSyncTombstone,
+    VisitFlag,
+    CareAlert,
+    CareTimesheet,
+    SOSCase,
+    CareInboxNotification,
+    CareDataRequest,
+    CareSetting,
+    SOSEvent,
+    CareConsent,
+    PushDelivery,
+    SyncPushReceipt,
+    AppRelease,
+]
+
 ROUTERS: list[APIRouter] = [
     auth_router.router,
     auth_router.admin_router,
+    app_releases_router.router,
     services_router.public_router,
     services_router.admin_router,
     enquiries_router.public_router,
@@ -105,6 +163,12 @@ ROUTERS: list[APIRouter] = [
     activity_router.router,
     users_router.public_router,
     users_router.admin_router,
+    nurses_router.router,
+    nurses_router.field_router,
+    field_router.router,
+    field_ops_router.router,
+    care_admin_router.router,
+    care_ops_router.router,
 ]
 
 

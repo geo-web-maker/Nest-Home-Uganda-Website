@@ -1,0 +1,52 @@
+name: nurse-app
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'nurse-module']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  nurse:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nurse
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require a committed lockfile
+        run: |
+          test -f package-lock.json || { echo "nurse/package-lock.json is missing. Run the nurse-lockfile workflow, review the result, and commit it."; exit 1; }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: nurse/package-lock.json
+      - name: Nurse packaging and Android override script tests
+        working-directory: .
+        run: node --test scripts/__tests__/nurse-package.test.mjs scripts/__tests__/apply-android-overrides.test.mjs scripts/__tests__/check-nurse-styles.test.mjs
+      - name: Install pinned nurse dependencies
+        run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: node ../scripts/check-no-external.mjs dist
+      - run: node ../scripts/check-bundle-size.mjs dist
+      - run: node ../scripts/check-fonts.mjs
+      - run: node ../scripts/check-strings.mjs dist
+      - run: node ../scripts/check-nurse-styles.mjs src/styles.css
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Run nurse browser acceptance tests
+        run: npm run test:e2e
+      - name: Upload nurse Playwright diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nurse-playwright-results
+          path: |
+            nurse/test-results
+            nurse/playwright-report
+          if-no-files-found: ignore
+          retention-days: 14

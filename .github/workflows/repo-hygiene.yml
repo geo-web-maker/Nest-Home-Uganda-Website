@@ -1,0 +1,32 @@
+name: repo-hygiene
+
+# One-off and self-healing cleanup: untracks generated files that were committed by mistake
+# (backend/*.egg-info) so nobody has to run git commands locally. Does nothing when already clean.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, nurse-module]
+
+permissions:
+  contents: write
+
+jobs:
+  untrack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Untrack egg-info
+        run: |
+          if [ -n "$(git ls-files 'backend/*.egg-info/*')" ]; then
+            git rm -r --cached --quiet backend/nest_home_care_backend.egg-info
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'chore: untrack backend egg-info'
+            git pull --rebase
+            git push
+          else
+            echo 'Nothing to untrack.'
+          fi

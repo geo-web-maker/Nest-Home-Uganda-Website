@@ -78,3 +78,35 @@ def route_required_scopes(route: APIRoute) -> tuple[str, ...] | None:
             return tuple(scopes)
         stack.extend(dep.dependencies)
     return None
+
+
+@dataclass(frozen=True)
+class ReachContext:
+    user_id: str
+    reach: str
+    team_nurse_ids: tuple[str, ...] = ()
+    is_superadmin: bool = False
+
+
+def reach_filter(ctx: ReachContext, nurse_field: str = "nurse_id") -> dict:
+    if ctx.is_superadmin or ctx.reach == "all":
+        return {}
+    if ctx.reach == "own":
+        return {nurse_field: ctx.user_id}
+    if ctx.reach == "team":
+        return {nurse_field: {"$in": list(ctx.team_nurse_ids)}}
+    return {nurse_field: {"$in": []}}
+
+
+async def get_care_actor(principal: Annotated[Principal, Depends(get_principal)]) -> ReachContext:
+    if principal.is_superadmin:
+        return ReachContext(principal.user_id, "all", (), True)
+    from app.modules.auth import repository as auth_repo
+    from app.modules.nurses.models import NurseProfile
+
+    user = await auth_repo.user_by_id(principal.user_id)
+    if user is None or not user.is_active:
+        raise Unauthorised()
+    team = await NurseProfile.find(NurseProfile.supervisor_id == principal.user_id).to_list()
+    reach = user.reach if user.reach in {"own", "team", "all"} else "own"
+    return ReachContext(principal.user_id, reach, tuple(profile.user_id for profile in team), False)

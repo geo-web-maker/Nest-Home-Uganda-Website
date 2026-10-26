@@ -55,7 +55,27 @@ async def login(
     email: str, password: str, ip_hash: str, user_agent: str | None, now: datetime | None = None
 ) -> Session:
     now = now or datetime.now(UTC)
-    user = await repo.user_by_email(email)
+    from app.core.phone import normalise_e164
+    from app.modules.settings.care_env import env_value
+    from app.modules.settings.models import SiteSetting
+
+    identifier = email.strip()
+    setting = await SiteSetting.find_one(SiteSetting.key == "auth.login_identifier")
+    login_mode = (
+        setting.value
+        if setting and setting.value in {"email", "phone", "either"}
+        else (env_value("auth.login_identifier") or "either")
+    )
+    is_email = "@" in identifier
+    if login_mode == "email" and not is_email:
+        user = None
+    elif login_mode == "phone" and is_email:
+        user = None
+    elif is_email:
+        user = await repo.user_by_email(identifier)
+    else:
+        normalized = normalise_e164(identifier)
+        user = await repo.user_by_phone(normalized) if normalized else None
     if user is None:
         verify_password(password, DUMMY_PASSWORD_HASH)  # same cost as a real check
         await audit.record(None, "auth.login_failed", "user", None, None, ip_hash=ip_hash)

@@ -32,17 +32,22 @@ describe('UsersPage', () => {
     vi.mocked(apiClient.get).mockImplementation(async (path: string) =>
       path === '/admin/scopes'
         ? [{ id: 'reports:read', group: 'Reports', label: 'Read reports' }]
-        : { items: [], total: 0, page: 1, page_size: 100 },
+        : path === '/admin/scope-presets'
+          ? { nurse: ['field:use', 'sos:send'] }
+          : { items: [], total: 0, page: 1, page_size: 100 },
     );
     setup();
     expect(await screen.findByText('No users found.')).toBeInTheDocument();
     expect(apiClient.get).toHaveBeenCalledWith('/admin/scopes');
+    expect(apiClient.get).toHaveBeenCalledWith('/admin/scope-presets');
   });
   it('renders user access counts', async () => {
     vi.mocked(apiClient.get).mockImplementation(async (path: string) =>
       path === '/admin/scopes'
         ? []
-        : {
+        : path === '/admin/scope-presets'
+          ? { nurse: ['field:use', 'sos:send'] }
+          : {
             items: [
               {
                 id: 'u2',

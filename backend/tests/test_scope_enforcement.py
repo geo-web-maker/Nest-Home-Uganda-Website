@@ -15,12 +15,18 @@ from tests.conftest import auth, make_token
 
 FAKE_ID = "0" * 24
 WRITE_METHODS = {"POST", "PATCH", "PUT", "DELETE"}
+# This is the sole admin-path exception: access is a short-lived HMAC URL, issued only
+# after a scope/reach check and audited on every successful byte delivery.
+SIGNED_PHOTO_STREAM = "/api/v1/admin/care/visits/{visit_id}/photos/{photo_id}/stream"
+SUPERADMIN_ONLY_PATHS = {"/api/v1/admin/app-releases"}
 
 
 def admin_cases() -> list[tuple[str, str]]:
     cases = []
     for path, route in iter_api_routes():
-        if path.startswith("/api/v1/admin"):
+        if (
+            path.startswith("/api/v1/admin") or path.startswith("/api/v1/field")
+        ) and path != SIGNED_PHOTO_STREAM:
             for method in sorted(route.methods - {"HEAD", "OPTIONS"}):
                 cases.append((method, path))
     return cases
@@ -73,7 +79,19 @@ def test_read_and_write_split(method: str, path: str) -> None:
     if method == "GET":
         assert not any(s.endswith(":write") for s in required)
     if method in WRITE_METHODS:
-        assert any(s.endswith(":write") or s.endswith(":manage") for s in required)
+        # Action-specific scopes are write capabilities too. They are intentionally
+        # narrower than a broad module-wide :write grant (for example photos:hide).
+        write_capabilities = (
+            ":write",
+            ":manage",
+            ":hide",
+            ":send",
+            ":respond",
+            ":approve",
+            ":export",
+            ":use",
+        )
+        assert any(s.endswith(write_capabilities) for s in required)
 
 
 @pytest.mark.parametrize(("method", "path"), admin_cases())
@@ -113,5 +131,34 @@ async def test_exact_scopes_and_superadmin_pass_authorisation(
 ) -> None:
     """Passing means not 401 or 403. The handler may then fail (422, 404 or no database)."""
     required = list(route_required_scopes(route_for(method, path)) or ())
-    assert await call(client, method, path, auth(make_token(required))) not in (401, 403)
+    scoped_headers = auth(make_token(required))
+    if path in SUPERADMIN_ONLY_PATHS and method == "POST":
+        response = await client.post(
+            concrete(path),
+            headers=scoped_headers,
+            json={
+                "id": "release-coverage-0001",
+                "platform": "android",
+                "version": "1.0.0",
+                "min_supported_version": "1.0.0",
+            },
+        )
+        scoped_status = response.status_code
+    else:
+        scoped_status = await call(client, method, path, scoped_headers)
+    if path in SUPERADMIN_ONLY_PATHS:
+        assert scoped_status == 403, "a non-superadmin must not publish or list releases"
+    else:
+        assert scoped_status not in (401, 403)
     assert await call(client, method, path, auth(make_token([], superadmin=True))) not in (401, 403)
+
+
+def test_signed_photo_stream_is_the_only_admin_path_without_a_scope_dependency() -> None:
+    paths = {path for _, path in iter_api_routes() if path.startswith("/api/v1/admin")}
+    assert SIGNED_PHOTO_STREAM in paths
+    unscoped = [
+        path
+        for path, route in iter_api_routes()
+        if path.startswith("/api/v1/admin") and route_required_scopes(route) is None
+    ]
+    assert unscoped == [SIGNED_PHOTO_STREAM]
