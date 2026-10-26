@@ -9,7 +9,6 @@ const deps = { ...pkg.dependencies, ...pkg.devDependencies };
 // Declared on purpose even though no source file imports them yet. Each entry names the phase
 // that will use it. Remove the entry when the phase lands. The test fails on stale entries.
 const PLANNED = {
-  'react-router-dom': 'B3 router and shell',
   '@byteowls/capacitor-sms': 'B13 SOS SMS fallback (opens the composer only)',
   '@capacitor/android': 'native project, used by the Capacitor CLI',
 };

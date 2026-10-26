@@ -27,8 +27,9 @@ export function SafetyTimerPrompt({ visit, onOpenVisit }: Props) {
 
   if (!eligible || !visit || now < deadline || dismissed) return null;
 
+  const activeVisit = visit;
   function dismiss() {
-    localStorage.setItem(dismissalKey(visit), 'true');
+    localStorage.setItem(dismissalKey(activeVisit), 'true');
     setDismissed(true);
   }
 

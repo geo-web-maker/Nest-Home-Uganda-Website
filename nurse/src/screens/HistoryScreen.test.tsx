@@ -16,7 +16,7 @@ describe('history screen', () => {
   it('lists cached history and requests another page only after selection', () => {
     const onLoadMore = vi.fn();
     render(<HistoryScreen history={[row]} loading={false} hasMore onLoadMore={onLoadMore} />);
-    expect(screen.getByText(/Reference: visit-old/)).toBeTruthy();
+    expect(screen.getByText(/Visit reference: visit-old/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /load more visits/i }));
     expect(onLoadMore).toHaveBeenCalledTimes(1);
   });

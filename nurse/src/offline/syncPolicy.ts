@@ -35,7 +35,7 @@ export function isRetryableSyncFailure(error: unknown): boolean {
   return status < 400 || status >= 500;
 }
 
-export function syncFailureMessage(error: unknown, fallback = copy.sync.failures.unavailable): string {
+export function syncFailureMessage(error: unknown, fallback: string = copy.sync.failures.unavailable): string {
   const failure = getSyncFailure(error);
   return failure.detail || failure.message || fallback;
 }
