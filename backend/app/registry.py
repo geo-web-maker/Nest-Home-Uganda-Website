@@ -10,8 +10,8 @@ from fastapi import APIRouter
 from fastapi.routing import APIRoute
 
 from app.modules.activity import router as activity_router
-from app.modules.app_releases.router import router as app_releases_api_router
 from app.modules.app_releases.models import AppRelease
+from app.modules.app_releases.router import router as app_releases_api_router
 from app.modules.applications import router as applications_router
 from app.modules.applications.models import Application
 from app.modules.areas import router as areas_router

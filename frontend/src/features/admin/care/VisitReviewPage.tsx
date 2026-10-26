@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiClient } from '../../../lib/api/client';
@@ -11,6 +12,7 @@ type Review={visit?:any;events?:any[];notes?:any[];flags?:any[];photos?:any[];an
 export function VisitReviewPage(){
  const {id=''}=useParams(); const navigate=useNavigate(); const [data,setData]=useState<Review|null>(null); const [note,setNote]=useState(''); const [error,setError]=useState('');
  async function load(){try{setData(await apiClient.get<Review>(`/admin/care/visits/${encodeURIComponent(id)}`));}catch(e){setError(e instanceof Error?e.message:'Visit could not be loaded.');}}
+ // eslint-disable-next-line react-hooks/exhaustive-deps
  useEffect(()=>{void load();},[id]);
  if(!data)return <><PageHeader title="Visit review"/><p>{error||'Loading…'}</p></>;
  const events=[...(data.events??[])].sort((a,b)=>String(a.server_received_at??a.device_time??'').localeCompare(String(b.server_received_at??b.device_time??'')));
