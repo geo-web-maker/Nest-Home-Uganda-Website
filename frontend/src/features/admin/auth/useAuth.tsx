@@ -35,10 +35,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || state.status !== 'signedIn') return;
-    let deviceId=window.localStorage.getItem('nhc.admin.device-id');
-    if (!deviceId) { deviceId=crypto.randomUUID(); window.localStorage.setItem('nhc.admin.device-id',deviceId); }
+    let deviceId = window.localStorage.getItem('nhc.admin.device-id');
+    if (!deviceId) {
+      deviceId = crypto.randomUUID();
+      window.localStorage.setItem('nhc.admin.device-id', deviceId);
+    }
     void registerAdminPush(async (pushToken) => {
-      await apiClient.post('/admin/care/devices',{device_id:deviceId,platform:Capacitor.getPlatform(),push_token:pushToken});
+      await apiClient.post('/admin/care/devices', {
+        device_id: deviceId,
+        platform: Capacitor.getPlatform(),
+        push_token: pushToken,
+      });
     });
   }, [state.status]);
 

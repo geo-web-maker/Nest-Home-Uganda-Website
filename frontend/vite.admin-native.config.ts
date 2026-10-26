@@ -3,6 +3,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
-  build: { outDir: 'dist-admin-native', emptyOutDir: true, rollupOptions: { input: resolve(__dirname, 'admin-native.html') } },
+  build: {
+    outDir: 'dist-admin-native',
+    emptyOutDir: true,
+    rollupOptions: { input: resolve(__dirname, 'admin-native.html') },
+  },
   server: { host: '0.0.0.0' },
 });

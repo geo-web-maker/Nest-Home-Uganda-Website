@@ -48,22 +48,22 @@ describe('UsersPage', () => {
         : path === '/admin/scope-presets'
           ? { nurse: ['field:use', 'sos:send'] }
           : {
-            items: [
-              {
-                id: 'u2',
-                name: 'Editor',
-                email: 'editor@example.invalid',
-                scopes: ['content:read'],
-                is_superadmin: false,
-                last_login: null,
-                status: 'active',
-                active: true,
-              },
-            ],
-            total: 1,
-            page: 1,
-            page_size: 100,
-          },
+              items: [
+                {
+                  id: 'u2',
+                  name: 'Editor',
+                  email: 'editor@example.invalid',
+                  scopes: ['content:read'],
+                  is_superadmin: false,
+                  last_login: null,
+                  status: 'active',
+                  active: true,
+                },
+              ],
+              total: 1,
+              page: 1,
+              page_size: 100,
+            },
     );
     setup();
     expect(await screen.findByText('Editor')).toBeInTheDocument();

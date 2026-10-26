@@ -1,3 +1,48 @@
-.wrap{display:grid;gap:12px}.map{min-height:220px;border:1px solid var(--border);border-radius:12px;background-size:256px 256px;background-repeat:repeat;display:grid;place-items:center;position:relative;overflow:hidden}.pin{font-size:32px;border:2px solid currentColor;border-radius:50%;width:48px;height:48px;display:grid;place-items:center;background:var(--surface)}.caption{position:absolute;bottom:8px;left:8px;background:var(--surface);padding:4px 8px;border-radius:6px}.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}@media(max-width:700px){.fields{grid-template-columns:1fr}}
+.wrap {
+  display: grid;
+  gap: 12px;
+}
+.map {
+  min-height: 220px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-size: 256px 256px;
+  background-repeat: repeat;
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+}
+.pin {
+  font-size: 32px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+}
+.caption {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: var(--surface);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 700px) {
+  .fields {
+    grid-template-columns: 1fr;
+  }
+}
 
-.marker{font-size:26px;font-weight:800}
+.marker {
+  font-size: 26px;
+  font-weight: 800;
+}
