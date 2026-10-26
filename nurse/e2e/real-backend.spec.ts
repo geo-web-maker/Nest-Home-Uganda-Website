@@ -35,13 +35,15 @@ test('nurse signs in, arrives, and the visit is in progress and visible to an ad
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
 
-  // First sign-in shows the location disclosure once.
-  const accept = page.getByRole('button', { name: 'Accept and continue' });
-  if (await accept.isVisible({ timeout: 5_000 }).catch(() => false)) await accept.click();
-
   await expect(page.getByText('E2E Client')).toBeVisible();
   await page.getByText('E2E Client').first().click();
-  await page.getByRole('button', { name: 'Arrive' }).first().click();
+  await page.getByRole('button', { name: 'Arrive', exact: true }).first().click();
+  // The first arrival on a device shows the location disclosure, then continues to the arrival sheet.
+  const accept = page.getByRole('button', { name: 'Accept and continue' });
+  if (await accept.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await accept.click();
+    await page.getByRole('button', { name: 'Continue to visits' }).click();
+  }
   // The arrival sheet asks for one confirmation; after saving, the app returns to the Today list.
   await page.getByRole('button', { name: 'Confirm arrival' }).click();
   await expect(page.getByText('In progress').first()).toBeVisible();
