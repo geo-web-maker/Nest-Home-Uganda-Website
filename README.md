@@ -8,7 +8,7 @@ Start here: `docs/STATE.md` (what is done, what is next) and `docs/BUILDER_INSTR
 ```
 bash scripts/preflight.sh                # environment check
 cp .env.example .env                     # fill in locally, never commit
-docker compose -f docker-compose.dev.yml up -d   # MongoDB replica set + MinIO
+docker compose -f docker-compose.dev.yml up -d   # MongoDB replica set (S3 for e2e is moto, started by local-tests/run.sh)
 cd frontend && npm ci
 cd ../backend && python3 -m venv .venv && . .venv/bin/activate \
   && pip install -r requirements.lock && pip install -e . --no-deps

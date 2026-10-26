@@ -19,3 +19,4 @@ nurse/android/
 
 # Python packaging output
 *.egg-info/
+.venv-local/
