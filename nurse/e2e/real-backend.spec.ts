@@ -42,10 +42,9 @@ test('nurse signs in, arrives, and the visit is in progress and visible to an ad
   await expect(page.getByText('E2E Client')).toBeVisible();
   await page.getByText('E2E Client').first().click();
   await page.getByRole('button', { name: 'Arrive' }).first().click();
-  // The arrival sheet asks for one confirmation; its button is the second "Arrive".
-  const confirm = page.getByRole('button', { name: 'Arrive' }).last();
-  if (await confirm.isVisible()) await confirm.click();
-  await expect(page.getByText('Arrived')).toBeVisible();
+  // The arrival sheet asks for one confirmation; after saving, the app returns to the Today list.
+  await page.getByRole('button', { name: 'Confirm arrival' }).click();
+  await expect(page.getByText('In progress').first()).toBeVisible();
 
   // Server-side proof, not just UI text: the nurse's visit is in progress...
   const nurse = await bearer(request, nurseEmail);
