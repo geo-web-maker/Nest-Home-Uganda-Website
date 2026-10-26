@@ -1,2 +1,4 @@
 import { CareScreenPage } from '../CareScreenPage';
-export function ReadinessPage(){ return <CareScreenPage screen="readiness" />; }
+export function ReadinessPage() {
+  return <CareScreenPage screen="readiness" />;
+}
