@@ -1,8 +1,8 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str = Field(min_length=3, max_length=254)
     password: str = Field(min_length=1, max_length=200)
 
 
@@ -26,3 +26,14 @@ class ScopeOut(BaseModel):
     id: str
     group: str
     label: str
+
+
+class NativeLoginResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    expires_in: int
+    user: UserPublic
+
+
+class NativeRefreshRequest(BaseModel):
+    refresh_token: str = Field(min_length=20, max_length=500)

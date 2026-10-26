@@ -1,0 +1,49 @@
+name: nurse-lockfile
+
+# Generates nurse/package-lock.json from the exact pins in nurse/package.json and commits it.
+# Runs on every push to main or nurse-module (it only commits when the lockfile changed) or by hand.
+# Review the committed lockfile once. Commits made with GITHUB_TOKEN do not start other
+# workflows, so re-run the nurse-app workflow after this one finishes.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, nurse-module]
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: nurse-lockfile-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate the lockfile without running install scripts
+        working-directory: nurse
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Commit the lockfile when it changed, then start the nurse workflows
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "$(git status --porcelain -- nurse/package-lock.json)" ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add nurse/package-lock.json
+            git commit -m 'chore(nurse): update package-lock.json'
+            git pull --rebase
+            git push
+            gh workflow run nurse.yml --ref "${{ github.ref_name }}"
+            gh workflow run e2e-real-backend.yml --ref "${{ github.ref_name }}"
+          else
+            echo 'Lockfile already up to date.'
+          fi

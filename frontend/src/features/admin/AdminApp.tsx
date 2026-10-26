@@ -34,6 +34,8 @@ export function Component() {
               );
               return item.path === '/admin' ? (
                 <Route key={item.path} index element={element} />
+              ) : item.path === '/admin/care' ? (
+                <Route key={item.path} path="care/*" element={element} />
               ) : (
                 <Route key={item.path} path={relative(item.path)} element={element} />
               );

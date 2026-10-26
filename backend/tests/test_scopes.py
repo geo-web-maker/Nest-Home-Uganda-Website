@@ -12,6 +12,12 @@ EXPECTED = {
     "content:publish", "media:write", "translations:write", "translations:review",
     "settings:read", "settings:write", "users:read", "users:write", "reports:read",
     "reports:export", "activity:read", "system:manage",
+    "field:use", "flags:read", "flags:write", "sos:send",
+    "nurses:read", "nurses:write", "carecfg:read", "carecfg:write",
+    "clients:read", "clients:write", "places:read", "places:write",
+    "visits:read", "visits:write", "photos:read", "photos:hide",
+    "alerts:read", "alerts:write", "timesheets:read", "timesheets:write",
+    "care-reports:read", "care-reports:export",
 }  # fmt: skip
 
 
@@ -86,6 +92,22 @@ def test_only_superadmin_grants_system_manage() -> None:
     with pytest.raises(Forbidden):
         change(a, new_scopes={"system:manage"})
     change(actor(set(), superadmin=True), new_scopes={"system:manage"})
+
+
+def test_scope_presets_contain_only_valid_non_superadmin_scopes() -> None:
+    from app.modules.auth.scopes import SCOPE_PRESETS
+
+    for name, scopes in SCOPE_PRESETS.items():
+        assert scopes <= ALL_SCOPE_IDS
+        if name != "super_admin":
+            assert "carecfg:write" not in scopes
+
+
+def test_only_superadmin_grants_carecfg_write() -> None:
+    a = actor({"users:write", "carecfg:write"})
+    with pytest.raises(Forbidden):
+        change(a, new_scopes={"carecfg:write"})
+    change(actor(set(), superadmin=True), new_scopes={"carecfg:write"})
 
 
 def test_only_superadmin_changes_superadmin_flag() -> None:

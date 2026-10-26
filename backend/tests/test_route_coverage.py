@@ -22,6 +22,7 @@ from app.registry import API_PREFIX, iter_api_routes
 
 ROOT = Path(__file__).resolve().parents[2]
 FRONTEND_SRC = ROOT / "frontend" / "src"
+NURSE_SRC = ROOT / "nurse" / "src"
 OPENAPI_JSON = FRONTEND_SRC / "types" / "openapi.json"
 
 WRITE_METHODS = {"POST", "PATCH", "PUT", "DELETE"}
@@ -37,6 +38,10 @@ PUBLIC_WRITES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/api/v1/auth/refresh"),
         ("POST", "/api/v1/auth/logout"),
         ("POST", "/api/v1/auth/set-password"),
+        ("POST", "/api/v1/auth/accept-invite"),
+        ("POST", "/api/v1/auth/native/login"),
+        ("POST", "/api/v1/auth/native/refresh"),
+        ("POST", "/api/v1/auth/native/logout"),
     }
 )
 
@@ -50,14 +55,16 @@ def all_cases() -> list[tuple[str, str]]:
 
 
 def test_every_route_is_public_auth_or_admin() -> None:
-    allowed = ("/api/v1/admin", "/api/v1/public", "/api/v1/auth")
+    allowed = ("/api/v1/admin", "/api/v1/public", "/api/v1/auth", "/api/v1/field")
     stray = [(m, p) for m, p in all_cases() if not p.startswith(allowed)]
     assert not stray, f"routes outside admin, public and auth: {stray}"
 
 
 def test_public_routes_only_read_or_are_allow_listed() -> None:
     writes = {
-        (m, p) for m, p in all_cases() if m in WRITE_METHODS and not p.startswith("/api/v1/admin")
+        (m, p)
+        for m, p in all_cases()
+        if m in WRITE_METHODS and not p.startswith(("/api/v1/admin", "/api/v1/field"))
     }
     assert writes == set(PUBLIC_WRITES), (
         f"unexpected public writes: {sorted(writes - PUBLIC_WRITES)}; "
@@ -88,6 +95,16 @@ def test_every_admin_module_prefix_has_routes() -> None:
         "/api/v1/admin/reports/export",
         "/api/v1/admin/activity",
         "/api/v1/admin/scopes",
+        "/api/v1/admin/care/clients",
+        "/api/v1/admin/care/visits",
+        "/api/v1/admin/care/settings",
+        "/api/v1/admin/care/alerts",
+        "/api/v1/admin/care/timesheets",
+        "/api/v1/admin/care/clients",
+        "/api/v1/admin/care/visits",
+        "/api/v1/admin/care/settings",
+        "/api/v1/admin/care/alerts",
+        "/api/v1/admin/care/timesheets",
     ):
         assert any(p == prefix or p.startswith(prefix + "/") for p in paths), prefix
 
@@ -99,7 +116,8 @@ CALL = re.compile(
     r"(['`])(/.*?)\2",
     re.DOTALL,
 )
-FETCH_PATH = re.compile(r"/api/v1(/(?:admin|public|auth)/[A-Za-z0-9_/\-]+)")
+FETCH_PATH = re.compile(r"/api/v1(/(?:admin|public|auth|field)/[A-Za-z0-9_/\-]+)")
+API_REQUEST = re.compile(r"\bapiRequest(?:<.*?>)?\s*\(\s*(['`])(/.*?)\1", re.DOTALL)
 TABS = re.compile(r"const tabs: ContentKind\[\] = \[(.*?)\];", re.DOTALL)
 
 
@@ -131,22 +149,34 @@ def frontend_calls() -> list[tuple[str, str, str]]:
     """(file, METHOD, path template) for every call in non-test source."""
     tabs = _content_tabs()
     calls: list[tuple[str, str, str]] = []
-    for file in sorted(FRONTEND_SRC.rglob("*.ts*")):
-        rel = str(file.relative_to(FRONTEND_SRC))
-        if ".test." in rel or rel.startswith("types/") or rel.endswith(".d.ts"):
+    for source_root in (FRONTEND_SRC, NURSE_SRC):
+        if not source_root.exists():
             continue
-        text = file.read_text()
-        found = [(m.group(1).upper(), m.group(3)) for m in CALL.finditer(text)]
-        # Plain `fetch` calls (file upload, export) carry the full /api/v1 path.
-        method_for_fetch = "POST" if "method: 'POST'" in text else "GET"
-        found += [(method_for_fetch, m.group(1)) for m in FETCH_PATH.finditer(text)]
-        for method, raw in found:
-            path = re.sub(r"\?.*$", "", raw)
-            if path.startswith("/admin/${tab}"):
-                for tab in tabs:
-                    calls.append((rel, method, path.replace("${tab}", tab)))
+        for file in sorted(source_root.rglob("*.ts*")):
+            rel = str(file.relative_to(ROOT))
+            if ".test." in rel or "/types/" in rel or rel.endswith(".d.ts"):
                 continue
-            calls.append((rel, method, re.sub(r"\$\{[^}]*\}", "{x}", path)))
+            text = file.read_text()
+            found = [(m.group(1).upper(), m.group(3)) for m in CALL.finditer(text)]
+            # The nurse PWA uses apiRequest(path, options), so inspect the immediate
+            # options object for the method rather than guessing from the whole file.
+            for match in API_REQUEST.finditer(text):
+                raw_path = match.group(2)
+                options = text[match.end() : match.end() + 240]
+                method_match = re.search(
+                    r"method\s*:\s*['\"](GET|POST|PATCH|PUT|DELETE)['\"]", options
+                )
+                found.append((method_match.group(1) if method_match else "GET", raw_path))
+            # Plain `fetch` calls (file upload, export) carry the full /api/v1 path.
+            method_for_fetch = "POST" if "method: 'POST'" in text else "GET"
+            found += [(method_for_fetch, m.group(1)) for m in FETCH_PATH.finditer(text)]
+            for method, raw in found:
+                path = re.sub(r"\?.*$", "", raw)
+                if path.startswith("/admin/${tab}"):
+                    for tab in tabs:
+                        calls.append((rel, method, path.replace("${tab}", tab)))
+                    continue
+                calls.append((rel, method, re.sub(r"\$\{[^}]*\}", "{x}", path)))
     return calls
 
 

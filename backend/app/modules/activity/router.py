@@ -18,5 +18,9 @@ async def activity_list(
     page: Annotated[PageParams, Depends(page_params)],
     start: Annotated[date | None, Query(alias="from")] = None,
     end: Annotated[date | None, Query(alias="to")] = None,
+    actor_id: Annotated[str | None, Query()] = None,
+    item_type: Annotated[str | None, Query()] = None,
+    item_id: Annotated[str | None, Query()] = None,
+    cursor: Annotated[str | None, Query()] = None,
 ) -> ActivityPage:
-    return await list_activity(page, start, end)
+    return await list_activity(page, start, end, actor_id, item_type, item_id, cursor)

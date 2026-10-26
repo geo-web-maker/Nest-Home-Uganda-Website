@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, Header, Request, Response
+from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Request, Response
 
 from app.core.config import get_settings
 from app.core.deps import Principal, get_principal, require_scopes
@@ -10,8 +10,15 @@ from app.core.errors import Forbidden, Unauthorised
 from app.core.rate_limit import client_ip, rate_limit
 from app.core.security import constant_time_equal, hash_ip
 from app.modules.auth import service
-from app.modules.auth.schemas import LoginRequest, ScopeOut, TokenResponse, UserPublic
-from app.modules.auth.scopes import SCOPES
+from app.modules.auth.schemas import (
+    LoginRequest,
+    NativeLoginResponse,
+    NativeRefreshRequest,
+    ScopeOut,
+    TokenResponse,
+    UserPublic,
+)
+from app.modules.auth.scopes import SCOPE_PRESETS, SCOPES
 
 REFRESH_COOKIE = "nhc_refresh"
 CSRF_COOKIE = "nhc_csrf"
@@ -84,6 +91,59 @@ async def login(body: LoginRequest, request: Request, response: Response) -> Tok
 
 
 @router.post(
+    "/native/login",
+    response_model=NativeLoginResponse,
+    dependencies=[Depends(rate_limit("auth_native", 10, 60))],
+)
+async def native_login(
+    body: LoginRequest,
+    request: Request,
+    x_client: Annotated[str | None, Header(alias="X-Client")] = None,
+) -> NativeLoginResponse:
+    if x_client != "native":
+        raise HTTPException(400, detail="Native client header required")
+    session = await service.login(
+        body.email, body.password, hash_ip(client_ip(request)), request.headers.get("user-agent")
+    )
+    return NativeLoginResponse(
+        access_token=session.access_token,
+        refresh_token=session.refresh_token,
+        expires_in=session.expires_in,
+        user=_user_public(session.user),
+    )
+
+
+@router.post(
+    "/native/refresh",
+    response_model=NativeLoginResponse,
+    dependencies=[Depends(rate_limit("auth_native", 10, 60))],
+)
+async def native_refresh(
+    body: NativeRefreshRequest,
+    request: Request,
+    x_client: Annotated[str | None, Header(alias="X-Client")] = None,
+) -> NativeLoginResponse:
+    if x_client != "native":
+        raise HTTPException(400, detail="Native client header required")
+    session = await service.refresh(body.refresh_token, request.headers.get("user-agent"))
+    return NativeLoginResponse(
+        access_token=session.access_token,
+        refresh_token=session.refresh_token,
+        expires_in=session.expires_in,
+        user=_user_public(session.user),
+    )
+
+
+@router.post("/native/logout", status_code=204)
+async def native_logout(
+    body: NativeRefreshRequest, x_client: Annotated[str | None, Header(alias="X-Client")] = None
+) -> None:
+    if x_client != "native":
+        raise HTTPException(400, detail="Native client header required")
+    await service.logout(body.refresh_token)
+
+
+@router.post(
     "/refresh",
     response_model=TokenResponse,
     dependencies=[Depends(require_csrf), Depends(rate_limit("refresh", 60, 900))],
@@ -116,6 +176,12 @@ async def logout(
 @router.get("/me", response_model=UserPublic)
 async def me(principal: Annotated[Principal, Depends(get_principal)]) -> UserPublic:
     return _user_public(await service.get_active_user(principal.user_id))
+
+
+@admin_router.get("/scope-presets")
+async def list_scope_presets(_: Annotated[Principal, Depends(require_scopes("users:read"))]):
+    """Named role presets are transparent data, not an implicit permission hierarchy."""
+    return {name: sorted(scopes) for name, scopes in sorted(SCOPE_PRESETS.items())}
 
 
 @admin_router.get("/scopes", response_model=list[ScopeOut])

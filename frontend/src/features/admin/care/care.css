@@ -1,0 +1,56 @@
+.care-tabs { display:flex; gap:.5rem; overflow:auto; padding:.75rem 0; }
+.care-tabs button[aria-pressed="true"] { outline:2px solid currentColor; outline-offset:2px; }
+.care-form { display:grid; gap:.75rem; max-width:36rem; margin:1rem 0; padding:1rem; border:1px solid var(--border,#d9e1da); border-radius:.75rem; }
+.care-form label { display:grid; gap:.35rem; }
+.care-form input,.care-form textarea { width:100%; min-height:2.75rem; padding:.6rem; font:inherit; border:1px solid #8c9c91; border-radius:.4rem; }
+.care-table-wrap { width:100%; overflow:auto; }
+.care-table-wrap table { width:100%; border-collapse:collapse; }
+.care-table-wrap th,.care-table-wrap td { padding:.7rem; text-align:left; border-bottom:1px solid #d9e1da; }
+
+.care-data-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.care-danger-button {
+  border: 1px solid var(--danger, #a52828);
+  color: var(--danger, #a52828);
+}
+
+.care-data-export {
+  max-height: 28rem;
+  overflow: auto;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line, #d5d5d5);
+  border-radius: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.care-row-actions { min-width: 11rem; }
+.care-row-actions button { margin: 0 .35rem .35rem 0; white-space: nowrap; }
+@media (max-width: 720px) { .care-tabs { padding-bottom: 1rem; } .care-row-actions { min-width: 9rem; } }
+
+.care-review {
+  display: grid;
+  gap: 1.25rem;
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  border: 1px solid var(--border, #d9e1da);
+  border-radius: .75rem;
+}
+.care-review-header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; }
+.care-review-header h2 { margin:0; }
+.care-review-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(10rem,1fr)); gap:.75rem; margin:0; }
+.care-review-summary div { padding:.75rem; border-radius:.5rem; background:var(--surface-muted,#f4f6f4); }
+.care-review-summary dt { font-size:.85rem; text-transform:capitalize; color:var(--muted,#526157); }
+.care-review-summary dd { margin:.25rem 0 0; overflow-wrap:anywhere; }
+.care-timeline { display:grid; gap:.75rem; padding-left:1.5rem; }
+.care-timeline li { padding-left:.25rem; }
+.care-timeline time { display:block; font-size:.875rem; color:var(--muted,#526157); }
+.care-photo-records { display:grid; gap:.75rem; margin-top:.75rem; }
+.care-photo-records article { padding:.75rem; border:1px solid var(--border,#d9e1da); border-radius:.5rem; }
+@media (max-width:720px) { .care-review-header { flex-direction:column; } }

@@ -1,0 +1,18 @@
+name: backup-operations-check
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 2 1 * *'
+permissions:
+  contents: read
+jobs:
+  remind-private-db-backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm the approved private-database procedure is documented
+        run: |
+          test -s docs/BACKUP_AND_RECOVERY_B2.md
+          test -s scripts/backup-mongodb-to-b2.sh
+          test -s scripts/restore-mongodb-from-b2.sh
+          echo 'GitHub runner does not connect to MongoDB. Follow docs/BACKUP_AND_RECOVERY_B2.md on the owner-controlled host.'

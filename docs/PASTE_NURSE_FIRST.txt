@@ -1,0 +1,28 @@
+You are building the Nurse Module for Nest Home Care Uganda, inside the repository in the attached zip. This message replaces docs/PASTE_FIRST.txt for this module. Where that older file says to run checks, ignore it: for this work you CANNOT run anything and GitHub Actions runs all tests.
+
+STEP 1. Read these files completely, in this order, before anything else:
+1. docs/NURSE_BUILD_PLAN.md  (the master plan: rules, decisions, test architecture, work orders WO-00 to WO-19, CI skeletons)
+2. docs/nurse-module-spec.md  (the v1.4 spec, the "what")
+3. docs/BUILDER_INSTRUCTIONS.md  (house rules; the plan's Section 2 overrides it where they differ)
+4. docs/MAMBOSMS_NOTES.md
+5. reference/nest-all-features-mockups.html  (the approved UI; look and behaviour only)
+Then skim the existing code the plan names: backend/app/modules/auth/scopes.py, backend/app/core/deps.py, backend/app/core/storage.py, backend/app/jobs.py, backend/app/registry.py, backend/tests/test_scopes.py, test_route_coverage.py, test_scope_enforcement.py, .github/workflows/ci.yml, docker-compose.dev.yml.
+
+STEP 2. Send ONE message containing every question you need answered (Section 0.5 of the plan), numbered, each with your recommended answer in brackets. Ask only about: package pins, plugin choices, the Northflank questions in plan Section 12.5, whether Module D is approved, and any conflict you find between the plan and the repo. Do NOT ask about settings, thresholds, texts, numbers, Firebase, Cloudinary or hosting values: nothing is set up yet, so every such value is an environment variable the owner will set later (plan Section 12.6). Never invent them. Then WAIT for my reply. Do not write code before I answer.
+
+STEP 3. After I answer, build the whole module in one run: WO-00 to WO-17, then WO-17B, then WO-17C, then WO-19 (WO-18 only if I approve Module D). Do not wait for me to say continue. Between work orders just keep going. When a message is full, end it with one line "Next: WO-NN" and carry on in the next message. Pause ONLY to ask a question, using the format in Section 0.5.
+
+HOW TO WORK
+- Nothing is assumed. If something is missing, ask.
+- You cannot run code. Never write "tests pass", "works" or "verified". After each work order write: "Written, not run. CI will run it."
+- For each work order: list the files, write the tests FIRST, then the code. Output every file in full with its full path. For a small edit to a large existing file, give exact old and new snippets.
+- Every work order must ship with the test files the plan names, using the exact file names.
+- Keep docs/NURSE_BUILD_LOG.md (files, public function names and routes created, per work order) and docs/OWNER_DECISIONS.md (my answers). Reuse names from earlier work orders exactly.
+- Additive only. Do not change existing behaviour or existing tests. No roles, scopes only. No new dependency beyond plan Section 3. Cloudinary is used for photos (plan decision D2). The app must work offline-first: online services only enhance.
+- Plain English in code, comments and UI text. No emojis. No em dashes.
+- Do not edit docs/, reference/ or design/ except to add the files the plan names.
+
+AFTER THE BUILD
+I will push the branch and paste failing CI logs. Use Section 9.2 of the plan: quote the first failing line, say whether code or test is wrong, give the smallest fix with full files, and never weaken a test just to pass. Move to the next failing job yourself. Behaviour or look changes come after CI is green, recorded in docs/CHANGELOG.md.
+
+Begin with STEP 1, then STEP 2.

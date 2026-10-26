@@ -23,6 +23,12 @@ export function UsersPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [chosen, setChosen] = useState<string[]>([]);
+  const [invitePreset, setInvitePreset] = useState('nurse');
+  const [inviteKind, setInviteKind] = useState<'staff' | 'nurse' | 'supervisor' | 'admin' | 'executive'>('nurse');
+  const [inviteReach, setInviteReach] = useState<'own' | 'team' | 'all'>('own');
+  const [editingKind, setEditingKind] = useState<'staff' | 'nurse' | 'supervisor' | 'admin' | 'executive'>('staff');
+  const [editingReach, setEditingReach] = useState<'own' | 'team' | 'all'>('all');
+  const [editingPreset, setEditingPreset] = useState('nurse');
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [editingScopes, setEditingScopes] = useState<string[]>([]);
   const users = useQuery({
@@ -34,8 +40,21 @@ export function UsersPage() {
     queryKey: ['admin', 'scopes'],
     queryFn: () => apiClient.get<ScopeInfo[]>('/admin/scopes'),
   });
+  const presets = useQuery({
+    queryKey: ['admin', 'scope-presets'],
+    queryFn: () => apiClient.get<Record<string, string[]>>('/admin/scope-presets'),
+  });
   const rows = useMemo(() => listItems(users.data), [users.data]);
   const scopeRows = listItems(scopes.data);
+  const presetScopes = presets.data ?? {};
+  const applyPreset = (preset: string) => {
+    const next = presetScopes[preset] ?? [];
+    return next.filter((scope) => current?.is_superadmin || (scope !== 'system:manage' && scope !== 'carecfg:write'));
+  };
+  const matchesInvitePreset = (chosenScopes: string[], preset: string) => {
+    const expected = presetScopes[preset];
+    return Boolean(expected) && [...chosenScopes].sort().join('|') === [...expected].sort().join('|');
+  };
   const invite = useMutation({
     mutationFn: (body: UserInvite) => apiClient.post<AdminUser>('/admin/users', body),
     onSuccess: async () => {
@@ -43,6 +62,7 @@ export function UsersPage() {
       setName('');
       setEmail('');
       setChosen([]);
+      setInviteKind('nurse'); setInviteReach('own'); setInvitePreset('nurse');
       await client.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
   });
@@ -106,6 +126,9 @@ export function UsersPage() {
             onClick={() => {
               setEditing(item);
               setEditingScopes(item.scopes);
+              setEditingKind((item.kind || 'staff') as typeof editingKind);
+              setEditingReach(item.reach || 'all');
+              setEditingPreset('nurse');
             }}
           >
             {t('users.editScopes')}
@@ -135,11 +158,22 @@ export function UsersPage() {
         subtitle={t('users.subtitle')}
         actions={
           canWrite ? (
-            <Button onClick={() => setOpenInvite((value) => !value)}>{t('users.invite')}</Button>
+            <Button
+              disabled={!presets.data}
+              onClick={() =>
+                setOpenInvite((value) => {
+                  const next = !value;
+                  if (next) setChosen(applyPreset(invitePreset));
+                  return next;
+                })
+              }
+            >
+              {t('users.invite')}
+            </Button>
           ) : undefined
         }
       />
-      {users.isError || scopes.isError ? (
+      {users.isError || scopes.isError || presets.isError ? (
         <div role="alert">
           <p>{t('users.error')}</p>
           <Button
@@ -147,12 +181,13 @@ export function UsersPage() {
             onClick={() => {
               void users.refetch();
               void scopes.refetch();
+              void presets.refetch();
             }}
           >
             {t('common.retry')}
           </Button>
         </div>
-      ) : !users.data || !scopes.data ? (
+      ) : !users.data || !scopes.data || !presets.data ? (
         <p aria-busy="true">{t('users.loading')}</p>
       ) : (
         <DataTable
@@ -173,7 +208,8 @@ export function UsersPage() {
             className={styles.form}
             onSubmit={(event) => {
               event.preventDefault();
-              invite.mutate({ name: name.trim(), email: email.trim(), scopes: chosen });
+              const presetMatches = matchesInvitePreset(chosen, invitePreset);
+              invite.mutate({ name: name.trim(), email: email.trim(), scopes: presetMatches ? [] : chosen, ...(presetMatches ? { preset: invitePreset } : {}), kind: inviteKind, reach: inviteReach });
             }}
           >
             <Field
@@ -192,6 +228,20 @@ export function UsersPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
+            <label className={styles.scope}>Account type
+              <select value={inviteKind} onChange={(event) => setInviteKind(event.target.value as typeof inviteKind)}>
+                <option value="staff">Staff</option><option value="nurse">Nurse</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option><option value="executive">Executive</option>
+              </select>
+            </label>
+            <label className={styles.scope}>Data reach
+              <select value={inviteReach} onChange={(event) => setInviteReach(event.target.value as typeof inviteReach)}>
+                <option value="own">Own</option><option value="team">Team</option><option value="all">All</option>
+              </select>
+            </label>
+            <div className={styles.actions}>
+              <label>Access preset <select value={invitePreset} onChange={(event) => setInvitePreset(event.target.value)}><option value="nurse">Nurse</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option><option value="executive">Executive</option>{current?.is_superadmin && <option value="super_admin">Super admin</option>}</select></label>
+              <Button type="button" variant="outline" onClick={() => { setChosen(applyPreset(invitePreset)); if (invitePreset !== 'staff') { setInviteKind(invitePreset === 'super_admin' ? 'admin' : invitePreset as typeof inviteKind); setInviteReach(invitePreset === 'nurse' ? 'own' : invitePreset === 'supervisor' ? 'team' : 'all'); } }}>Apply preset</Button>
+            </div>
             <fieldset className={styles.scopeFieldset}>
               <legend>{t('users.grantScopes')}</legend>
               {Object.entries(
@@ -207,7 +257,7 @@ export function UsersPage() {
                       <input
                         type="checkbox"
                         checked={chosen.includes(scope.id)}
-                        disabled={scope.id === 'system:manage' && !current?.is_superadmin}
+                        disabled={(scope.id === 'system:manage' || scope.id === 'carecfg:write') && !current?.is_superadmin}
                         onChange={(event) =>
                           setChosen((old) =>
                             event.target.checked
@@ -238,6 +288,13 @@ export function UsersPage() {
         <section className={styles.editor}>
           <h2>{t('users.editHeading', { name: editing.name })}</h2>
           {editing.id === current?.id && <p>{t('users.selfEditNotice')}</p>}
+          <label className={styles.scope}>Account type
+            <select value={editingKind} disabled={!canWrite || editing.id === current?.id} onChange={(event) => setEditingKind(event.target.value as typeof editingKind)}><option value="staff">Staff</option><option value="nurse">Nurse</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option><option value="executive">Executive</option></select>
+          </label>
+          <label className={styles.scope}>Data reach
+            <select value={editingReach} disabled={!canWrite || editing.id === current?.id} onChange={(event) => setEditingReach(event.target.value as typeof editingReach)}><option value="own">Own</option><option value="team">Team</option><option value="all">All</option></select>
+          </label>
+          <div className={styles.actions}><label>Access preset <select value={editingPreset} onChange={(event) => setEditingPreset(event.target.value)}><option value="nurse">Nurse</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option><option value="executive">Executive</option>{current?.is_superadmin && <option value="super_admin">Super admin</option>}</select></label><Button type="button" variant="outline" disabled={!canWrite || editing.id === current?.id} onClick={() => setEditingScopes(applyPreset(editingPreset))}>Apply preset</Button></div>
           <fieldset className={styles.scopeFieldset}>
             <legend>{t('users.grantScopes')}</legend>
             {Object.entries(
@@ -256,7 +313,7 @@ export function UsersPage() {
                       disabled={
                         !canWrite ||
                         editing.id === current?.id ||
-                        (scope.id === 'system:manage' && !current?.is_superadmin)
+                        ((scope.id === 'system:manage' || scope.id === 'carecfg:write') && !current?.is_superadmin)
                       }
                       onChange={(event) =>
                         setEditingScopes((old) =>
@@ -276,7 +333,7 @@ export function UsersPage() {
           <div className={styles.actions}>
             <Button
               disabled={!canWrite || editing.id === current?.id || update.isPending}
-              onClick={() => update.mutate({ id: editing.id, body: { scopes: editingScopes } })}
+              onClick={() => update.mutate({ id: editing.id, body: { scopes: editingScopes, kind: editingKind, reach: editingReach } })}
             >
               {t('users.saveScopes')}
             </Button>

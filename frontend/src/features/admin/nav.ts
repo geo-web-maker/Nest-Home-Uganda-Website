@@ -67,6 +67,13 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
     group: 'manage',
   },
   {
+    path: '/admin/care',
+    labelKey: 'care',
+    scopes: ['clients:read'],
+    icon: 'dashboard',
+    group: 'manage',
+  },
+  {
     path: '/admin/reports',
     labelKey: 'reports',
     scopes: ['reports:read'],

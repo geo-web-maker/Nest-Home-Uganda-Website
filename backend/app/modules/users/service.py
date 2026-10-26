@@ -20,6 +20,7 @@ from app.modules.audit import service as audit
 from app.modules.auth import repository as auth_repo
 from app.modules.auth import service as auth_service
 from app.modules.auth.models import PasswordReset, User
+from app.modules.auth.scopes import SCOPE_PRESETS
 from app.modules.notifications.providers import get_email_provider
 from app.modules.users import repository as repo
 from app.modules.users.schemas import AdminUserOut, Done, UserInvite, UserUpdate
@@ -40,11 +41,18 @@ def to_out(user: User) -> AdminUserOut:
         last_login=user.last_login_at,
         status="active" if user.last_login_at else "invited",
         active=user.is_active,
+        kind=user.kind,
+        reach=user.reach,
     )
 
 
 def _snapshot(user: User) -> dict:
-    return {"scopes": sorted(user.scopes), "active": user.is_active}
+    return {
+        "scopes": sorted(user.scopes),
+        "active": user.is_active,
+        "kind": user.kind,
+        "reach": user.reach,
+    }
 
 
 async def _get(user_id: str) -> User:
@@ -60,13 +68,13 @@ def _guard_superadmin_target(actor: Principal, target: User) -> None:
         raise Forbidden("Only a superadmin can change a superadmin.")
 
 
-def _link(raw_token: str) -> str:
+def _link(raw_token: str, *, purpose: str = "reset") -> str:
     base = get_settings().frontend_url.rstrip("/")
-    return f"{base}/admin/set-password?token={raw_token}"
+    return f"{base}/admin/set-password?token={raw_token}&purpose={purpose}"
 
 
 async def _send_link(user: User, raw_token: str, *, invite: bool, minutes: int) -> None:
-    link = _link(raw_token)
+    link = _link(raw_token, purpose="invite" if invite else "reset")
     days = minutes // 1440
     valid = f"{days} days" if days else f"{minutes} minutes"
     subject = "You are invited to Nest Home Care admin" if invite else "Reset your password"
@@ -83,11 +91,14 @@ async def _send_link(user: User, raw_token: str, *, invite: bool, minutes: int) 
         log.exception("could not send the set-password email")
 
 
-async def _issue_link(user: User, now: datetime, minutes: int) -> str:
+async def _issue_link(user: User, now: datetime, minutes: int, *, purpose: str = "reset") -> str:
     await repo.invalidate_open_links(user.id, now)
     raw = new_opaque_token()
     await PasswordReset(
-        user_id=user.id, token_hash=hash_token(raw), expires_at=now + timedelta(minutes=minutes)
+        user_id=user.id,
+        token_hash=hash_token(raw),
+        expires_at=now + timedelta(minutes=minutes),
+        purpose=purpose,
     ).insert()
     return raw
 
@@ -100,7 +111,11 @@ async def list_users(page: PageParams, q: str | None) -> Page[AdminUserOut]:
 
 
 async def invite(principal: Principal, body: UserInvite, ip_hash: str | None) -> AdminUserOut:
-    new_scopes = set(body.scopes)
+    if body.preset and body.scopes:
+        raise ValidationFailed(
+            "Choose a scope preset or explicit scopes, not both.", {"preset": "ambiguous"}
+        )
+    new_scopes = set(SCOPE_PRESETS[body.preset]) if body.preset else set(body.scopes)
     auth_service.validate_scope_change(
         principal,
         target_user_id=None,
@@ -118,6 +133,8 @@ async def invite(principal: Principal, body: UserInvite, ip_hash: str | None) ->
         # Nobody knows this password. The person sets their own from the emailed link.
         password_hash=hash_password(new_opaque_token()),
         scopes=sorted(new_scopes),
+        kind=body.kind,
+        reach=body.reach,
     )
     try:
         await user.insert()
@@ -126,7 +143,7 @@ async def invite(principal: Principal, body: UserInvite, ip_hash: str | None) ->
             "A user with this email already exists.", {"email": "already in use"}
         ) from exc
     now = datetime.now(UTC)
-    raw = await _issue_link(user, now, INVITE_DAYS * 1440)
+    raw = await _issue_link(user, now, INVITE_DAYS * 1440, purpose="invite")
     await _send_link(user, raw, invite=True, minutes=INVITE_DAYS * 1440)
     await audit.record(
         principal, "user.invite", ITEM_TYPE, str(user.id), user.email,
@@ -161,6 +178,15 @@ async def update(
             user.scopes = sorted(new_scopes)
             scopes_changed = True
     active_changed = "active" in changes and changes["active"] != user.is_active
+    profile_changed = False
+    for field in ("kind", "reach"):
+        if (
+            field in changes
+            and changes[field] is not None
+            and getattr(user, field) != changes[field]
+        ):
+            setattr(user, field, changes[field])
+            profile_changed = True
     if active_changed:
         if str(user.id) == principal.user_id:
             raise Forbidden("You cannot deactivate yourself.")
@@ -171,7 +197,7 @@ async def update(
                 stays_active_superadmin=False,
             )
         user.is_active = changes["active"]
-    if scopes_changed or active_changed:
+    if scopes_changed or active_changed or profile_changed:
         await user.save()
         await auth_service.sign_out_user(user)  # old sessions must not keep old access (12.6.5)
         await audit.record(
@@ -186,7 +212,7 @@ async def reset_password(principal: Principal, user_id: str, ip_hash: str | None
     _guard_superadmin_target(principal, user)
     if not user.is_active:
         raise ValidationFailed("This user is deactivated.", {"user": "inactive"})
-    raw = await _issue_link(user, datetime.now(UTC), RESET_MINUTES)
+    raw = await _issue_link(user, datetime.now(UTC), RESET_MINUTES, purpose="reset")
     await auth_service.sign_out_user(user)
     await _send_link(user, raw, invite=False, minutes=RESET_MINUTES)
     await audit.record(
@@ -205,12 +231,19 @@ async def sign_out(principal: Principal, user_id: str, ip_hash: str | None) -> D
     return Done(status="signed_out")
 
 
-async def set_password(token: str, password: str, ip_hash: str | None) -> Done:
+async def set_password(
+    token: str, password: str, ip_hash: str | None, *, expected_purpose: str | None = None
+) -> Done:
     """Redeem an invite or reset link. One use, and only before it expires."""
     now = datetime.now(UTC)
     bad = ValidationFailed("This link has expired or was already used.", {"token": "invalid"})
     reset = await repo.reset_by_hash(hash_token(token))
-    if reset is None or reset.used_at is not None or reset.expires_at <= now:
+    if (
+        reset is None
+        or reset.used_at is not None
+        or reset.expires_at <= now
+        or (expected_purpose is not None and getattr(reset, "purpose", "reset") != expected_purpose)
+    ):
         raise bad
     user = await auth_repo.user_by_id(str(reset.user_id))
     if user is None or not user.is_active:
@@ -218,6 +251,8 @@ async def set_password(token: str, password: str, ip_hash: str | None) -> Done:
     if not await repo.claim_reset(PydanticObjectId(reset.id), now):
         raise bad
     user.password_hash = hash_password(password)
+    if getattr(reset, "purpose", "reset") == "invite":
+        user.invite_accepted_at = now
     user.failed_logins = 0
     user.last_failed_at = None
     user.locked_until = None

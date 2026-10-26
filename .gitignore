@@ -14,3 +14,7 @@ test-results/
 patches/
 *.log
 .DS_Store
+nurse/android/
+
+# Python packaging output
+*.egg-info/

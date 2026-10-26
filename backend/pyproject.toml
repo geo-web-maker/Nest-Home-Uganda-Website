@@ -16,6 +16,7 @@ dependencies = [
   "boto3==1.43.114",
   "python-multipart==0.0.32",
   "httpx==0.28.1",
+  "cryptography==46.0.3",
 ]
 
 [project.optional-dependencies]
@@ -41,7 +42,7 @@ target-version = "py312"
 select = ["E", "F", "I", "B", "UP", "ASYNC", "S"]
 
 [tool.ruff.lint.flake8-bugbear]
-extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Header", "fastapi.Cookie"]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Header", "fastapi.Cookie", "app.core.deps.require_scopes"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S105", "S106"]

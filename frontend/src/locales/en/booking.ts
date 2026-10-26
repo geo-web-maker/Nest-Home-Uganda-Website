@@ -16,6 +16,7 @@ export type BookingCopy = {
   preferredStartOptions: Record<'today' | 'this_week' | 'later' | 'not_sure', string>;
   note: string;
   noteHint: string;
+  medicalDetailsWarning: string;
   noteCount: (used: number, max: number) => string;
   consent: string;
   privacyLink: string;
@@ -67,6 +68,7 @@ export const bookingCopyEn: BookingCopy = {
   },
   note: 'Short note',
   noteHint: 'No medical details here. The nurse will ask later.',
+  medicalDetailsWarning: 'Please do not enter medical details here',
   noteCount: (used, max) => `${used} of ${max} characters`,
   consent: 'I agree that Nest Home Care may contact me about this request.',
   privacyLink: 'Privacy',

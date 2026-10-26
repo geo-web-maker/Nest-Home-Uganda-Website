@@ -18,7 +18,7 @@ describe('hasScopes', () => {
 });
 
 describe('navigation from a mocked scope list', () => {
-  it('lists the nine routes in spec order and shows a superadmin all of them', () => {
+  it('lists the admin routes including care operations and shows a superadmin all of them', () => {
     expect(ADMIN_NAV.map((i) => i.labelKey)).toEqual([
       'dashboard',
       'enquiries',
@@ -27,10 +27,11 @@ describe('navigation from a mocked scope list', () => {
       'content',
       'settings',
       'users',
+      'care',
       'reports',
       'activity',
     ]);
-    expect(visibleNav(user([], true))).toHaveLength(9);
+    expect(visibleNav(user([], true))).toHaveLength(10);
   });
 
   it('shows only reachable items and hides a write-only scope holder', () => {
@@ -56,7 +57,7 @@ describe('navigation from a mocked scope list', () => {
       '/admin/careers',
       '/admin/applications',
     ]);
-    expect(paths(bottomNav(all).more)).toHaveLength(5);
+    expect(paths(bottomNav(all).more)).toHaveLength(6);
     expect(bottomNav(user(['content:read'])).more).toEqual([]);
   });
 
