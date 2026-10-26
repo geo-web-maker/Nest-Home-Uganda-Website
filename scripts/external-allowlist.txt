@@ -1,1 +1,11 @@
+# Hosts that may appear as text in built output. None of these are fetched by the app.
 api.cloudinary.com
+# SVG and XML namespace identifiers (xmlns), not network requests.
+www.w3.org
+# Strings inside bundled libraries (React error-decoder link, library comments and examples).
+reactjs.org
+bit.ly
+tinyurl.com
+www.google.com
+# Deliberate: the SOS SMS fallback text contains a maps link for the supervisor to open.
+maps.google.com

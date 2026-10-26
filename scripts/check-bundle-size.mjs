@@ -42,7 +42,8 @@ if (isNurse) {
     oversized.forEach((item) => console.error(`  ${item.gzip} ${path.relative(root, item.file)}`));
     failed = true;
   }
-  if (assets.some((item) => /\.js$/.test(item.file) && /leaflet/i.test(fs.readFileSync(item.file, 'utf8')))) {
+  // `assets` holds path strings; the objects with a `file` field are in `sizes`.
+  if (sizes.some((item) => /\.js$/.test(item.file) && /leaflet/i.test(fs.readFileSync(item.file, 'utf8')))) {
     console.error('Leaflet detected in the nurse bundle; admin-only map code must not enter nurse/dist.');
     failed = true;
   }

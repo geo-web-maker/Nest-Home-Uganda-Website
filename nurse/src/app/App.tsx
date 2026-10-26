@@ -11,7 +11,7 @@ import { enableVisitReminders, scheduleVisitReminders } from '../platform/notify
 import { compressPhotoBundle, PHOTO_MAX_BYTES } from '../features/photos/compress';
 import { readRefreshToken } from '../platform/secureTokenStorage';
 import { kampalaDateKey } from '../lib/time';
-import { applySyncPullPage, cacheClients, cacheHistory, clearSyncCursor, enqueueOperation, enqueuePhoto, getSyncCursor, listCachedClients, listCachedHistory, listCachedVisits, listQueuedPhotos, nurseDb, recoverInterruptedOperations, recoverInterruptedPhotos, removeLocalPhoto, updateCachedVisit, updateLocalPhoto, type CachedClient, type CachedHistoryVisit, type CachedVisit, type LocalPhoto, type OutboxOperation } from '../offline/db';
+import { applySyncPullPage, cacheClients, cacheVisits, cacheHistory, clearSyncCursor, enqueueOperation, enqueuePhoto, getSyncCursor, listCachedClients, listCachedHistory, listCachedVisits, listQueuedPhotos, nurseDb, recoverInterruptedOperations, recoverInterruptedPhotos, removeLocalPhoto, updateCachedVisit, updateLocalPhoto, type CachedClient, type CachedHistoryVisit, type CachedVisit, type LocalPhoto, type OutboxOperation } from '../offline/db';
 import { runSync } from '../offline/syncEngine';
 import { pullSyncPages } from '../offline/pullSyncPages';
 import { canUploadPhoto } from '../features/photos/uploadPolicy';
@@ -572,7 +572,7 @@ function NurseWorkspace() {
     }
     const newId = makeId();
     const now = new Date().toISOString();
-    const payload = { ...operation.payload, id: newId, client_op_id: newId };
+    const payload: Record<string, unknown> = { ...operation.payload, id: newId, client_op_id: newId };
     // Replace the rejected identifier and optimistic visit state as one local transaction.
     await nurseDb.transaction('rw', nurseDb.outbox, nurseDb.visits, async () => {
       await nurseDb.outbox.put({ id: newId, kind: operation.kind, visitId: operation.visitId, ownerUserId: currentUserId, payload, createdAt: now, state: 'queued', attempts: 0 });

@@ -1,5 +1,5 @@
 function parts(value: string): number[] {
-  return value.trim().replace(/^v/i, '').split(/[.+-]/, 1)[0].split('.').map((part) => {
+  return value.trim().replace(/^v/i, '').split(/[+-]/, 1)[0].split('.').map((part) => {
     const parsed = Number.parseInt(part, 10);
     return Number.isFinite(parsed) ? parsed : 0;
   });
