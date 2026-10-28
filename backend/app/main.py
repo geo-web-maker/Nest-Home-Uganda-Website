@@ -6,7 +6,7 @@ from fastapi import APIRouter, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.core import db
+from app.core import db, site_rebuild
 from app.core.config import get_settings
 from app.core.errors import install_error_handlers
 from app.jobs import build_scheduler
@@ -72,6 +72,17 @@ def create_app() -> FastAPI:
             response.headers.setdefault(
                 "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
             )
+        return response
+
+    @app.middleware("http")
+    async def rebuild_public_site(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        response = await call_next(request)
+        if site_rebuild.affects_public_site(
+            request.method, request.url.path, response.status_code
+        ):
+            site_rebuild.request_rebuild(settings)
         return response
 
     api = APIRouter(prefix=API_PREFIX)

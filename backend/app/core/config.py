@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     notify_hours_to: str = "20:00"
     scheduler_enabled: bool = True
     seo_index: bool = False
+    # Optional deploy hook (Cloudflare Pages or Vercel) called after public content changes.
+    site_rebuild_hook_url: str = ""
+    site_rebuild_debounce_seconds: float = 300.0
     tz: str = "Africa/Kampala"
 
     s3_endpoint: str = ""

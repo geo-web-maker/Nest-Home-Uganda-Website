@@ -11,7 +11,7 @@ const PAGES = [
   { path: '/faq', h1: /Answers to common questions/i },
   { path: '/careers', h1: /Join the team/i },
   { path: '/contact', h1: /Talk to us today/i },
-  { path: '/privacy', h1: /safe with us/i },
+  { path: '/privacy', h1: /privacy and terms/i },
 ];
 
 for (const { path, h1 } of PAGES) {

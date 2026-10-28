@@ -628,6 +628,8 @@ function NurseWorkspace() {
     try {
       const platform = Capacitor.getPlatform();
       const version = await apiRequest<{ latest: string; min_supported: string; download_path?: string | null }>(`/field/app/version?platform=${platform === 'ios' || platform === 'android' ? platform : 'web'}`);
+      // A malformed reply must never reach render: compareVersions would throw and blank the app.
+      if (typeof version?.latest !== 'string' || typeof version?.min_supported !== 'string') throw new Error('Invalid version response');
       setVersionInfo(version);
       setMessage(copy.messages.versionRefreshed);
     } catch { setMessage(copy.messages.updateUnavailable); }

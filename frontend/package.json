@@ -24,7 +24,7 @@
     "test:responsive": "playwright test e2e/care-responsive.spec.ts",
     "test:admin-native": "vitest run src/admin-native/identity.test.ts",
     "test:e2e:admin-native": "playwright test e2e/admin-native.spec.ts --config playwright.admin-native.config.ts",
-    "test:pre-apk": "npm run typecheck && npm run lint && npm run test && npm run build && npm run test:reference && npm run test:a11y && npm run test:responsive && npm run test:admin-native && npm run test:e2e:admin-native && npm run test:e2e"
+    "test:pre-apk": "npm run typecheck && npm run lint && npm run test && npm run build && npm run test:reference && npm run test:a11y && npm run test:responsive && npm run test:admin-native && npm run build:admin-native && npm run test:e2e:admin-native && npm run test:e2e"
   },
   "dependencies": {
     "@hookform/resolvers": "5.9.2",

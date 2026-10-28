@@ -191,7 +191,8 @@ async def patch_group(
                 "Payment gateway mode must be sandbox or production.",
                 {suffix: "invalid mode"},
             )
-        if key in {"system.MAX_DAILY_VISITS", "system.MAX_ITEMS_PER_USER"} and not 1 <= value <= 100000:
+        limit_keys = {"system.MAX_DAILY_VISITS", "system.MAX_ITEMS_PER_USER"}
+        if key in limit_keys and not 1 <= value <= 100000:
             raise ValidationFailed(
                 "The operational limit must be between 1 and 100000.",
                 {suffix: "out of range"},

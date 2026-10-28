@@ -7,6 +7,8 @@ import { extname, join, normalize, resolve } from 'node:path';
 
 const root = resolve(process.argv[2] ?? 'dist');
 const port = Number(process.argv[3] ?? 4173);
+// Optional single-page entry (e.g. admin-native.html) that answers every extensionless path.
+const entry = process.argv[4];
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -31,7 +33,14 @@ function resolveFile(urlPath) {
   if (existsSync(target) && statSync(target).isFile()) return target;
   const index = join(target, 'index.html');
   if (existsSync(index)) return index;
+  // A build with a relative base ('./') asks for /admin/assets/x.js from /admin/login: serve it from /assets.
+  const nested = /[/\\]assets[/\\](.+)$/.exec(clean);
+  if (nested) {
+    const asset = join(root, 'assets', nested[1]);
+    if (asset.startsWith(root) && existsSync(asset) && statSync(asset).isFile()) return asset;
+  }
   if (extname(clean)) return null;
+  if (entry) return join(root, entry);
   // Same as the vercel.json rewrite: /admin/* gets the clean shell, everything else the home page.
   return join(root, /^[/\\]admin([/\\]|$)/.test(clean) ? 'admin-shell.html' : 'index.html');
 }

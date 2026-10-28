@@ -12514,6 +12514,36 @@
         ]
       }
     },
+    "/api/v1/admin/settings/system": {
+      "get": {
+        "operationId": "admin_system_list_api_v1_admin_settings_system_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SettingEntry"
+                  },
+                  "title": "Response Admin System List Api V1 Admin Settings System Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin System List",
+        "tags": [
+          "admin-settings"
+        ]
+      }
+    },
     "/api/v1/admin/settings/theme/reset": {
       "post": {
         "operationId": "admin_reset_theme_api_v1_admin_settings_theme_reset_post",

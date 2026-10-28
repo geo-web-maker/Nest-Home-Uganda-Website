@@ -9,7 +9,9 @@ TEMPLATES = {
     "critical_alert": Template(
         "Well Nest Home Care: a critical staff alert needs a response. Open: $url"
     ),
-    "warning_alert": Template("Well Nest Home Care: an unresolved staff alert needs review. Open: $url"),
+    "warning_alert": Template(
+        "Well Nest Home Care: an unresolved staff alert needs review. Open: $url"
+    ),
     "safety_timer": Template("Well Nest Home Care: a staff safety timer needs review. Open: $url"),
 }
 BANNED_TERMS = ("diagnosis", "medication", "medical condition", "patient name", "clinical note")

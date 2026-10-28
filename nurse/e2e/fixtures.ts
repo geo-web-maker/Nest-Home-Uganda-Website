@@ -30,6 +30,28 @@ export async function installMockApi(page: Page, options: { activeVisit?: boolea
     const path = url.pathname.replace('/api/v1', '');
     const method = request.method();
 
+    // If the build was made with VITE_API_URL set, API calls are cross-origin. A fulfilled mock has no
+    // CORS headers, so the browser would reject it; answer preflights and add the headers to every reply.
+    const cors = {
+      'access-control-allow-origin': request.headers()['origin'] ?? '*',
+      'access-control-allow-headers': '*',
+      'access-control-allow-methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+    };
+    if (method === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: cors });
+      return;
+    }
+    const fulfill = route.fulfill.bind(route);
+    route.fulfill = (options) => fulfill({ ...options, headers: { ...cors, ...options?.headers } });
+
+    // Browser (non-native) sign-in: the app posts to /auth/login and expects a CSRF token back.
+    if (path === '/auth/login' && method === 'POST') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+        access_token: 'e2-access', csrf_token: 'e2-csrf',
+        user: { id: 'nurse-e2', display_name: 'Demo Nurse', role: 'nurse' },
+      }) });
+      return;
+    }
     if (path === '/auth/native/login' && method === 'POST') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
         access_token: 'e2-access', refresh_token: 'e2-refresh',
@@ -85,6 +107,12 @@ export async function installMockApi(page: Page, options: { activeVisit?: boolea
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'ok' }) });
       return;
     }
+    if (path === '/field/app/version') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+        latest: '0.1.0', min_supported: '0.0.0', download_path: null,
+      }) });
+      return;
+    }
     if (path === '/field/history') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }) });
       return;
@@ -109,13 +137,33 @@ export async function installMockApi(page: Page, options: { activeVisit?: boolea
 }
 
 export async function loginAsDemoNurse(page: Page) {
+  // Collected so a failed sign-in explains itself (an uncaught render error blanks the whole app).
+  const problems: string[] = [];
+  page.on('pageerror', (error) => problems.push(`pageerror: ${error.message}`));
+  page.on('console', (message) => { if (message.type() === 'error') problems.push(`console: ${message.text()}`); });
+  page.on('requestfailed', (request) => problems.push(`requestfailed: ${request.method()} ${request.url()} ${request.failure()?.errorText ?? ''}`));
   await page.goto('/');
   const identifier = page.getByLabel(/email|phone|identifier/i).first();
   const password = page.getByLabel(/password/i);
+  // Wait for either the sign-in form or the signed-in shell; isVisible() alone would not wait.
+  await expect(identifier.or(page.locator('.bottom-tabs, .desktop-rail')).first()).toBeVisible();
   if (await identifier.isVisible()) {
     await identifier.fill('nurse@example.test');
     await password.fill('Password123!');
     await page.getByRole('button', { name: /sign in|log in|login/i }).click();
   }
   await expect(page).not.toHaveURL(/login/i);
+  // Signed in once the shell navigation exists (both navs are in the DOM; CSS shows one).
+  const shell = page.locator('.bottom-tabs, .desktop-rail').first();
+  try {
+    await expect(shell).toBeAttached();
+  } catch (error) {
+    const notice = await page.locator('.notice, [role="status"]').allTextContents();
+    const body = ((await page.locator('body').innerText().catch(() => '')) || '').slice(0, 300);
+    throw new Error(
+      `Sign-in did not reach the app shell.\nURL: ${page.url()}\nOn-screen status: ${JSON.stringify(notice)}\n` +
+      `Body text: ${JSON.stringify(body)}\nBrowser problems:\n${problems.join('\n') || '(none)'}`,
+      { cause: error },
+    );
+  }
 }

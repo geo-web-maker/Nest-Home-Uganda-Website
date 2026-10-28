@@ -82,61 +82,61 @@ test.describe('public website vs reference mockup', () => {
     expect(tokens.scheme).toBe('light');
   });
 
-  test('the reference page registry renders the intended headlines without horizontal overflow', async ({ page }) => {
-    const referenceArticle = {
-      id: 'reference-care-guide', slug: 'care-guide', title: 'Care guide',
-      body: 'A short practical guide for families arranging care at home.',
-      image_media_id: null, published_at: '2026-10-01T09:00:00Z',
-    };
-    const referenceJob = {
-      id: 'abc', title: 'Registered Nurse', department: 'clinical', location: 'Kampala',
-      type: 'full_time', description: 'Provide safe, compassionate home nursing.',
-      requirements: 'Registered with the relevant professional council.',
-      closes_on: null, registration_required: true,
-    };
-    const referenceJobs = [
-      referenceJob,
-      { ...referenceJob, id: 'midwife', title: 'Midwife', type: 'part_time' },
-      {
-        ...referenceJob, id: 'caregiver', title: 'Caregiver and Companion', department: 'care',
-        type: 'contract', registration_required: false,
-      },
-    ];
-    const referenceService = {
-      id: 'service-elder-care', slug: 'elder-care', name: 'Elder care',
-      summary: 'Daily support for older adults at home.', number: 1, icon_key: null,
-      photo_media_id: null, hero_label: 'Elder care',
-      hero_headline: 'Care for older adults at home.',
-      hero_lead: 'Respectful everyday support for older people and their families.',
-      facts: ['Home visits', 'Kampala and surrounds'],
-      who_for: ['Older adults who need practical daily support'],
-      includes: ['Personal care', 'Companionship'], how_often: 'As agreed in the care plan.',
-      seo_title: 'Elder care at home', seo_description: 'Home elder care.', related: [],
-    };
-    await mockApi(page, {
-      'GET /api/v1/public/services/elder-care': (route) => json(200, referenceService)(route),
-      'GET /api/v1/public/faqs': (route) => json(200, [])(route),
-      'GET /api/v1/public/articles': (route) => json(200, [referenceArticle])(route),
-      'GET /api/v1/public/articles/care-guide': (route) => json(200, referenceArticle)(route),
-      'GET /api/v1/public/jobs': (route) => json(200, referenceJobs)(route),
-      'GET /api/v1/public/jobs/abc': (route) => json(200, referenceJob)(route),
-    });
-    const pages = [
-      { path: '/', heading: 'Care that comes home to you' },
-      { path: '/services', heading: 'Eight kinds of care, one trusted team' },
-      { path: '/services/elder-care', heading: 'Care for older adults at home' },
-      { path: '/about', heading: 'Care that treats your family as ours' },
-      { path: '/how-it-works', heading: 'Clear steps, clear pricing' },
-      { path: '/team', heading: 'Faces you can trust at your door' },
-      { path: '/areas', heading: 'Home visits across Kampala and surrounds' },
-      { path: '/faq', heading: 'Answers to common questions' },
-      { path: '/faq/care-guide', heading: 'Care guide' },
-      { path: '/contact', heading: 'Talk to us today' },
-      { path: '/privacy', heading: 'Privacy and terms' },
-      { path: '/careers', heading: 'Join the team' },
-      { path: '/careers/abc', heading: 'Registered Nurse' },
-    ];
-    for (const width of [320, 390, 820, 1280]) {
+  for (const width of [320, 390, 820, 1280]) {
+    test(`the reference page registry renders the intended headlines without horizontal overflow at ${width}px`, async ({ page }) => {
+      const referenceArticle = {
+        id: 'reference-care-guide', slug: 'care-guide', title: 'Care guide',
+        body: 'A short practical guide for families arranging care at home.',
+        image_media_id: null, published_at: '2026-10-01T09:00:00Z',
+      };
+      const referenceJob = {
+        id: 'abc', title: 'Registered Nurse', department: 'clinical', location: 'Kampala',
+        type: 'full_time', description: 'Provide safe, compassionate home nursing.',
+        requirements: 'Registered with the relevant professional council.',
+        closes_on: null, registration_required: true,
+      };
+      const referenceJobs = [
+        referenceJob,
+        { ...referenceJob, id: 'midwife', title: 'Midwife', type: 'part_time' },
+        {
+          ...referenceJob, id: 'caregiver', title: 'Caregiver and Companion', department: 'care',
+          type: 'contract', registration_required: false,
+        },
+      ];
+      const referenceService = {
+        id: 'service-elder-care', slug: 'elder-care', name: 'Elder care',
+        summary: 'Daily support for older adults at home.', number: 1, icon_key: null,
+        photo_media_id: null, hero_label: 'Elder care',
+        hero_headline: 'Care for older adults at home.',
+        hero_lead: 'Respectful everyday support for older people and their families.',
+        facts: ['Home visits', 'Kampala and surrounds'],
+        who_for: ['Older adults who need practical daily support'],
+        includes: ['Personal care', 'Companionship'], how_often: 'As agreed in the care plan.',
+        seo_title: 'Elder care at home', seo_description: 'Home elder care.', related: [],
+      };
+      await mockApi(page, {
+        'GET /api/v1/public/services/elder-care': (route) => json(200, referenceService)(route),
+        'GET /api/v1/public/faqs': (route) => json(200, [])(route),
+        'GET /api/v1/public/articles': (route) => json(200, [referenceArticle])(route),
+        'GET /api/v1/public/articles/care-guide': (route) => json(200, referenceArticle)(route),
+        'GET /api/v1/public/jobs': (route) => json(200, referenceJobs)(route),
+        'GET /api/v1/public/jobs/abc': (route) => json(200, referenceJob)(route),
+      });
+      const pages = [
+        { path: '/', heading: 'Care that comes home to you' },
+        { path: '/services', heading: 'Eight kinds of care, one trusted team' },
+        { path: '/services/elder-care', heading: 'Care for older adults at home' },
+        { path: '/about', heading: 'Care that treats your family as ours' },
+        { path: '/how-it-works', heading: 'Clear steps, clear pricing' },
+        { path: '/team', heading: 'Faces you can trust at your door' },
+        { path: '/areas', heading: 'Home visits across Kampala and surrounds' },
+        { path: '/faq', heading: 'Answers to common questions' },
+        { path: '/faq/care-guide', heading: 'Care guide' },
+        { path: '/contact', heading: 'Talk to us today' },
+        { path: '/privacy', heading: 'Privacy and terms' },
+        { path: '/careers', heading: 'Join the team' },
+        { path: '/careers/abc', heading: 'Registered Nurse' },
+      ];
       await page.setViewportSize({ width, height: 900 });
       for (const destination of pages) {
         await page.goto(destination.path);
@@ -158,9 +158,10 @@ test.describe('public website vs reference mockup', () => {
         }));
         expect(dimensions.content, `${destination.path} overflows at ${width}px`).toBeLessThanOrEqual(dimensions.viewport);
       }
-    }
-  });
+    });
+  }
 });
+
 
 
 test.describe('admin route coverage and responsive shell', () => {

@@ -31,7 +31,8 @@ test.describe('nurse app reference fidelity', () => {
     await expect(currentVisit.getByRole('link', { name: /continue active visit/i })).toHaveAttribute('href', '/active/visit-e2-001');
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(currentVisit).toBeHidden();
-    await expect(page.getByText('Demo Client')).toBeVisible();
+    // The hidden desktop pane still holds a "Demo Client" heading, so count only the visible one.
+    await expect(page.getByRole('heading', { name: 'Demo Client' }).filter({ visible: true })).toHaveCount(1);
     const dimensions = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }));
     expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
   });

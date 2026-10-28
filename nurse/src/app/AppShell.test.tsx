@@ -17,8 +17,12 @@ describe('nurse app shell', () => {
 
   it('marks the current tab and keeps the shell tabs predictable', () => {
     renderShell('/history', true);
-    expect(screen.getByRole('link', { name: 'History' }).getAttribute('aria-current')).toBe('page');
-    expect(screen.getByRole('link', { name: 'Today' }).getAttribute('aria-current')).not.toBe('page');
-    expect(screen.getByRole('link', { name: 'Profile' })).toBeTruthy();
+    // The shell renders two "Main navigation" landmarks (desktop rail and bottom tabs); CSS shows
+    // one at a time, but jsdom applies no CSS, so both exist here and each must agree.
+    const links = (name: string) => screen.getAllByRole('link', { name });
+    expect(links('History')).toHaveLength(2);
+    for (const link of links('History')) expect(link.getAttribute('aria-current')).toBe('page');
+    for (const link of links('Today')) expect(link.getAttribute('aria-current')).not.toBe('page');
+    expect(links('Profile')).toHaveLength(2);
   });
 });

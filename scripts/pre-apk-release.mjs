@@ -50,7 +50,7 @@ assertFile('backend/pyproject.toml', 'backend project');
 assertFile('docs/PRE_APK_RELEASE_TEST_SUITE.md', 'release-suite documentation');
 assertFile('reference/nest-all-features-mockups.html', 'canonical UI reference');
 
-const frontendScripts = ['typecheck', 'lint', 'test', 'build', 'test:reference', 'test:a11y', 'test:responsive', 'test:admin-native', 'test:e2e:admin-native'];
+const frontendScripts = ['typecheck', 'lint', 'test', 'build', 'test:reference', 'test:a11y', 'test:responsive', 'test:admin-native', 'build:admin-native', 'test:e2e:admin-native'];
 const nurseScripts = ['typecheck', 'lint', 'test', 'build', 'test:reference', 'test:a11y', 'test:responsive'];
 for (const script of frontendScripts) packageScript('frontend', script);
 for (const script of nurseScripts) packageScript('nurse', script);
@@ -80,6 +80,8 @@ if (!skipE2E) {
   run('Public/admin reference fidelity', 'npm run test:reference', join(root, 'frontend'));
   run('Public/admin accessibility', 'npm run test:a11y', join(root, 'frontend'));
   run('Public/admin responsive checks', 'npm run test:responsive', join(root, 'frontend'));
+  // The browser checks serve ./dist-admin-native, which `npm run build` does not produce.
+  run('Admin-native build', 'npm run build:admin-native', join(root, 'frontend'));
   run('Admin-native browser checks', 'npm run test:e2e:admin-native', join(root, 'frontend'));
   run('Frontend full browser E2E', 'npm run test:e2e', join(root, 'frontend'));
 }

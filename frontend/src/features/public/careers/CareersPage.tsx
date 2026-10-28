@@ -32,6 +32,7 @@ export function CareersPage() {
       <section className={styles.section}>
         <div className={`container ${styles.columns}`}>
           <div>
+            <h2 className={styles.srOnly}>{t('careers.openRoles')}</h2>
             {jobs.isError ? (
               <p role="alert">{t('careers.error')}</p>
             ) : jobs.data ? (

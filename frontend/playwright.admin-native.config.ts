@@ -16,8 +16,8 @@ export default defineConfig({
   },
   projects: [{ name: 'admin-native-mobile', use: { ...devices['Pixel 7'] } }],
   webServer: {
-    command: `node e2e/static-server.mjs dist-admin-native ${PORT}`,
-    url: `http://127.0.0.1:${PORT}`,
+    command: `node e2e/static-server.mjs dist-admin-native ${PORT} admin-native.html`,
+    url: `http://127.0.0.1:${PORT}/admin/login`,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
   },

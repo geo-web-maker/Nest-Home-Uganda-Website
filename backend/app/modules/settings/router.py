@@ -45,14 +45,19 @@ async def admin_list(principal: CanRead) -> list[SettingEntry]:
 
 
 @admin_router.get("/sms", response_model=list[SettingEntry])
-async def admin_sms_list(principal: CanManageSms) -> list[SettingEntry]:
+async def admin_sms_list(principal: CanManageSystem) -> list[SettingEntry]:
     return await service.admin_entries(principal, group="sms")
+
+
+@admin_router.get("/system", response_model=list[SettingEntry])
+async def admin_system_list(principal: CanManageSystem) -> list[SettingEntry]:
+    return await service.admin_entries(principal, group="system")
 
 
 @admin_router.patch("/sms", response_model=list[SettingEntry])
 async def admin_sms_patch(
     changes: dict,
-    principal: CanManageSms,
+    principal: CanManageSystem,
     request: Request,
 ) -> list[SettingEntry]:
     return await service.patch_group(principal, "sms", changes, hash_ip(client_ip(request)))

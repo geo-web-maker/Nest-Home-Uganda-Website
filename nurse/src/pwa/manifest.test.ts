@@ -18,7 +18,8 @@ function pngSize(file: string): { width: number; height: number } {
 describe('nurse PWA manifest', () => {
   it('is installable: name, standalone display, start URL and scope', () => {
     expect(manifest.name).toBe('Well Nest Home Care Uganda Nurse');
-    expect(manifest.short_name.length).toBeLessThanOrEqual(12);
+    // Branding decision (copy.test.ts, branding-contract.test.ts): the short name is the full approved name.
+    expect(manifest.short_name).toBe('Well Nest Home Care Uganda Nurse');
     expect(manifest.display).toBe('standalone');
     expect(manifest.start_url).toBe('/');
     expect(manifest.scope).toBe('/');

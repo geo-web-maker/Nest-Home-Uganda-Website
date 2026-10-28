@@ -12,6 +12,8 @@ Values are owner-supplied at deployment time. Never commit secrets or production
 | `VITE_API_URL` | API origin used by frontends and native apps at build time. |
 | `VITE_SITE_URL` | Public site origin (canonical and og:url). Set to the new domain; no domain is hardcoded. |
 | `FRONTEND_URL` | Public site origin used by the backend for links in emails and SMS. Set to the new domain. |
+| `SITE_REBUILD_HOOK_URL` | Optional Cloudflare Pages or Vercel deploy hook URL. The backend POSTs to it after an admin edits public content so the pre-rendered pages are rebuilt. Secret; empty disables it. |
+| `SITE_REBUILD_DEBOUNCE_SECONDS` | Quiet time after the last public edit before the hook is called (default 300). Several edits in that window cause one build. |
 | `BUSINESS_EMAIL` | Default public contact email (seeds `business.email`). Set to an address on the new domain; editable later in admin Settings. |
 | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET_PUBLIC`, `S3_BUCKET_PRIVATE`, `S3_KEY`, `S3_SECRET` | Existing S3-compatible object storage. |
 

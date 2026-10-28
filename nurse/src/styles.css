@@ -107,9 +107,11 @@ small, .muted, .hint { color: var(--mut); }
   color: var(--ink);
   font-size: 0.9rem;
 }
-.connection-banner > a { grid-column: 1 / -1; font-weight: 750; }
+/* Text uses --ink (7:1+ on --mint in light and dark); leaf green on mint is only 3.66:1, so it is kept for the status dot. */
+.connection-banner > a { grid-column: 1 / -1; color: var(--ink); font-weight: 750; }
 .connection-banner.is-offline { border-color: var(--gold); }
-.connection-banner.is-online strong { color: var(--leaf); }
+.connection-banner.is-online strong { color: var(--ink); }
+.connection-banner.is-online strong::before { content: ''; display: inline-block; width: 0.6rem; height: 0.6rem; margin-inline-end: 0.4rem; border-radius: 50%; background: var(--leaf); }
 .connection-banner.is-offline strong { color: var(--on-straw); }
 
 .visit-list { display: grid; gap: 0.8rem; }
