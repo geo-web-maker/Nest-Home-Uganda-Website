@@ -1,1 +1,2 @@
+/admin /admin-shell.html 200
 /admin/* /admin-shell.html 200

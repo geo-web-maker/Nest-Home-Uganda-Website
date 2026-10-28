@@ -8461,6 +8461,26 @@ export interface operations {
             };
         };
     };
+    admin_system_list_api_v1_admin_settings_system_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingEntry"][];
+                };
+            };
+        };
+    };
     admin_sms_patch_api_v1_admin_settings_sms_patch: {
         parameters: {
             query?: never;
@@ -8492,26 +8512,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    admin_system_list_api_v1_admin_settings_system_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SettingEntry"][];
                 };
             };
         };
