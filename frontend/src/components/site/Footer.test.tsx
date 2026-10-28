@@ -30,9 +30,8 @@ describe('Footer', () => {
     const explore = screen.getByRole('navigation', { name: 'Explore' });
     for (const [name, href] of [
       ['Services', '/services'],
-      ['Our team', '/team'],
-      ['Areas we serve', '/areas'],
-      ['FAQ and care tips', '/faq'],
+      ['How it works', '/how-it-works'],
+      ['Contact', '/contact'],
     ] as const) {
       expect(within(explore).getByRole('link', { name })).toHaveAttribute('href', href);
     }
@@ -42,10 +41,13 @@ describe('Footer', () => {
     setup();
     const company = screen.getByRole('navigation', { name: 'Company' });
     for (const [name, href] of [
+      ['Our team', '/team'],
+      ['Areas we serve', '/areas'],
+      ['FAQ and care tips', '/faq'],
       ['About us', '/about'],
       ['Careers', '/careers'],
-      ['Contact', '/contact'],
       ['Privacy and terms', '/privacy'],
+      ['Staff login', '/admin/login'],
     ] as const) {
       expect(within(company).getByRole('link', { name })).toHaveAttribute('href', href);
     }
@@ -53,8 +55,8 @@ describe('Footer', () => {
 
   it('marks the current footer destination', () => {
     setup('/team');
-    const explore = screen.getByRole('navigation', { name: 'Explore' });
-    expect(within(explore).getByRole('link', { name: 'Our team' })).toHaveAttribute(
+    const company = screen.getByRole('navigation', { name: 'Company' });
+    expect(within(company).getByRole('link', { name: 'Our team' })).toHaveAttribute(
       'aria-current',
       'page',
     );

@@ -16,12 +16,17 @@ const COMPANY = [
   { to: '/areas', label: 'site:footer.areas' },
   { to: '/faq', label: 'site:footer.faq' },
   { to: '/about', label: 'site:footer.aboutUs' },
+  { to: '/careers', label: 'common:nav.careers' },
   { to: '/privacy', label: 'site:footer.privacy' },
   { to: '/admin/login', label: 'common:nav.staffLogin' },
 ] as const;
 
 function isCurrentLink(to: string, pathname: string): boolean {
-  return pathname === to || (to === '/services' && pathname.startsWith('/services/'));
+  return (
+    pathname === to ||
+    (to === '/services' && pathname.startsWith('/services/')) ||
+    (to === '/careers' && pathname.startsWith('/careers/'))
+  );
 }
 
 export function Footer() {

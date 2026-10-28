@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { apiClient } from '../../../lib/api/client';
@@ -60,24 +61,24 @@ describe('SettingsPage', () => {
 
   it('allows a system manager to open and edit only SMS settings', async () => {
     authMock.scopes = ['system:manage'];
-    vi.mocked(apiClient.get).mockResolvedValueOnce([
-      { key: 'sms.staff_enabled', group: 'sms', value: true },
-    ]);
-    setup();
-    expect(await screen.findByRole('tab', { name: 'SMS' })).toHaveAttribute(
-      'aria-selected',
-      'true',
+    vi.mocked(apiClient.get).mockImplementation(async (url: string) =>
+      url === '/admin/settings/sms'
+        ? [{ key: 'sms.staff_enabled', group: 'sms', value: true }]
+        : [{ key: 'system.MAINTENANCE_MODE', group: 'system', value: false }],
     );
+    setup();
+    await userEvent.click(await screen.findByRole('tab', { name: 'SMS' }));
+    expect(screen.getByRole('tab', { name: 'SMS' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.queryByRole('tab', { name: 'Business details' })).not.toBeInTheDocument();
-    expect(apiClient.get).toHaveBeenCalledWith('/admin/settings/sms');
     const boxes = await screen.findAllByRole('checkbox');
+    expect(apiClient.get).toHaveBeenCalledWith('/admin/settings/sms');
     expect(boxes).toHaveLength(2);
     boxes.forEach((box) => expect(box).toBeEnabled());
     expect(screen.getByRole('button', { name: 'Save settings' })).toBeEnabled();
   });
   it('allows a system manager to open and edit system controls', async () => {
     authMock.scopes = ['system:manage'];
-    vi.mocked(apiClient.get).mockResolvedValueOnce([
+    vi.mocked(apiClient.get).mockResolvedValue([
       { key: 'system.MAINTENANCE_MODE', group: 'system', value: false },
       { key: 'system.MAX_DAILY_VISITS', group: 'system', value: 50 },
       { key: 'system.PAYMENT_GATEWAY_MODE', group: 'system', value: 'sandbox' },
@@ -87,7 +88,7 @@ describe('SettingsPage', () => {
       'aria-selected',
       'true',
     );
-    expect(screen.getByLabelText('Maintenance mode')).toBeEnabled();
+    expect(await screen.findByLabelText('Maintenance mode')).toBeEnabled();
     expect(screen.getByDisplayValue('50')).toBeEnabled();
     expect(screen.getByRole('combobox', { name: 'Payment gateway mode' })).toHaveValue('sandbox');
     expect(screen.getByRole('option', { name: 'Production' })).toBeInTheDocument();

@@ -9,14 +9,77 @@ import { Logo } from '../brand/Logo';
 import { Button } from '../ui/Button';
 import styles from './Header.module.css';
 
-const NAV = [
-  { to: '/about', key: 'about' },
-  { to: '/how-it-works', key: 'howItWorks' },
-  { to: '/team', key: 'team' },
-  { to: '/areas', key: 'areas' },
-  { to: '/faq', key: 'faq' },
-  { to: '/contact', key: 'contact' },
-] as const;
+type MenuId = 'services' | 'about';
+
+interface MenuItem {
+  to: string;
+  label: string;
+}
+
+interface NavMenuProps {
+  id: MenuId;
+  label: string;
+  items: MenuItem[];
+  pathname: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+/** A top-level trigger with an expandable sub-list: indented in the phone panel, a dropdown on desktop. */
+function NavMenu({ id, label, items, pathname, open, onOpenChange }: NavMenuProps) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const pointerDown = useRef(false);
+  const menuId = `${id}-menu`;
+  const groupCurrent = items.some((item) => item.to === pathname);
+
+  return (
+    <li
+      className={cx(styles.hasMenu, open && styles.menuOpen)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) onOpenChange(false);
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || !open) return;
+        triggerRef.current?.focus();
+        onOpenChange(false);
+      }}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        className={styles.link}
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-controls={menuId}
+        data-group-current={groupCurrent ? 'true' : undefined}
+        onPointerDown={() => {
+          pointerDown.current = true;
+        }}
+        onFocus={() => {
+          // Keyboard focus opens the menu; a mouse press is handled by onClick instead.
+          if (!pointerDown.current) onOpenChange(true);
+          pointerDown.current = false;
+        }}
+        onClick={() => onOpenChange(!open)}
+      >
+        {label}
+      </button>
+      <ul id={menuId} className={styles.menu}>
+        {items.map((item) => (
+          <li key={item.to}>
+            <Link
+              to={item.to}
+              className={styles.menuLink}
+              aria-current={pathname === item.to ? 'page' : undefined}
+            >
+              {item.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </li>
+  );
+}
 
 export function Header() {
   const { t } = useTranslation(['common', 'site']);
@@ -25,9 +88,8 @@ export function Header() {
   const { data: services } = useServices();
   // Each menu remembers the path it was opened on, so a route change closes it without an effect.
   const [menuAt, setMenuAt] = useState<string | null>(null);
-  const [servicesAt, setServicesAt] = useState<string | null>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const pointerDown = useRef(false);
+  // Only one submenu is open at a time; it remembers the path it was opened on.
+  const [openMenu, setOpenMenu] = useState<{ id: MenuId; at: string } | null>(null);
   const headerRef = useRef<HTMLElement>(null);
 
   // Scrolled shadow: one passive listener that sets an attribute, so there is no React state per scroll.
@@ -43,14 +105,30 @@ export function Header() {
   }, []);
 
   const menuOpen = menuAt === pathname;
-  const servicesOpen = servicesAt === pathname;
+  const isOpen = (id: MenuId) => openMenu?.id === id && openMenu.at === pathname;
+  const setMenuOpen = (id: MenuId) => (open: boolean) =>
+    setOpenMenu((current) =>
+      open ? { id, at: pathname } : current?.id === id ? null : current,
+    );
+  const servicesItems: MenuItem[] = [
+    { to: '/services', label: t('common:nav.services') },
+    ...(services ?? []).map((service) => ({
+      to: `/services/${service.slug}`,
+      label: service.name,
+    })),
+  ];
+  const aboutItems: MenuItem[] = [
+    { to: '/about', label: t('common:nav.about') },
+    { to: '/team', label: t('site:header.team') },
+    { to: '/areas', label: t('site:header.areas') },
+    { to: '/careers', label: t('common:nav.careers') },
+  ];
   const phone = site.business.phone;
   const tel = `tel:${normaliseUgPhone(phone) ?? phone.replace(/\s/g, '')}`;
 
   function onKeyDown(event: React.KeyboardEvent) {
     if (event.key !== 'Escape') return;
-    if (servicesOpen) triggerRef.current?.focus();
-    setServicesAt(null);
+    setOpenMenu(null);
     setMenuAt(null);
   }
 
@@ -77,67 +155,49 @@ export function Header() {
                 {t('common:nav.home')}
               </Link>
             </li>
-            <li
-              className={cx(styles.hasMenu, servicesOpen && styles.menuOpen)}
-              onBlur={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget)) setServicesAt(null);
-              }}
-            >
-              <button
-                ref={triggerRef}
-                type="button"
+            <NavMenu
+              id="services"
+              label={t('common:nav.services')}
+              items={servicesItems}
+              pathname={pathname}
+              open={isOpen('services')}
+              onOpenChange={setMenuOpen('services')}
+            />
+            <li>
+              <Link
+                to="/how-it-works"
                 className={styles.link}
-                aria-expanded={servicesOpen}
-                aria-haspopup="true"
-                aria-controls="services-menu"
-                onPointerDown={() => {
-                  pointerDown.current = true;
-                }}
-                onFocus={() => {
-                  // Keyboard focus opens the menu; a mouse press is handled by onClick instead.
-                  if (!pointerDown.current) setServicesAt(pathname);
-                  pointerDown.current = false;
-                }}
-                onClick={() => setServicesAt(servicesOpen ? null : pathname)}
+                aria-current={pathname === '/how-it-works' ? 'page' : undefined}
               >
-                {t('common:nav.services')}
-              </button>
-              <ul id="services-menu" className={styles.menu}>
-                <li>
-                  <Link
-                    to="/services"
-                    className={styles.menuLink}
-                    aria-current={pathname === '/services' ? 'page' : undefined}
-                  >
-                    {t('common:nav.services')}
-                  </Link>
-                </li>
-                {services?.map((service) => (
-                  <li key={service.id}>
-                    <Link
-                      to={`/services/${service.slug}`}
-                      className={styles.menuLink}
-                      aria-current={pathname === `/services/${service.slug}` ? 'page' : undefined}
-                    >
-                      {service.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+                {t('common:nav.howItWorks')}
+              </Link>
             </li>
-            {NAV.map((item) => (
-              <li key={item.key}>
-                <Link
-                  to={item.to}
-                  className={styles.link}
-                  aria-current={pathname === item.to ? 'page' : undefined}
-                >
-                  {item.key === 'team' || item.key === 'areas' || item.key === 'faq'
-                    ? t(`site:header.${item.key}`)
-                    : t(`common:nav.${item.key}`)}
-                </Link>
-              </li>
-            ))}
+            <NavMenu
+              id="about"
+              label={t('common:nav.about')}
+              items={aboutItems}
+              pathname={pathname}
+              open={isOpen('about')}
+              onOpenChange={setMenuOpen('about')}
+            />
+            <li>
+              <Link
+                to="/faq"
+                className={styles.link}
+                aria-current={pathname === '/faq' ? 'page' : undefined}
+              >
+                {t('site:header.faq')}
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/contact"
+                className={styles.link}
+                aria-current={pathname === '/contact' ? 'page' : undefined}
+              >
+                {t('common:nav.contact')}
+              </Link>
+            </li>
           </ul>
         </nav>
 

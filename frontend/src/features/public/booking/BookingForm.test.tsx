@@ -69,7 +69,7 @@ describe('BookingForm', () => {
     const link = screen.getByRole('link', { name: 'Chat on WhatsApp' });
     expect(link).toHaveAttribute(
       'href',
-      expect.stringContaining('text=Hello%20Nest%20Home%20Care%2C%20I%20would%20like%20to%20ask'),
+      expect.stringContaining('text=Hello%20Well%20Nest%20Home%20Care%20Uganda%2C%20I%20would%20like%20to%20ask'),
     );
   });
 

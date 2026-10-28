@@ -48,7 +48,7 @@ describe('registered public routes', () => {
     ['/areas', 'Home visits across Kampala and surrounds.'],
     ['/faq', 'Answers to common questions.'],
     ['/privacy', 'Privacy and terms.'],
-    ['/careers', 'Join the team that cares for Uganda’s families.'],
+    ['/careers', 'Join the team.'],
     ['/contact', 'Talk to us today.'],
   ])('renders %s with its own h1', (path, title) => {
     renderAt(path);

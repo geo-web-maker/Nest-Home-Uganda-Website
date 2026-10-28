@@ -135,6 +135,7 @@
 }
 
 .link[aria-current='page'],
+.link[data-group-current='true'],
 .menuLink[aria-current='page'] {
   color: var(--gold);
   opacity: 1;
@@ -233,6 +234,7 @@
   }
 
   .link:focus-visible::after,
+  .link[data-group-current='true']::after,
   .link[aria-current='page']::after {
     transform: scaleX(1);
   }

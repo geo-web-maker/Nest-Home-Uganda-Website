@@ -160,12 +160,20 @@ export function SettingsPage() {
   const canSystem = hasScopes(user, ['system:manage']);
   const [tab, setTab] = useState<SettingsGroup>('business');
   const [edited, setEdited] = useState<Record<string, string | boolean>>({});
-  const activeTab: SettingsGroup = canReadSettings ? tab : canSystem ? 'system' : 'sms';
+  const activeTab: SettingsGroup = canReadSettings
+    ? tab
+    : tab === 'sms' || tab === 'system'
+      ? tab
+      : canSystem
+        ? 'system'
+        : 'sms';
   const canWriteActiveTab = activeTab === 'sms' || activeTab === 'system' ? canSystem : canWrite;
   const data = useQuery({
-    queryKey: ['admin', 'settings', canReadSettings ? 'all' : canSystem ? 'system' : 'sms'],
+    queryKey: ['admin', 'settings', canReadSettings ? 'all' : activeTab],
     queryFn: () =>
-      apiClient.get<SettingEntry[]>(canReadSettings ? '/admin/settings' : canSystem ? '/admin/settings/system' : '/admin/settings/sms'),
+      apiClient.get<SettingEntry[]>(
+        canReadSettings ? '/admin/settings' : `/admin/settings/${activeTab}`,
+      ),
   });
   const byKey = useMemo(
     () => Object.fromEntries((data.data ?? []).map((entry) => [entry.key, entry.value])),
