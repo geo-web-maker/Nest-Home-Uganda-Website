@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test';
 import { json, mockApi } from './helpers';
 import { mockAdminApi, signInReferenceAdmin } from './admin-fixtures';
 
-const PUBLIC_HEADER_LINKS = ['Home', 'About', 'How it works', 'Team', 'Areas', 'FAQ', 'Contact'];
+const PUBLIC_HEADER_LINKS = ['Home', 'How it works', 'FAQ', 'Contact'];
+const ABOUT_MENU_LINKS = ['About', 'Team', 'Areas', 'Careers'];
 
 test.describe('public website vs reference mockup', () => {
   test('desktop primary navigation follows the canonical page order', async ({ page }) => {
@@ -10,10 +11,10 @@ test.describe('public website vs reference mockup', () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: 'Main' });
-    const primaryLabels = await nav.locator('ul > li').evaluateAll((items) =>
+    const primaryLabels = await nav.locator(':scope > ul > li').evaluateAll((items) =>
       items.map((item) => item.querySelector('a, button')?.textContent?.trim() ?? ''),
     );
-    expect(primaryLabels).toEqual(['Home', 'Services', 'About', 'How it works', 'Team', 'Areas', 'FAQ', 'Contact']);
+    expect(primaryLabels).toEqual(['Home', 'Services', 'How it works', 'About', 'FAQ', 'Contact']);
     for (const label of PUBLIC_HEADER_LINKS) {
       await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
     }
@@ -21,7 +22,14 @@ test.describe('public website vs reference mockup', () => {
     await expect(servicesMenu).toBeVisible();
     await servicesMenu.click();
     await expect(nav.getByRole('link', { name: 'Services', exact: true })).toBeVisible();
-    await expect(nav.getByRole('link', { name: 'Careers', exact: true })).toHaveCount(0);
+    const aboutMenu = nav.getByRole('button', { name: 'About', exact: true });
+    await expect(aboutMenu).toBeVisible();
+    await aboutMenu.click();
+    await expect(aboutMenu).toHaveAttribute('aria-expanded', 'true');
+    await expect(servicesMenu).toHaveAttribute('aria-expanded', 'false');
+    for (const label of ABOUT_MENU_LINKS) {
+      await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
+    }
     const footer = page.locator('footer');
     const explore = footer.getByRole('navigation', { name: 'Explore' });
     const company = footer.getByRole('navigation', { name: 'Company' });
@@ -30,9 +38,8 @@ test.describe('public website vs reference mockup', () => {
       'Services', 'How it works', 'Contact',
     ]);
     expect(await company.getByRole('link').allTextContents()).toEqual([
-      'Our team', 'Areas we serve', 'FAQ and care tips', 'About us', 'Privacy and terms', 'Staff login',
+      'Our team', 'Areas we serve', 'FAQ and care tips', 'About us', 'Careers', 'Privacy and terms', 'Staff login',
     ]);
-    await expect(footer.getByRole('link', { name: 'Careers', exact: true })).toHaveCount(0);
   });
 
   test('phone/tablet menu stays collapsible and all primary destinations remain reachable', async ({ page }) => {
@@ -45,9 +52,11 @@ test.describe('public website vs reference mockup', () => {
       await menuButton.click();
       const nav = page.getByRole('navigation', { name: 'Main' });
       await expect(nav.getByRole('link', { name: 'Home', exact: true })).toBeVisible();
-      await expect(nav.getByRole('link', { name: 'Team', exact: true })).toBeVisible();
-      await expect(nav.getByRole('link', { name: 'Areas', exact: true })).toBeVisible();
       await expect(nav.getByRole('link', { name: 'FAQ', exact: true })).toBeVisible();
+      await nav.getByRole('button', { name: 'About', exact: true }).click();
+      for (const label of ABOUT_MENU_LINKS) {
+        await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
+      }
       const dimensions = await page.evaluate(() => ({
         viewport: document.documentElement.clientWidth,
         content: document.documentElement.scrollWidth,

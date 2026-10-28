@@ -10,7 +10,7 @@ export default defineConfig({
   reporter: process.env.CI ? 'list' : 'list',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
-    channel: process.env.PLAYWRIGHT_CHANNEL || undefined,
+    channel: (process.env.PLAYWRIGHT_CHANNEL ?? (process.env.CI ? undefined : 'chrome-beta')) || undefined,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

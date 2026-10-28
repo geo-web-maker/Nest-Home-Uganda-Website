@@ -12,8 +12,9 @@ export default defineConfig({
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
-    // Set PLAYWRIGHT_CHANNEL=chrome-beta to reuse an installed Google Chrome Beta locally.
-    channel: process.env.PLAYWRIGHT_CHANNEL || undefined,
+    // Locally this uses the installed Google Chrome Beta; CI uses Playwright's bundled Chromium.
+    // Override with PLAYWRIGHT_CHANNEL=<channel>, or set it to an empty string to force the bundled browser.
+    channel: (process.env.PLAYWRIGHT_CHANNEL ?? (process.env.CI ? undefined : 'chrome-beta')) || undefined,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

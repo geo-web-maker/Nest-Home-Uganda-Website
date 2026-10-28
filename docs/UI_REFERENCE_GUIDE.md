@@ -85,7 +85,7 @@ npm run test:responsive
 
 The end-to-end projects start their own local preview/static server on port 4173 and intercept `/api/v1/*` with deterministic test responses. Run the two applications' browser suites separately because they both use port 4173. `test:reference` is the fast, focused suite to use when changing layout or navigation.
 
-To use an already-installed **Google Chrome Beta** instead of downloading Playwright's Chromium, set `PLAYWRIGHT_CHANNEL=chrome-beta` before running a browser-test command. In PowerShell:
+Outside CI, the browser tests use an already-installed **Google Chrome Beta** by default, so no `npx playwright install` is needed. To use another channel, set `PLAYWRIGHT_CHANNEL` (an empty value forces Playwright's bundled Chromium). In PowerShell:
 
 ```powershell
 $env:PLAYWRIGHT_CHANNEL = "chrome-beta"

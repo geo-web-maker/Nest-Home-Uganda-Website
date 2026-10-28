@@ -86,6 +86,11 @@ export async function mockAdminApi(page: Page) {
       })(route);
       return;
     }
+    // The enquiries screen reads the public services list; it must be an array, not the generic fallback object.
+    if (path === '/api/v1/public/services' && method === 'GET') {
+      await json(200, [])(route);
+      return;
+    }
     if (path === '/api/v1/admin/settings' && method === 'GET') {
       await json(200, adminSettings())(route);
       return;
