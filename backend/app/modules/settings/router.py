@@ -17,7 +17,7 @@ public_router = APIRouter(prefix="/public/site", tags=["public-site-settings"])
 admin_router = APIRouter(prefix="/admin/settings", tags=["admin-settings"])
 CanRead = Annotated[Principal, Depends(require_scopes("settings:read"))]
 CanWrite = Annotated[Principal, Depends(require_scopes("settings:write"))]
-CanManageSms = Annotated[Principal, Depends(require_scopes("system:manage"))]
+CanManageSystem = Annotated[Principal, Depends(require_scopes("system:manage"))]
 
 
 @public_router.get("", response_model=PublicSiteSettings)

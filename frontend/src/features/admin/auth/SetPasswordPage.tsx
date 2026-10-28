@@ -64,7 +64,7 @@ export function SetPasswordPage() {
   return (
     <main className={styles.screen}>
       <Head>
-        <title>{`${t('setPassword.title')} | Nest Home Care Uganda`}</title>
+        <title>{`${t('setPassword.title')} | Well Nest Home Care Uganda`}</title>
         <meta name="robots" content="noindex" />
       </Head>
       {done ? (

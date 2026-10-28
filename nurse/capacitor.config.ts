@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: process.env.CAP_APP_ID_NURSE ?? 'ug.nesthomecare.nurse',
-  appName: process.env.VITE_APP_NAME_NURSE ?? 'Nest Home Care Nurse',
+  appName: process.env.VITE_APP_NAME_NURSE ?? 'Well Nest Home Care Uganda Nurse',
   webDir: 'dist',
   server: { androidScheme: 'https' },
   plugins: {

@@ -20,7 +20,7 @@ const shell = (html.slice(0, rootStart) + '<div id="root"></div>\n' + html.slice
   .replace(/<(meta|link|script)\b[^>]*data-rh="true"[^>]*>(<\/script>)?/g, '')
   .replace(
     '<head>',
-    '<head><title>Admin | Nest Home Care Uganda</title><meta name="robots" content="noindex">',
+    '<head><title>Admin | Well Nest Home Care Uganda</title><meta name="robots" content="noindex">',
   );
 
 writeFileSync(resolve(dist, 'admin-shell.html'), shell);

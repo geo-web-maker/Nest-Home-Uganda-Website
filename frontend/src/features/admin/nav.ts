@@ -7,89 +7,51 @@ export type AdminNavItem = {
   path: string;
   /** Key under `nav` in locales/en/admin.ts. */
   labelKey: string;
-  /** A user needs all of these (spec 12.3). */
+  /** A user needs all of these. Route guards repeat this check on the server-backed screen. */
   scopes: readonly string[];
   /** Key into `icons.tsx`. */
   icon: string;
-  /** Sidebar group (spec 4.19 names the groups "Work" and "Manage" but not their members). */
-  group: 'work' | 'manage';
+  /** Groups follow nest-all-features-mockups.html; gated care-record screens are deliberately omitted. */
+  group: 'website' | 'careOperations' | 'monitoring' | 'safety' | 'setup';
 };
 
-/** The one list of admin routes, in spec 7.1 navigation order. Detail routes use their list's entry. */
+/**
+ * The mockup's navigation is the admin IA source of truth. Only implemented screens are listed;
+ * patients/medications/adherence remain gated out until those screens and their APIs exist.
+ */
 export const ADMIN_NAV: readonly AdminNavItem[] = [
-  {
-    path: '/admin',
-    labelKey: 'dashboard',
-    scopes: ['dashboard:view'],
-    icon: 'dashboard',
-    group: 'work',
-  },
-  {
-    path: '/admin/enquiries',
-    labelKey: 'enquiries',
-    scopes: ['enquiries:read'],
-    icon: 'enquiries',
-    group: 'work',
-  },
-  {
-    path: '/admin/careers',
-    labelKey: 'careers',
-    scopes: ['jobs:read'],
-    icon: 'careers',
-    group: 'work',
-  },
-  {
-    path: '/admin/applications',
-    labelKey: 'applications',
-    scopes: ['applications:read'],
-    icon: 'applications',
-    group: 'work',
-  },
-  {
-    path: '/admin/content',
-    labelKey: 'content',
-    scopes: ['content:read'],
-    icon: 'content',
-    group: 'work',
-  },
-  {
-    path: '/admin/settings',
-    labelKey: 'settings',
-    scopes: ['settings:read'],
-    icon: 'settings',
-    group: 'manage',
-  },
-  {
-    path: '/admin/users',
-    labelKey: 'users',
-    scopes: ['users:read'],
-    icon: 'users',
-    group: 'manage',
-  },
-  {
-    path: '/admin/care',
-    labelKey: 'care',
-    scopes: ['clients:read'],
-    icon: 'dashboard',
-    group: 'manage',
-  },
-  {
-    path: '/admin/reports',
-    labelKey: 'reports',
-    scopes: ['reports:read'],
-    icon: 'reports',
-    group: 'manage',
-  },
-  {
-    path: '/admin/activity',
-    labelKey: 'activity',
-    scopes: ['activity:read'],
-    icon: 'activity',
-    group: 'manage',
-  },
+  // Website and administration
+  { path: '/admin', labelKey: 'dashboard', scopes: ['dashboard:view'], icon: 'dashboard', group: 'website' },
+  { path: '/admin/enquiries', labelKey: 'enquiries', scopes: ['enquiries:read'], icon: 'enquiries', group: 'website' },
+  { path: '/admin/careers', labelKey: 'careers', scopes: ['jobs:read'], icon: 'careers', group: 'website' },
+  { path: '/admin/applications', labelKey: 'applications', scopes: ['applications:read'], icon: 'applications', group: 'website' },
+  { path: '/admin/content', labelKey: 'content', scopes: ['content:read'], icon: 'content', group: 'website' },
+  { path: '/admin/settings', labelKey: 'settings', scopes: ['settings:read'], icon: 'settings', group: 'website' },
+  { path: '/admin/users', labelKey: 'users', scopes: ['users:read'], icon: 'users', group: 'website' },
+  { path: '/admin/reports', labelKey: 'reports', scopes: ['reports:read'], icon: 'reports', group: 'website' },
+  { path: '/admin/activity', labelKey: 'activity', scopes: ['activity:read'], icon: 'activity', group: 'website' },
+  // Care operations
+  { path: '/admin/care/clients', labelKey: 'clients', scopes: ['clients:read'], icon: 'home', group: 'careOperations' },
+  { path: '/admin/care/places', labelKey: 'places', scopes: ['places:read'], icon: 'pin', group: 'careOperations' },
+  { path: '/admin/care/nurses', labelKey: 'nurses', scopes: ['nurses:read'], icon: 'users', group: 'careOperations' },
+  { path: '/admin/care/visits', labelKey: 'visits', scopes: ['visits:read'], icon: 'calendar', group: 'careOperations' },
+  { path: '/admin/care/flags', labelKey: 'flags', scopes: ['flags:read'], icon: 'flag', group: 'careOperations' },
+  { path: '/admin/care/team', labelKey: 'team', scopes: ['visits:read'], icon: 'users', group: 'careOperations' },
+  // Monitoring
+  { path: '/admin/care/alerts', labelKey: 'alerts', scopes: ['alerts:read'], icon: 'bell', group: 'monitoring' },
+  { path: '/admin/care/timesheets', labelKey: 'timesheets', scopes: ['timesheets:read'], icon: 'timer', group: 'monitoring' },
+  { path: '/admin/care/photos', labelKey: 'photos', scopes: ['photos:read'], icon: 'photo', group: 'monitoring' },
+  { path: '/admin/care/reports/visits', labelKey: 'careReports', scopes: ['care-reports:read'], icon: 'chart', group: 'monitoring' },
+  // Safety
+  { path: '/admin/care/sos', labelKey: 'sos', scopes: ['alerts:read'], icon: 'alert', group: 'safety' },
+  // Setup and compliance
+  { path: '/admin/care/settings', labelKey: 'careSettings', scopes: ['carecfg:read'], icon: 'gear', group: 'setup' },
+  { path: '/admin/care/readiness', labelKey: 'readiness', scopes: ['carecfg:read'], icon: 'check', group: 'setup' },
+  { path: '/admin/care/data-requests', labelKey: 'dataRequests', scopes: ['system:manage'], icon: 'shield', group: 'setup' },
 ];
 
 const BOTTOM_NAV_SLOTS = 4;
+const MOBILE_SHORTCUTS = ['/admin', '/admin/care/visits', '/admin/care/alerts', '/admin/care/sos'];
 
 /** Scopes a route needs. Throws for a path not in the list, so a typo in route config fails loudly. */
 export function scopesFor(path: string): readonly string[] {
@@ -109,10 +71,18 @@ export function visibleNav(user: Access | null): AdminNavItem[] {
   return ADMIN_NAV.filter((item) => canReach(item, user));
 }
 
-/** Phone bottom nav: the first four reachable items; the rest go under "More". */
+/** Phone shortcuts follow the reference: dashboard, visits, alerts and SOS, with scoped fallbacks. */
 export function bottomNav(user: Access | null): { primary: AdminNavItem[]; more: AdminNavItem[] } {
   const items = visibleNav(user);
-  return { primary: items.slice(0, BOTTOM_NAV_SLOTS), more: items.slice(BOTTOM_NAV_SLOTS) };
+  const primary = MOBILE_SHORTCUTS.map((path) => items.find((item) => item.path === path))
+    .filter((item): item is AdminNavItem => Boolean(item))
+    .slice(0, BOTTOM_NAV_SLOTS);
+  for (const item of items) {
+    if (primary.length >= BOTTOM_NAV_SLOTS) break;
+    if (!primary.some((current) => current.path === item.path)) primary.push(item);
+  }
+  const primaryPaths = new Set(primary.map((item) => item.path));
+  return { primary, more: items.filter((item) => !primaryPaths.has(item.path)) };
 }
 
 export function firstReachablePath(user: Access | null): string | null {

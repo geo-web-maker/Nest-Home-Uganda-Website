@@ -29,6 +29,20 @@ export function AppShell({ children, online, queued, authenticated, message, sos
         <Link to="/sync">{queued} {copy.shell.waiting}</Link>
       </div>
       {message && <p className="notice" role="status">{message}</p>}
+      {authenticated && (
+        <nav className="desktop-rail" aria-label={copy.shell.mainNavigation}>
+          <p className="desktop-rail-title">Your workspace</p>
+          <NavLink to="/" end aria-current={location.pathname === '/' ? 'page' : undefined}>
+            <span className="rail-icon" aria-hidden="true">◷</span><span>{copy.tabs.today}</span>
+          </NavLink>
+          <NavLink to="/history" aria-current={location.pathname === '/history' ? 'page' : undefined}>
+            <span className="rail-icon" aria-hidden="true">↺</span><span>{copy.tabs.history}</span>
+          </NavLink>
+          <NavLink to="/profile" aria-current={location.pathname === '/profile' ? 'page' : undefined}>
+            <span className="rail-icon" aria-hidden="true">◎</span><span>{copy.tabs.profile}</span>
+          </NavLink>
+        </nav>
+      )}
       <main className="app-shell">{children}</main>
       {authenticated && (
         <nav className="bottom-tabs" aria-label={copy.shell.mainNavigation}>

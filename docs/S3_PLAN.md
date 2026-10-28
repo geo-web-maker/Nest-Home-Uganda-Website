@@ -1,4 +1,4 @@
-# S3 split into free-session phases (Nest Home Care frontend pattern slice)
+# S3 split into free-session phases (Well Nest Home Care frontend pattern slice)
 
 S3 is too big for one free session because Claude re-reads the repo, the 91 KB spec and runs the full gate every time. This plan cuts S3 into **15 small phases (S3.1 to S3.15)**. Each one touches 2 to 6 files and needs only a few small uploads.
 
@@ -13,7 +13,7 @@ S3 is too big for one free session because Claude re-reads the repo, the 91 KB s
 ## Paste this at the start of every session (the standing rules, short)
 
 ```
-You are continuing the Nest Home Care Uganda frontend (React 18, Vite 7, TypeScript, react-router-dom 6.30.6, TanStack Query, CSS Modules, vitest). Do ONLY the phase below. Rules:
+You are continuing the Well Nest Home Care Uganda frontend (React 18, Vite 7, TypeScript, react-router-dom 6.30.6, TanStack Query, CSS Modules, vitest). Do ONLY the phase below. Rules:
 - Use only pinned packages already in package.json. No new libraries, no Tailwind, no UI kit, no Redux.
 - No roles anywhere. Access is by scopes only (scope ids are strings like "enquiries:read").
 - No hard-coded user-facing strings in components: use the copy/i18n approach given in the phase.

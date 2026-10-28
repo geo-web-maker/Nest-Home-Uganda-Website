@@ -1,4 +1,4 @@
-# Nest Home Care Uganda — Track B handover
+# Well Nest Home Care Uganda — Track B handover
 
 **Date:** 2026-10-25  
 **Coverage:** Nurse Module Track B, B1–B17  
@@ -6,7 +6,7 @@
 
 ## What is in this ZIP
 
-- The existing full Nest Home Care project tree, updated with Track B nurse-app source and regression tests.
+- The existing full Well Nest Home Care project tree, updated with Track B nurse-app source and regression tests.
 - `docs/TRACK_B_COMPLETION_AUDIT.md`: phase-by-phase source audit, reliability changes, limitations, and next steps.
 - `docs/TRACK_B_CHECKLIST.md`: easy-to-follow implementation and acceptance checklist.
 - `docs/NURSE_IMPLEMENTATION_STATUS.md`: appended current checkpoint while retaining previous historical status.

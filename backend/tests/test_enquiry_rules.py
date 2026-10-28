@@ -40,14 +40,14 @@ def test_transitions(current: str, target: str, ok: bool) -> None:
 
 def test_whatsapp_message_and_url_follow_the_spec() -> None:
     msg = rules.whatsapp_message(
-        "Hello Nest Home Care, I would like to book",
+        "Hello Well Nest Home Care, I would like to book",
         ["Postnatal care", "Physiotherapy"],
         "Mary Atim",
         "Ntinda",
         "NHC-000007",
     )
     assert msg == (
-        "Hello Nest Home Care, I would like to book: Postnatal care, Physiotherapy. "
+        "Hello Well Nest Home Care, I would like to book: Postnatal care, Physiotherapy. "
         "Name: Mary Atim. Area: Ntinda. Ref: NHC-000007."
     )
     url = rules.whatsapp_url("256787499988", msg)

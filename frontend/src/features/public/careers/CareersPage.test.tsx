@@ -15,10 +15,17 @@ function setup() {
   );
 }
 describe('CareersPage', () => {
-  it('renders the page hero and application heading', () => {
+  beforeEach(() => {
+    vi.mocked(apiClient.get).mockReset().mockResolvedValue([]);
+  });
+  it('renders the reference careers hero and keeps applications on the detail flow', () => {
     setup();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Join the team');
-    expect(screen.getByRole('heading', { name: 'Apply to join the team' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Join the team.');
+    expect(screen.getByRole('link', { name: 'Register your interest' })).toHaveAttribute(
+      'href',
+      '/careers/general#application',
+    );
+    expect(screen.queryByRole('heading', { name: 'Apply to join the team' })).not.toBeInTheDocument();
   });
   it('renders public job cards from the API', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce([

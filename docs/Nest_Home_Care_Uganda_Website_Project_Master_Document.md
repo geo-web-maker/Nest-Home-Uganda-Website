@@ -1,6 +1,6 @@
-# Nest Home Care Uganda: Website Project Master Document
+# Well Nest Home Care Uganda: Website Project Master Document
 
-**Version 1.0 · Prepared for the Nest Home Care team and the web designer**
+**Version 1.0 · Prepared for the Well Nest Home Care team and the web designer**
 
 This document records everything decided so far, sets out the structure of the full website, and specifies the admin panel, enquiry form and careers system. It is the single reference for design, build and handover.
 
@@ -10,7 +10,7 @@ This document records everything decided so far, sets out the structure of the f
 
 | Item | Detail |
 | --- | --- |
-| Client | Nest Home Care Uganda |
+| Client | Well Nest Home Care Uganda |
 | Business | Home-based nursing and care in Kampala |
 | Contact | 0787 499 988 (tel link +256787499988) |
 | Office | Kampala, Uganda |
@@ -212,7 +212,7 @@ If the client prefers to ignore the saved-form part for now, build Option A firs
 | Location or area | Yes | Neighbourhood in Kampala or surrounding area |
 | Preferred start | No | Today, This week, Later, Not sure |
 | Short note | No | Anything the nurse should know (limit 500 characters) |
-| Consent | Yes | "I agree that Nest Home Care may contact me about this request" with a link to the privacy page |
+| Consent | Yes | "I agree that Well Nest Home Care may contact me about this request" with a link to the privacy page |
 
 Keep medical detail out of the form. Ask for only what is needed to arrange the first call. Sensitive details are collected by the nurse during the assessment.
 
@@ -227,7 +227,7 @@ Keep medical detail out of the form. Ask for only what is needed to arrange the 
 
 ## 8. Admin panel
 
-A private area where Nest Home Care staff manage enquiries, job applications and the website's content without needing a developer.
+A private area where Well Nest Home Care staff manage enquiries, job applications and the website's content without needing a developer.
 
 ### 8.1 Users and roles
 
@@ -294,7 +294,7 @@ Each enquiry stores: who, phone, service, area, source (website form, call butto
 - New enquiry: email to the coordinator group, plus an optional SMS or WhatsApp alert to the on-duty phone.
 - New application: email to the manager.
 - Reminder if an enquiry stays **New** for more than 30 minutes during working hours (time adjustable).
-- Optional automatic confirmation to the visitor by SMS: "Thank you for contacting Nest Home Care. A nurse will call you shortly."
+- Optional automatic confirmation to the visitor by SMS: "Thank you for contacting Well Nest Home Care. A nurse will call you shortly."
 
 ### 8.7 Admin on small screens
 
@@ -401,7 +401,7 @@ The design previews built so far are static pages. They cannot store form data o
 
 ## 13. SEO and analytics
 
-- One page per service, each with a unique title and description (for example "Newborn and Postnatal Care at Home in Kampala | Nest Home Care").
+- One page per service, each with a unique title and description (for example "Newborn and Postnatal Care at Home in Kampala | Well Nest Home Care").
 - Local business structured data with the office address, phone and opening hours; a Google Business Profile that matches the website exactly.
 - Clear headings, descriptive image names and alt text, fast loading.
 - Care-tip articles that answer real family questions.

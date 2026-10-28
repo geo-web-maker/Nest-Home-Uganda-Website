@@ -140,7 +140,7 @@ describe('ServicesPage', () => {
     setup();
 
     expect(vi.mocked(Seo).mock.calls[0]?.[0]).toEqual({
-      title: 'Home Care Services in Kampala | Nest Home Care Uganda',
+      title: 'Home Care Services in Kampala | Well Nest Home Care Uganda',
       description: 'Everything your family needs, delivered at home. See our eight kinds of care.',
       path: '/services',
     });

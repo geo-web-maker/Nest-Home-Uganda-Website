@@ -9,7 +9,7 @@ export function NotFoundPage() {
     <section className={styles.page}>
       <div className="container">
         <Head>
-          <title>{`${t('notFound.title')} | Nest Home Care Uganda`}</title>
+          <title>{`${t('notFound.title')} | Well Nest Home Care Uganda`}</title>
           <meta name="robots" content="noindex" />
         </Head>
         <div className={styles.content}>

@@ -14,8 +14,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:reference": "playwright test e2e/reference-fidelity.spec.ts",
     "test:a11y": "playwright test e2e/accessibility.spec.ts",
-    "test:responsive": "playwright test e2e/responsive.spec.ts"
+    "test:responsive": "playwright test e2e/responsive.spec.ts",
+    "test:pre-apk": "npm run typecheck && npm run lint && npm run test && npm run build && npm run test:reference && npm run test:a11y && npm run test:responsive && npm run test:e2e"
   },
   "dependencies": {
     "@byteowls/capacitor-sms": "7.0.0",

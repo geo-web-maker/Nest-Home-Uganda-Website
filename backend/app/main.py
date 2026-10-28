@@ -41,7 +41,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
-        title="Nest Home Care Uganda API",
+        title="Well Nest Home Care Uganda API",
         version="0.0.0",
         lifespan=lifespan,
         docs_url="/docs" if settings.is_development else None,

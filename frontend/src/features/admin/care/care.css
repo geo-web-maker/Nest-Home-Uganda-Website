@@ -149,3 +149,6 @@
     flex-direction: column;
   }
 }
+
+/* On wide screens the canonical grouped admin sidebar replaces this compact route switcher. */
+@media (min-width: 1040px) { .care-subnav { display: none; } }

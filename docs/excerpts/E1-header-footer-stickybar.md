@@ -11,11 +11,11 @@
 
 Forest, top border `1px rgba(199,154,59,.4)`, padding `34px 0 24px`, .92rem. Three columns at ≥700px (one on phone), gap 22px:
 
-1. **Nest Home Care**: "Trusted · Reliable · Compassionate. Office: Kampala · {phone}".
+1. **Well Nest Home Care**: "Trusted · Reliable · Compassionate. Office: Kampala · {phone}".
 2. **Explore**: Services, Our team, Areas we serve, FAQ and care tips.
 3. **Company**: About us, Careers, Contact, Privacy and terms.
 
-Links are buttons or anchors, padding 5px 0, opacity .85. Bottom line centred: "© Nest Home Care Uganda", .84rem, opacity .7, margin-top 22px. Social icons render only if URLs are set in settings.
+Links are buttons or anchors, padding 5px 0, opacity .85. Bottom line centred: "© Well Nest Home Care Uganda", .84rem, opacity .7, margin-top 22px. Social icons render only if URLs are set in settings.
 
 ### 4.5 Sticky action bar (`site/StickyBar`)
 

@@ -12,7 +12,7 @@ from app.modules.settings import repository as repo
 from app.modules.settings.defaults import setting_defaults, setting_group
 from app.modules.settings.schemas import PublicSiteSettings, SettingEntry
 
-_GROUPS = {"business", "home", "forms", "notify", "theme", "seo", "site", "sms"}
+_GROUPS = {"business", "home", "forms", "notify", "theme", "seo", "site", "sms", "system"}
 _PUBLIC_GROUPS = ("business", "home", "forms", "theme", "seo", "site")
 _HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 _EDITABLE_THEME_KEYS = ("theme.forest", "theme.gold", "theme.leaf", "theme.mint")
@@ -112,9 +112,9 @@ async def admin_entries(
         current_group = setting_group(key)
         if group is not None and current_group != group:
             continue
-        if current_group == "sms" and not principal.has("system:manage"):
+        if current_group in {"sms", "system"} and not principal.has("system:manage"):
             continue
-        if current_group != "sms" and not principal.has("settings:read"):
+        if current_group not in {"sms", "system"} and not principal.has("settings:read"):
             continue
         entries.append(SettingEntry(key=key, group=current_group, value=values[key]))
     return entries
@@ -141,9 +141,9 @@ async def patch_group(
 ) -> list[SettingEntry]:
     if group not in _GROUPS:
         raise ValidationFailed("Unknown settings tab.", {"tab": "unknown"})
-    if group == "sms":
+    if group in {"sms", "system"}:
         if not principal.has("system:manage"):
-            raise Forbidden("SMS settings require system:manage.")
+            raise Forbidden(f"{group.title()} settings require system:manage.")
         principal.authorised_by = tuple(dict.fromkeys((*principal.authorised_by, "system:manage")))
     persisted = await repo.get_values()
     values = _values_with_defaults(persisted)
@@ -185,6 +185,60 @@ async def patch_group(
         if key == "business.phone_dial" and (not value.startswith("+") or not value[1:].isdigit()):
             raise ValidationFailed(
                 "Use an international phone number beginning with +.", {suffix: "invalid number"}
+            )
+        if key == "system.PAYMENT_GATEWAY_MODE" and value not in {"sandbox", "production"}:
+            raise ValidationFailed(
+                "Payment gateway mode must be sandbox or production.",
+                {suffix: "invalid mode"},
+            )
+        if key in {"system.MAX_DAILY_VISITS", "system.MAX_ITEMS_PER_USER"} and not 1 <= value <= 100000:
+            raise ValidationFailed(
+                "The operational limit must be between 1 and 100000.",
+                {suffix: "out of range"},
+            )
+        if key == "system.SESSION_TIMEOUT_MINUTES" and not 5 <= value <= 1440:
+            raise ValidationFailed(
+                "Session timeout must be between 5 and 1440 minutes.",
+                {suffix: "out of range"},
+            )
+        if key == "system.MAX_UPLOAD_SIZE_MB" and not 1 <= value <= 1024:
+            raise ValidationFailed(
+                "Maximum upload size must be between 1 and 1024 MB.",
+                {suffix: "out of range"},
+            )
+        if key == "system.WEBHOOK_RETRY_ATTEMPTS" and not 0 <= value <= 20:
+            raise ValidationFailed(
+                "Webhook retries must be between 0 and 20.",
+                {suffix: "out of range"},
+            )
+        if key == "system.API_REQUEST_TIMEOUT_SEC" and not 1 <= value <= 300:
+            raise ValidationFailed(
+                "API request timeout must be between 1 and 300 seconds.",
+                {suffix: "out of range"},
+            )
+        if key == "system.SYNC_CRON_INTERVAL_MIN" and not 1 <= value <= 1440:
+            raise ValidationFailed(
+                "Sync interval must be between 1 and 1440 minutes.",
+                {suffix: "out of range"},
+            )
+        if key == "system.DEFAULT_SENDER_EMAIL" and (
+            "@" not in value or value.startswith("@") or value.endswith("@")
+        ):
+            raise ValidationFailed(
+                "Enter a valid sender email address.",
+                {suffix: "invalid email"},
+            )
+        if key == "system.SUPPORT_CONTACT_EMAIL" and (
+            "@" not in value or value.startswith("@") or value.endswith("@")
+        ):
+            raise ValidationFailed(
+                "Enter a valid support email address.",
+                {suffix: "invalid email"},
+            )
+        if key == "system.DEFAULT_TIMEZONE" and "/" not in value:
+            raise ValidationFailed(
+                "Use an IANA timezone such as Africa/Kampala.",
+                {suffix: "invalid timezone"},
             )
         if key in _EDITABLE_THEME_KEYS:
             _check_colour(suffix, value)

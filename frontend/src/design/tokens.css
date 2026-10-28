@@ -11,10 +11,8 @@
   --arch:999px 999px 18px 18px;
   --container:1180px;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0C1A12; --mint:#12281D; --surf:#14271C; --ink:#E8EFE2; --mut:#9DB5A4; --line:#244233; --straw:#3A3620; --forest:#091410;}}
-:root[data-theme="dark"]{--bg:#0C1A12; --mint:#12281D; --surf:#14271C; --ink:#E8EFE2; --mut:#9DB5A4; --line:#244233; --straw:#3A3620; --forest:#091410}
-/* breakpoints: tablet @media (min-width:700px), desktop @media (min-width:1040px) */
+:root{color-scheme:light;}
+/* Keep the palette light like the reference. Public header collapses below 1040px; admin groups expand at 1040px; nurse rail starts at 820px. */
 
 /* Motion tokens (Step 2A). Only these may carry raw ms or cubic-bezier values. */
 :root{
@@ -49,11 +47,3 @@
   --shadow-2:0 2px 4px rgba(18,53,36,0.06),0 12px 32px rgba(18,53,36,0.12);
   --highlight-inset:inset 0 0 0 0 transparent;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --shadow-1:0 1px 2px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.3);
-  --shadow-2:0 2px 4px rgba(0,0,0,0.4),0 12px 32px rgba(0,0,0,0.45);
-  --highlight-inset:inset 0 1px 0 rgba(232,239,226,0.06);}}
-:root[data-theme="dark"]{
-  --shadow-1:0 1px 2px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.3);
-  --shadow-2:0 2px 4px rgba(0,0,0,0.4),0 12px 32px rgba(0,0,0,0.45);
-  --highlight-inset:inset 0 1px 0 rgba(232,239,226,0.06)}

@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { operationKindLabel, visitStatusLabel } from './copy';
+import { copy, operationKindLabel, visitStatusLabel } from './copy';
 
 describe('shared nurse UI labels', () => {
+  it('uses the approved nurse app name and organisation branding', () => {
+    expect(copy.appName).toBe('Well Nest Home Care Uganda Nurse');
+    expect(copy.appShortName).toBe('Well Nest Home Care Uganda Nurse');
+    expect(copy.organisation).toBe('Well Nest Home Care Uganda Ltd');
+  });
+
   it('maps known visit states to readable centralised copy', () => {
     expect(visitStatusLabel('in_progress')).toBe('In progress');
     expect(visitStatusLabel('needs_attention')).toBe('Needs attention');

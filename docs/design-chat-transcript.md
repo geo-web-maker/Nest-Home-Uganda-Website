@@ -73,7 +73,7 @@ Most of the well-reviewed examples are US or UK franchises, but they show what w
 -   **FirstLight Home Care** addresses pricing head-on, which almost none of the others do. [nanoglobals](https://nanoglobals.com/home-care-websites/)
 -   **Radfield Home Care** and **Purposeful Living Home Care** are also reviewed on Sagapixel’s page, where the latter has a “Get care now” button and phone number as the first thing you see. [sagapixel](https://sagapixel.com/?p=18997)
 
-**What to copy for Nest Home Care:**
+**What to copy for Well Nest Home Care:**
 
 1.  Put the phone number and a “Book care” button at the very top.
 2.  Show real faces of the team, since for a company that sends people into your home, faces matter. [nanoglobals](https://nanoglobals.com/home-care-websites/)
@@ -82,7 +82,7 @@ Most of the well-reviewed examples are US or UK franchises, but they show what w
 
 **For Uganda specifically** (my suggestion, not from those sources): most visitors will be on phones, so add a WhatsApp chat button and a tap-to-call button, and keep the pages light for slower data.
 
-Want me to build 2-3 design screens for Nest Home Care using your green and gold branding and photos, so you can send the client a link?
+Want me to build 2-3 design screens for Well Nest Home Care using your green and gold branding and photos, so you can send the client a link?
 
 ![Create PDF Docs](chrome-extension://eilaijjijfgeckkddafebmkllclibobc/assets/pdf.svg)
 
@@ -92,11 +92,11 @@ Want me to build 2-3 design screens for Nest Home Care using your green and gold
 
 Create those design but as single html file both in mobile, tablet and desktop but should look unique
 
-## Claude responded: I built the Nest Home Care Uganda page as a single file that adapts to mobile, tablet and desktop.
+## Claude responded: I built the Well Nest Home Care Uganda page as a single file that adapts to mobile, tablet and desktop.
 
 Read a file, created a file
 
-I built the Nest Home Care Uganda page as a single file that adapts to mobile, tablet and desktop. The link is private to you until you choose to share it. I haven’t opened it on a phone or desktop, so check it on both before you send it to the client.
+I built the Well Nest Home Care Uganda page as a single file that adapts to mobile, tablet and desktop. The link is private to you until you choose to share it. I haven’t opened it on a phone or desktop, so check it on both before you send it to the client.
 
 -   **Look:** deep forest green and gold from their flyers, with egg-shaped frames and a woven-nest edge as the main design idea. The headline is “Care that comes home to you.”
 -   **Services:** all 8 services from the second flyer, tappable, each with a “Book this care” button.
@@ -220,7 +220,7 @@ The WhatsApp booking, the mobile call bar and the team photo slots all work as b
 
 Live link: [https://claude.ai/artifact/ELxUG1E1XmR6GWfMnFwbga](https://claude.ai/artifact/ELxUG1E1XmR6GWfMnFwbga)
 
-For the template design instructions and document, I need to know what it’s for. Is it a guide so you can reuse this design for other home care clients, or a handover document for the Nest Home Care team on how to edit and maintain their site?
+For the template design instructions and document, I need to know what it’s for. Is it a guide so you can reuse this design for other home care clients, or a handover document for the Well Nest Home Care team on how to edit and maintain their site?
 
 
 
@@ -283,7 +283,7 @@ You’re right: a single page works for a quick intro, but a care business needs
 3.  **Check it against the real customer.** Ask the client what families ask on the phone. Those questions become your FAQ and page content.
 4.  **Keep the menu to 5-6 items** so a phone visitor is never lost.
 
-**Suggested sitemap for Nest Home Care**
+**Suggested sitemap for Well Nest Home Care**
 
 -   **Home:** the current design, trimmed to highlights.
 -   **Services:** an overview, plus one page for each of the 8 services (what’s included, who it’s for, how a visit works).
@@ -348,13 +348,13 @@ Want me to add that spec and then build the Services page with all three layouts
 
 let first build a comprehensive document covering all our discussion although I would like an admin panel so that we can have the ones who use the form or we should ignore that part of form and career also
 
-## Claude responded: https://claude.ai/code/artifact/7e31b151-68a2-42bc-ac37-aaacd92e6be4 The Nest Home Care master document is ready.
+## Claude responded: https://claude.ai/code/artifact/7e31b151-68a2-42bc-ac37-aaacd92e6be4 The Well Nest Home Care master document is ready.
 
 O
 
 Artifact
 
-The Nest Home Care master document is ready. Read it over, edit inline, or comment, and I’ll revise.
+The Well Nest Home Care master document is ready. Read it over, edit inline, or comment, and I’ll revise.
 
 It covers our whole discussion, plus these decisions on what you raised:
 

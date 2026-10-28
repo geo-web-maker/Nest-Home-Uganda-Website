@@ -17,7 +17,7 @@ function pngSize(file: string): { width: number; height: number } {
 
 describe('nurse PWA manifest', () => {
   it('is installable: name, standalone display, start URL and scope', () => {
-    expect(manifest.name).toBe('Nest Home Care Nurse');
+    expect(manifest.name).toBe('Well Nest Home Care Uganda Nurse');
     expect(manifest.short_name.length).toBeLessThanOrEqual(12);
     expect(manifest.display).toBe('standalone');
     expect(manifest.start_url).toBe('/');

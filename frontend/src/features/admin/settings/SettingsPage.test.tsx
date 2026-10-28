@@ -75,4 +75,30 @@ describe('SettingsPage', () => {
     boxes.forEach((box) => expect(box).toBeEnabled());
     expect(screen.getByRole('button', { name: 'Save settings' })).toBeEnabled();
   });
+  it('allows a system manager to open and edit system controls', async () => {
+    authMock.scopes = ['system:manage'];
+    vi.mocked(apiClient.get).mockResolvedValueOnce([
+      { key: 'system.MAINTENANCE_MODE', group: 'system', value: false },
+      { key: 'system.MAX_DAILY_VISITS', group: 'system', value: 50 },
+      { key: 'system.PAYMENT_GATEWAY_MODE', group: 'system', value: 'sandbox' },
+    ]);
+    setup();
+    expect(await screen.findByRole('tab', { name: 'System controls' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByLabelText('Maintenance mode')).toBeEnabled();
+    expect(screen.getByDisplayValue('50')).toBeEnabled();
+    expect(screen.getByRole('combobox', { name: 'Payment gateway mode' })).toHaveValue('sandbox');
+    expect(screen.getByRole('option', { name: 'Production' })).toBeInTheDocument();
+    expect(apiClient.get).toHaveBeenCalledWith('/admin/settings/system');
+  });
+
+  it('does not expose system controls to a normal settings administrator', () => {
+    authMock.scopes = ['settings:read', 'settings:write'];
+    vi.mocked(apiClient.get).mockResolvedValueOnce([]);
+    setup();
+    expect(screen.queryByRole('tab', { name: 'System controls' })).not.toBeInTheDocument();
+  });
+
 });

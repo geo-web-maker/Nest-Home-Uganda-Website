@@ -1,5 +1,5 @@
 # Rules excerpt (BUILDER_INSTRUCTIONS): hard rules and scope model
-1. **Source of truth order:** (a) this file, (b) the build spec, (c) `reference/nest-home-care-complete.html` for look and behaviour (it wins over the spec on any measured value), (d) the other docs. Never use memory or "common practice" to settle a conflict. Stop and ask.
+1. **Source of truth order:** (a) this file for engineering/security rules, (b) the build spec for functional requirements and scope, (c) `reference/nest-all-features-mockups.html` for public website, nurse app and admin UI. This is the canonical UI reference and wins over older HTML previews for visual design, section hierarchy, navigation and responsive behaviour. Use `reference/nest-home-care-complete.html` only for supplementary details not covered by the canonical mockup. Never use memory or "common practice" to settle a conflict.
 2. **Do not reopen decisions.** Spec Section 0.3 lists 14 decisions. They are final.
 3. **Do not invent content.** Copy, prices, licences, nurse names, testimonials, legal text and the seven non-postnatal service bodies are "client to supply". Use the exact placeholder strings in the spec (Section 12). Never write medical claims.
 4. **Do not add features, libraries, pages, fields or settings** not in the spec. No Tailwind, no UI kit, no Redux, no Next.js, no Motor, no SQL.
@@ -7,7 +7,7 @@
 6. **Production CSS uses media queries** at `min-width: 700px` and `min-width: 1040px`. Never copy `@container` rules or `cqi` units from the reference (use `vw` where the reference uses `cqi`).
 7. **Never claim something works unless you ran it.** Every claim in your report needs the command and its real output (Section 8). If you did not run it, write "NOT RUN".
 8. **Never store secrets in the repo.** Only `.env.example` with empty or dummy values.
-9. **Never edit** files under `docs/`, `reference/` or `design/` (read-only inputs).
+9. Preserve original files under `reference/` and `design/`; update supporting documentation under `docs/` when a task explicitly calls for source-of-truth guidance, implementation maps or test instructions. Do not rewrite source specifications beyond the smallest explicit change needed to resolve a documented conflict.
 10. **No silent fallbacks.** If a step fails, do not work around it with a different approach. Report the exact error and stop.
 11. **Edits to existing files are small diffs, not full rewrites.** Rewrite a file in full only if you created it in the current phase.
 12. **Text style in code, comments and UI strings:** plain English, short sentences. No emojis. Use a normal hyphen or a comma, never an em dash.

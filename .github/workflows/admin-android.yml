@@ -1,0 +1,65 @@
+name: admin-android
+
+# Builds an unsigned debug APK of the admin app. The Capacitor Android project is generated in CI
+# and is intentionally not committed, matching the nurse Android build pattern.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, nurse-module]
+    paths:
+      - frontend/**
+      - scripts/apply_admin_android_overrides.mjs
+      - .github/workflows/admin-android.yml
+  pull_request:
+    paths:
+      - frontend/**
+      - scripts/apply_admin_android_overrides.mjs
+      - .github/workflows/admin-android.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: admin-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  debug-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Install Android SDK components for Capacitor 7
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build:admin-native
+      - name: Generate the native Android project
+        run: npx cap add android --config capacitor.admin.config.ts
+      - name: Apply Android overrides
+        working-directory: .
+        run: node scripts/apply_admin_android_overrides.mjs
+      - run: npx cap sync android --config capacitor.admin.config.ts
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Assemble the debug APK
+        working-directory: frontend/android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: admin-debug-apk
+          path: frontend/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14

@@ -1,4 +1,4 @@
-You are continuing the Nest Home Care Uganda frontend (React 18, Vite 7, TypeScript, react-router-dom 6.30.6, TanStack Query, CSS Modules, vitest). Do ONLY the phase below. Rules:
+You are continuing the Well Nest Home Care Uganda frontend (React 18, Vite 7, TypeScript, react-router-dom 6.30.6, TanStack Query, CSS Modules, vitest). Do ONLY the phase below. Rules:
 - Use only pinned packages already in package.json. No new libraries, no Tailwind, no UI kit, no Redux.
 - No roles anywhere. Access is by scopes only (scope ids are strings like "enquiries:read").
 - No hard-coded user-facing strings in components: use the copy/i18n approach given in the phase.

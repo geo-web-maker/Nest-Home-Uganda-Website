@@ -12,7 +12,7 @@ describe('Nurse app offline workspace', () => {
 
   it('renders the app name and offline-first purpose', () => {
     render(<App />);
-    expect(screen.getByRole('heading', { name: 'Nest Home Care Nurse' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Well Nest Home Care Uganda Nurse' })).toBeTruthy();
     expect(screen.getByText(/visits stay available when the network is unavailable/i)).toBeTruthy();
   });
 });

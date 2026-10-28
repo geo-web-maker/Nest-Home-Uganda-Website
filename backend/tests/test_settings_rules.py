@@ -9,16 +9,16 @@ from app.modules.settings.service import _check_theme, _localise, contrast_ratio
 
 
 def test_settings_defaults_match_the_public_build_spec() -> None:
-    values = setting_defaults(Settings())
+    values = setting_defaults(Settings(business_email="info@example.test"))
     assert values["business.phone_display"] == "0787 499 988"
     assert values["business.phone_dial"] == "+256787499988"
     assert values["business.whatsapp"] == "256787499988"
     assert values["business.address"] == "Kampala, Uganda"
-    assert values["business.email"] == "info@nesthomecare.ug"
+    assert values["business.email"] == "info@example.test"
     assert values["business.hours"] == "Add opening hours"
     assert values["seo.index"] is False
     assert values["forms.consent_text"] == (
-        "I agree that Nest Home Care may contact me about this request."
+        "I agree that Well Nest Home Care may contact me about this request."
     )
     assert values["home.eggs"] == [
         {"title": "Elders", "caption": "with dignity"},

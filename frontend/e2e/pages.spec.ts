@@ -8,7 +8,7 @@ const PAGES = [
   { path: '/team', h1: /Faces you can trust/i },
   { path: '/how-it-works', h1: /Clear steps, clear pricing/i },
   { path: '/areas', h1: /Home visits across Kampala/i },
-  { path: '/faq', h1: /Answers for worried families/i },
+  { path: '/faq', h1: /Answers to common questions/i },
   { path: '/careers', h1: /Join the team/i },
   { path: '/contact', h1: /Talk to us today/i },
   { path: '/privacy', h1: /safe with us/i },

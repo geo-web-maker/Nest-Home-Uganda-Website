@@ -857,7 +857,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
       />
       <nav className="care-subnav" aria-label="Care screens">
         {(Object.keys(CARE_SCREEN_PATHS) as ScreenKey[])
-          .filter((k) => hasScopes(user, CARE_SCREEN_SCOPES[k]))
+          .filter((k) => k !== 'audit' && hasScopes(user, CARE_SCREEN_SCOPES[k]))
           .map((k) => (
             <button
               key={k}

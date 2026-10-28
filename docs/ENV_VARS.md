@@ -10,6 +10,9 @@ Values are owner-supplied at deployment time. Never commit secrets or production
 | `MONGODB_DB` | Existing primary database name. |
 | `SECRET_KEY` | JWT signing secret. |
 | `VITE_API_URL` | API origin used by frontends and native apps at build time. |
+| `VITE_SITE_URL` | Public site origin (canonical and og:url). Set to the new domain; no domain is hardcoded. |
+| `FRONTEND_URL` | Public site origin used by the backend for links in emails and SMS. Set to the new domain. |
+| `BUSINESS_EMAIL` | Default public contact email (seeds `business.email`). Set to an address on the new domain; editable later in admin Settings. |
 | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET_PUBLIC`, `S3_BUCKET_PRIVATE`, `S3_KEY`, `S3_SECRET` | Existing S3-compatible object storage. |
 
 ## Nurse/care configuration

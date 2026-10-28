@@ -1,4 +1,4 @@
-You are building the Nurse Module for Nest Home Care Uganda, inside the repository in the attached zip. This message replaces docs/PASTE_FIRST.txt for this module. Where that older file says to run checks, ignore it: for this work you CANNOT run anything and GitHub Actions runs all tests.
+You are building the Nurse Module for Well Nest Home Care Uganda, inside the repository in the attached zip. This message replaces docs/PASTE_FIRST.txt for this module. Where that older file says to run checks, ignore it: for this work you CANNOT run anything and GitHub Actions runs all tests.
 
 STEP 1. Read these files completely, in this order, before anything else:
 1. docs/NURSE_BUILD_PLAN.md  (the master plan: rules, decisions, test architecture, work orders WO-00 to WO-19, CI skeletons)

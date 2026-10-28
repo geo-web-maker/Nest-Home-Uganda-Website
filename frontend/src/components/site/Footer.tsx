@@ -7,16 +7,17 @@ import styles from './Footer.module.css';
 
 const EXPLORE = [
   { to: '/services', label: 'common:nav.services' },
-  { to: '/team', label: 'site:footer.ourTeam' },
-  { to: '/areas', label: 'site:footer.areas' },
-  { to: '/faq', label: 'site:footer.faq' },
+  { to: '/how-it-works', label: 'common:nav.howItWorks' },
+  { to: '/contact', label: 'common:nav.contact' },
 ] as const;
 
 const COMPANY = [
+  { to: '/team', label: 'site:footer.ourTeam' },
+  { to: '/areas', label: 'site:footer.areas' },
+  { to: '/faq', label: 'site:footer.faq' },
   { to: '/about', label: 'site:footer.aboutUs' },
-  { to: '/careers', label: 'common:nav.careers' },
-  { to: '/contact', label: 'common:nav.contact' },
   { to: '/privacy', label: 'site:footer.privacy' },
+  { to: '/admin/login', label: 'common:nav.staffLogin' },
 ] as const;
 
 function isCurrentLink(to: string, pathname: string): boolean {

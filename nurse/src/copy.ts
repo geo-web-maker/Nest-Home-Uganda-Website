@@ -1,9 +1,9 @@
 /** User-facing copy shared by the nurse app. Keep sensitive health details out of alerts. */
 export const copy = {
-  appName: 'Nest Home Care Nurse',
-  appShortName: 'Nest Nurse',
-  manifestDescription: 'Offline-first visit workspace for authorised Nest Home Care nurses.',
-  organisation: 'Nest Home Care Uganda',
+  appName: 'Well Nest Home Care Uganda Nurse',
+  appShortName: 'Well Nest Home Care Uganda Nurse',
+  manifestDescription: 'Offline-first visit workspace for authorised Well Nest Home Care Uganda nurses.',
+  organisation: 'Well Nest Home Care Uganda Ltd',
   offlinePurpose: 'Your visits stay available when the network is unavailable.',
   shell: { onlineLabel: 'Online', offlineLabel: 'Offline', online: 'A connection is available.', offline: 'Saved actions will stay on this device until reconnection.', waiting: 'waiting · Sync status', syncStatus: 'Sync status', safetyAlert: 'Safety alert', sosDisabled: 'SOS is not enabled by your organisation.', mainNavigation: 'Main navigation' },
   login: {
@@ -152,7 +152,7 @@ export const copy = {
     cancel: 'Cancel alert',
     sent: 'Safety alert sent or saved for retry.',
     emergency: 'SOS notifies your supervisor. In immediate danger, also call the emergency number.',
-    smsUrgent: 'I need urgent assistance. Please contact me now.', smsTime: 'Time:', smsLocation: 'Location:', smsPrepared: 'This message was prepared by the Nest Home Care safety feature.',
+    smsUrgent: 'I need urgent assistance. Please contact me now.', smsTime: 'Time:', smsLocation: 'Location:', smsPrepared: 'This message was prepared by the Well Nest Home Care Uganda safety feature.',
     sms: 'Open SMS composer',
     timerEyebrow: 'Lone-worker safety timer', timerTitle: 'Safety check deadline reached',
     timerStillArmed: 'The server-side safety timer is still armed. This reminder does not confirm that you are safe or cancel the timer.',

@@ -18,7 +18,7 @@ describe('PrivacyPage', () => {
   it('uses the privacy page title', () => {
     setup();
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Your information is safe with us.' }),
+      screen.getByRole('heading', { level: 1, name: 'Privacy and terms.' }),
     ).toBeInTheDocument();
   });
   it('uses the exact client-supplied placeholder for draft legal text', () => {

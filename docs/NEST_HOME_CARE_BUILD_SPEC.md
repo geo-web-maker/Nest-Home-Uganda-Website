@@ -1,4 +1,4 @@
-# Nest Home Care Uganda: Build Specification
+# Well Nest Home Care Uganda: Build Specification
 
 **Version 1.1 · React (Vite, TypeScript) frontend · FastAPI backend · MongoDB · modular on both sides**
 
@@ -12,16 +12,17 @@ This is the single build document for developers. It turns the approved design (
 
 ### 0.1 Source of truth, in order
 
-1. **This document** for everything to be built.
-2. `reference/nest-home-care-complete.html` for how it looks and behaves. When a number here and the reference disagree, **the reference HTML wins**; fix this document.
-3. `docs/nest-home-care-design-system.md` for the original single-page style guide (older; see Appendix B for known differences).
-4. `docs/Nest_Home_Care_Uganda_Website_Project_Master_Document.md` for business goals, roles and process.
-5. `docs/design-chat-transcript.md` for the reasoning behind decisions.
+1. **This document** for functional requirements, supported behaviour, data rules and implementation scope.
+2. `reference/nest-all-features-mockups.html` for the canonical visual design, page sections, navigation information architecture and responsive behaviour across the public website, nurse app and admin. Where HTML previews differ on those UI topics, this file wins.
+3. `reference/nest-home-care-complete.html` for supplementary details that are not covered by the canonical mockup; it is an earlier public/admin preview and must not override the canonical UI reference.
+4. `docs/nest-home-care-design-system.md` for the original single-page style guide (older; see Appendix B for known differences).
+5. `docs/Nest_Home_Care_Uganda_Website_Project_Master_Document.md` for business goals, roles and process.
+6. `docs/design-chat-transcript.md` for the reasoning behind decisions.
 
 ### 0.2 What the reference HTML is, and is not
 
-- It shows every public page and every admin screen at phone, tablet and desktop widths.
-- It uses CSS **container queries** (`@container`) only because the preview shows the site inside a resizable frame. **Production must use normal media queries at the same widths**: `min-width: 700px` and `min-width: 1040px`. Where the reference uses `cqi` units, use `vw` instead.
+- `reference/nest-all-features-mockups.html` is the canonical reference for public pages, nurse workflows, admin group navigation and its feature map. Not every illustrated feature is implemented as a production route; see `docs/UI_REFERENCE_GUIDE.md` for implemented coverage and intentional gaps.
+- The HTML preview uses CSS **container queries** (`@container`) because it displays screens inside a resizable frame. **Production must use normal media queries** that preserve the intended responsive transitions. The current public/admin layouts use 700px and 1040px breakpoints; the nurse app desktop rail starts at 820px. Where the reference uses `cqi` units, use a suitable viewport-based equivalent.
 - Form submissions and admin edits in it live only in memory. Production persists them through the API.
 - Placeholder content is marked "client to supply" in Section 12.
 
@@ -264,7 +265,7 @@ Test at 390, 820, 1024, 1280 and 1920px.
 - Gold cross: line `20,1 → 20,7` and `17,4 → 23,4`, stroke `#C79A3B`, width 2, round caps.
 - Three ellipses: `cx14 cy16 rx5 ry6.5` fill `#E9DDB8`; `cx22 cy14.5 rx5 ry6.5` fill `#F4F1DF`; `cx29 cy17 rx4.5 ry6` fill `#E9DDB8`.
 - Nest arcs, stroke `#C79A3B`, width 1.8, round caps: `M3 21c4 11 30 11 34 0`, `M6 23c6 7 22 7 28 0`, `M10 26c5 4 15 4 20 0` (the admin uses only the first arc).
-- Beside it: "Nest Home Care" and, below, "Uganda · Kampala" (admin: "Nest Admin" and "Home Care Uganda").
+- Beside it: "Well Nest Home Care" and, below, "Uganda · Kampala" (admin: "Nest Admin" and "Home Care Uganda").
 - Clear space equals one egg height. Never place the logo on gold.
 
 ### 3.2 Weave
@@ -273,7 +274,7 @@ Full-width SVG under the home hero: `viewBox="0 0 1200 46"`, `preserveAspectRati
 
 ### 3.3 Favicon and meta
 
-Favicon 🪺 until a real icon is supplied (admin Appearance setting). Default title `Nest Home Care Uganda | Compassionate Home Care in Kampala`. Default description `Trained nurses for elderly care, newborn care, wound care and more, at home across Kampala. Call 0787 499 988.`
+Favicon 🪺 until a real icon is supplied (admin Appearance setting). Default title `Well Nest Home Care Uganda | Compassionate Home Care in Kampala`. Default description `Trained nurses for elderly care, newborn care, wound care and more, at home across Kampala. Call 0787 499 988.`
 
 ### 3.4 Images
 
@@ -318,11 +319,11 @@ Flex row, gap 10px, margin-bottom 12px. A 30px × 1px gold line, then the upperc
 
 Forest, top border `1px rgba(199,154,59,.4)`, padding `34px 0 24px`, .92rem. Three columns at ≥700px (one on phone), gap 22px:
 
-1. **Nest Home Care**: "Trusted · Reliable · Compassionate. Office: Kampala · {phone}".
+1. **Well Nest Home Care**: "Trusted · Reliable · Compassionate. Office: Kampala · {phone}".
 2. **Explore**: Services, Our team, Areas we serve, FAQ and care tips.
 3. **Company**: About us, Careers, Contact, Privacy and terms.
 
-Links are buttons or anchors, padding 5px 0, opacity .85. Bottom line centred: "© Nest Home Care Uganda", .84rem, opacity .7, margin-top 22px. Social icons render only if URLs are set in settings.
+Links are buttons or anchors, padding 5px 0, opacity .85. Bottom line centred: "© Well Nest Home Care Uganda", .84rem, opacity .7, margin-top 22px. Social icons render only if URLs are set in settings.
 
 ### 4.5 Sticky action bar (`site/StickyBar`)
 
@@ -507,7 +508,7 @@ The other seven services follow the same fields. No copy is invented: until the 
 
 ### 5.4 About us (`/about`)
 
-Page hero: Rule "About us", H1 "Care that treats your family as ours.", lead "Nest Home Care Uganda brings skilled, compassionate nursing into Ugandan homes." Blocks: (1) "Our *story*" text left with a photo slot right (two columns `1.1fr .9fr`, gap 60px at ≥1040px; the photo slot is a `MapPlaceholder`-style box labelled "Photo: the Nest team together" until supplied); (2) forest band "What we *stand for*" with three rings; (3) mint "Credentials and *registration*" check list: Business registration number · Professional council registration · Insurance and safety standards · Staff training and vetting process (each editable as content blocks); (4) CTA band "Meet the people who will care for you."
+Page hero: Rule "About us", H1 "Care that treats your family as ours.", lead "Well Nest Home Care Uganda brings skilled, compassionate nursing into Ugandan homes." Blocks: (1) "Our *story*" text left with a photo slot right (two columns `1.1fr .9fr`, gap 60px at ≥1040px; the photo slot is a `MapPlaceholder`-style box labelled "Photo: the Nest team together" until supplied); (2) forest band "What we *stand for*" with three rings; (3) mint "Credentials and *registration*" check list: Business registration number · Professional council registration · Insurance and safety standards · Staff training and vetting process (each editable as content blocks); (4) CTA band "Meet the people who will care for you."
 
 ### 5.5 Our team (`/team`)
 
@@ -556,7 +557,7 @@ Page hero: Rule "Privacy and terms", H1 "Your information is safe with us.", lea
 | Area | text with suggestions | yes | From the Areas list; free text allowed |
 | Preferred start | select | no | Today · This week · Later · Not sure |
 | Short note | textarea | no | Max 500 characters, counter shown. Hint: "No medical details here. The nurse will ask later." |
-| Consent | checkbox | yes | "I agree that Nest Home Care may contact me about this request." with a link to `/privacy` |
+| Consent | checkbox | yes | "I agree that Well Nest Home Care may contact me about this request." with a link to `/privacy` |
 | Honeypot | hidden text | – | Must be empty; humans never see it |
 
 Layout: title, then the **Chat on WhatsApp** button (whatsapp variant, full width), then the line "or send a request", then the fields, then the primary full-width **Send request** button. Form card: `--surf`, radius 28px, padding `24px 20px`, 1px gold border.
@@ -569,7 +570,7 @@ Layout: title, then the **Chat on WhatsApp** button (whatsapp variant, full widt
 4. If "Open WhatsApp after the form is sent" is on, also open the URL in a new tab, but only on a user gesture to avoid popup blocking; the Continue button is always shown.
 5. If the API call fails, keep the form, show "We couldn’t send that. Please try WhatsApp or call us." with the two buttons, and keep the entered data.
 
-**WhatsApp message** (prefix from settings): `Hello Nest Home Care, I would like to book: {services joined by ", "}. Name: {name}. Area: {area}. Ref: {reference}.` URL: `https://wa.me/{whatsapp_digits}?text={encodeURIComponent(message)}`. If no services are chosen the form cannot submit; the plain **Chat on WhatsApp** button uses `Hello Nest Home Care, I would like to ask about home care.`
+**WhatsApp message** (prefix from settings): `Hello Well Nest Home Care, I would like to book: {services joined by ", "}. Name: {name}. Area: {area}. Ref: {reference}.` URL: `https://wa.me/{whatsapp_digits}?text={encodeURIComponent(message)}`. If no services are chosen the form cannot submit; the plain **Chat on WhatsApp** button uses `Hello Well Nest Home Care, I would like to ask about home care.`
 
 **Click tracking.** Header Call, sticky bar and in-page Call and WhatsApp buttons send `POST /api/v1/public/clicks` (`{channel: "call" | "whatsapp", page}`) using `navigator.sendBeacon`. These are counted for the dashboard "sources" chart and create no enquiry.
 
@@ -686,7 +687,7 @@ Tabs and keys. Every key is stored in the `settings` table (Section 8.3) and ret
 
 | Tab | Key | Controls |
 | --- | --- | --- |
-| Business | `business.name` | "Nest Home Care Uganda" |
+| Business | `business.name` | "Well Nest Home Care Uganda" |
 | | `business.tagline` | "Trusted · Reliable · Compassionate" |
 | | `business.phone_display` | "0787 499 988", shown everywhere |
 | | `business.phone_dial` | "+256787499988", all `tel:` links |
@@ -876,7 +877,7 @@ The owner monitors the alerts at launch, so the first recipient addresses and nu
 
 | Trigger | Action |
 | --- | --- |
-| New enquiry | Email to `notify.enquiry_emails`; SMS to `notify.sms_number` if enabled; optional confirmation SMS to the visitor (off by default): “Thank you for contacting Nest Home Care. A nurse will call you shortly.” |
+| New enquiry | Email to `notify.enquiry_emails`; SMS to `notify.sms_number` if enabled; optional confirmation SMS to the visitor (off by default): “Thank you for contacting Well Nest Home Care. A nurse will call you shortly.” |
 | Enquiry still New after `notify.reminder_minutes` during working hours | Reminder email and SMS, repeated every reminder interval up to 3 times |
 | New application | Email to `notify.application_emails` |
 | Daily summary (07:00) | Email: new enquiries, unanswered, applications waiting |
@@ -923,7 +924,7 @@ Privacy-respecting analytics (Plausible or similar). Goals: Call click, WhatsApp
 
 ## 11. SEO
 
-- One page per service with unique title and description, for example `Postnatal and Newborn Care at Home in Kampala | Nest Home Care`.
+- One page per service with unique title and description, for example `Postnatal and Newborn Care at Home in Kampala | Well Nest Home Care`.
 - `LocalBusiness` (or `MedicalBusiness`) JSON-LD with name, phone, address, hours, areas served, sameAs links; `FAQPage` JSON-LD on pages with accordions; `JobPosting` JSON-LD on job pages.
 - `sitemap.xml` and `robots.txt` generated from published content; `seo.index` off adds `noindex`.
 - **Multilingual SEO:** one URL per language (`/lg/services/...`), `hreflang` alternates (including `x-default` pointing to English), `<html lang dir>`, a canonical per language, and all language URLs in `sitemap.xml`. Only reviewed translations are indexed (Section 17.4).
@@ -1128,8 +1129,9 @@ nest-home-care-design-package/
 │  ├─ nest-home-care-design-system.md
 │  └─ design-chat-transcript.md
 ├─ reference/
-│  ├─ nest-home-care-complete.html              public site + admin in one file
-│  ├─ nest-full-site-preview.html               public site only (original)
+│  ├─ nest-home-care-complete.html              legacy public site + admin preview (supplementary)
+│  ├─ nest-full-site-preview.html               public site only (older preview)
+│  ├─ nest-all-features-mockups.html             canonical public, nurse and admin UI reference + feature map
 │  └─ nest-admin-preview.html                   admin only (original)
 ├─ design/
 │  ├─ tokens.css                                Section 2 as CSS

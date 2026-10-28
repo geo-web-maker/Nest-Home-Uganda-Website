@@ -2,4 +2,4 @@
 export type SettingEntry = { key: string; group: string; value: unknown };
 export type SettingPayload = Record<string, unknown>;
 export type SettingsGroup =
-  'business' | 'home' | 'forms' | 'notify' | 'theme' | 'seo' | 'site' | 'sms';
+  'business' | 'home' | 'forms' | 'notify' | 'theme' | 'seo' | 'site' | 'sms' | 'system';

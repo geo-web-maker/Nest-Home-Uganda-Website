@@ -6,7 +6,19 @@ import { expect, type Page } from '@playwright/test';
  * The fixture deliberately intercepts only /api/v1/* requests. It never talks to a
  * real backend, so E1 remains deterministic and can run in the nurse preview server.
  */
-export async function installMockApi(page: Page) {
+export async function installMockApi(page: Page, options: { activeVisit?: boolean } = {}) {
+  const dateParts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Kampala', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date());
+  const datePart = (type: string) => dateParts.find((part) => part.type === type)?.value ?? '';
+  const visitStart = new Date(`${datePart('year')}-${datePart('month')}-${datePart('day')}T08:00:00+03:00`).toISOString();
+  const visit = {
+    id: 'visit-e2-001', client_display_name: 'Demo Client', place_address_text: 'Kampala',
+    scheduled_start: visitStart, scheduled_end: new Date(Date.parse(visitStart) + 60 * 60 * 1000).toISOString(),
+    status: options.activeVisit ? 'in_progress' : 'scheduled', instructions: 'Use the front entrance.',
+    adhoc: false, check_in_at: options.activeVisit ? visitStart : null, check_out_at: null,
+    safety_state: 'off', updated_at: new Date().toISOString(),
+  };
   let syncPushes = 0;
   let notes: string[] = [];
   let photoQueued = false;
@@ -30,11 +42,22 @@ export async function installMockApi(page: Page) {
       return;
     }
     if (path === '/field/me') {
-      await route.fulfill({ status: loggedOut ? 401 : 200, contentType: 'application/json', body: JSON.stringify({ id: 'nurse-e2', display_name: 'Demo Nurse', role: 'nurse' }) });
+      await route.fulfill({ status: loggedOut ? 401 : 200, contentType: 'application/json', body: JSON.stringify({
+        user_id: 'nurse-e2', display_name: 'Demo Nurse', role: 'nurse', team_id: 'team-e2',
+        consents_required: [], settings: { adhoc_allowed: false, photos_enabled: true, photo_max_mb: 5, sos_enabled: false, sos_disabled_reason: 'Not configured' },
+      }) });
+      return;
+    }
+    if (path === '/field/sync/pull') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [visit], cursor: null, has_more: false }) });
       return;
     }
     if (path === '/field/visits' || path.startsWith('/field/visits?')) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{ id: 'visit-e2-001', client_id: 'client-e2', client_name: 'Demo Client', place_name: 'Demo Home', address: 'Kampala', scheduled_start: '2026-10-26T08:00:00Z', status: 'scheduled', instructions: 'Use the front entrance.' }] }) });
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{
+        id: visit.id, client_id: 'client-e2', client_name: 'Demo Client', place_name: 'Demo Home', address: 'Kampala',
+        scheduled_start: visit.scheduled_start, scheduled_end: visit.scheduled_end, status: visit.status,
+        check_in_at: visit.check_in_at, check_out_at: visit.check_out_at, instructions: visit.instructions,
+      }] }) });
       return;
     }
     if (path === '/field/sync/push' && method === 'POST') {

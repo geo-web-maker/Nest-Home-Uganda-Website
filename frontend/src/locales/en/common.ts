@@ -6,6 +6,7 @@ export const commonEn = {
     about: 'About',
     howItWorks: 'How it works',
     careers: 'Careers',
+    staffLogin: 'Staff login',
     contact: 'Contact',
     team: 'Our team',
     areas: 'Areas we serve',

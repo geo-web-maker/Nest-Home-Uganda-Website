@@ -1,4 +1,4 @@
-# Nest Home Care Nurse Module: Free-Session Completion Plan
+# Well Nest Home Care Nurse Module: Free-Session Completion Plan
 
 Based on the review of `Nest-Home-Uganda-Website-Nurse-Module-phase13-ci-integration.zip`.
 
@@ -25,7 +25,7 @@ Based on the review of `Nest-Home-Uganda-Website-Nurse-Module-phase13-ci-integra
 ### Session prompt template (copy/paste)
 
 ```
-You are continuing the Nest Home Care Nurse Module. Phase: <ID> <title>.
+You are continuing the Well Nest Home Care Nurse Module. Phase: <ID> <title>.
 Rules: write code and tests only; do NOT run or claim to run anything; use diffs for
 existing files; no invented values or versions; follow docs/OWNER_DECISIONS.md.
 Goal: <goal line from the plan>

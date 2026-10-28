@@ -34,7 +34,7 @@ SCOPES: tuple[Scope, ...] = (
     Scope("reports:read", "Reports", "View report summaries"),
     Scope("reports:export", "Reports", "Export reports to CSV and Excel"),
     Scope("activity:read", "Activity", "View the activity log"),
-    Scope("system:manage", "System", "Manage SMS and data retention settings"),
+    Scope("system:manage", "System", "Manage system controls, SMS and data retention settings"),
     Scope("field:use", "Field app", "Use the nurse field app"),
     Scope("flags:read", "Care alerts", "View care flags"),
     Scope("flags:write", "Care alerts", "Resolve care flags"),

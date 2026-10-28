@@ -44,19 +44,19 @@ beforeEach(() => {
 });
 
 describe('AdminLayout navigation', () => {
-  it('shows only reachable items, in Work and Manage groups', () => {
+  it('shows only reachable items in the reference Website group', () => {
     setup('/admin/enquiries', ['enquiries:read', 'reports:read']);
     const links = within(sidebar()).getAllByRole('link');
     expect(links.map((a) => a.textContent)).toEqual(['Enquiries', 'Reports']);
-    expect(within(sidebar()).getByText('Work')).toBeInTheDocument();
-    expect(within(sidebar()).getByText('Manage')).toBeInTheDocument();
+    expect(within(sidebar()).getByText('Website')).toBeInTheDocument();
+    expect(within(sidebar()).queryByText('Monitoring')).not.toBeInTheDocument();
     expect(within(sidebar()).queryByText('Careers')).not.toBeInTheDocument();
   });
 
-  it('leaves out a group with no reachable items', () => {
+  it('leaves out groups with no reachable items', () => {
     setup('/admin/enquiries', ['enquiries:read']);
-    expect(within(sidebar()).getByText('Work')).toBeInTheDocument();
-    expect(within(sidebar()).queryByText('Manage')).not.toBeInTheDocument();
+    expect(within(sidebar()).getByText('Website')).toBeInTheDocument();
+    expect(within(sidebar()).queryByText('Care operations')).not.toBeInTheDocument();
   });
 
   it('marks the current item, including on a detail route', () => {
@@ -89,14 +89,14 @@ describe('AdminLayout top bar', () => {
 });
 
 describe('AdminLayout phone navigation', () => {
-  it('puts the first four items in the bottom nav and the rest under More, with Sign out', async () => {
+  it('puts the reference dashboard/visits/alerts/SOS shortcuts in the bottom nav and the rest under More', async () => {
     const user = userEvent.setup();
     setup('/admin', [], { superadmin: true });
     expect(
       within(bottom())
         .getAllByRole('link')
         .map((a) => a.textContent),
-    ).toEqual(['Dashboard', 'Enquiries', 'Careers', 'Applications']);
+    ).toEqual(['Today', 'Visits', 'Alerts', 'SOS']);
 
     const more = within(bottom()).getByRole('button', { name: 'More' });
     expect(more).toHaveAttribute('aria-expanded', 'false');
@@ -109,12 +109,25 @@ describe('AdminLayout phone navigation', () => {
         .getAllByRole('link')
         .map((a) => a.textContent),
     ).toEqual([
+      'Enquiries',
+      'Careers',
+      'Applications',
       'Content',
       'Site settings',
       'Users and scopes',
-      'Care operations',
       'Reports',
-      'Activity log',
+      'Audit log',
+      'Clients',
+      'Places & stays',
+      'Nurses',
+      'Flags',
+      'My team',
+      'Timesheets',
+      'Photo review',
+      'Care reports',
+      'Care settings',
+      'Go-live checklist',
+      'Data requests',
     ]);
     await user.click(within(list).getByRole('button', { name: 'Sign out' }));
     expect(logout).toHaveBeenCalledTimes(1);

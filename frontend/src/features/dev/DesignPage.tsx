@@ -59,7 +59,7 @@ export function DesignPage() {
     <div>
       <section className={styles.dark}>
         <div className="container">
-          <Logo name="Nest Home Care" subtitle="Uganda · Kampala" />
+          <Logo name="Well Nest Home Care Uganda" subtitle="Uganda · Kampala" />
           <h1 className={styles.title}>
             Design <AccentText>system</AccentText>
           </h1>

@@ -17,21 +17,16 @@ describe('hasScopes', () => {
   });
 });
 
-describe('navigation from a mocked scope list', () => {
-  it('lists the admin routes including care operations and shows a superadmin all of them', () => {
-    expect(ADMIN_NAV.map((i) => i.labelKey)).toEqual([
-      'dashboard',
-      'enquiries',
-      'careers',
-      'applications',
-      'content',
-      'settings',
-      'users',
-      'care',
-      'reports',
-      'activity',
+describe('mockup-aligned admin navigation', () => {
+  it('declares implemented screens in the reference information architecture', () => {
+    expect(ADMIN_NAV.map((item) => item.group)).toEqual([
+      'website', 'website', 'website', 'website', 'website', 'website', 'website', 'website', 'website',
+      'careOperations', 'careOperations', 'careOperations', 'careOperations', 'careOperations', 'careOperations',
+      'monitoring', 'monitoring', 'monitoring', 'monitoring', 'safety',
+      'setup', 'setup', 'setup',
     ]);
-    expect(visibleNav(user([], true))).toHaveLength(10);
+    expect(paths(visibleNav(user([], true)))).toHaveLength(23);
+    expect(visibleNav(user([], true)).some((item) => item.path.includes('/care/patients'))).toBe(false);
   });
 
   it('shows only reachable items and hides a write-only scope holder', () => {
@@ -43,21 +38,34 @@ describe('navigation from a mocked scope list', () => {
     expect(visibleNav(null)).toEqual([]);
   });
 
-  it('lets system managers reach settings without granting general settings access', () => {
+  it('lets system managers reach system controls and data requests without general settings access', () => {
     const systemManager = user(['system:manage']);
-    expect(paths(visibleNav(systemManager))).toEqual(['/admin/settings']);
+    expect(paths(visibleNav(systemManager))).toEqual(['/admin/settings', '/admin/care/data-requests']);
     expect(firstReachablePath(systemManager)).toBe('/admin/settings');
   });
 
-  it('puts the first four reachable items in the bottom nav and the rest under More', () => {
+  it('shows only the care routes granted by the assigned read scopes', () => {
+    expect(paths(visibleNav(user(['visits:read'])))).toEqual([
+      '/admin/care/visits',
+      '/admin/care/team',
+    ]);
+    expect(paths(visibleNav(user(['alerts:read'])))).toEqual([
+      '/admin/care/alerts',
+      '/admin/care/sos',
+    ]);
+    expect(paths(visibleNav(user(['clients:read'])))).toEqual(['/admin/care/clients']);
+  });
+
+  it('puts the reference shortcuts on mobile and leaves the other screens under More', () => {
     const all = user([], true);
     expect(paths(bottomNav(all).primary)).toEqual([
       '/admin',
-      '/admin/enquiries',
-      '/admin/careers',
-      '/admin/applications',
+      '/admin/care/visits',
+      '/admin/care/alerts',
+      '/admin/care/sos',
     ]);
-    expect(paths(bottomNav(all).more)).toHaveLength(6);
+    expect(bottomNav(all).more).toHaveLength(19);
+    expect(paths(bottomNav(user(['content:read'])).primary)).toEqual(['/admin/content']);
     expect(bottomNav(user(['content:read'])).more).toEqual([]);
   });
 
@@ -68,6 +76,7 @@ describe('navigation from a mocked scope list', () => {
 
   it('gives route config the scopes for a path and throws for an unknown one', () => {
     expect(scopesFor('/admin/users')).toEqual(['users:read']);
+    expect(scopesFor('/admin/care/visits')).toEqual(['visits:read']);
     expect(() => scopesFor('/admin/nope')).toThrow();
   });
 });

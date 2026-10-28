@@ -3,14 +3,14 @@ import { Logo } from './Logo';
 
 describe('Logo', () => {
   it('gives the logo an accessible name from its text', () => {
-    render(<Logo name="Nest Home Care" subtitle="Uganda · Kampala" />);
-    expect(screen.getByText(/Nest Home Care/)).toBeInTheDocument();
+    render(<Logo name="Well Nest Home Care Uganda" subtitle="Uganda · Kampala" />);
+    expect(screen.getByText(/Well Nest Home Care/)).toBeInTheDocument();
     expect(screen.getByText('Uganda · Kampala')).toBeInTheDocument();
   });
 
   it('hides the svg mark from assistive technology', () => {
     const { container } = render(
-      <Logo name="Nest Admin" subtitle="Home Care Uganda" variant="admin" />,
+      <Logo name="Well Nest Home Care Uganda Admin" subtitle="Home Care Uganda" variant="admin" />,
     );
     const svg = container.querySelector('svg');
     expect(svg).toHaveAttribute('aria-hidden', 'true');
@@ -19,7 +19,7 @@ describe('Logo', () => {
   });
 
   it('draws three nest arcs on the site variant', () => {
-    const { container } = render(<Logo name="Nest Home Care" subtitle="Uganda · Kampala" />);
+    const { container } = render(<Logo name="Well Nest Home Care Uganda" subtitle="Uganda · Kampala" />);
     const svg = container.querySelector('svg');
     expect(svg).toHaveAttribute('width', '36');
     expect(svg?.getAttribute('viewBox')).toBe('0 0 40 34');

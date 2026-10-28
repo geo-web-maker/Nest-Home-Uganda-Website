@@ -26,7 +26,20 @@ export const adminScreens: Partial<Record<string, ComponentType>> = {
   '/admin/settings': SettingsPage,
   '/admin/users': UsersPage,
   '/admin/reports': ReportsPage,
-  '/admin/care': CareScreenRouter,
+  '/admin/care/clients': CareScreenRouter,
+  '/admin/care/places': CareScreenRouter,
+  '/admin/care/nurses': CareScreenRouter,
+  '/admin/care/visits': CareScreenRouter,
+  '/admin/care/flags': CareScreenRouter,
+  '/admin/care/team': CareScreenRouter,
+  '/admin/care/alerts': CareScreenRouter,
+  '/admin/care/timesheets': CareScreenRouter,
+  '/admin/care/photos': CareScreenRouter,
+  '/admin/care/reports/visits': CareScreenRouter,
+  '/admin/care/sos': CareScreenRouter,
+  '/admin/care/settings': CareScreenRouter,
+  '/admin/care/readiness': CareScreenRouter,
+  '/admin/care/data-requests': CareScreenRouter,
 };
 
 /** Title only. No copy is invented for screens that are not built yet. */

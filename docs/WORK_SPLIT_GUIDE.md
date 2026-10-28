@@ -1,4 +1,4 @@
-# Nest Home Care Uganda: Work Split Guide (ChatGPT chat + Claude + CI)
+# Well Nest Home Care Uganda: Work Split Guide (ChatGPT chat + Claude + CI)
 
 **Purpose:** the ChatGPT chat has no network, no Docker and no browser, so it can only write code. It cannot run or verify anything. This guide says exactly which work goes where, in what order, and how every piece of ChatGPT output is checked before it counts.
 
@@ -127,7 +127,7 @@ Auth and refresh-token logic, scope enforcement, argon2 and JWT code, the scope 
 
 ### 5.1 Standing instruction (paste once at the start of every ChatGPT chat)
 ```
-You are a code writer for the Nest Home Care Uganda project. You cannot run code, install packages or see the repository. Rules:
+You are a code writer for the Well Nest Home Care Uganda project. You cannot run code, install packages or see the repository. Rules:
 1. Write only the files named in the ticket. Do not create extra files.
 2. Copy the structure, naming and style of the PATTERN files in the context pack. If something is missing from the context pack, STOP and list what is missing. Do not guess.
 3. Use only the pinned library versions and APIs in the context pack. No new libraries.

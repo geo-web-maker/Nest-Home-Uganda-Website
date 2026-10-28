@@ -70,7 +70,7 @@ export const bookingCopyEn: BookingCopy = {
   noteHint: 'No medical details here. The nurse will ask later.',
   medicalDetailsWarning: 'Please do not enter medical details here',
   noteCount: (used, max) => `${used} of ${max} characters`,
-  consent: 'I agree that Nest Home Care may contact me about this request.',
+  consent: 'I agree that Well Nest Home Care Uganda may contact me about this request.',
   privacyLink: 'Privacy',
   honeypotLabel: 'Leave this field empty',
   send: 'Send request',

@@ -10,7 +10,7 @@ async function fillValidBooking(page: Page) {
   await page.getByLabel('Who needs care').selectOption('parent');
   await page.locator('form button[aria-pressed]').first().click();
   await page.getByLabel('Area').fill('Ntinda');
-  await page.getByLabel('I agree that Nest Home Care may contact me').check();
+  await page.getByLabel('I agree that Well Nest Home Care Uganda may contact me').check();
 }
 
 test('an empty booking form shows what is missing and sends nothing', async ({ page }) => {

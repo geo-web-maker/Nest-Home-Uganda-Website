@@ -1,4 +1,4 @@
-# S5 and S6 split into free-session phases (Nest Home Care, remaining work)
+# S5 and S6 split into free-session phases (Well Nest Home Care, remaining work)
 
 Same idea as `S3_PLAN.md`: every phase is one fresh free session, touches 1 to 6 files, needs only the uploads it lists, and ends with one cheap check line and one commit.
 
@@ -31,7 +31,7 @@ This is a FIX phase on files that already exist. Change only what the failure te
 ### Standing block B (backend, replaces the frontend wording in PASTE_FIRST)
 
 ```
-You are continuing the Nest Home Care Uganda backend (Python 3.12, FastAPI, Beanie on MongoDB, pytest, ruff). Copy the structure of backend/app/modules/services/ (models, schemas, repository, service, router, seed) that I upload. No roles, scopes only (`require_scopes`). Every admin route needs a scope and an audit entry on change. No new libraries. Register routers and models only in app/registry.py. Tests that need MongoDB are marked like test_db_services.py and may skip here. Never claim a check passed unless you ran it. Return changed files in full, then 3 lines. Same BUDGET RULES as PASTE_FIRST.
+You are continuing the Well Nest Home Care Uganda backend (Python 3.12, FastAPI, Beanie on MongoDB, pytest, ruff). Copy the structure of backend/app/modules/services/ (models, schemas, repository, service, router, seed) that I upload. No roles, scopes only (`require_scopes`). Every admin route needs a scope and an audit entry on change. No new libraries. Register routers and models only in app/registry.py. Tests that need MongoDB are marked like test_db_services.py and may skip here. Never claim a check passed unless you ran it. Return changed files in full, then 3 lines. Same BUDGET RULES as PASTE_FIRST.
 ```
 
 ## Phase map

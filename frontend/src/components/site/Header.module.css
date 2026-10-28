@@ -187,7 +187,7 @@
     visibility 0s;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 1040px) {
   .menuButton {
     display: none;
   }
@@ -270,7 +270,7 @@
   }
 }
 
-@media (min-width: 700px) and (hover: hover) and (pointer: fine) {
+@media (min-width: 1040px) and (hover: hover) and (pointer: fine) {
   .link:hover::after {
     transform: scaleX(1);
   }

@@ -12,7 +12,9 @@ import styles from './Header.module.css';
 const NAV = [
   { to: '/about', key: 'about' },
   { to: '/how-it-works', key: 'howItWorks' },
-  { to: '/careers', key: 'careers' },
+  { to: '/team', key: 'team' },
+  { to: '/areas', key: 'areas' },
+  { to: '/faq', key: 'faq' },
   { to: '/contact', key: 'contact' },
 ] as const;
 
@@ -66,6 +68,15 @@ export function Header() {
           data-open={menuOpen}
         >
           <ul className={styles.list}>
+            <li>
+              <Link
+                to="/"
+                className={styles.link}
+                aria-current={pathname === '/' ? 'page' : undefined}
+              >
+                {t('common:nav.home')}
+              </Link>
+            </li>
             <li
               className={cx(styles.hasMenu, servicesOpen && styles.menuOpen)}
               onBlur={(event) => {
@@ -121,7 +132,9 @@ export function Header() {
                   className={styles.link}
                   aria-current={pathname === item.to ? 'page' : undefined}
                 >
-                  {t(`common:nav.${item.key}`)}
+                  {item.key === 'team' || item.key === 'areas' || item.key === 'faq'
+                    ? t(`site:header.${item.key}`)
+                    : t(`common:nav.${item.key}`)}
                 </Link>
               </li>
             ))}

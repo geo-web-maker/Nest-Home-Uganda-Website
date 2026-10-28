@@ -1,4 +1,4 @@
-# Nest Home Care Uganda: Builder Instructions
+# Well Nest Home Care Uganda: Builder Instructions
 
 **For:** the implementing model. **Reviewer:** Claude (reviews every phase before the next starts).
 **Read this file completely before running any command.** It overrides nothing in the build spec except where Section 3 says so.
@@ -7,19 +7,19 @@
 
 ## 1. Your job in one paragraph
 
-Build the Nest Home Care Uganda website exactly as described in `docs/NEST_HOME_CARE_BUILD_SPEC.md` (v1.1): a React 18 + Vite + TypeScript frontend and a FastAPI + MongoDB backend, in a monorepo, modular on both sides. You work through **all phases in order, without waiting for approval** (Section 6). A phase may start only after its self-check gate passes (Section 6.1). You do not decide anything: every open question is already answered in Section 11. You stop only for the hard blockers in Section 7.
+Build the Well Nest Home Care Uganda website exactly as described in `docs/NEST_HOME_CARE_BUILD_SPEC.md` (v1.1): a React 18 + Vite + TypeScript frontend and a FastAPI + MongoDB backend, in a monorepo, modular on both sides. You work through **all phases in order, without waiting for approval** (Section 6). A phase may start only after its self-check gate passes (Section 6.1). You do not decide anything: every open question is already answered in Section 11. You stop only for the hard blockers in Section 7.
 
 ## 2. Hard rules (violating any one fails the phase)
 
-1. **Source of truth order:** (a) this file, (b) the build spec, (c) `reference/nest-home-care-complete.html` for look and behaviour (it wins over the spec on any measured value), (d) the other docs. Never use memory or "common practice" to settle a conflict. Stop and ask.
+1. **Source of truth order:** (a) this file for engineering/security rules, (b) the build spec for functional requirements and scope, (c) `reference/nest-all-features-mockups.html` for public website, nurse app, admin visual design, section hierarchy, navigation and responsive behaviour. This is the canonical UI reference and wins over older HTML previews for UI decisions. Use `reference/nest-home-care-complete.html` and other previews only for details the canonical mockup does not cover. Functional, privacy and authorization requirements remain governed by this file and the build/spec documents. Never use memory or "common practice" to settle a conflict. If a material conflict remains, report it explicitly.
 2. **Do not reopen decisions.** Spec Section 0.3 lists 14 decisions. They are final.
 3. **Do not invent content.** Copy, prices, licences, nurse names, testimonials, legal text and the seven non-postnatal service bodies are "client to supply". Use the exact placeholder strings in the spec (Section 12). Never write medical claims.
 4. **Do not add features, libraries, pages, fields or settings** not in the spec. No Tailwind, no UI kit, no Redux, no Next.js, no Motor, no SQL.
 5. **Use only the pinned versions in Section 4.** Do not run `npm update`, `npm install <pkg>@latest`, or `pip install <pkg>` without a version. Do not change a pin without asking.
-6. **Production CSS uses media queries** at `min-width: 700px` and `min-width: 1040px`. Never copy `@container` rules or `cqi` units from the reference (use `vw` where the reference uses `cqi`).
+6. **Production CSS uses media queries**, not the reference preview's frame-specific `@container` rules. Preserve the application-specific reviewed breakpoints: the admin sidebar expands at 700px/1040px, the public header switches to inline navigation at 1040px, and the nurse app switches to its desktop rail at 820px. Do not copy `@container` rules or `cqi` units from the reference; use a suitable viewport-based equivalent where needed.
 7. **Never claim something works unless you ran it.** Every claim in your report needs the command and its real output (Section 8). If you did not run it, write "NOT RUN".
 8. **Never store secrets in the repo.** Only `.env.example` with empty or dummy values.
-9. **Never edit** files under `docs/`, `reference/` or `design/` (read-only inputs).
+9. **Preserve the original source inputs** under `reference/` and `design/`; do not rewrite the HTML mockups or token package. Documentation under `docs/` may be updated when the task requires design guidance, implementation maps, test instructions or handover notes. Do not rewrite source specifications beyond the smallest explicit change needed to resolve a documented conflict.
 10. **No silent fallbacks.** If a step fails, do not work around it with a different approach. Report the exact error and stop.
 11. **Edits to existing files are small diffs, not full rewrites.** Rewrite a file in full only if you created it in the current phase.
 12. **Text style in code, comments and UI strings:** plain English, short sentences. No emojis. Use a normal hyphen or a comma, never an em dash.
@@ -311,7 +311,7 @@ Build:
 
 | Trigger | Staff SMS | Visitor SMS |
 | --- | --- | --- |
-| New enquiry | to every number in `notify.sms_number` (a list) when `sms.staff_enabled` | to the enquiry's normalised phone when `sms.visitor_enabled`, text from `sms.visitor_text`, default: "Thank you for contacting Nest Home Care. A nurse will call you shortly." |
+| New enquiry | to every number in `notify.sms_number` (a list) when `sms.staff_enabled` | to the enquiry's normalised phone when `sms.visitor_enabled`, text from `sms.visitor_text`, default: "Thank you for contacting Well Nest Home Care. A nurse will call you shortly." |
 | Enquiry still New after `notify.reminder_minutes` in working hours | reminder, up to 3 times (spec 9.8) | none |
 | New application | email only | none |
 

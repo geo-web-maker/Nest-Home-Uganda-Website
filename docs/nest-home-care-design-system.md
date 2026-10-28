@@ -1,4 +1,4 @@
-# Nest Home Care Uganda: UI and Design System
+# Well Nest Home Care Uganda: UI and Design System
 
 **Version 1.0 · Reference build: `nest-home-care-final.html`**
 Every value below is taken from the final design. If a value here and the HTML ever disagree, the HTML wins; update this document to match.
@@ -7,7 +7,7 @@ Every value below is taken from the final design. If a value here and the HTML e
 
 ## 1. Brand and design concept
 
-**Business:** Nest Home Care Uganda, compassionate home-based nursing in Kampala.
+**Business:** Well Nest Home Care Uganda, compassionate home-based nursing in Kampala.
 **Tagline:** "Trusted · Reliable · Compassionate · Home-based care for Ugandan families."
 **Contact:** 0787 499 988 (tel link `+256787499988`) · Office: Kampala, Uganda.
 
@@ -174,7 +174,7 @@ Inline SVG, `40 × 34` in the header.
 - Gold cross: vertical line `20,1 → 20,7`, horizontal `17,4 → 23,4`, 2px stroke, round caps.
 - Three eggs (ellipses): `#E9DDB8`, `#F4F1DF`, `#E9DDB8`, sizes about 10 × 13.
 - Three woven nest arcs below, gold `#C79A3B`, 1.8px stroke, round caps.
-- Beside it: "Nest Home Care" (Fraunces 700, 1.1rem) with "Uganda · Kampala" under it (Figtree 500, .72rem, gold).
+- Beside it: "Well Nest Home Care" (Fraunces 700, 1.1rem) with "Uganda · Kampala" under it (Figtree 500, .72rem, gold).
 - Keep clear space around the logo equal to the height of one egg. Never place it on gold.
 
 ---
@@ -259,12 +259,12 @@ Shape text sits at the bottom, centred, padding `0 10px 22px`.
 - **Care chips:** all eight service names, wrapped, gap 8px. Min height 44px, padding `0 14px`, pill, border 2px `--line`, background `--bg`, .95rem 500. Selected (`aria-pressed="true"`): `--moss` background and border, white text.
 - **Submit:** WhatsApp green button, full width, "Send on WhatsApp".
 - **Hint:** "Opens WhatsApp with your message ready to send." (.88rem, centred).
-- **Message built:** `Hello Nest Home Care, my name is {name}. I need: {services}.` If nothing is chosen: `Hello Nest Home Care, I would like to ask about home care.`
+- **Message built:** `Hello Well Nest Home Care, my name is {name}. I need: {services}.` If nothing is chosen: `Hello Well Nest Home Care, I would like to ask about home care.`
 - **Link format:** `https://wa.me/256787499988?text={URL-encoded message}`
 
 ### 7.9 Footer
 Forest background, top border `1px rgba(199,154,59,.4)`, padding 28px 0 32px, centred, .93rem.
-Lines: **Nest Home Care Uganda** (bold) · "Trusted · Reliable · Compassionate · Home-based care for Ugandan families" · "Office: Kampala, Uganda · 0787 499 988".
+Lines: **Well Nest Home Care Uganda** (bold) · "Trusted · Reliable · Compassionate · Home-based care for Ugandan families" · "Office: Kampala, Uganda · 0787 499 988".
 
 ### 7.10 Sticky action bar (mobile and tablet only)
 - Fixed, left and right 12px, bottom `12px + safe area`, z-index 35, gap 10px.
@@ -304,7 +304,7 @@ Lines: **Nest Home Care Uganda** (bold) · "Trusted · Reliable · Compassionate
 **Punctuation:** use typographic apostrophes and quotation marks (’ “ ”) in visible text.
 
 **SEO basics**
-- Title: `Nest Home Care Uganda | Compassionate Home Care in Kampala`
+- Title: `Well Nest Home Care Uganda | Compassionate Home Care in Kampala`
 - Description: `Trained nurses for elderly care, newborn care, wound care and more, at home across Kampala. Call 0787 499 988.`
 - Favicon: 🪺
 

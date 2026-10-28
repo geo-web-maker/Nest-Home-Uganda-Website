@@ -7,12 +7,12 @@ import { AdminIcon } from './icons';
 import { ADMIN_NAV, bottomNav, visibleNav, type AdminNavItem } from './nav';
 import styles from './AdminLayout.module.css';
 
-const GROUPS = ['work', 'manage'] as const;
+const GROUPS = ['website', 'careOperations', 'monitoring', 'safety', 'setup'] as const;
 
 function currentItem(pathname: string): AdminNavItem | undefined {
-  return ADMIN_NAV.find((item) =>
+  return ADMIN_NAV.filter((item) =>
     item.path === '/admin' ? pathname === '/admin' : pathname.startsWith(item.path),
-  );
+  ).sort((a, b) => b.path.length - a.path.length)[0];
 }
 
 /** Shell for every signed-in admin screen: sidebar, phone bottom nav, top bar, content area. */
@@ -149,7 +149,7 @@ export function AdminLayout() {
             className={({ isActive }) => cx(styles.tab, isActive && styles.tabCurrent)}
           >
             <AdminIcon name={item.icon} />
-            <span>{label(item)}</span>
+            <span>{item.path === '/admin' ? t('nav.today') : label(item)}</span>
           </NavLink>
         ))}
         <button

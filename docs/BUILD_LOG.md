@@ -307,11 +307,11 @@ websockets==17.2
 ```
 dist/index.html
   h1:    <h1>Care that comes home to you.</h1>
-  title: <title data-rh="true">Nest Home Care Uganda | Compassionate Home Care in Kampala</title> (count 1)
+  title: <title data-rh="true">Well Nest Home Care Uganda | Compassionate Home Care in Kampala</title> (count 1)
   desc:  <meta data-rh="true" name="description" content="Trained nurses for elderly care, ..."> (count 1)
 dist/services/index.html
   h1:    <h1>Eight kinds of care, one trusted team.</h1>
-  title: <title data-rh="true">Home Care Services in Kampala | Nest Home Care Uganda</title> (count 1)
+  title: <title data-rh="true">Home Care Services in Kampala | Well Nest Home Care Uganda</title> (count 1)
   desc:  <meta data-rh="true" name="description" content="Everything your family needs, delivered at home. ..."> (count 1)
 ```
 Problems found and fixed during the spike:

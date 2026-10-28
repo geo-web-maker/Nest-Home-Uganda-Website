@@ -50,7 +50,7 @@ describe('BookingForm', () => {
     const { submit, user } = setup();
     expect(screen.getByText('Please do not enter medical details here')).toBeInTheDocument();
     expect(
-      screen.getByRole('checkbox', { name: /I agree that Nest Home Care may contact me/ }),
+      screen.getByRole('checkbox', { name: /I agree that Well Nest Home Care Uganda may contact me/ }),
     ).not.toBeChecked();
 
     await user.type(screen.getByLabelText(/Your name/), 'Mary Atim');

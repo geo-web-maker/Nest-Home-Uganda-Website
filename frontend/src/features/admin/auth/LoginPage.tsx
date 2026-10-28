@@ -77,7 +77,7 @@ export function LoginPage() {
   return (
     <main className={styles.screen}>
       <Head>
-        <title>{`${t('login.title')} | Nest Home Care Uganda`}</title>
+        <title>{`${t('login.title')} | Well Nest Home Care Uganda`}</title>
         <meta name="robots" content="noindex" />
       </Head>
       <form

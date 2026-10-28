@@ -77,7 +77,7 @@ async def _send_link(user: User, raw_token: str, *, invite: bool, minutes: int) 
     link = _link(raw_token, purpose="invite" if invite else "reset")
     days = minutes // 1440
     valid = f"{days} days" if days else f"{minutes} minutes"
-    subject = "You are invited to Nest Home Care admin" if invite else "Reset your password"
+    subject = "You are invited to Well Nest Home Care admin" if invite else "Reset your password"
     note = f"This link works once and expires in {valid}."
     text = f"Hello {user.name},\n\nSet your password here: {link}\n\n{note}"
     html = (

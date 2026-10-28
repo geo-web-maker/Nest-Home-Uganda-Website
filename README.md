@@ -1,8 +1,12 @@
-# Nest Home Care Uganda
+# Well Nest Home Care Uganda
 
 Monorepo: `frontend/` (React 18 + Vite + TypeScript), `backend/` (FastAPI + Beanie on PyMongo async + MongoDB), `docs/` (spec, instructions, state ledger), `reference/` (HTML previews).
 
 Start here: `docs/STATE.md` (what is done, what is next) and `docs/BUILDER_INSTRUCTIONS.md` (rules, pinned versions, scope model, SMS).
+
+## UI reference and browser tests
+
+Before changing public-site, nurse-app or admin UI, use `reference/nest-all-features-mockups.html` as the canonical design and navigation reference. `docs/UI_REFERENCE_GUIDE.md` maps the mockup to implemented routes, records intentional implementation gaps, and documents local UI tests. Earlier HTML previews are supplementary and must not override the canonical mockup.
 
 ## First time
 ```
@@ -28,3 +32,46 @@ cd ../backend && python3 -m venv .venv && . .venv/bin/activate \
 
 ## Rules in one line
 Exact pinned versions only (no `^`, no updates), no roles (scopes only), no Motor, no secrets in git, one commit per job.
+
+
+## Admin Android app
+
+The admin frontend is also packaged as a dedicated Capacitor Android app. It reuses the same admin React UI, server-side scopes, native refresh-token authentication and push-registration path.
+
+- App name: `Well Nest Home Care Uganda Admin`
+- Android application id: `ug.nesthomecare.admin`
+- Native build config: `frontend/capacitor.admin.config.ts`
+- CI workflow: `.github/workflows/admin-android.yml`
+- Build guide: `docs/ADMIN_ANDROID_APP.md`
+
+Focused checks:
+
+```bash
+cd frontend
+npm run test:admin-native
+npm run build:admin-native
+npm run test:e2e:admin-native
+```
+
+The Android project is generated during the build and is not committed to the repository.
+
+
+## Pre-APK release gate
+
+Before generating any Android APK, run the complete web/backend release gate:
+
+```bash
+node scripts/pre-apk-release.mjs
+```
+
+This covers the public website, admin web application, nurse web/PWA application, backend tests, production builds, accessibility, responsive behaviour, reference fidelity, authentication/permission flows already represented by the browser suites, offline/sync checks, and critical browser journeys. It does **not** build an APK.
+
+For faster local iteration:
+
+```bash
+node scripts/pre-apk-release.mjs --skip-e2e
+node scripts/pre-apk-release.mjs --web-only
+node scripts/pre-apk-release.mjs --backend-only
+```
+
+See `docs/PRE_APK_RELEASE_TEST_SUITE.md` for the release criteria and failure scenarios. A production APK should only be created from a passing release candidate, followed by native Android smoke tests.

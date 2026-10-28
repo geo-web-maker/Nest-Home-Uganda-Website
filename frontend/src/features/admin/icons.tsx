@@ -50,6 +50,19 @@ const PATHS: Record<string, ReactNode> = {
       <circle cx="19" cy="12" r="1.5" />
     </>
   ),
+  // Icons used by the reference-aligned care operations navigation.
+  home: <path d="M3 10.5 12 3l9 7.5M5.5 9v11h13V9M9 20v-6h6v6" />,
+  pin: <><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></>,
+  calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18M7 14h3M7 17h3M14 14h3" /></>,
+  flag: <path d="M5 21V4m0 1c6-4 8 4 14 0v10c-6 4-8-4-14 0" />,
+  bell: <><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 22h4" /></>,
+  timer: <><circle cx="12" cy="13" r="8" /><path d="M12 9v4l3 2M9 2h6M12 2v3" /></>,
+  photo: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9" r="1.5" /><path d="m21 15-5-5L5 20" /></>,
+  alert: <><path d="M12 3 2.8 20h18.4L12 3Z" /><path d="M12 9v5M12 17h.01" /></>,
+  gear: <><circle cx="12" cy="12" r="3" /><path d="m19.4 15 .1.1 1.2 2-2.1 2.1-2-1.2-.2-.1a8 8 0 0 1-2 .8l-.1.2-.5 2.2h-3l-.5-2.2-.1-.2a8 8 0 0 1-2-.8l-.2.1-2 1.2L3.9 17l1.2-2 .1-.2a8 8 0 0 1-.8-2l-.2-.1L2 12.2v-3l2.2-.5.2-.1a8 8 0 0 1 .8-2l-.1-.2-1.2-2L6 2.3l2 1.2.2.1a8 8 0 0 1 2-.8l.1-.2.5-2.2h3l.5 2.2.1.2a8 8 0 0 1 2 .8l.2-.1 2-1.2L21 4.4l-1.2 2-.1.2a8 8 0 0 1 .8 2l.2.1 2.2.5v3l-2.2.5-.2.1a8 8 0 0 1-.8 2Z" /></>,
+  check: <><path d="m4 12 5 5L20 6" /><circle cx="12" cy="12" r="10" /></>,
+  shield: <><path d="M12 3 20 6v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3Z" /><path d="m9 12 2 2 4-4" /></>,
+  chart: <><path d="M3 3v18h18" /><rect x="6" y="12" width="3" height="6" /><rect x="11" y="8" width="3" height="10" /><rect x="16" y="5" width="3" height="13" /></>,
   signOut: <path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M16 8l4 4-4 4M20 12H9" />,
 };
 

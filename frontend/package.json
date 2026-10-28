@@ -18,9 +18,13 @@
     "gen:types:ts": "openapi-typescript src/types/openapi.json -o src/types/api.d.ts",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:reference": "playwright test e2e/reference-fidelity.spec.ts",
     "build:admin-native": "tsc --noEmit && vite build --config vite.admin-native.config.ts",
     "test:a11y": "playwright test e2e/care-a11y.spec.ts",
-    "test:responsive": "playwright test e2e/care-responsive.spec.ts"
+    "test:responsive": "playwright test e2e/care-responsive.spec.ts",
+    "test:admin-native": "vitest run src/admin-native/identity.test.ts",
+    "test:e2e:admin-native": "playwright test e2e/admin-native.spec.ts --config playwright.admin-native.config.ts",
+    "test:pre-apk": "npm run typecheck && npm run lint && npm run test && npm run build && npm run test:reference && npm run test:a11y && npm run test:responsive && npm run test:admin-native && npm run test:e2e:admin-native && npm run test:e2e"
   },
   "dependencies": {
     "@hookform/resolvers": "5.9.2",
@@ -36,7 +40,8 @@
     "zod": "4.6.7",
     "@capacitor/core": "7.4.3",
     "@capacitor/push-notifications": "7.0.3",
-    "capacitor-secure-storage-plugin": "0.12.0"
+    "capacitor-secure-storage-plugin": "0.12.0",
+    "@capacitor/android": "7.4.3"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
