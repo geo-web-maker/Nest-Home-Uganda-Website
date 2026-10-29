@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../../components/admin/PageHeader';
+import { DataTable } from '../../../components/admin/DataTable';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
 import { apiClient } from '../../../lib/api/client';
@@ -62,7 +63,19 @@ export function FlagsQueuePage() {
     <div className="stage-summary-strip"><div><strong>{rows.length}</strong><span>Open flags</span></div><div><strong>{rows.filter((row) => /unscheduled|no_visit/i.test(String(row.type))).length}</strong><span>Scheduling review</span></div><div><strong>{rows.filter((row) => /location|distance|accuracy/i.test(String(row.type))).length}</strong><span>Verification</span></div><div><strong>{rows.filter((row) => /photo/i.test(String(row.type))).length}</strong><span>Photo review</span></div></div>
     <FilterBar label="Filter flags"><Field label="Find a flag" type="search" className={filterBarGrow} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Flag, visit or nurse" /><Field label="Type" kind="select" value={filter} onChange={(event) => setFilter(event.target.value)}><option value="all">All open flags</option>{kinds.map((kind) => <option key={kind} value={kind}>{label(kind)}</option>)}</Field></FilterBar>
     {error && <Notice tone="error">{error}</Notice>}{notice && <Notice>{notice}</Notice>}
-    {loading ? <p aria-busy="true">Loading flags…</p> : visible.length === 0 ? <section className="stage-panel"><p>No open flags match this view.</p></section> : <section className="stage-panel"><div className="stage-table-scroll"><table className="stage-table"><caption>Open flags awaiting review</caption><thead><tr><th>Flag</th><th>Visit</th><th>Nurse</th><th>Raised</th><th>Details</th><th>Action</th></tr></thead><tbody>{visible.map((row) => <tr key={row.id}><td><StatusBadge status="warning">{label(row.type)}</StatusBadge><small className="stage-muted">{row.id}</small></td><td>{String(row.visit_id ?? 'No visit linked')}</td><td>{String(row.nurse_id ?? '—')}</td><td>{dateTime(row.raised_at)}</td><td>{String(row.details?.message ?? row.details?.reason ?? row.details?.note ?? 'Needs supervisor review')}</td><td><ButtonGroup size="compact">{canReview && row.visit_id && <Button variant="outline" onClick={() => navigate(`/admin/care/visits/${encodeURIComponent(String(row.visit_id))}`)}>Review visit</Button>}{canResolve && <Button onClick={() => { setTarget(row); setReason(''); }}>Resolve</Button>}</ButtonGroup></td></tr>)}</tbody></table></div></section>}
+    {loading ? <p aria-busy="true">Loading flags…</p> : visible.length === 0 ? <section className="stage-panel"><p>No open flags match this view.</p></section> : <section className="stage-panel"><DataTable
+    columns={[
+      { key: 'flag', header: 'Flag', cell: (row) => <><StatusBadge status="warning">{label(row.type)}</StatusBadge><small className="stage-muted">{row.id}</small></> },
+      { key: 'visit', header: 'Visit', cell: (row) => String(row.visit_id ?? 'No visit linked') },
+      { key: 'nurse', header: 'Nurse', cell: (row) => String(row.nurse_id ?? '—') },
+      { key: 'raised', header: 'Raised', cell: (row) => dateTime(row.raised_at) },
+      { key: 'details', header: 'Details', cell: (row) => String(row.details?.message ?? row.details?.reason ?? row.details?.note ?? 'Needs supervisor review') },
+      { key: 'action', header: 'Action', cell: (row) => <ButtonGroup size="compact">{canReview && row.visit_id && <Button variant="outline" onClick={() => navigate(`/admin/care/visits/${encodeURIComponent(String(row.visit_id))}`)}>Review visit</Button>}{canResolve && <Button onClick={() => { setTarget(row); setReason(''); }}>Resolve</Button>}</ButtonGroup> },
+    ]}
+    rows={visible}
+    getRowKey={(row) => row.id}
+    labels={{ caption: 'Open flags awaiting review', loading: 'Loading…', empty: 'Nothing to show.' }}
+  /></section>}
     {target && <Modal id="stage-resolve-flag-title" title="Resolve flag" subtitle={<>{label(target.type)} · Visit {String(target.visit_id ?? 'not linked')}</>} onClose={() => setTarget(null)}><form className="stage-form" onSubmit={(event) => void resolve(event)}><p>Record what you checked and why this flag can be closed. This note is saved to the audit log.</p><Field label="Resolution note (required)" kind="textarea" value={reason} onChange={(event) => setReason(event.target.value)} minLength={3} maxLength={500} requiredLabel="required" required /><ButtonGroup spaced><Button type="submit" disabled={saving || reason.trim().length < 3}>{saving ? 'Saving…' : 'Resolve flag'}</Button><Button type="button" variant="outline" onClick={() => setTarget(null)}>Cancel</Button></ButtonGroup></form></Modal>}
   </div>;
 }
@@ -97,7 +110,34 @@ export function MyTeamPage() {
     <PageHeader title="My team" subtitle="Supervisor view, limited to the team available to your account." actions={<Button variant="outline" onClick={() => void load()}>Refresh</Button>} />
     <div className="stage-summary-strip"><div><strong>{rows.length}</strong><span>Team members</span></div><div><strong>{active}</strong><span>Active staff</span></div><div><strong>{scheduledToday}</strong><span>Visits in progress or scheduled today</span></div><div><strong>{recentlySeen}</strong><span>Seen in the past 24 hours</span></div></div>
     {error && <Notice tone="error">{error}</Notice>}
-    {loading ? <p aria-busy="true">Loading team…</p> : rows.length === 0 ? <section className="stage-panel"><p>No team members are in your current scope.</p></section> : <section className="stage-panel"><div className="stage-table-scroll"><table className="stage-table"><caption>Team status</caption><thead><tr><th>Nurse</th><th>Staff number</th><th>Status</th><th>Last seen</th><th>Latest visit status</th><th>Last visit</th></tr></thead><tbody>{rows.map((row) => { const latest = latestVisit(row.user_id); const seen = row.last_seen_at ? new Date(row.last_seen_at).getTime() : 0; const seenLabel = !seen ? 'Not recorded' : Date.now() - seen < 30 * 60 * 1000 ? 'Recent' : Date.now() - seen < recentCutoff ? 'Earlier today' : 'Stale'; return <tr key={String(row.user_id)}><td><strong>{String(row.display_name ?? row.name ?? row.user_id)}</strong></td><td>{String(row.staff_number ?? '—')}</td><td><StatusBadge status={row.active === false ? 'muted' : 'success'}>{row.active === false ? 'Inactive' : 'Active'}</StatusBadge></td><td><strong>{dateTime(row.last_seen_at)}</strong><small className="stage-muted">{seenLabel}</small></td><td>{label(latest?.status ?? 'No visit recorded')}</td><td>{dateTime(latest?.updated_at ?? latest?.scheduled_start)}</td></tr>; })}</tbody></table></div></section>}
+    {loading ? <p aria-busy="true">Loading team…</p> : rows.length === 0 ? <section className="stage-panel"><p>No team members are in your current scope.</p></section> : <section className="stage-panel"><DataTable
+    columns={[
+      { key: 'nurse', header: 'Nurse', cell: (row) => <strong>{String(row.display_name ?? row.name ?? row.user_id)}</strong> },
+      { key: 'staff-number', header: 'Staff number', cell: (row) => String(row.staff_number ?? '—') },
+      { key: 'status', header: 'Status', cell: (row) => <StatusBadge status={row.active === false ? 'muted' : 'success'}>{row.active === false ? 'Inactive' : 'Active'}</StatusBadge> },
+      {
+        key: 'last-seen',
+        header: 'Last seen',
+        cell: (row) => {
+          const seen = row.last_seen_at ? new Date(row.last_seen_at).getTime() : 0;
+          const seenLabel = !seen ? 'Not recorded' : Date.now() - seen < 30 * 60 * 1000 ? 'Recent' : Date.now() - seen < recentCutoff ? 'Earlier today' : 'Stale';
+          return <><strong>{dateTime(row.last_seen_at)}</strong><small className="stage-muted">{seenLabel}</small></>;
+        },
+      },
+      { key: 'latest-visit-status', header: 'Latest visit status', cell: (row) => label(latestVisit(row.user_id)?.status ?? 'No visit recorded') },
+      {
+        key: 'last-visit',
+        header: 'Last visit',
+        cell: (row) => {
+          const latest = latestVisit(row.user_id);
+          return dateTime(latest?.updated_at ?? latest?.scheduled_start);
+        },
+      },
+    ]}
+    rows={rows}
+    getRowKey={(row) => String(row.user_id)}
+    labels={{ caption: 'Team status', loading: 'Loading…', empty: 'Nothing to show.' }}
+  /></section>}
     <p className="stage-footnote">Last-seen values are based on the server’s recorded heartbeat, not continuous background tracking. Coordinates are shown only in the separately scoped map view.</p>
   </div>;
 }

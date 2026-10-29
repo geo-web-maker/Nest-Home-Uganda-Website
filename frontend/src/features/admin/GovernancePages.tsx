@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Field } from '../../components/ui/Field';
 import { Checkbox } from '../../components/ui/Checkbox';
 import { PageHeader } from '../../components/admin/PageHeader';
+import { DataTable } from '../../components/admin/DataTable';
 import { apiClient } from '../../lib/api/client';
 import { useAuth } from './auth/useAuth';
 import styles from './GovernancePages.module.css';
@@ -92,7 +93,19 @@ export function AppReleasesPage() {
         <Button type="submit" disabled={publish.isPending}>{publish.isPending ? 'Publishing…' : 'Publish release'}</Button>
       </form> : null}
       {allowed && releases.data && releases.data.items.length === 0 ? <p>No releases have been published yet.</p> : null}
-      {allowed && releases.data && releases.data.items.length > 0 ? <div className={styles.tableWrap}><table className={styles.table}><caption>Published app release policies</caption><thead><tr><th>Platform</th><th>Version</th><th>Minimum supported</th><th>Policy</th><th>Published</th><th>Notes</th></tr></thead><tbody>{releases.data.items.map((release) => <tr key={release.id}><td>{release.platform}</td><td>{release.version}</td><td>{release.min_supported_version}</td><td>{release.active ? 'Active' : 'Inactive'}</td><td>{dateLabel(release.published_at)}</td><td>{release.release_notes || '—'}</td></tr>)}</tbody></table></div> : null}
+      {allowed && releases.data && releases.data.items.length > 0 ? <DataTable
+    columns={[
+      { key: 'platform', header: 'Platform', cell: (release) => release.platform },
+      { key: 'version', header: 'Version', cell: (release) => release.version },
+      { key: 'minimum-supported', header: 'Minimum supported', cell: (release) => release.min_supported_version },
+      { key: 'policy', header: 'Policy', cell: (release) => release.active ? 'Active' : 'Inactive' },
+      { key: 'published', header: 'Published', cell: (release) => dateLabel(release.published_at) },
+      { key: 'notes', header: 'Notes', cell: (release) => release.release_notes || '—' },
+    ]}
+    rows={releases.data.items}
+    getRowKey={(release) => release.id}
+    labels={{ caption: 'Published app release policies', loading: 'Loading…', empty: 'Nothing to show.' }}
+  /> : null}
       <div className={styles.card}><h2>Adoption analytics</h2><p>Not connected yet. The current API records published policies but does not report installed versions, active devices, rollout percentage, or adoption over time. Do not infer adoption from release records.</p></div>
     </section>
   );
@@ -177,7 +190,21 @@ export function CareSettingCataloguePage() {
     {settings.isPending ? <p role="status">Loading setting catalogue…</p> : null}
     {settings.isError ? <div role="alert"><p>Catalogue unavailable. Confirm carecfg:read access and API connectivity.</p><Button variant="outline" onClick={() => void settings.refetch()}>Retry</Button></div> : null}
     {settings.data ? <><FilterBar label="Filter settings" meta={`${rows.length} registered settings`}><Field label="Search settings" type="search" className={filterBarGrow} value={query} onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} placeholder="Key, group or type" /><Field kind="select" label="Group" value={group} onChange={(e) => setGroup(e.target.value)}><option value="all">All groups</option>{groups.map((item) => <option key={item}>{item}</option>)}</Field></FilterBar>
-    <div className={styles.tableWrap}><table className={styles.table}><caption>Care settings schema and current values</caption><thead><tr><th>Setting</th><th>Group</th><th>Type</th><th>Current value</th><th>Source</th><th>Default</th><th>Override levels</th><th>Go-live</th></tr></thead><tbody>{filtered.map((row) => <tr key={row.id}><th scope="row">{row.id}</th><td>{row.group}</td><td>{row.type}</td><td><code>{JSON.stringify(row.value)}</code></td><td>{row.source}</td><td><code>{JSON.stringify(row.default)}</code></td><td>{row.overridable_at.join(', ') || 'None'}</td><td>{row.required_before_go_live ? 'Required' : '—'}</td></tr>)}</tbody></table></div></> : null}
+    <DataTable
+    columns={[
+      { key: 'setting', header: 'Setting', cell: (row) => row.id },
+      { key: 'group', header: 'Group', cell: (row) => row.group },
+      { key: 'type', header: 'Type', cell: (row) => row.type },
+      { key: 'current-value', header: 'Current value', cell: (row) => <code>{JSON.stringify(row.value)}</code> },
+      { key: 'source', header: 'Source', cell: (row) => row.source },
+      { key: 'default', header: 'Default', cell: (row) => <code>{JSON.stringify(row.default)}</code> },
+      { key: 'override-levels', header: 'Override levels', cell: (row) => row.overridable_at.join(', ') || 'None' },
+      { key: 'go-live', header: 'Go-live', cell: (row) => row.required_before_go_live ? 'Required' : '—' },
+    ]}
+    rows={filtered}
+    getRowKey={(row) => row.id}
+    labels={{ caption: 'Care settings schema and current values', loading: 'Loading…', empty: 'Nothing to show.' }}
+  /></> : null}
   </section>;
 }
 
@@ -189,7 +216,17 @@ export function DataRetentionPage() {
   return <section className={styles.page}><PageHeader title="Data and retention" subtitle="Current retention settings, go-live evidence, and data-subject request entry point." />
     {(settings.isPending || readiness.isPending) ? <p role="status">Loading retention and readiness evidence…</p> : null}
     {(settings.isError || readiness.isError) ? <div role="alert"><p>Some retention evidence could not be loaded. No retention job or deletion success is inferred from settings alone.</p><Button variant="outline" onClick={() => { void settings.refetch(); void readiness.refetch(); }}>Retry</Button></div> : null}
-    {settings.data ? <div className={styles.tableWrap}><table className={styles.table}><caption>Configured retention periods (months)</caption><thead><tr><th>Data class</th><th>Configured months</th><th>Source</th><th>Required before go-live</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><th scope="row">{row.id.replace('retention.', '').replaceAll('_', ' ')}</th><td>{String(row.value)}</td><td>{row.source}</td><td>{row.required_before_go_live ? 'Yes' : 'No'}</td></tr>)}</tbody></table><p>These values show configured policy only. They do not prove a scheduled retention job ran or deleted records.</p></div> : null}
+    {settings.data ? <DataTable
+    columns={[
+      { key: 'data-class', header: 'Data class', cell: (row) => row.id.replace('retention.', '').replaceAll('_', ' ') },
+      { key: 'configured-months', header: 'Configured months', cell: (row) => String(row.value) },
+      { key: 'source', header: 'Source', cell: (row) => row.source },
+      { key: 'required-before-go-live', header: 'Required before go-live', cell: (row) => row.required_before_go_live ? 'Yes' : 'No' },
+    ]}
+    rows={rows}
+    getRowKey={(row) => row.id}
+    labels={{ caption: 'Configured retention periods (months)', loading: 'Loading…', empty: 'Nothing to show.' }}
+  /><p>These values show configured policy only. They do not prove a scheduled retention job ran or deleted records.</p></div> : null}
     {readiness.data ? <div className={styles.card}><h2>Go-live evidence</h2><ul>{readiness.data.items.filter((item) => item.id.startsWith('retention.') || item.id.includes('restore') || item.id.includes('database')).map((item) => <li key={item.id}><strong>{item.label}</strong>: {item.status}{item.detail ? ` — ${item.detail}` : ''}</li>)}</ul></div> : null}
     <div className={styles.card}><h2>Data subject requests and consent</h2><p>Review and process requests in the existing data requests screen. Consent and privacy notices are configured in Care settings. This page does not create consent records or claim requests are fulfilled.</p><p><a href="/admin/care/data-requests">Open data requests</a> · <a href="/admin/care/settings">Open care settings</a></p></div>
   </section>;

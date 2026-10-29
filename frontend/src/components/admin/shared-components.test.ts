@@ -47,16 +47,9 @@ describe('admin pages use the shared components', () => {
 
   it('keeps the list of pages that still draw their own <table> from growing', () => {
     // Debt list. Move each page onto DataTable and delete it from here; never add to it.
-    const stillHandDrawn = [
-      'GovernancePages.tsx',
-      'care/AlertAndTimesheetPages.tsx',
-      'care/CareWorkspace.tsx',
-      'care/FlagsAndTeamPages.tsx',
-      'care/NotificationAndSmsPages.tsx',
-      'care/SafetyAndSetupPages.tsx',
-      'care/VisitListAndPhotosPages.tsx',
-      'care/VisitSchedulePage.tsx',
-    ];
+    // GovernancePages: the read-only scope matrix is a real two-way grid. CareWorkspace: columns come from
+    // the data. VisitSchedulePage: the day table shares its row renderer with the week view.
+    const stillHandDrawn = ['GovernancePages.tsx', 'care/CareWorkspace.tsx', 'care/VisitSchedulePage.tsx'];
     const found = offenders(tsx, /<table[\s>]/);
     expect(found.filter((file) => !stillHandDrawn.includes(file))).toEqual([]);
   });
@@ -74,6 +67,27 @@ describe('admin pages use the shared components', () => {
   it('has no per-page action rows: they are ButtonGroup', () => {
     expect(offenders(tsx, /className="(stage-modal-actions|stage-toolbar-actions|care-data-actions|stage-row-actions|care-row-actions)"/)).toEqual([]);
     expect(offenders(css, /\.stage-(row|modal)-actions|\.stage-toolbar-actions|\.care-(row|data)-actions/)).toEqual([]);
+  });
+
+  it('draws the care list tables with the shared DataTable, which turns into cards on a phone', () => {
+    const converted = [
+      'GovernancePages.tsx',
+      'care/AlertAndTimesheetPages.tsx',
+      'care/FlagsAndTeamPages.tsx',
+      'care/NotificationAndSmsPages.tsx',
+      'care/SafetyAndSetupPages.tsx',
+      'care/VisitListAndPhotosPages.tsx',
+    ];
+    for (const page of converted) expect(read(join(admin, page))).toMatch(/<DataTable[\s>]/);
+  });
+
+  it('has no page-made table scroll wrapper left on the pages that moved to DataTable', () => {
+    const converted = tsx.filter((file) => /AlertAndTimesheet|FlagsAndTeam|NotificationAndSms|SafetyAndSetup|VisitListAndPhotos/.test(rel(file)));
+    expect(offenders(converted, /stage-table-scroll|className="stage-table"/)).toEqual([]);
+  });
+
+  it('has no leftover Governance table styles: its plain tables are DataTable now', () => {
+    expect(offenders(css, /^\.tableWrap\b|^\.table[\s,{]/m)).toEqual([]);
   });
 
   it('sets the sidebar current item from navItemFor, never from NavLink prefix matching', () => {

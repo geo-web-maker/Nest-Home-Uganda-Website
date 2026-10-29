@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../../components/admin/PageHeader';
+import { DataTable } from '../../../components/admin/DataTable';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
 import { apiClient } from '../../../lib/api/client';
@@ -63,7 +64,20 @@ export function VisitListPage() {
     <PageHeader title="Visits" subtitle="Review scheduled and completed visits, including verification details." actions={<><Button variant="outline" onClick={() => void load()}>Refresh</Button>{canSchedule && <Button onClick={() => navigate('/admin/care/schedule')}>Open schedule</Button>}</>} />
     <FilterBar label="Filter visits" meta={`${visible.length} visit${visible.length === 1 ? '' : 's'} shown`}><Field label="Status" kind="select" value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option><option value="scheduled">Scheduled</option><option value="in_progress">In progress</option><option value="completed">Completed</option><option value="missed">Missed</option><option value="cancelled">Cancelled</option></Field></FilterBar>
     {error && <Notice tone="error">{error}</Notice>}
-    {loading ? <p aria-busy="true">Loading visits…</p> : visible.length === 0 ? <section className="stage-panel"><p>No visits match this status.</p></section> : <section className="stage-panel"><div className="stage-table-scroll"><table className="stage-table"><caption>Visit list</caption><thead><tr><th>Visit</th><th>Client</th><th>Nurse</th><th>Scheduled</th><th>Verification</th><th>Status</th><th>Action</th></tr></thead><tbody>{visible.map((row) => <tr key={String(row.id)}><td><strong>{String(row.id)}</strong><small className="stage-muted">{row.adhoc ? 'Ad-hoc visit' : 'Scheduled visit'}</small></td><td>{clientName(row.client_id)}</td><td>{nurseName(row.nurse_id)}</td><td><strong>{dateTime(row.scheduled_start)}</strong><small className="stage-muted">Ends {time(row.scheduled_end)}</small></td><td>{row.latest_verification ? <><span>{statusLabel(row.latest_verification)}</span>{row.last_event_at && <small className="stage-muted">{dateTime(row.last_event_at)}</small>}</> : row.check_in_at ? 'Check-in recorded (verification not available)' : 'Not yet checked in'}{row.last_event_distance_m != null && <small className="stage-muted">Distance {Math.round(Number(row.last_event_distance_m))} m</small>}{row.last_event_accuracy_m != null && <small className="stage-muted">Accuracy {Math.round(Number(row.last_event_accuracy_m))} m</small>}</td><td><StatusBadge status={String(row.status ?? '')}>{statusLabel(row.status)}</StatusBadge></td><td><Button variant="outline" onClick={() => navigate(`/admin/care/visits/${encodeURIComponent(String(row.id))}`)}>Review</Button></td></tr>)}</tbody></table></div></section>}
+    {loading ? <p aria-busy="true">Loading visits…</p> : visible.length === 0 ? <section className="stage-panel"><p>No visits match this status.</p></section> : <section className="stage-panel"><DataTable
+    columns={[
+      { key: 'visit', header: 'Visit', cell: (row) => <><strong>{String(row.id)}</strong><small className="stage-muted">{row.adhoc ? 'Ad-hoc visit' : 'Scheduled visit'}</small></> },
+      { key: 'client', header: 'Client', cell: (row) => clientName(row.client_id) },
+      { key: 'nurse', header: 'Nurse', cell: (row) => nurseName(row.nurse_id) },
+      { key: 'scheduled', header: 'Scheduled', cell: (row) => <><strong>{dateTime(row.scheduled_start)}</strong><small className="stage-muted">Ends {time(row.scheduled_end)}</small></> },
+      { key: 'verification', header: 'Verification', cell: (row) => <>{row.latest_verification ? <><span>{statusLabel(row.latest_verification)}</span>{row.last_event_at && <small className="stage-muted">{dateTime(row.last_event_at)}</small>}</> : row.check_in_at ? 'Check-in recorded (verification not available)' : 'Not yet checked in'}{row.last_event_distance_m != null && <small className="stage-muted">Distance {Math.round(Number(row.last_event_distance_m))} m</small>}{row.last_event_accuracy_m != null && <small className="stage-muted">Accuracy {Math.round(Number(row.last_event_accuracy_m))} m</small>}</> },
+      { key: 'status', header: 'Status', cell: (row) => <StatusBadge status={String(row.status ?? '')}>{statusLabel(row.status)}</StatusBadge> },
+      { key: 'action', header: 'Action', cell: (row) => <Button variant="outline" onClick={() => navigate(`/admin/care/visits/${encodeURIComponent(String(row.id))}`)}>Review</Button> },
+    ]}
+    rows={visible}
+    getRowKey={(row) => String(row.id)}
+    labels={{ caption: 'Visit list', loading: 'Loading…', empty: 'Nothing to show.' }}
+  /></section>}
     <p className="stage-footnote">Visit detail includes events, notes, flags, photo metadata, annotations and the audit trail. Data is restricted to your assigned reach by the server.</p>
   </div>;
 }

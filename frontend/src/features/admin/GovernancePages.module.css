@@ -11,19 +11,11 @@
   color: var(--ink);
 }
 .card h2 { margin-top: 0; }
-.tableWrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
-.table { width: 100%; border-collapse: collapse; min-width: 620px; }
-.table th, .table td { padding: 12px 14px; border-bottom: 1px solid var(--line); text-align: start; }
-.table th { color: var(--mut); background: var(--surf-2, var(--surf)); font-size: .82rem; }
-.table tr:last-child td { border-bottom: 0; }
 
 .formGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 14px; margin-block: 14px; }
-.table th small { font-weight: 400; overflow-wrap: anywhere; }
-.table td code { overflow-wrap: anywhere; white-space: pre-wrap; }
-.table td, .table th { overflow-wrap: anywhere; }
 .page a { color: var(--link, var(--ink)); text-decoration: underline; text-underline-offset: 3px; }
 .page :focus-visible { outline: 3px solid var(--focus, var(--ink)); outline-offset: 3px; }
-@media (max-width: 640px) { .card { padding: 14px; } .table { min-width: 760px; } }
+@media (max-width: 640px) { .card { padding: 14px; } }
 
 /* Permissions matrix: scopes down the side, people across the top, so a long scope list reads as rows. */
 .matrixWrap { max-height: 70vh; overflow: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surf); }

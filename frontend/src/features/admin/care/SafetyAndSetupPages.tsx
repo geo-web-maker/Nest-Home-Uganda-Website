@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '../../../components/admin/PageHeader';
+import { DataTable } from '../../../components/admin/DataTable';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
 import { Checkbox } from '../../../components/ui/Checkbox';
@@ -73,11 +74,35 @@ export function SOSConsolePage() {
   return <div className="stage-page">
     <PageHeader title={id ? 'SOS case detail' : 'SOS response console'} subtitle="Acknowledge, review recorded events, and record a response outcome. This console does not call emergency services on your behalf." actions={<ButtonGroup size="compact"><Button variant="outline" onClick={() => void load()} disabled={loading}>Refresh</Button>{id && <Button variant="outline" onClick={() => navigate('/admin/care/sos')}>Back to console</Button>}</ButtonGroup>} />
     {error && <Notice tone="error">{error}</Notice>}{notice && <Notice>{notice}</Notice>}
-    {!id ? <section className="stage-panel"><h2>Current and recent SOS cases</h2>{rows.length === 0 && !loading ? <p className="stage-empty">No SOS cases are available within your permitted reach.</p> : <div className="stage-table-scroll"><table className="stage-table"><caption>SOS cases</caption><thead><tr><th>Raised</th><th>Nurse</th><th>Visit</th><th>Type</th><th>Status</th><th>Acknowledged</th><th>Outcome</th><th>Review</th></tr></thead><tbody>{rows.map((row) => <tr key={String(row.id)}><td>{dt(row.created_at)}</td><td>{String(row.nurse_id ?? '—')}</td><td>{String(row.visit_id ?? '—')}</td><td>{row.test ? 'Test case' : 'SOS'}</td><td><StatusBadge status={String(row.status ?? '')}>{human(row.status)}</StatusBadge></td><td>{dt(row.acknowledged_at)}</td><td>{row.outcome ? safeOutcome(String(row.outcome)) : '—'}</td><td><Button variant="outline" onClick={() => navigate(`/admin/care/sos/${encodeURIComponent(String(row.id))}`)}>Open case</Button></td></tr>)}</tbody></table></div>}</section> : <>
+    {!id ? <section className="stage-panel"><h2>Current and recent SOS cases</h2>{rows.length === 0 && !loading ? <p className="stage-empty">No SOS cases are available within your permitted reach.</p> : <DataTable
+    columns={[
+      { key: 'raised', header: 'Raised', cell: (row) => dt(row.created_at) },
+      { key: 'nurse', header: 'Nurse', cell: (row) => String(row.nurse_id ?? '—') },
+      { key: 'visit', header: 'Visit', cell: (row) => String(row.visit_id ?? '—') },
+      { key: 'type', header: 'Type', cell: (row) => row.test ? 'Test case' : 'SOS' },
+      { key: 'status', header: 'Status', cell: (row) => <StatusBadge status={String(row.status ?? '')}>{human(row.status)}</StatusBadge> },
+      { key: 'acknowledged', header: 'Acknowledged', cell: (row) => dt(row.acknowledged_at) },
+      { key: 'outcome', header: 'Outcome', cell: (row) => row.outcome ? safeOutcome(String(row.outcome)) : '—' },
+      { key: 'review', header: 'Review', cell: (row) => <Button variant="outline" onClick={() => navigate(`/admin/care/sos/${encodeURIComponent(String(row.id))}`)}>Open case</Button> },
+    ]}
+    rows={rows}
+    getRowKey={(row) => String(row.id)}
+    labels={{ caption: 'SOS cases', loading: 'Loading…', empty: 'Nothing to show.' }}
+  />}</section> : <>
       {selected && <div className="stage-summary-strip"><div><strong>{human(selected.status)}</strong><span>Current status</span></div><div><strong>{selected.test ? 'Yes' : 'No'}</strong><span>Test case</span></div><div><strong>{dt(selected.created_at)}</strong><span>Raised at</span></div><div><strong>{dt(selected.acknowledged_at)}</strong><span>Acknowledged at</span></div></div>}
       {selected && <section className="stage-panel"><div className="stage-detail-grid"><div><h2>Case details</h2><dl><dt>Case ID</dt><dd>{String(selected.id)}</dd><dt>Nurse ID</dt><dd>{String(selected.nurse_id ?? '—')}</dd><dt>Visit ID</dt><dd>{String(selected.visit_id ?? '—')}</dd><dt>Test case</dt><dd>{selected.test ? 'Yes' : 'No'}</dd><dt>Raised</dt><dd>{dt(selected.created_at)}</dd><dt>Acknowledged by</dt><dd>{String(selected.acknowledged_by ?? '—')}</dd><dt>Resolved</dt><dd>{dt(selected.resolved_at)}</dd><dt>Outcome</dt><dd>{selected.outcome ? safeOutcome(String(selected.outcome)) : 'Not recorded'}</dd></dl></div><div><h2>Response notes</h2><p>{String(selected.response_notes ?? 'No resolution notes have been recorded.')}</p><p className="stage-label-note">{selected.resolved_by ? `Recorded by ${selected.resolved_by}.` : 'Case remains in progress until an authorized responder records an outcome.'}</p>{canWrite && !isClosed && <ButtonGroup spaced>{selected.status !== 'acknowledged' && <Button onClick={() => void acknowledge()} disabled={saving}>Acknowledge case</Button>}<Button variant="outline" onClick={() => { setOutcome('safe'); setNotes(''); setOutcomeOpen(true); }} disabled={saving}>Record outcome</Button></ButtonGroup>}</div></div></section>}
       <section className="stage-panel"><h2>Recorded case events</h2>{Array.isArray(selected?.events) && selected.events.length ? <ol className="stage-event-list">{selected.events.map((event: Row, index: number) => <li key={`${event.type ?? 'event'}-${index}`}><strong>{human(event.type)}</strong><span>{dt(event.at)}</span>{event.outcome && <p>Outcome: {safeOutcome(String(event.outcome))}</p>}{event.notes && <p>{String(event.notes)}</p>}</li>)}</ol> : <p className="stage-empty">No case event history was returned.</p>}</section>
-      <section className="stage-panel"><h2>Live-follow snapshots</h2>{follow?.active ? <><p>Live follow is active until {dt(follow.until)}. Only the latest bounded snapshots are displayed.</p>{Array.isArray(follow.snapshots) && follow.snapshots.length ? <div className="stage-table-scroll"><table className="stage-table"><thead><tr><th>Captured</th><th>Recorded</th><th>Coordinates</th><th>Accuracy</th></tr></thead><tbody>{follow.snapshots.map((point: Row) => <tr key={String(point.id)}><td>{dt(point.captured_at)}</td><td>{dt(point.recorded_at)}</td><td>{Number(point.lat).toFixed(5)}, {Number(point.lng).toFixed(5)}</td><td>{point.accuracy_m == null ? '—' : `${Number(point.accuracy_m)} m`}</td></tr>)}</tbody></table></div> : <p>No location snapshots are available.</p>}</> : <p className="stage-empty">Live follow is not active, not enabled, or has expired. This screen does not start location tracking.</p>}</section>
+      <section className="stage-panel"><h2>Live-follow snapshots</h2>{follow?.active ? <><p>Live follow is active until {dt(follow.until)}. Only the latest bounded snapshots are displayed.</p>{Array.isArray(follow.snapshots) && follow.snapshots.length ? <DataTable
+    columns={[
+      { key: 'captured', header: 'Captured', cell: (point: Row) => dt(point.captured_at) },
+      { key: 'recorded', header: 'Recorded', cell: (point: Row) => dt(point.recorded_at) },
+      { key: 'coordinates', header: 'Coordinates', cell: (point: Row) => <>{Number(point.lat).toFixed(5)}, {Number(point.lng).toFixed(5)}</> },
+      { key: 'accuracy', header: 'Accuracy', cell: (point: Row) => point.accuracy_m == null ? '—' : `${Number(point.accuracy_m)} m` },
+    ]}
+    rows={follow.snapshots}
+    getRowKey={(point: Row) => String(point.id)}
+    labels={{ caption: 'Live-follow snapshots', loading: 'Loading…', empty: 'Nothing to show.' }}
+  /> : <p>No location snapshots are available.</p>}</> : <p className="stage-empty">Live follow is not active, not enabled, or has expired. This screen does not start location tracking.</p>}</section>
     </>}
     {outcomeOpen && <Modal id="stage-sos-outcome-title" title="Record SOS outcome" subtitle="This action closes the administrative case; it does not notify emergency services." onClose={() => setOutcomeOpen(false)}><form className="stage-form" onSubmit={(event) => void resolveCase(event)}><Field label="Outcome" kind="select" value={outcome} onChange={(event) => setOutcome(event.target.value)}><option value="safe">Staff confirmed safe</option><option value="referred">Escalated / referred</option><option value="closed_no_contact">Closed after no contact</option></Field><Field label="Responder notes (required)" kind="textarea" value={notes} onChange={(event) => setNotes(event.target.value)} requiredLabel="required" required minLength={3} maxLength={1000} /><ButtonGroup spaced><Button type="submit" disabled={saving || notes.trim().length < 3}>{saving ? 'Saving…' : 'Save outcome'}</Button><Button type="button" variant="outline" onClick={() => setOutcomeOpen(false)}>Cancel</Button></ButtonGroup></form></Modal>}
   </div>;
@@ -124,9 +149,32 @@ export function SOSHistoryPage() {
     <PageHeader title="SOS history & drills" subtitle="Review response history and record explicit test outcomes separately from real SOS cases." actions={<ButtonGroup size="compact"><Button variant="outline" disabled={loading} onClick={() => void load()}>Refresh</Button>{canCareWrite && <Button onClick={() => setDrillOpen(true)}>Record drill</Button>}</ButtonGroup>} />
     {error && <Notice tone="error">{error}</Notice>}{notice && <Notice>{notice}</Notice>}
     <section className="stage-panel"><SectionHeader title="SOS case history" note={<>{loading ? 'Loading…' : `${cases.length} cases within your permitted reach`}</>} actions={canCareWrite && <ButtonGroup><Button variant="outline" disabled={busy} onClick={() => void testMessage()}>Send test message</Button></ButtonGroup>} />
-      {cases.length === 0 && !loading ? <p className="stage-empty">No SOS cases have been recorded in your permitted reach.</p> : <div className="stage-table-scroll"><table className="stage-table"><caption>SOS response history</caption><thead><tr><th>Raised</th><th>Case</th><th>Nurse</th><th>Status</th><th>Acknowledgement</th><th>Resolution</th><th>Outcome</th></tr></thead><tbody>{cases.map((row) => <tr key={String(row.id)}><td>{dt(row.created_at)}</td><td><Button variant="outline" href={`/admin/care/sos/${encodeURIComponent(String(row.id))}`}>{String(row.id)}</Button></td><td>{String(row.nurse_id ?? '—')}</td><td>{human(row.status)}</td><td>{dt(row.acknowledged_at)}</td><td>{dt(row.resolved_at)}</td><td>{row.outcome ? safeOutcome(String(row.outcome)) : 'Not recorded'}</td></tr>)}</tbody></table></div>}
+      {cases.length === 0 && !loading ? <p className="stage-empty">No SOS cases have been recorded in your permitted reach.</p> : <DataTable
+    columns={[
+      { key: 'raised', header: 'Raised', cell: (row) => dt(row.created_at) },
+      { key: 'case', header: 'Case', cell: (row) => <Button variant="outline" href={`/admin/care/sos/${encodeURIComponent(String(row.id))}`}>{String(row.id)}</Button> },
+      { key: 'nurse', header: 'Nurse', cell: (row) => String(row.nurse_id ?? '—') },
+      { key: 'status', header: 'Status', cell: (row) => human(row.status) },
+      { key: 'acknowledgement', header: 'Acknowledgement', cell: (row) => dt(row.acknowledged_at) },
+      { key: 'resolution', header: 'Resolution', cell: (row) => dt(row.resolved_at) },
+      { key: 'outcome', header: 'Outcome', cell: (row) => row.outcome ? safeOutcome(String(row.outcome)) : 'Not recorded' },
+    ]}
+    rows={cases}
+    getRowKey={(row) => String(row.id)}
+    labels={{ caption: 'SOS response history', loading: 'Loading…', empty: 'Nothing to show.' }}
+  />}
     </section>
-    {canCareRead && <section className="stage-panel"><h2>Recorded drills</h2><p className="stage-label-note">Manual drill entries are audit records. They do not themselves test the handset, verify an emergency responder, or create an SOS case.</p>{drills.length === 0 ? <p className="stage-empty">No drill results recorded.</p> : <div className="stage-table-scroll"><table className="stage-table"><caption>Drill history</caption><thead><tr><th>When</th><th>Outcome</th><th>Notes</th><th>Recorded by</th></tr></thead><tbody>{drills.map((row) => <tr key={String(row.id)}><td>{dt(row.at)}</td><td>{human(row.outcome)}</td><td>{String(row.notes ?? '—')}</td><td>{String(row.actor_id ?? 'Audit actor not available')}</td></tr>)}</tbody></table></div>}</section>}
+    {canCareRead && <section className="stage-panel"><h2>Recorded drills</h2><p className="stage-label-note">Manual drill entries are audit records. They do not themselves test the handset, verify an emergency responder, or create an SOS case.</p>{drills.length === 0 ? <p className="stage-empty">No drill results recorded.</p> : <DataTable
+    columns={[
+      { key: 'when', header: 'When', cell: (row) => dt(row.at) },
+      { key: 'outcome', header: 'Outcome', cell: (row) => human(row.outcome) },
+      { key: 'notes', header: 'Notes', cell: (row) => String(row.notes ?? '—') },
+      { key: 'recorded-by', header: 'Recorded by', cell: (row) => String(row.actor_id ?? 'Audit actor not available') },
+    ]}
+    rows={drills}
+    getRowKey={(row) => String(row.id)}
+    labels={{ caption: 'Drill history', loading: 'Loading…', empty: 'Nothing to show.' }}
+  />}</section>}
     {drillOpen && <Modal id="stage-drill-title" title="Record SOS drill outcome" subtitle="Record only a drill that has already taken place. Use “Send test message” separately to test the configured SMS path." onClose={() => setDrillOpen(false)}><form className="stage-form" onSubmit={(event) => void saveDrill(event)}><Field label="Outcome" kind="select" value={drillOutcome} onChange={(event) => setDrillOutcome(event.target.value)}><option value="passed">Passed</option><option value="failed">Failed</option><option value="blocked">Blocked / could not run</option></Field><Field label="Drill notes (required)" kind="textarea" value={drillNotes} onChange={(event) => setDrillNotes(event.target.value)} minLength={3} maxLength={1000} requiredLabel="required" required /><ButtonGroup spaced><Button type="submit" disabled={busy || drillNotes.trim().length < 3}>{busy ? 'Saving…' : 'Record result'}</Button><Button type="button" variant="outline" onClick={() => setDrillOpen(false)}>Cancel</Button></ButtonGroup></form></Modal>}
   </div>;
 }
