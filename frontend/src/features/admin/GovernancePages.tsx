@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Field } from '../../components/ui/Field';
@@ -124,6 +124,11 @@ export function PermissionsPage() {
   const userRows = Array.isArray(users.data) ? users.data : (users.data?.items ?? []);
   const scopeRows = scopes.data ?? [];
   const visibleUsers = userRows.filter((item) => `${item.name} ${item.email}`.toLowerCase().includes(query.toLowerCase()));
+  const scopeGroups = new Map<string, ScopeRow[]>();
+  for (const scope of scopeRows) {
+    const key = (scope.group || 'other').replaceAll('_', ' ');
+    scopeGroups.set(key, [...(scopeGroups.get(key) ?? []), scope]);
+  }
   return <section className={styles.page}>
     <PageHeader title="Permissions" subtitle="Read-only resource-by-person view. Change assignments in Users and scopes; server scope checks remain authoritative." />
     {!current ? <p role="status">Loading current access…</p> : null}
@@ -131,7 +136,29 @@ export function PermissionsPage() {
     {users.isPending || scopes.isPending ? <p role="status">Loading users and resource scopes…</p> : null}
     {!users.isPending && !scopes.isPending && !users.isError && !scopes.isError ? <>
       <div className={styles.card}><p><strong>{userRows.length}</strong> users · <strong>{scopeRows.length}</strong> available scopes</p><Field label="Find a person" value={query} onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} placeholder="Name or email" /><p>Superadmins are marked explicitly; the check matrix shows direct scopes only. It does not simulate all server-side reach or policy logic.</p></div>
-      <div className={styles.tableWrap}><table className={styles.table}><caption>Direct user scopes (read-only)</caption><thead><tr><th>Person</th><th>Status</th>{scopeRows.map((scope) => <th key={scope.id} title={scope.label || scope.id}>{scope.label || scope.id}</th>)}</tr></thead><tbody>{visibleUsers.map((person) => <tr key={person.id}><th scope="row">{person.name}<br /><small>{person.email}</small>{person.is_superadmin ? <><br /><strong>Superadmin</strong></> : null}</th><td>{person.status || '—'}</td>{scopeRows.map((scope) => <td key={scope.id} aria-label={`${person.name}: ${scope.id}: ${person.is_superadmin || person.scopes.includes(scope.id) ? 'granted' : 'not granted'}`}>{person.is_superadmin || person.scopes.includes(scope.id) ? '✓' : '—'}</td>)}</tr>)}</tbody></table></div>
+      {visibleUsers.length === 0 ? <p role="status">No people match “{query}”.</p> : <div className={styles.matrixWrap} role="region" aria-label="Permission matrix (scrolls sideways when there are many people)" tabIndex={0}>
+        <table className={styles.matrix}>
+          <caption>Direct user scopes (read-only)</caption>
+          <thead><tr>
+            <th scope="col" className={styles.matrixCorner}>Scope</th>
+            {visibleUsers.map((person) => <th scope="col" key={person.id} className={styles.matrixPerson}>
+              <span className={styles.matrixName}>{person.name}</span>
+              <small>{person.email}</small>
+              <span className={styles.matrixTags}>{person.is_superadmin ? <strong>Superadmin</strong> : null}<em>{person.status || '—'}</em></span>
+            </th>)}
+          </tr></thead>
+          <tbody>{[...scopeGroups.entries()].map(([group, list]) => <Fragment key={group}>
+            <tr><th scope="colgroup" colSpan={visibleUsers.length + 1} className={styles.matrixGroup}>{group}</th></tr>
+            {list.map((scope) => <tr key={scope.id}>
+              <th scope="row" className={styles.matrixScope}>{scope.label || scope.id}<small>{scope.id}</small></th>
+              {visibleUsers.map((person) => {
+                const granted = person.is_superadmin || person.scopes.includes(scope.id);
+                return <td key={person.id} className={granted ? styles.matrixYes : styles.matrixNo} aria-label={`${person.name}: ${scope.id}: ${granted ? 'granted' : 'not granted'}`}>{granted ? '✓' : '—'}</td>;
+              })}
+            </tr>)}
+          </Fragment>)}</tbody>
+        </table>
+      </div>}
       <p><a href="/admin/users">Manage user assignments in Users and scopes</a>. This matrix is intentionally read-only and never grants permissions.</p>
     </> : null}
   </section>;

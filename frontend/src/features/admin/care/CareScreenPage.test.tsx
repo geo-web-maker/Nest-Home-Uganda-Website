@@ -94,3 +94,19 @@ describe('care mutation scope boundaries', () => {
     expect(screen.getByRole('button', { name: 'Adjust' })).toBeInTheDocument();
   });
 });
+
+describe('care screen navigation', () => {
+  it('does not repeat the sidebar as a second row of screen tabs', async () => {
+    careMocks.user.scopes = ['timesheets:read', 'nurses:read', 'clients:read'];
+    careMocks.get.mockReset();
+    careMocks.get.mockResolvedValue([]);
+    render(
+      <MemoryRouter>
+        <CareScreenPage screen="timesheets" />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByRole('heading', { name: 'Timesheets' })).toBeInTheDocument();
+    expect(screen.queryByRole('tablist', { name: 'Care screens' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+  });
+});

@@ -6,7 +6,6 @@ import { ApiError, apiClient } from '../../../lib/api/client';
 import type { DataColumn } from '../../../components/admin/DataTable';
 import { CareTable } from './components/CareTable';
 import { CareSheet } from './components/CareSheet';
-import { CareScreenNav } from './components/CareScreenNav';
 import { InviteNurseSheet } from './nurses/InviteNurseSheet';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Button } from '../../../components/ui/Button';
@@ -874,17 +873,6 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
             {t('care.refresh')}
           </Button>
         }
-      />
-      <CareScreenNav
-        active={screen}
-        links={(Object.keys(CARE_SCREEN_PATHS) as ScreenKey[])
-          .filter((key) => key !== 'audit' && hasScopes(user, CARE_SCREEN_SCOPES[key]))
-          .map((key) => ({
-            value: key,
-            label: titles[key],
-            path: `/admin/care/${CARE_SCREEN_PATHS[key]}`,
-          }))}
-        onChange={navigate}
       />
       {error && (
         <div role="alert" className="care-error">

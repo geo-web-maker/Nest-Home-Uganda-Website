@@ -89,3 +89,19 @@
   .stage-table th, .stage-table td { padding: .6rem .5rem; }
   .stage-map { min-height: 18rem; }
 }
+
+/* Schedule toolbar: one tidy row (view switch, date stepper, range), wrapping cleanly on phones. */
+.stage-toolbar.stage-toolbar--schedule { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem 1.25rem; margin-bottom: 1rem; }
+.stage-toolbar.stage-toolbar--schedule > * { flex: 0 0 auto; max-width: none; }
+.stage-toolbar--schedule .stage-segment { flex-wrap: nowrap; gap: .35rem; }
+.stage-toolbar--schedule .stage-date-navigation { flex-wrap: nowrap; align-items: flex-end; gap: .4rem; }
+.stage-toolbar--schedule .stage-date-field { flex: 0 1 11rem; min-width: 9.5rem; }
+.stage-toolbar--schedule .stage-segment button,
+.stage-toolbar--schedule .stage-date-navigation button { min-height: 44px; padding-inline: 16px; }
+.stage-toolbar--schedule .stage-date-navigation .stage-nav-arrow { width: 44px; padding-inline: 0; font-size: 1.25rem; line-height: 1; }
+.stage-toolbar--schedule .stage-range-label { margin-inline-start: auto; align-self: center; white-space: nowrap; }
+@media (max-width: 560px) {
+  .stage-toolbar.stage-toolbar--schedule > .stage-date-navigation { width: 100%; }
+  .stage-toolbar--schedule .stage-date-field { flex: 1 1 auto; }
+  .stage-toolbar--schedule .stage-range-label { margin-inline-start: 0; width: 100%; }
+}

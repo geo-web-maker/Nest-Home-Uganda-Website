@@ -30,3 +30,26 @@
 .page a { color: var(--link, var(--ink)); text-decoration: underline; text-underline-offset: 3px; }
 .page :focus-visible { outline: 3px solid var(--focus, var(--ink)); outline-offset: 3px; }
 @media (max-width: 640px) { .card { padding: 14px; } .table { min-width: 760px; } }
+
+/* Permissions matrix: scopes down the side, people across the top, so a long scope list reads as rows. */
+.matrixWrap { max-height: 70vh; overflow: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surf); }
+.matrixWrap:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.matrix { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .9rem; }
+.matrix caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.matrix th, .matrix td { padding: 10px 14px; border-bottom: 1px solid var(--line); text-align: start; overflow-wrap: normal; word-break: normal; }
+.matrix thead th { position: sticky; top: 0; z-index: 2; background: var(--surf-2, var(--surf)); vertical-align: bottom; }
+.matrixCorner { left: 0; z-index: 3; min-width: 15rem; color: var(--mut); font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; }
+.matrix thead .matrixCorner { position: sticky; left: 0; z-index: 4; }
+.matrixPerson { min-width: 11rem; font-weight: 600; }
+.matrixPerson small { display: block; color: var(--mut); font-weight: 400; overflow-wrap: anywhere; }
+.matrixName { display: block; }
+.matrixTags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: .75rem; }
+.matrixTags strong { padding: 1px 8px; border-radius: 99px; background: var(--gold); color: var(--on-gold); }
+.matrixTags em { padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--mut); font-style: normal; }
+.matrixGroup { position: sticky; left: 0; background: var(--mint); color: var(--ink); font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; }
+.matrixScope { position: sticky; left: 0; z-index: 1; min-width: 15rem; background: var(--surf); font-weight: 600; }
+.matrixScope small { display: block; color: var(--mut); font-weight: 400; font-family: ui-monospace, monospace; font-size: .75rem; overflow-wrap: anywhere; }
+.matrixYes, .matrixNo { text-align: center !important; }
+.matrixYes { color: var(--leaf, var(--ink)); font-weight: 700; }
+.matrixNo { color: var(--mut); }
+@media (max-width: 640px) { .matrixCorner, .matrixScope { min-width: 11rem; } .matrixPerson { min-width: 9rem; } }

@@ -9,19 +9,20 @@ vi.mock('../../../../lib/api/client', async (importOriginal) => {
   return { ...actual, apiClient: { get: vi.fn(), post: vi.fn() } };
 });
 
-beforeEach(() => { vi.clearAllMocks(); vi.mocked(apiClient.post).mockResolvedValue({} as never); });
+beforeEach(() => { vi.clearAllMocks(); vi.mocked(apiClient.post).mockResolvedValue({} as never); vi.mocked(apiClient.get).mockResolvedValue([{ id: 'supervisor-0001', name: 'Sam Supervisor', email: 'sam@example.test', is_superadmin: false }, { id: 'admin-0001', name: 'Root Admin', email: 'root@example.test', is_superadmin: true }] as never); });
 
 describe('InviteNurseSheet', () => {
   it('requires the supervisor and sends it with the invite request', async () => {
     const user = userEvent.setup();
     const onCreated = vi.fn();
     render(<InviteNurseSheet onClose={vi.fn()} onCreated={onCreated} />);
-    expect(screen.getByLabelText(/^Supervisor user ID/)).toBeRequired();
+    expect(screen.getByLabelText(/^Supervisor/)).toBeRequired();
     await user.type(screen.getByLabelText(/^Full name/), 'Grace Nurse');
     await user.type(screen.getByLabelText(/^Email address/), 'grace@example.test');
     await user.type(screen.getByLabelText(/^Phone number/), '+256700000000');
     await user.type(screen.getByLabelText(/^Staff number/), 'N-014');
-    await user.type(screen.getByLabelText(/^Supervisor user ID/), 'supervisor-0001');
+    await screen.findByRole('option', { name: /Sam Supervisor/ });
+    await user.selectOptions(screen.getByLabelText(/^Supervisor/), 'supervisor-0001');
     await user.click(screen.getByRole('button', { name: 'Create invitation' }));
     await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/admin/care/nurses', {
       name: 'Grace Nurse', email: 'grace@example.test', phone: '+256700000000', staff_number: 'N-014', supervisor_id: 'supervisor-0001',

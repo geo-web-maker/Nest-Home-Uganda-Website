@@ -256,18 +256,18 @@ export function VisitSchedulePage() {
   return (
     <div className="stage-page">
       <PageHeader title="Schedule" subtitle="Create, review and coordinate home visits." actions={canCreate ? <Button onClick={() => void loadCreateOptions()}>New visit</Button> : undefined} />
-      <div className="stage-toolbar">
+      <div className="stage-toolbar stage-toolbar--schedule">
         <div className="stage-segment" role="group" aria-label="Schedule view">
           <Button variant={view === 'day' ? 'primary' : 'outline'} aria-pressed={view === 'day'} onClick={() => setView('day')}>Day</Button>
           <Button variant={view === 'week' ? 'primary' : 'outline'} aria-pressed={view === 'week'} onClick={() => setView('week')}>Week</Button>
         </div>
         <div className="stage-date-navigation">
-          <Button variant="outline" onClick={() => moveAnchor(-1)} aria-label="Previous period">‹</Button>
-          <Field label="Date" type="date" value={anchor} onChange={(event) => setAnchor(event.target.value)} />
+          <Button variant="outline" className="stage-nav-arrow" onClick={() => moveAnchor(-1)} aria-label="Previous period">‹</Button>
+          <Field className="stage-date-field" label="Date" type="date" value={anchor} onChange={(event) => setAnchor(event.target.value)} />
           <Button variant="outline" onClick={() => setAnchor(dateKey(new Date()))}>Today</Button>
-          <Button variant="outline" onClick={() => moveAnchor(1)} aria-label="Next period">›</Button>
+          <Button variant="outline" className="stage-nav-arrow" onClick={() => moveAnchor(1)} aria-label="Next period">›</Button>
         </div>
-        <strong>{range.label}</strong>
+        <strong className="stage-range-label">{range.label}</strong>
       </div>
       {error && <div className="stage-message stage-message--error" role="alert">{error}</div>}
       {notice && <div className="stage-message" role="status">{notice}</div>}

@@ -127,25 +127,48 @@ export function AdminLayout() {
       </div>
 
       {moreOpen && (
-        <ul id="admin-more" className={styles.moreList}>
-          {more.map((item) => (
-            <li key={item.path}>
-              <NavLink
-                to={item.path}
-                className={({ isActive }) => cx(styles.moreItem, isActive && styles.moreCurrent)}
-              >
-                <AdminIcon name={item.icon} />
-                {label(item)}
-              </NavLink>
-            </li>
-          ))}
-          <li>
-            <button type="button" className={styles.moreItem} onClick={signOut}>
-              <AdminIcon name="signOut" />
-              {t('layout.signOut')}
-            </button>
-          </li>
-        </ul>
+        <>
+          <div className={styles.scrim} onClick={() => setMoreOpen(false)} aria-hidden="true" />
+          <div id="admin-more" className={styles.moreSheet} role="dialog" aria-label={t('layout.more')}>
+            <div className={styles.moreHead}>
+              <span className={styles.moreGrab} aria-hidden="true" />
+              <p className={styles.moreTitle}>{t('layout.more')}</p>
+              <button type="button" className={styles.moreClose} onClick={() => setMoreOpen(false)}>
+                {t('layout.closeMore')}
+              </button>
+            </div>
+            <div className={styles.moreBody}>
+              {GROUPS.map((group) => {
+                const groupItems = more.filter((item) => item.group === group);
+                if (groupItems.length === 0) return null;
+                return (
+                  <section key={group} className={styles.moreSection}>
+                    <h2 className={styles.moreGroup}>{t(`groups.${group}`)}</h2>
+                    <ul className={styles.moreGrid}>
+                      {groupItems.map((item) => (
+                        <li key={item.path}>
+                          <NavLink
+                            to={item.path}
+                            className={({ isActive }) => cx(styles.moreTile, isActive && styles.moreCurrent)}
+                          >
+                            <AdminIcon name={item.icon} />
+                            <span>{label(item)}</span>
+                          </NavLink>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                );
+              })}
+            </div>
+            <div className={styles.moreFoot}>
+              <button type="button" className={styles.moreSignOut} onClick={signOut}>
+                <AdminIcon name="signOut" />
+                {t('layout.signOut')}
+              </button>
+            </div>
+          </div>
+        </>
       )}
       <nav aria-label={t('layout.shortcutsLabel')} className={styles.bottomNav}>
         {primary.map((item) => (

@@ -8,7 +8,7 @@ test('serves one valid web app manifest whose icons load', async ({ page, reques
   const response = await request.get(hrefs[0] as string);
   expect(response.ok()).toBe(true);
   const manifest = await response.json();
-  expect(manifest.name).toBe('Well Nest Home Care Uganda Nurse');
+  expect(manifest.name).toBe('Well Nest Home Care Uganda');
   expect(manifest.display).toBe('standalone');
   expect(manifest.icons.length).toBeGreaterThanOrEqual(3);
 

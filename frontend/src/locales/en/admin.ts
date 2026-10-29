@@ -54,6 +54,7 @@ export const adminEn = {
     sidebarLabel: 'Admin',
     shortcutsLabel: 'Admin shortcuts',
     more: 'More',
+    closeMore: 'Close menu',
     signOut: 'Sign out',
     superadmin: 'Superadmin',
     themeLabel: 'Theme',

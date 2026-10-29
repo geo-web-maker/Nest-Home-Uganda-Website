@@ -6,7 +6,7 @@ from app.core.deps import Principal, ReachContext, get_care_actor, require_scope
 from app.core.errors import Conflict, NotFound, ValidationFailed
 from app.modules.audit import service as audit
 from app.modules.auth import repository as auth_repo
-from app.modules.auth.models import PasswordReset
+from app.modules.auth.models import PasswordReset, User
 from app.modules.care_ops.models import CareConsent
 from app.modules.nurses.models import Device, NurseProfile
 from app.modules.nurses.schemas import (
@@ -77,7 +77,10 @@ async def create_nurse(
     if payload.supervisor_id:
         supervisor = await auth_repo.user_by_id(payload.supervisor_id)
         if supervisor is None or not supervisor.is_active:
-            raise HTTPException(status_code=422, detail="Supervisor is not active")
+            raise ValidationFailed(
+                "No active user was found with that supervisor ID. Use the supervisor's user ID.",
+                {"supervisor_id": "not_found_or_inactive"},
+            )
         if not (ctx.is_superadmin or ctx.reach == "all") and payload.supervisor_id != ctx.user_id:
             raise HTTPException(status_code=404, detail="Supervisor not found")
     try:
@@ -85,6 +88,27 @@ async def create_nurse(
     except (Conflict, ValidationFailed) as exc:
         raise HTTPException(getattr(exc, "status_code", 422), detail=str(exc)) from exc
     return profile
+
+
+@router.get("/supervisor-options")
+async def supervisor_options(
+    _: Principal = Depends(require_scopes("nurses:write")),
+    ctx: ReachContext = Depends(get_care_actor),
+):
+    """Active accounts that can be assigned as a nurse's supervisor, within the caller's reach."""
+    users = await User.find(User.is_active == True).to_list()  # noqa: E712
+    if ctx.is_superadmin or ctx.reach == "all":
+        users = [
+            u for u in users
+            if u.kind != "nurse" and (u.is_superadmin or u.kind in {"supervisor", "admin", "executive"})
+        ]
+    else:
+        users = [u for u in users if str(u.id) == ctx.user_id]
+    users.sort(key=lambda u: (u.name or "").lower())
+    return [
+        {"id": str(u.id), "name": u.name, "email": u.email, "kind": u.kind, "is_superadmin": u.is_superadmin}
+        for u in users
+    ]
 
 
 @router.get("/{user_id}", response_model=NurseProfileResponse)

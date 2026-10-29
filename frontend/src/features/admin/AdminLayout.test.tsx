@@ -168,6 +168,26 @@ describe('AdminLayout phone navigation', () => {
     expect(document.getElementById('admin-more')).toBeNull();
   });
 
+  it('groups the More sheet under the same headings as the sidebar and can be dismissed', async () => {
+    const user = userEvent.setup();
+    setup('/admin', [], { superadmin: true });
+    await user.click(within(bottom()).getByRole('button', { name: 'More' }));
+    const sheet = document.getElementById('admin-more') as HTMLElement;
+    expect(sheet).toHaveAttribute('role', 'dialog');
+    expect(
+      within(sheet)
+        .getAllByRole('heading', { level: 2 })
+        .map((h) => h.textContent),
+    ).toEqual(['Website', 'Care operations', 'Monitoring', 'Safety', 'Setup']);
+
+    await user.click(within(sheet).getByRole('button', { name: 'Close menu' }));
+    expect(document.getElementById('admin-more')).toBeNull();
+
+    await user.click(within(bottom()).getByRole('button', { name: 'More' }));
+    await user.click(document.querySelector('[class*="scrim"]') as HTMLElement);
+    expect(document.getElementById('admin-more')).toBeNull();
+  });
+
   it('closes the More list on Escape and returns focus to the button', async () => {
     const user = userEvent.setup();
     setup('/admin', [], { superadmin: true });

@@ -6,7 +6,7 @@ test.describe('Track E mocked nurse workflows', () => {
     const api = await installMockApi(page);
     await loginAsDemoNurse(page);
     await api.expectVisit();
-    await expect(page.getByText('Demo Home')).toBeVisible();
+    await expect(page.getByText('Demo Client').first()).toBeVisible();
   });
 
   test('offline check-in reconnect is duplicate-safe at the sync contract', async ({ page, context }) => {
@@ -23,6 +23,6 @@ test.describe('Track E mocked nurse workflows', () => {
   test('logout guard prevents leaving pending local work silently', async ({ page }) => {
     await installMockApi(page);
     await loginAsDemoNurse(page);
-    await expect(page.getByRole('heading', { name: /nest home care nurse/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /well nest home care uganda/i })).toBeVisible();
   });
 });

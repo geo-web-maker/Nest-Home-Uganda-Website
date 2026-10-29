@@ -43,7 +43,7 @@ export function AppShell({ children, online, queued, authenticated, message, sos
         <p>{copy.offlinePurpose}</p>
       </header>
       <div className={`connection-banner ${online ? 'is-online' : 'is-offline'}`} role="status" aria-live="polite">
-        <strong>{bannerLabel}</strong>
+        <strong role="heading" aria-level={2}>{bannerLabel}</strong>
         <span>{bannerText}</span>
         <Link to="/sync">{queued} {copy.shell.waiting}</Link>
       </div>

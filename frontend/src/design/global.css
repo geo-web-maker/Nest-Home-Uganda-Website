@@ -11,6 +11,19 @@ html {
   -webkit-tap-highlight-color: transparent;
   scrollbar-gutter: stable;
   accent-color: var(--leaf);
+  /* Slim, theme-coloured scrollbars everywhere instead of the browser's chunky default. */
+  scrollbar-color: color-mix(in srgb, var(--mut) 45%, transparent) transparent;
+}
+
+* {
+  scrollbar-width: thin;
+}
+
+/* Phones: no reserved gutter, so fixed bars (bottom nav) span the full width. */
+@media (max-width: 699px) {
+  html {
+    scrollbar-gutter: auto;
+  }
 }
 
 body {
