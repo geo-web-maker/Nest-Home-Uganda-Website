@@ -25,6 +25,28 @@
     box-shadow var(--dur-fast) var(--ease-standard);
 }
 
+.control[type='date'],
+.control[type='time'],
+.control[type='datetime-local'],
+.control[type='month'],
+.control[type='week'] {
+  /* Phones ignore min-height on a native date input and draw the value a few pixels off centre,
+     so the text would not share a line with the button beside it. */
+  -webkit-appearance: none;
+  appearance: none;
+  line-height: 1.2;
+}
+
+.control::-webkit-date-and-time-value {
+  min-height: 1.2em;
+  margin: 0;
+  text-align: start;
+}
+
+.control::-webkit-datetime-edit {
+  padding: 0;
+}
+
 .control:focus-visible {
   border-color: var(--gold);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 35%, transparent);

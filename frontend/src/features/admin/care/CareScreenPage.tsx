@@ -11,6 +11,7 @@ import { FilterBar } from '../../../components/admin/FilterBar';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
+import { Checkbox } from '../../../components/ui/Checkbox';
 import { MapPicker } from './components/MapPicker';
 import { VisitReviewPage } from './VisitReviewPage';
 import { VisitListPage } from './VisitListAndPhotosPages';
@@ -823,10 +824,10 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                 disabled={!hasScopes(user, ['carecfg:write'])}
               />
               {s.type === 'boolean' && (
-                <input
-                  aria-label={`${s.id} enabled`}
+                <Checkbox
+                  label={`${s.id} enabled`}
+                  hideLabel
                   name="value"
-                  type="checkbox"
                   defaultChecked={Boolean(s.value)}
                   disabled={!hasScopes(user, ['carecfg:write'])}
                 />

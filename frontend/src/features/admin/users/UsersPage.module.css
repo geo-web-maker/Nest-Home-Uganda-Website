@@ -29,16 +29,6 @@
 .fullRow {
   min-width: 0;
 }
-.scope {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  min-height: 44px;
-}
-.scope input {
-  width: 1.15rem;
-  height: 1.15rem;
-}
 @media (min-width: 700px) {
   .editor {
     padding: 1.5rem;

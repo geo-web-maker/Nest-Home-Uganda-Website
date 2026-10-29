@@ -3,6 +3,7 @@ import { Fragment, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Field } from '../../components/ui/Field';
+import { Checkbox } from '../../components/ui/Checkbox';
 import { PageHeader } from '../../components/admin/PageHeader';
 import { apiClient } from '../../lib/api/client';
 import { useAuth } from './auth/useAuth';
@@ -84,7 +85,7 @@ export function AppReleasesPage() {
           <Field label="Download path (optional)" value={downloadPath} onChange={(e: ChangeEvent<HTMLInputElement>) => setDownloadPath(e.target.value)} placeholder="/downloads/app.apk or https://…" />
         </div>
         <Field kind="textarea" label="Release notes" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={2000} rows={3} />
-        <label className={styles.check}><input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Activate this release policy</label>
+        <Checkbox label="Activate this release policy" checked={active} onChange={(e) => setActive(e.target.checked)} />
         {formError ? <p role="alert">{formError}</p> : null}
         {publish.isError ? <p role="alert">{formError || 'Release was not published.'}</p> : null}
         {publish.isSuccess ? <p role="status">Release published successfully.</p> : null}

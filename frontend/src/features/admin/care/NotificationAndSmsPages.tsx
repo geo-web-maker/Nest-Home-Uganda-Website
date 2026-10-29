@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
+import { Checkbox } from '../../../components/ui/Checkbox';
 import { apiClient } from '../../../lib/api/client';
 import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
@@ -133,8 +134,8 @@ export function SmsSettingsPage() {
           <Field label="Test destination number" value={testNumber} onChange={(event) => setTestNumber(event.target.value)} maxLength={20} disabled={!canCareWrite} placeholder="+256…" />
         </div>
         <div className="stage-form-columns">
-          <label className="stage-inline-checkbox"><input type="checkbox" checked={staffEnabled} disabled={!canSystemManage} onChange={(event) => setStaffEnabled(event.target.checked)} /><span>Staff SMS enabled</span></label>
-          <label className="stage-inline-checkbox"><input type="checkbox" checked={visitorEnabled} disabled={!canSystemManage} onChange={(event) => setVisitorEnabled(event.target.checked)} /><span>Visitor SMS enabled</span></label>
+          <Checkbox label="Staff SMS enabled" checked={staffEnabled} disabled={!canSystemManage} onChange={(event) => setStaffEnabled(event.target.checked)} />
+          <Checkbox label="Visitor SMS enabled" checked={visitorEnabled} disabled={!canSystemManage} onChange={(event) => setVisitorEnabled(event.target.checked)} />
         </div>
         <div><Field label="Visitor SMS text preview (maximum 160 characters)" kind="textarea" value={visitorText} maxLength={300} onChange={(event) => setVisitorText(event.target.value)} disabled={!canSystemManage} /><p className="stage-label-note"><span className="stage-count">{visitorText.length}/160</span> characters. {visitorText.length > 160 ? 'Over budget; save is blocked.' : 'No message body is stored in the notification log.'}</p></div>
         {!canSystemManage && <p className="stage-label-note">Sender ID, category, staff/visitor enablement, and visitor text are read-only because these global SMS settings require system:manage. Monthly cap and test destination require carecfg:write.</p>}

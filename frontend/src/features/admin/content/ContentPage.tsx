@@ -8,6 +8,7 @@ import { PageHeader } from '../../../components/admin/PageHeader';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
 import { Field, requiredProps } from '../../../components/ui/Field';
+import { Checkbox } from '../../../components/ui/Checkbox';
 import { apiClient } from '../../../lib/api/client';
 import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
@@ -298,23 +299,21 @@ export function ContentPage() {
           >
             {fields[tab].map((field) =>
               field.kind === 'boolean' ? (
-                <label className={styles.check} key={field.key}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(form[field.key])}
-                    disabled={
-                      !canWrite ||
-                      (field.key === statusKey[tab] &&
-                        !canPublish &&
-                        tab !== 'testimonials' &&
-                        tab !== 'pricing')
-                    }
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, [field.key]: event.target.checked }))
-                    }
-                  />
-                  {t(`content.fields.${field.key}`)}
-                </label>
+                <Checkbox
+                  key={field.key}
+                  label={t(`content.fields.${field.key}`)}
+                  checked={Boolean(form[field.key])}
+                  disabled={
+                    !canWrite ||
+                    (field.key === statusKey[tab] &&
+                      !canPublish &&
+                      tab !== 'testimonials' &&
+                      tab !== 'pricing')
+                  }
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, [field.key]: event.target.checked }))
+                  }
+                />
               ) : (
                 <Field
                   key={field.key}

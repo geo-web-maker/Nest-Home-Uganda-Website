@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../../../components/ui/Button';
 import { Field } from '../../../../components/ui/Field';
+import { Checkbox } from '../../../../components/ui/Checkbox';
 import { ApiError, apiClient } from '../../../../lib/api/client';
 import { MapPicker } from '../components/MapPicker';
 import { CareSheet } from '../components/CareSheet';
@@ -229,7 +230,7 @@ export function ClientDetailPage() {
         <h2>Profile and care notes</h2>
         <Field label="Client display name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} required requiredLabel="required" maxLength={120} disabled={!canEditClient} />
         <Field kind="textarea" label="Notes for nurse" value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={280} disabled={!canEditClient} />
-        <label className="client-check"><input type="checkbox" checked={photoAllowed} onChange={(event) => setPhotoAllowed(event.target.checked)} disabled={!canEditClient} /> Photo evidence is permitted for this client</label>
+        <Checkbox label="Photo evidence is permitted for this client" checked={photoAllowed} onChange={(event) => setPhotoAllowed(event.target.checked)} disabled={!canEditClient} />
         <Field kind="select" label="Required photo evidence" value={photoRequired} onChange={(event) => setPhotoRequired(event.target.value)} disabled={!canEditClient}>
           {PHOTO_REQUIREMENTS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </Field>

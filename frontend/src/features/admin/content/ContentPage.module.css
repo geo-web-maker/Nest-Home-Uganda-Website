@@ -20,16 +20,6 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 0.8rem;
 }
-.check {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  min-height: 44px;
-}
-.check input {
-  width: 1.2rem;
-  height: 1.2rem;
-}
 @media (min-width: 700px) {
   .editor {
     padding: 1.5rem;

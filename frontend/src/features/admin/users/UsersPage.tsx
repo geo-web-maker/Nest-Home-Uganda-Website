@@ -8,6 +8,7 @@ import { PageHeader } from '../../../components/admin/PageHeader';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
+import { Checkbox } from '../../../components/ui/Checkbox';
 import { apiClient } from '../../../lib/api/client';
 import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
@@ -311,24 +312,22 @@ export function UsersPage() {
                 <div key={group} className={styles.scopeGroup}>
                   <h3>{group}</h3>
                   {items.map((scope) => (
-                    <label key={scope.id} className={styles.scope}>
-                      <input
-                        type="checkbox"
-                        checked={chosen.includes(scope.id)}
-                        disabled={
-                          (scope.id === 'system:manage' || scope.id === 'carecfg:write') &&
-                          !current?.is_superadmin
-                        }
-                        onChange={(event) =>
-                          setChosen((old) =>
-                            event.target.checked
-                              ? [...old, scope.id]
-                              : old.filter((id) => id !== scope.id),
-                          )
-                        }
-                      />
-                      <span>{scope.label || scope.id}</span>
-                    </label>
+                    <Checkbox
+                      key={scope.id}
+                      label={scope.label || scope.id}
+                      checked={chosen.includes(scope.id)}
+                      disabled={
+                        (scope.id === 'system:manage' || scope.id === 'carecfg:write') &&
+                        !current?.is_superadmin
+                      }
+                      onChange={(event) =>
+                        setChosen((old) =>
+                          event.target.checked
+                            ? [...old, scope.id]
+                            : old.filter((id) => id !== scope.id),
+                        )
+                      }
+                    />
                   ))}
                 </div>
               ))}
@@ -399,26 +398,24 @@ export function UsersPage() {
               <div key={group} className={styles.scopeGroup}>
                 <h3>{group}</h3>
                 {items.map((scope) => (
-                  <label key={scope.id} className={styles.scope}>
-                    <input
-                      type="checkbox"
-                      checked={editingScopes.includes(scope.id)}
-                      disabled={
-                        !canWrite ||
-                        editing.id === current?.id ||
-                        ((scope.id === 'system:manage' || scope.id === 'carecfg:write') &&
-                          !current?.is_superadmin)
-                      }
-                      onChange={(event) =>
-                        setEditingScopes((old) =>
-                          event.target.checked
-                            ? [...old, scope.id]
-                            : old.filter((id) => id !== scope.id),
-                        )
-                      }
-                    />
-                    <span>{scope.label || scope.id}</span>
-                  </label>
+                  <Checkbox
+                    key={scope.id}
+                    label={scope.label || scope.id}
+                    checked={editingScopes.includes(scope.id)}
+                    disabled={
+                      !canWrite ||
+                      editing.id === current?.id ||
+                      ((scope.id === 'system:manage' || scope.id === 'carecfg:write') &&
+                        !current?.is_superadmin)
+                    }
+                    onChange={(event) =>
+                      setEditingScopes((old) =>
+                        event.target.checked
+                          ? [...old, scope.id]
+                          : old.filter((id) => id !== scope.id),
+                      )
+                    }
+                  />
                 ))}
               </div>
             ))}

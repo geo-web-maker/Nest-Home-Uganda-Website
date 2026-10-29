@@ -71,7 +71,7 @@ describe('admin pages do not draw their own filter rows', () => {
   });
 
   it('puts every filter field in a FilterBar, not a page-made .stage-toolbar', () => {
-    expect(offenders(adminTsx, /className="stage-toolbar"[^\n]*<Field/)).toEqual([]);
+    expect(offenders(adminTsx, /className="stage-toolbar">(?:(?!<\/div>)[^\n])*<Field/)).toEqual([]);
   });
 
   it('has no hand-made label-and-select pairs that skip the shared Field', () => {
@@ -97,5 +97,43 @@ describe('admin pages do not draw their own filter rows', () => {
     ];
     const using = adminTsx.filter((f) => /<(FilterBar|SearchBar)[\s>]/.test(readFileSync(f, 'utf8'))).map(rel);
     for (const page of pages) expect(using).toContain(page);
+  });
+});
+
+describe('text sits on one line across an input and the button beside it', () => {
+  const field = read('components', 'ui', 'Field.module.css');
+  const button = read('components', 'ui', 'Button.module.css');
+  const careScreen = read('features', 'admin', 'care', 'care-screen.css');
+  const schedule = read('features', 'admin', 'care', 'stage30-38.css');
+
+  it('centres the label of every button on its own height, the way an input centres its value', () => {
+    expect(rule(button, '.button')).toMatch(/display:\s*inline-flex/);
+    expect(rule(button, '.button')).toMatch(/align-items:\s*center/);
+  });
+
+  it('keeps a control or compact button on one line, so a long label never makes it taller than the input', () => {
+    expect(rule(button, '.control')).toMatch(/white-space:\s*nowrap/);
+    expect(rule(button, '.compact')).toMatch(/white-space:\s*nowrap/);
+  });
+
+  it('turns off the native look of date and time inputs, which phones draw taller and off centre', () => {
+    for (const type of ['date', 'time', 'datetime-local']) expect(field).toContain(`.control[type='${type}']`);
+    expect(field).toMatch(/\.control\[type='week'\]\s*\{[^}]*appearance:\s*none/);
+    expect(field).toMatch(/::-webkit-date-and-time-value\s*\{[^}]*margin:\s*0/);
+  });
+
+  it('removes the Field gap in the Care settings rows, where an input and its Save button share a bottom edge', () => {
+    const body = rule(careScreen, '.care-setting');
+    expect(body).toMatch(/--field-gap:\s*0/);
+    expect(body).toMatch(/align-items:\s*end/);
+  });
+
+  it('keeps the Visit schedule date field gap-free next to its arrows and Today button', () => {
+    expect(schedule).toMatch(/\.stage-date-field\s*\{[^}]*margin-bottom:\s*0/);
+  });
+
+  it('never lets a page stylesheet put a non-zero gap back on a Field', () => {
+    const pageRules = adminCss.map((file) => readFileSync(file, 'utf8')).join('\n');
+    expect(pageRules).not.toMatch(/--field-gap:\s*(?!\s|0\b)/);
   });
 });

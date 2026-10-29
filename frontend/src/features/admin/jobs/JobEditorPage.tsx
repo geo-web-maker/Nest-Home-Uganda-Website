@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
+import { Checkbox } from '../../../components/ui/Checkbox';
 import { apiClient } from '../../../lib/api/client';
 import type { JobAdmin, JobInput } from './types';
 import { useAuth } from '../auth/useAuth';
@@ -175,33 +176,24 @@ export function JobEditorPage() {
           onChange={(event) => change('requirements', event.target.value)}
           rows={6}
         />
-        <label className={styles.check}>
-          <input
-            type="checkbox"
-            checked={form.registration_required}
-            disabled={!canWrite}
-            onChange={(event) => change('registration_required', event.target.checked)}
-          />
-          {t('jobs.editor.registrationRequired')}
-        </label>
-        <label className={styles.check}>
-          <input
-            type="checkbox"
-            checked={form.show_closing}
-            disabled={!canWrite}
-            onChange={(event) => change('show_closing', event.target.checked)}
-          />
-          {t('jobs.editor.showClosingDate')}
-        </label>
-        <label className={styles.check}>
-          <input
-            type="checkbox"
-            checked={form.published}
-            disabled={!canWrite}
-            onChange={(event) => change('published', event.target.checked)}
-          />
-          {t('jobs.editor.published')}
-        </label>
+        <Checkbox
+          label={t('jobs.editor.registrationRequired')}
+          checked={form.registration_required}
+          disabled={!canWrite}
+          onChange={(event) => change('registration_required', event.target.checked)}
+        />
+        <Checkbox
+          label={t('jobs.editor.showClosingDate')}
+          checked={form.show_closing}
+          disabled={!canWrite}
+          onChange={(event) => change('show_closing', event.target.checked)}
+        />
+        <Checkbox
+          label={t('jobs.editor.published')}
+          checked={form.published}
+          disabled={!canWrite}
+          onChange={(event) => change('published', event.target.checked)}
+        />
         {save.isError && <p role="alert">{t('jobs.editor.saveError')}</p>}
         <div className={styles.actions}>
           <Button type="submit" disabled={!canWrite || save.isPending}>

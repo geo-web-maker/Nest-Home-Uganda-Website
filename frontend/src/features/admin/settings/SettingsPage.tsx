@@ -5,6 +5,7 @@ import { FilterTabs } from '../../../components/admin/FilterTabs';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
+import { Checkbox } from '../../../components/ui/Checkbox';
 import { apiClient } from '../../../lib/api/client';
 import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
@@ -271,17 +272,15 @@ export function SettingsPage() {
                 const value = valueFor(key);
                 const locked = key === 'sms.provider' || !canWriteActiveTab;
                 return isBoolean(key) ? (
-                  <label className={styles.check} key={key}>
-                    <input
-                      type="checkbox"
-                      checked={Boolean(value)}
-                      disabled={locked}
-                      onChange={(event) =>
-                        setEdited((current) => ({ ...current, [key]: event.target.checked }))
-                      }
-                    />
-                    {t(`settings.fields.${key}`)}
-                  </label>
+                  <Checkbox
+                    key={key}
+                    label={t(`settings.fields.${key}`)}
+                    checked={Boolean(value)}
+                    disabled={locked}
+                    onChange={(event) =>
+                      setEdited((current) => ({ ...current, [key]: event.target.checked }))
+                    }
+                  />
                 ) : key === 'system.PAYMENT_GATEWAY_MODE' ? (
                   <Field
                     key={key}

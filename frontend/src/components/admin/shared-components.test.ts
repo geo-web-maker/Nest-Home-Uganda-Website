@@ -65,6 +65,12 @@ describe('admin pages use the shared components', () => {
     expect(offenders(tsx, /<select[\s>]/)).toEqual([]);
   });
 
+  it('has no page-made checkbox rows: every checkbox is the shared Checkbox', () => {
+    expect(offenders(tsx, /type="checkbox"/)).toEqual([]);
+    expect(offenders(tsx, /stage-inline-checkbox|client-check/)).toEqual([]);
+    expect(offenders(css, /\.stage-inline-checkbox|\.client-check|\.check\b|\.scope\b/)).toEqual([]);
+  });
+
   it('has no per-page action rows: they are ButtonGroup', () => {
     expect(offenders(tsx, /className="(stage-modal-actions|stage-toolbar-actions|care-data-actions|stage-row-actions|care-row-actions)"/)).toEqual([]);
     expect(offenders(css, /\.stage-(row|modal)-actions|\.stage-toolbar-actions|\.care-(row|data)-actions/)).toEqual([]);
