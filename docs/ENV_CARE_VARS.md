@@ -35,14 +35,22 @@ Generated from `backend/app/modules/settings/care_keys.py`. Empty values use the
 | `CARE_FIELD_CHECKIN_FIX_WAIT_S` | `field.checkin_fix_wait_s` | integer | `10` | No | field |
 | `CARE_FIELD_GEO_SNAP_WAIT_S` | `field.geo_snap_wait_s` | integer | `3` | No | field |
 | `CARE_PHOTOS_ENABLED` | `photos.enabled` | boolean | `False` | No | photos |
+| `CARE_PHOTOS_GUIDANCE_TEXT` | `photos.guidance_text` | text | `''` | No | photos |
 | `CARE_PHOTOS_MAX_MB` | `photos.max_mb` | integer | `5` | No | photos |
 | `CARE_PHOTOS_MAX_PER_VISIT` | `photos.max_per_visit` | integer | `5` | No | photos |
+| `CARE_PHOTOS_REQUIRED` | `photos.required` | choice | `'none'` | No | photos |
 | `CARE_SMS_ENABLED` | `sms.enabled` | boolean | `False` | No | sms |
 | `CARE_SMS_MONTHLY_CAP` | `sms.monthly_cap` | integer | `1000` | No | sms |
 | `CARE_SMS_TEST_NUMBER` | `sms.test_number` | text | `''` | No | sms |
+| `CARE_SOS_CANCEL_WINDOW_S` | `sos.cancel_window_s` | integer | `5` | No | sos |
 | `CARE_SOS_EMERGENCY_NUMBERS` | `sos.emergency_numbers` | list | `[]` | No | sos |
 | `CARE_SOS_ENABLED` | `sos.enabled` | boolean | `False` | No | sos |
+| `CARE_SOS_HOLD_SECONDS` | `sos.hold_seconds` | integer | `2` | No | sos |
+| `CARE_SOS_LIVE_FOLLOW_ENABLED` | `sos.live_follow_enabled` | boolean | `False` | No | sos |
+| `CARE_SOS_LIVE_FOLLOW_INTERVAL_SECONDS` | `sos.live_follow_interval_seconds` | integer | `30` | No | sos |
+| `CARE_SOS_LIVE_FOLLOW_MINUTES` | `sos.live_follow_minutes` | integer | `30` | No | sos |
 | `CARE_SOS_ON_CALL_CONTACTS` | `sos.on_call_contacts` | map | `{}` | No | sos |
+| `CARE_SOS_ON_CALL_ROSTER` | `sos.on_call_roster` | map | `{'enabled': False, 'approved': False, 'entries': []}` | No | sos |
 | `CARE_SOS_PROCEDURE` | `sos.procedure` | text | `''` | No | sos |
 | `CARE_SOS_RESPONDER_CONFIGURED` | `sos.responder_configured` | boolean | `False` | No | sos |
 | `CARE_THRESHOLDS_CLOCK_SKEW_MIN` | `thresholds.clock_skew_min` | integer | `10` | No | thresholds |
