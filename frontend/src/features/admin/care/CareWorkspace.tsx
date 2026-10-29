@@ -10,6 +10,7 @@ import { VisitReviewPanel } from './visits/VisitReviewPanel';
 import { CreateClientPanel } from './clients/CreateClientPanel';
 import { ResolveFlagPanel } from './flags/ResolveFlagPanel';
 import { DataToolsPanel } from './data/DataToolsPanel';
+import { ButtonGroup } from '../../../components/admin/ButtonGroup';
 
 type CareTab =
   | 'nurses'
@@ -546,7 +547,7 @@ export function CareWorkspace() {
                       <td key={key}>{printable(value)}</td>
                     ))}
                   {['visits', 'flags', 'photos', 'alerts', 'timesheets', 'sos'].includes(tab) && (
-                    <td className="care-row-actions">
+                    <td><ButtonGroup size="compact">
                       {tab === 'visits' && (
                         <Button variant="outline"
                           type="button"
@@ -692,7 +693,7 @@ export function CareWorkspace() {
                           Acknowledge SOS
                         </Button>
                       )}
-                    </td>
+                    </ButtonGroup></td>
                   )}
                 </tr>
               ))}

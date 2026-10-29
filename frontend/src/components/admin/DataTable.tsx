@@ -1,6 +1,7 @@
 import type { MouseEvent, ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cx } from '../../lib/cx';
+import { ButtonSizeProvider } from '../ui/Button';
 import styles from './DataTable.module.css';
 
 export interface DataColumn<T> {
@@ -75,6 +76,7 @@ export function DataTable<T>({
 
   return (
     <div id={id} className={styles.wrap} aria-busy={loading}>
+      <ButtonSizeProvider value="compact">
       <table className={styles.table} role="table">
         <caption className={styles.caption}>{labels.caption}</caption>
         <thead className={styles.head} role="rowgroup">
@@ -121,6 +123,7 @@ export function DataTable<T>({
           })}
         </tbody>
       </table>
+      </ButtonSizeProvider>
     </div>
   );
 }

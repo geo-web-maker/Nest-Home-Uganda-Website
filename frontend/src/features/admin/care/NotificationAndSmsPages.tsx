@@ -9,6 +9,8 @@ import { hasScopes } from '../auth/hasScopes';
 import './stage30-38.css';
 import { Notice } from '../../../components/admin/Notice';
 import { StatusBadge } from '../../../components/ui/Badge';
+import { ButtonGroup } from '../../../components/admin/ButtonGroup';
+import { SectionHeader } from '../../../components/admin/SectionHeader';
 
 type LogRow = { id: string; at: string; provider: string; audience: string; template: string; to_hint: string; status: string; error?: string | null; cost?: number | null; related_type?: string | null; related_id?: string | null };
 type SmsSnapshot = { provider: string; sender_id: string; message_category: string; staff_enabled: boolean; visitor_enabled: boolean; visitor_text: string; daily_limit: number; monthly_cap: number; test_number: string; test_message_only: boolean; delivery_receipts_supported: boolean };
@@ -31,7 +33,7 @@ export function NotificationLogPage() {
     <PageHeader title="Notification delivery log" subtitle="A bounded, privacy-conscious view of the latest SMS attempts. Message bodies and provider credentials are not shown." actions={<Button variant="outline" onClick={() => void load()} disabled={loading}>Refresh</Button>} />
     <div className="stage-callout"><strong>Status definition</strong><p>“Accepted by provider” means the provider accepted the send request. It does not prove delivery to the handset. The configured MamboSMS integration does not expose delivery receipts in this app.</p></div>
     {error && <Notice tone="error">{error}</Notice>}
-    <section className="stage-panel"><div className="stage-toolbar"><div><h2>Recent attempts</h2><p className="stage-label-note">{loading ? 'Loading…' : `${rows.length} attempt records (maximum 100)`}</p></div></div>
+    <section className="stage-panel"><SectionHeader title="Recent attempts" note={<>{loading ? 'Loading…' : `${rows.length} attempt records (maximum 100)`}</>} />
       {rows.length === 0 && !loading ? <p className="stage-empty">No notification attempts have been recorded for the current log window.</p> : <div className="stage-table-scroll"><table className="stage-table"><caption>SMS send attempts</caption><thead><tr><th>Time</th><th>Recipient</th><th>Audience / template</th><th>Provider</th><th>Provider status</th><th>Reported cost</th><th>Error details</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td>{dateTime(row.at)}</td><td>{row.to_hint || 'Masked recipient not available'}</td><td>{human(row.audience)}<br /><span className="stage-label-note">{human(row.template)}</span></td><td>{row.provider}</td><td><StatusBadge status={String(row.status ?? '')}>{providerOutcome(row.status)}</StatusBadge></td><td>{row.cost == null ? 'Not reported' : String(row.cost)}<br /><span className="stage-label-note">Provider value; currency not specified</span></td><td>{row.error || '—'}</td></tr>)}</tbody></table></div>}
     </section>
   </div>;
@@ -136,7 +138,7 @@ export function SmsSettingsPage() {
         </div>
         <div><Field label="Visitor SMS text preview (maximum 160 characters)" kind="textarea" value={visitorText} maxLength={300} onChange={(event) => setVisitorText(event.target.value)} disabled={!canSystemManage} /><p className="stage-label-note"><span className="stage-count">{visitorText.length}/160</span> characters. {visitorText.length > 160 ? 'Over budget; save is blocked.' : 'No message body is stored in the notification log.'}</p></div>
         {!canSystemManage && <p className="stage-label-note">Sender ID, category, staff/visitor enablement, and visitor text are read-only because these global SMS settings require system:manage. Monthly cap and test destination require carecfg:write.</p>}
-        <div className="stage-modal-actions"><Button type="submit" disabled={saving || (!canCareWrite && !canSystemManage)}>{saving ? 'Saving…' : 'Save settings'}</Button><Button type="button" variant="outline" disabled={testing || !canCareWrite || !testNumber.trim()} onClick={() => void testSms()}>{testing ? 'Testing…' : 'Send test message'}</Button>{snapshot?.provider === 'mambosms' && <Button type="button" variant="outline" disabled={checkingBalance || !canCareWrite} onClick={() => void checkBalance()}>{checkingBalance ? 'Checking…' : 'Check provider balance'}</Button>}</div>
+        <ButtonGroup spaced><Button type="submit" disabled={saving || (!canCareWrite && !canSystemManage)}>{saving ? 'Saving…' : 'Save settings'}</Button><Button type="button" variant="outline" disabled={testing || !canCareWrite || !testNumber.trim()} onClick={() => void testSms()}>{testing ? 'Testing…' : 'Send test message'}</Button>{snapshot?.provider === 'mambosms' && <Button type="button" variant="outline" disabled={checkingBalance || !canCareWrite} onClick={() => void checkBalance()}>{checkingBalance ? 'Checking…' : 'Check provider balance'}</Button>}</ButtonGroup>
         {balance !== null && <Notice>Provider-reported balance value: <strong>{balance}</strong> (currency/units are not inferred).</Notice>}
         <p className="stage-label-note">The monthly cap is enforced for care SOS and critical-alert SMS. A cap of 0 pauses these care SMS sends. The daily limit is enforced across the notification service.</p>
       </form>

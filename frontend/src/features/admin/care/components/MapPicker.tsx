@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react';
+import { ButtonGroup } from '../../../../components/admin/ButtonGroup';
+import { FilterBar, filterBarGrow } from '../../../../components/admin/FilterBar';
+import { Button } from '../../../../components/ui/Button';
 import { Field } from '../../../../components/ui/Field';
 import styles from './MapPicker.module.css';
 
@@ -97,18 +100,24 @@ export function MapPicker({ tileUrl, lat, lng, radius, onChange, markers = [] }:
 
   return (
     <section className={styles.wrap} aria-label="Map location picker">
-      <div className={styles.addressSearch}>
+      {/* No onSubmit: the picker lives inside other forms, and forms cannot nest. */}
+      <FilterBar
+        label="Find an address"
+        actions={
+          <Button type="button" variant="outline" onClick={() => void searchAddress()} disabled={searching}>
+            {searching ? 'Searching…' : 'Find address'}
+          </Button>
+        }
+      >
         <Field
           label="Search address or nearby landmark"
           type="search"
           value={addressQuery}
           onChange={(event) => setAddressQuery(event.target.value)}
           placeholder="For example, a street or trading centre"
+          className={filterBarGrow}
         />
-        <button type="button" onClick={() => void searchAddress()} disabled={searching}>
-          {searching ? 'Searching…' : 'Find address'}
-        </button>
-      </div>
+      </FilterBar>
       {searchError && <p className={styles.error} role="alert">{searchError}</p>}
       <div className={styles.map}>
         {mapPreview ? (
@@ -138,7 +147,7 @@ export function MapPicker({ tileUrl, lat, lng, radius, onChange, markers = [] }:
         <Field label="Longitude" type="number" step="0.000001" value={lng} onChange={(event) => onChange({ lat, lng: event.target.value, radius })} />
         <Field label="Radius (m)" type="number" min="50" max="1000" value={radius} onChange={(event) => onChange({ lat, lng, radius: event.target.value })} />
       </div>
-      <button type="button" onClick={validate}>Validate location</button>
+      <ButtonGroup><Button type="button" variant="outline" onClick={validate}>Validate location</Button></ButtonGroup>
       <output role="status">{message || (lat.trim() && lng.trim() && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)) ? `${rounded.lat}, ${rounded.lng}` : '')}</output>
     </section>
   );

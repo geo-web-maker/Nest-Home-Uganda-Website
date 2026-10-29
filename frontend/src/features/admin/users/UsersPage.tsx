@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ButtonGroup } from '../../../components/admin/ButtonGroup';
 import { DataTable, type DataColumn } from '../../../components/admin/DataTable';
+import { FilterBar } from '../../../components/admin/FilterBar';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Badge } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
@@ -129,7 +131,7 @@ export function UsersPage() {
       key: 'actions',
       header: t('users.columns.actions'),
       cell: (item) => (
-        <div className={styles.actions}>
+        <ButtonGroup size="compact">
           <Button
             variant="outline"
             onClick={() => {
@@ -156,7 +158,7 @@ export function UsersPage() {
           >
             {t('users.forceSignOut')}
           </Button>
-        </div>
+        </ButtonGroup>
       ),
     },
   ];
@@ -246,9 +248,7 @@ export function UsersPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
-            <label className={styles.scope}>
-              Account type
-              <select
+            <Field kind="select" label="Account type"
                 value={inviteKind}
                 onChange={(event) => setInviteKind(event.target.value as typeof inviteKind)}
               >
@@ -257,34 +257,16 @@ export function UsersPage() {
                 <option value="supervisor">Supervisor</option>
                 <option value="admin">Admin</option>
                 <option value="executive">Executive</option>
-              </select>
-            </label>
-            <label className={styles.scope}>
-              Data reach
-              <select
+              </Field>
+            <Field kind="select" label="Data reach"
                 value={inviteReach}
                 onChange={(event) => setInviteReach(event.target.value as typeof inviteReach)}
               >
                 <option value="own">Own</option>
                 <option value="team">Team</option>
                 <option value="all">All</option>
-              </select>
-            </label>
-            <div className={styles.actions}>
-              <label>
-                Access preset{' '}
-                <select
-                  value={invitePreset}
-                  onChange={(event) => setInvitePreset(event.target.value)}
-                >
-                  <option value="nurse">Nurse</option>
-                  <option value="supervisor">Supervisor</option>
-                  <option value="admin">Admin</option>
-                  <option value="executive">Executive</option>
-                  {current?.is_superadmin && <option value="super_admin">Super admin</option>}
-                </select>
-              </label>
-              <Button
+              </Field>
+            <FilterBar label="Access preset" className={styles.fullRow} actions={<Button
                 type="button"
                 variant="outline"
                 onClick={() => {
@@ -306,8 +288,18 @@ export function UsersPage() {
                 }}
               >
                 Apply preset
-              </Button>
-            </div>
+              </Button>}>
+              <Field kind="select" label="Access preset"
+                  value={invitePreset}
+                  onChange={(event) => setInvitePreset(event.target.value)}
+                >
+                  <option value="nurse">Nurse</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="admin">Admin</option>
+                  <option value="executive">Executive</option>
+                  {current?.is_superadmin && <option value="super_admin">Super admin</option>}
+                </Field>
+</FilterBar>
             <fieldset className={styles.scopeFieldset}>
               <legend>{t('users.grantScopes')}</legend>
               {Object.entries(
@@ -342,14 +334,14 @@ export function UsersPage() {
               ))}
             </fieldset>
             {invite.isError && <p role="alert">{t('users.inviteError')}</p>}
-            <div className={styles.actions}>
+            <ButtonGroup className={styles.fullRow}>
               <Button type="submit" disabled={invite.isPending || !name.trim() || !email.trim()}>
                 {t('users.sendInvite')}
               </Button>
               <Button type="button" variant="outline" onClick={() => setOpenInvite(false)}>
                 {t('common.cancel')}
               </Button>
-            </div>
+            </ButtonGroup>
           </form>
         </section>
       )}
@@ -357,9 +349,7 @@ export function UsersPage() {
         <section className={styles.editor}>
           <h2>{t('users.editHeading', { name: editing.name })}</h2>
           {editing.id === current?.id && <p>{t('users.selfEditNotice')}</p>}
-          <label className={styles.scope}>
-            Account type
-            <select
+          <Field kind="select" label="Account type"
               value={editingKind}
               disabled={!canWrite || editing.id === current?.id}
               onChange={(event) => setEditingKind(event.target.value as typeof editingKind)}
@@ -369,11 +359,8 @@ export function UsersPage() {
               <option value="supervisor">Supervisor</option>
               <option value="admin">Admin</option>
               <option value="executive">Executive</option>
-            </select>
-          </label>
-          <label className={styles.scope}>
-            Data reach
-            <select
+            </Field>
+          <Field kind="select" label="Data reach"
               value={editingReach}
               disabled={!canWrite || editing.id === current?.id}
               onChange={(event) => setEditingReach(event.target.value as typeof editingReach)}
@@ -381,12 +368,16 @@ export function UsersPage() {
               <option value="own">Own</option>
               <option value="team">Team</option>
               <option value="all">All</option>
-            </select>
-          </label>
-          <div className={styles.actions}>
-            <label>
-              Access preset{' '}
-              <select
+            </Field>
+          <FilterBar label="Access preset" className={styles.fullRow} actions={<Button
+              type="button"
+              variant="outline"
+              disabled={!canWrite || editing.id === current?.id}
+              onClick={() => setEditingScopes(applyPreset(editingPreset))}
+            >
+              Apply preset
+            </Button>}>
+            <Field kind="select" label="Access preset"
                 value={editingPreset}
                 onChange={(event) => setEditingPreset(event.target.value)}
               >
@@ -395,17 +386,8 @@ export function UsersPage() {
                 <option value="admin">Admin</option>
                 <option value="executive">Executive</option>
                 {current?.is_superadmin && <option value="super_admin">Super admin</option>}
-              </select>
-            </label>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={!canWrite || editing.id === current?.id}
-              onClick={() => setEditingScopes(applyPreset(editingPreset))}
-            >
-              Apply preset
-            </Button>
-          </div>
+              </Field>
+</FilterBar>
           <fieldset className={styles.scopeFieldset}>
             <legend>{t('users.grantScopes')}</legend>
             {Object.entries(
@@ -442,7 +424,7 @@ export function UsersPage() {
             ))}
           </fieldset>
           {update.isError && <p role="alert">{t('users.updateError')}</p>}
-          <div className={styles.actions}>
+          <ButtonGroup className={styles.fullRow}>
             <Button
               disabled={!canWrite || editing.id === current?.id || update.isPending}
               onClick={() =>
@@ -470,7 +452,7 @@ export function UsersPage() {
             >
               {editing.active ? t('users.deactivate') : t('users.activate')}
             </Button>
-          </div>
+          </ButtonGroup>
         </section>
       )}
     </>

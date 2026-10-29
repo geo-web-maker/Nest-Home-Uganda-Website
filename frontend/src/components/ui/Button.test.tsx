@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { Button } from './Button';
+import { Button, ButtonSizeProvider } from './Button';
 
 function renderInRouter(ui: React.ReactElement) {
   return render(<MemoryRouter>{ui}</MemoryRouter>);
@@ -66,5 +66,56 @@ describe('Button', () => {
   it('defaults to the primary variant', () => {
     renderInRouter(<Button>Go</Button>);
     expect(screen.getByRole('button')).toHaveAttribute('data-variant', 'primary');
+  });
+
+  describe('size', () => {
+    it('is the marketing size unless something above says otherwise', () => {
+      renderInRouter(<Button>Go</Button>);
+      expect(screen.getByRole('button')).toHaveAttribute('data-size', 'default');
+    });
+
+    it.each(['header', 'control', 'compact'] as const)('accepts the %s size on a button and on a link', (size) => {
+      renderInRouter(
+        <>
+          <Button size={size}>Act</Button>
+          <Button size={size} href="/admin">
+            Open
+          </Button>
+        </>,
+      );
+      expect(screen.getByRole('button', { name: 'Act' })).toHaveAttribute('data-size', size);
+      expect(screen.getByRole('link', { name: 'Open' })).toHaveAttribute('data-size', size);
+    });
+
+    it('takes the size set by ButtonSizeProvider, for buttons, links and nested content', () => {
+      renderInRouter(
+        <ButtonSizeProvider value="control">
+          <div>
+            <Button>Save</Button>
+            <Button href="https://example.test/x">Docs</Button>
+          </div>
+        </ButtonSizeProvider>,
+      );
+      expect(screen.getByRole('button', { name: 'Save' })).toHaveAttribute('data-size', 'control');
+      expect(screen.getByRole('link', { name: 'Docs' })).toHaveAttribute('data-size', 'control');
+    });
+
+    it('lets one Button override the provider, and the nearest provider wins', () => {
+      renderInRouter(
+        <ButtonSizeProvider value="control">
+          <Button size="compact">Small</Button>
+          <ButtonSizeProvider value="compact">
+            <Button>Inner</Button>
+          </ButtonSizeProvider>
+        </ButtonSizeProvider>,
+      );
+      expect(screen.getByRole('button', { name: 'Small' })).toHaveAttribute('data-size', 'compact');
+      expect(screen.getByRole('button', { name: 'Inner' })).toHaveAttribute('data-size', 'compact');
+    });
+
+    it('does not pass size on to the DOM element', () => {
+      renderInRouter(<Button size="control">Go</Button>);
+      expect(screen.getByRole('button')).not.toHaveAttribute('size');
+    });
   });
 });

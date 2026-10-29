@@ -1,5 +1,5 @@
 import { hasScopes } from './auth/hasScopes';
-import { ADMIN_NAV, bottomNav, firstReachablePath, scopesFor, visibleNav } from './nav';
+import { ADMIN_NAV, bottomNav, firstReachablePath, navItemFor, scopesFor, visibleNav } from './nav';
 
 const user = (scopes: string[], is_superadmin = false) => ({ scopes, is_superadmin });
 const paths = (items: { path: string }[]) => items.map((i) => i.path);
@@ -79,5 +79,33 @@ describe('mockup-aligned admin navigation', () => {
     expect(scopesFor('/admin/care/schedule')).toEqual(['visits:read']);
     expect(scopesFor('/admin/care/sos-procedure')).toEqual(['carecfg:read']);
     expect(() => scopesFor('/admin/nope')).toThrow();
+  });
+});
+
+describe('navItemFor', () => {
+  it('picks exactly one item for a URL, even when one nav path is a prefix of another', () => {
+    expect(navItemFor('/admin/care/sos')?.path).toBe('/admin/care/sos');
+    expect(navItemFor('/admin/care/sos/history')?.path).toBe('/admin/care/sos/history');
+  });
+
+  it('keeps a detail route under its list: an SOS case is still SOS, not History', () => {
+    expect(navItemFor('/admin/care/sos/case-42')?.path).toBe('/admin/care/sos');
+    expect(navItemFor('/admin/enquiries/42')?.path).toBe('/admin/enquiries');
+    expect(navItemFor('/admin/care/visits/abc')?.path).toBe('/admin/care/visits');
+  });
+
+  it('matches the dashboard only on its own URL, not on every admin URL', () => {
+    expect(navItemFor('/admin')?.path).toBe('/admin');
+    expect(navItemFor('/admin/')?.path).toBe('/admin');
+    expect(navItemFor('/admin/does-not-exist')).toBeUndefined();
+  });
+
+  it('does not match a path that only shares a prefix of letters', () => {
+    expect(navItemFor('/admin/care/sos-procedure')?.path).toBe('/admin/care/sos-procedure');
+    expect(navItemFor('/admin/care/sosx')).toBeUndefined();
+  });
+
+  it('resolves every nav item to itself, so no two items can ever be current together', () => {
+    for (const item of ADMIN_NAV) expect(navItemFor(item.path)?.path).toBe(item.path);
   });
 });

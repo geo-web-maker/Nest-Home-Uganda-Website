@@ -7,6 +7,7 @@ import { PageHeader } from '../../components/admin/PageHeader';
 import { apiClient } from '../../lib/api/client';
 import { useAuth } from './auth/useAuth';
 import styles from './GovernancePages.module.css';
+import { FilterBar, filterBarGrow } from '../../components/admin/FilterBar';
 
 type Release = {
   id: string;
@@ -77,12 +78,12 @@ export function AppReleasesPage() {
         <h2>Publish a release</h2>
         <p>Publishing changes the version policy consumed by field apps. Confirm the minimum version before publishing.</p>
         <div className={styles.formGrid}>
-          <label>Platform<select value={platform} onChange={(e) => setPlatform(e.target.value as typeof platform)}><option value="android">Android</option><option value="ios">iOS</option><option value="web">Web</option></select></label>
+          <Field kind="select" label="Platform" value={platform} onChange={(e) => setPlatform(e.target.value as typeof platform)}><option value="android">Android</option><option value="ios">iOS</option><option value="web">Web</option></Field>
           <Field label="Version" value={version} onChange={(e: ChangeEvent<HTMLInputElement>) => setVersion(e.target.value)} placeholder="1.2.3" required requiredLabel="(required)" />
           <Field label="Minimum supported version" value={minimum} onChange={(e: ChangeEvent<HTMLInputElement>) => setMinimum(e.target.value)} placeholder="1.0.0" required requiredLabel="(required)" />
           <Field label="Download path (optional)" value={downloadPath} onChange={(e: ChangeEvent<HTMLInputElement>) => setDownloadPath(e.target.value)} placeholder="/downloads/app.apk or https://…" />
         </div>
-        <label className={styles.fullField}>Release notes<textarea value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={2000} rows={3} /></label>
+        <Field kind="textarea" label="Release notes" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={2000} rows={3} />
         <label className={styles.check}><input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Activate this release policy</label>
         {formError ? <p role="alert">{formError}</p> : null}
         {publish.isError ? <p role="alert">{formError || 'Release was not published.'}</p> : null}
@@ -174,7 +175,7 @@ export function CareSettingCataloguePage() {
   return <section className={styles.page}><PageHeader title="Care setting catalogue" subtitle="Schema-backed catalogue from the care settings API. Values are read-only here; edit them in Care settings." />
     {settings.isPending ? <p role="status">Loading setting catalogue…</p> : null}
     {settings.isError ? <div role="alert"><p>Catalogue unavailable. Confirm carecfg:read access and API connectivity.</p><Button variant="outline" onClick={() => void settings.refetch()}>Retry</Button></div> : null}
-    {settings.data ? <><div className={styles.card}><p>{rows.length} registered settings</p><Field label="Search settings" value={query} onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} placeholder="Key, group or type" /><label>Group<select value={group} onChange={(e) => setGroup(e.target.value)}><option value="all">All groups</option>{groups.map((item) => <option key={item}>{item}</option>)}</select></label></div>
+    {settings.data ? <><FilterBar label="Filter settings" meta={`${rows.length} registered settings`}><Field label="Search settings" type="search" className={filterBarGrow} value={query} onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} placeholder="Key, group or type" /><Field kind="select" label="Group" value={group} onChange={(e) => setGroup(e.target.value)}><option value="all">All groups</option>{groups.map((item) => <option key={item}>{item}</option>)}</Field></FilterBar>
     <div className={styles.tableWrap}><table className={styles.table}><caption>Care settings schema and current values</caption><thead><tr><th>Setting</th><th>Group</th><th>Type</th><th>Current value</th><th>Source</th><th>Default</th><th>Override levels</th><th>Go-live</th></tr></thead><tbody>{filtered.map((row) => <tr key={row.id}><th scope="row">{row.id}</th><td>{row.group}</td><td>{row.type}</td><td><code>{JSON.stringify(row.value)}</code></td><td>{row.source}</td><td><code>{JSON.stringify(row.default)}</code></td><td>{row.overridable_at.join(', ') || 'None'}</td><td>{row.required_before_go_live ? 'Required' : '—'}</td></tr>)}</tbody></table></div></> : null}
   </section>;
 }

@@ -69,6 +69,7 @@ export const adminEn = {
     notRated: 'Not rated',
   },
   enquiries: {
+    filtersLabel: 'Search and filter enquiries',
     search: 'Search',
     searchPlaceholder: 'Name, phone or area',
     searchButton: 'Search',
@@ -189,6 +190,7 @@ export const adminEn = {
   },
   activity: {
     subtitle: 'A record of changes made in the admin.',
+    filtersLabel: 'Filter activity by date',
     from: 'From',
     to: 'To',
     apply: 'Apply filters',
@@ -576,6 +578,7 @@ export const adminEn = {
   },
   reports: {
     subtitle: 'Review activity and export reports.',
+    exportLabel: 'Export options',
     statsLabel: 'Report summary',
     loading: 'Loading reports',
     error: 'We could not load report data just now.',

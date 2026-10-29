@@ -64,6 +64,18 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { path: '/admin/backups', labelKey: 'backupsHealth', scopes: ['system:manage'], icon: 'shield', group: 'setup' },
 ];
 
+/**
+ * The one nav item a URL belongs to: the longest matching path. `/admin/care/sos/history` is
+ * History, not SOS, while `/admin/care/sos/123` (a case) is still SOS. Prefix matching alone would
+ * light both, so the sidebar, More list and bottom bar all use this instead of NavLink's own match.
+ */
+export function navItemFor(pathname: string): AdminNavItem | undefined {
+  const clean = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  return ADMIN_NAV.filter((item) =>
+    item.path === '/admin' ? clean === '/admin' : clean === item.path || clean.startsWith(`${item.path}/`),
+  ).sort((a, b) => b.path.length - a.path.length)[0];
+}
+
 const BOTTOM_NAV_SLOTS = 4;
 const MOBILE_SHORTCUTS = ['/admin', '/admin/care/visits', '/admin/care/alerts', '/admin/care/sos'];
 

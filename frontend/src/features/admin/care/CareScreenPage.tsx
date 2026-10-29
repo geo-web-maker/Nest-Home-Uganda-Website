@@ -7,6 +7,7 @@ import type { DataColumn } from '../../../components/admin/DataTable';
 import { CareTable } from './components/CareTable';
 import { CareSheet } from './components/CareSheet';
 import { InviteNurseSheet } from './nurses/InviteNurseSheet';
+import { FilterBar } from '../../../components/admin/FilterBar';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
@@ -19,6 +20,7 @@ import { hasScopes } from '../auth/hasScopes';
 import './care.css';
 import './care-screen.css';
 import { Notice } from '../../../components/admin/Notice';
+import { ButtonGroup } from '../../../components/admin/ButtonGroup';
 
 type Row = Record<string, any>;
 type ScreenKey =
@@ -241,7 +243,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
         key: 'actions',
         header: 'Actions',
         cell: (r: Row) => (
-          <span className="care-row-actions">
+          <ButtonGroup size="compact">
             {screen === 'clients' && (
               <Button type="button" variant="outline" onClick={() => navigate(`/admin/care/clients/${encodeURIComponent(String(r.id ?? ''))}`)}>
                 Details
@@ -475,7 +477,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                 Acknowledge
               </Button>
             )}
-          </span>
+          </ButtonGroup>
         ),
       } as any);
     return base as DataColumn<Row>[];
@@ -706,7 +708,32 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
       );
     if (screen === 'reports')
       return (
-        <div className="care-actions">
+        <>
+        <FilterBar
+          label="Visit report filters"
+          onSubmit={() => void load()}
+          actions={
+            <>
+              <Button type="submit">Preview</Button>
+              {hasScopes(user, ['care-reports:export']) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const q = new URLSearchParams({ format: 'csv' });
+                    if (nurseId) q.set('nurse', nurseId);
+                    if (clientId) q.set('client', clientId);
+                    if (reportFrom) q.set('from', reportFrom);
+                    if (reportTo) q.set('to', reportTo);
+                    window.location.assign(`/api/v1/admin/care/reports/visits?${q.toString()}`);
+                  }}
+                >
+                  Download CSV
+                </Button>
+              )}
+            </>
+          }
+        >
           <Field label="Nurse ID" value={nurseId} onChange={(e) => setNurseId(e.target.value)} />
           <Field label="Client ID" value={clientId} onChange={(e) => setClientId(e.target.value)} />
           <Field
@@ -721,33 +748,19 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
             value={reportTo}
             onChange={(e) => setReportTo(e.target.value)}
           />
-          <Button type="button" onClick={() => void load()}>
-            Preview
-          </Button>
-          {hasScopes(user, ['care-reports:export']) && (
-            <Button
-              type="button"
-              onClick={() => {
-                const q = new URLSearchParams({ format: 'csv' });
-              if (nurseId) q.set('nurse', nurseId);
-              if (clientId) q.set('client', clientId);
-              if (reportFrom) q.set('from', reportFrom);
-              if (reportTo) q.set('to', reportTo);
-                window.location.assign(`/api/v1/admin/care/reports/visits?${q.toString()}`);
-              }}
-            >
-              Download CSV
-            </Button>
-          )}
-          <p>
+        </FilterBar>
+          <p className="stage-muted">
             Exports are audited and require <code>care-reports:export</code>.
           </p>
-        </div>
+        </>
       );
     if (screen === 'audit')
       return (
-        <div className="care-form">
-          <div className="care-grid">
+        <FilterBar
+          label="Audit filters"
+          onSubmit={() => void load()}
+          actions={<Button type="submit">Apply filters</Button>}
+        >
             <Field
               label="Actor ID"
               value={auditFilters.actor}
@@ -783,11 +796,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
               value={auditFilters.to}
               onChange={(e) => setAuditFilters({ ...auditFilters, to: e.target.value, cursor: '' })}
             />
-          </div>
-          <Button type="button" onClick={() => void load()}>
-            Apply filters
-          </Button>
-        </div>
+        </FilterBar>
       );
     if (screen === 'settings')
       return (
@@ -845,22 +854,22 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
       );
     if (screen === 'data')
       return (
-        <div className="care-form">
-          <Field label="Client ID" value={clientId} onChange={(e) => setClientId(e.target.value)} />
-          <Button
-            type="button"
-            onClick={async () => {
+        <>
+          <FilterBar
+            label="Client data export"
+            onSubmit={async () => {
               const r: any = await apiClient.get(
                 `/admin/care/data-requests/clients/${encodeURIComponent(clientId)}/export`,
               );
               setSelected(r);
               setNotice('Client data export prepared and audited.');
             }}
+            actions={<Button type="submit">Preview export</Button>}
           >
-            Preview export
-          </Button>
-          {selected && <pre>{JSON.stringify(selected, null, 2)}</pre>}
-        </div>
+            <Field label="Client ID" value={clientId} onChange={(e) => setClientId(e.target.value)} />
+          </FilterBar>
+          {selected && <pre className="care-data-export">{JSON.stringify(selected, null, 2)}</pre>}
+        </>
       );
     return null;
   }

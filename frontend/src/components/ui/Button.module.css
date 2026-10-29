@@ -42,6 +42,20 @@
   font-size: 0.88rem;
 }
 .header.withArrow { padding: 4px 4px 4px 14px; }
+.control {
+  /* Same height as Field's control, so a button beside an input shares its top and bottom edge. */
+  min-height: 48px;
+  padding-inline: 20px;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+.compact {
+  min-height: 36px;
+  padding-inline: 14px;
+  gap: 6px;
+  border-width: 1px;
+  font-size: 0.85rem;
+}
 .arrow {
   display: inline-grid;
   place-items: center;

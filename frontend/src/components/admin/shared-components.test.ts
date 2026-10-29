@@ -32,8 +32,10 @@ describe('admin pages use the shared components', () => {
     expect(offenders(css, /\.stage-message|\.stage-status|\.stage-modal-backdrop|\.stage-modal \{|\.care-error|\.care-notice|\.care-tabs/)).toEqual([]);
   });
 
-  it('builds buttons from the shared Button, not raw <button>, outside the navigation shell and map picker', () => {
-    const allowed = new Set(['AdminLayout.tsx', 'care/components/MapPicker.tsx']);
+  it('builds buttons from the shared Button, not raw <button>, outside the navigation shell and two icon-style triggers', () => {
+    // AdminLayout: sidebar and drawer controls. The other two are a photo thumbnail that opens its
+    // viewer and an inline text action in the alerts table; neither is a pill button.
+    const allowed = new Set(['AdminLayout.tsx', 'care/VisitListAndPhotosPages.tsx', 'care/AlertAndTimesheetPages.tsx']);
     expect(offenders(tsx, /<button[\s>]/).filter((file) => !allowed.has(file))).toEqual([]);
   });
 
@@ -57,5 +59,20 @@ describe('admin pages use the shared components', () => {
     ];
     const found = offenders(tsx, /<table[\s>]/);
     expect(found.filter((file) => !stillHandDrawn.includes(file))).toEqual([]);
+  });
+
+  it('has no label-and-select pairs and no raw selects: dropdowns come from Field', () => {
+    expect(offenders(tsx, /<select[\s>]/)).toEqual([]);
+  });
+
+  it('has no per-page action rows: they are ButtonGroup', () => {
+    expect(offenders(tsx, /className="(stage-modal-actions|stage-toolbar-actions|care-data-actions|stage-row-actions|care-row-actions)"/)).toEqual([]);
+    expect(offenders(css, /\.stage-(row|modal)-actions|\.stage-toolbar-actions|\.care-(row|data)-actions/)).toEqual([]);
+  });
+
+  it('sets the sidebar current item from navItemFor, never from NavLink prefix matching', () => {
+    const layout = read(join(admin, 'AdminLayout.tsx'));
+    expect(layout).toMatch(/navItemFor/);
+    expect(layout).not.toMatch(/NavLink/);
   });
 });

@@ -6,7 +6,6 @@
 .stage-panel { min-width: 0; padding: 1rem; border: 1px solid var(--line); border-radius: 16px; background: var(--surf); }
 .stage-toolbar { display: flex; align-items: end; gap: .75rem; flex-wrap: wrap; }
 .stage-toolbar > * { flex: 1 1 11rem; max-width: 22rem; }
-.stage-toolbar .stage-toolbar-actions { flex: 0 0 auto; display: flex; gap: .5rem; }
 .stage-summary-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; }
 .stage-summary-strip > div { display: grid; gap: .2rem; min-width: 0; padding: .85rem 1rem; border: 1px solid var(--line); border-radius: 14px; background: var(--surf); }
 .stage-summary-strip strong { font-size: 1.5rem; line-height: 1.15; font-variant-numeric: tabular-nums; }
@@ -17,7 +16,6 @@
 .stage-table th, .stage-table td { padding: .72rem .65rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .stage-table th { color: var(--mut); font-weight: 650; white-space: nowrap; }
 .stage-table tbody tr:last-child td { border-bottom: 0; }
-.stage-row-actions { display: flex; gap: .45rem; flex-wrap: wrap; }
 .stage-tabs { display: flex; flex-wrap: wrap; gap: .45rem; }
 .stage-tabs button[aria-pressed="true"] { background: var(--mint); border-color: var(--mut); font-weight: 700; }
 .stage-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
@@ -30,14 +28,12 @@
 .stage-event-list { display: grid; gap: .7rem; padding-left: 1.25rem; }
 .stage-event-list li span { display: block; color: var(--mut); font-size: .84rem; }
 .stage-event-list li p { margin: .25rem 0 0; }
-.stage-modal-actions { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: .8rem; }
 .stage-schedule-week { display: grid; grid-template-columns: repeat(7, minmax(8.5rem, 1fr)); gap: .65rem; overflow-x: auto; }
 .stage-schedule-day { min-width: 8.5rem; padding: .7rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surf); }
 .stage-schedule-day > h3 { padding-bottom: .55rem; border-bottom: 1px solid var(--line); }
 .stage-visit-card { display: grid; gap: .3rem; margin-bottom: .55rem; padding: .65rem; border: 1px solid var(--line); border-radius: 10px; background: var(--bg, var(--surf)); }
 .stage-visit-card:last-child { margin-bottom: 0; }
 .stage-visit-card p { margin: 0; font-size: .84rem; color: var(--mut); overflow-wrap: anywhere; }
-.stage-visit-card .stage-row-actions { margin-top: .3rem; }
 .stage-callout { padding: .85rem 1rem; border: 1px solid var(--line); border-left: .3rem solid var(--mut); border-radius: 10px; }
 .stage-map { display: block; width: 100%; min-height: 22rem; border: 1px solid var(--line); border-radius: 14px; }
 .stage-map-points { display: grid; gap: .65rem; }
@@ -83,8 +79,7 @@
 .stage-toolbar.stage-toolbar--schedule { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem 1.25rem; margin-bottom: 1rem; }
 .stage-toolbar.stage-toolbar--schedule > * { flex: 0 0 auto; max-width: none; }
 .stage-toolbar--schedule [role='tablist'] { margin: 0; padding: 0; overflow: visible; }
-.stage-toolbar--schedule [role='tab'],
-.stage-toolbar--schedule .stage-date-navigation button { min-height: 48px; padding-inline: 18px; }
+.stage-toolbar--schedule [role='tab'] { min-height: 48px; padding-inline: 18px; }
 .stage-toolbar--schedule .stage-date-navigation { flex-wrap: nowrap; align-items: flex-end; gap: .4rem; }
 .stage-toolbar--schedule .stage-date-field { flex: 0 1 11rem; min-width: 9.5rem; margin-bottom: 0; }
 .stage-toolbar--schedule .stage-date-navigation .stage-nav-arrow { width: 48px; padding-inline: 0; font-size: 1.25rem; line-height: 1; }

@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { Button } from '../ui/Button';
 import { DataTable } from './DataTable';
 
 type Row = { id: string; name: string; phone: string };
@@ -96,5 +97,39 @@ describe('DataTable', () => {
     setup({ rows: [] });
     expect(screen.getByText('No enquiries yet')).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+});
+
+describe('DataTable row actions', () => {
+  it('draws shared Buttons in cells at the compact size, so a row is not taller than its text', () => {
+    setup({
+      columns: [
+        { key: 'name', header: 'Name', cell: (r: Row) => r.name },
+        {
+          key: 'act',
+          header: 'Action',
+          cell: (r: Row) => (
+            <>
+              <Button variant="outline">Review {r.name}</Button>
+              <Button variant="outline" href={`/admin/x/${r.id}`}>
+                Open {r.name}
+              </Button>
+            </>
+          ),
+        },
+      ],
+    });
+    expect(screen.getByRole('button', { name: 'Review Grace' })).toHaveAttribute('data-size', 'compact');
+    expect(screen.getByRole('link', { name: 'Open Peter' })).toHaveAttribute('data-size', 'compact');
+  });
+
+  it('does not shrink a Button that is outside the table', () => {
+    setup();
+    render(
+      <MemoryRouter>
+        <Button>Outside</Button>
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('button', { name: 'Outside' })).toHaveAttribute('data-size', 'default');
   });
 });

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FilterBar } from '../../../components/admin/FilterBar';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
@@ -122,12 +123,16 @@ export function ReportsPage() {
       )}
       <section className={styles.panel}>
         <h2>{t('reports.exportHeading')}</h2>
-        <form
-          className={styles.exportForm}
-          onSubmit={(event) => {
-            event.preventDefault();
+        <FilterBar
+          label={t('reports.exportLabel')}
+          onSubmit={() => {
             if (canExport) void download();
           }}
+          actions={
+            <Button type="submit" disabled={!canExport || exporting}>
+              {exporting ? t('reports.downloading') : t('reports.download')}
+            </Button>
+          }
         >
           <Field
             kind="select"
@@ -162,11 +167,8 @@ export function ReportsPage() {
             <option value="csv">{t('reports.csv')}</option>
             <option value="xlsx">{t('reports.excel')}</option>
           </Field>
-          <Button type="submit" disabled={!canExport || exporting}>
-            {exporting ? t('reports.downloading') : t('reports.download')}
-          </Button>
-          {exportError && <p role="alert">{t('reports.exportError')}</p>}
-        </form>
+        </FilterBar>
+        {exportError && <p role="alert">{t('reports.exportError')}</p>}
       </section>
     </>
   );

@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { Button } from '../../components/ui/Button';
 import { AdminLayout } from './AdminLayout';
 import { useAuth } from './auth/useAuth';
 
@@ -29,6 +30,17 @@ function setup(path: string, scopes: string[], opts: { superadmin?: boolean; nam
           <Route path="/admin/enquiries" element={<p>enquiries page</p>} />
           <Route path="/admin/enquiries/:id" element={<p>enquiry detail page</p>} />
           <Route path="/admin/users" element={<p>users page</p>} />
+          <Route
+            path="/admin/care/sos"
+            element={
+              <>
+                <p>sos page</p>
+                <Button>Page action</Button>
+              </>
+            }
+          />
+          <Route path="/admin/care/sos/history" element={<p>sos history page</p>} />
+          <Route path="/admin/care/sos/:id" element={<p>sos case page</p>} />
         </Route>
       </Routes>
     </MemoryRouter>,
@@ -74,6 +86,42 @@ describe('AdminLayout navigation', () => {
       'aria-current',
     );
     expect(screen.getByText('enquiry detail page')).toBeInTheDocument();
+  });
+});
+
+describe('AdminLayout current item', () => {
+  const scopes = ['alerts:read', 'dashboard:view'];
+  const current = (nav: HTMLElement) =>
+    within(nav)
+      .queryAllByRole('link')
+      .filter((link) => link.getAttribute('aria-current') === 'page')
+      .map((link) => link.textContent?.trim());
+
+  it('marks only SOS history on the history page, not SOS as well', () => {
+    setup('/admin/care/sos/history', scopes);
+    expect(current(sidebar())).toEqual(['SOS history & drills']);
+    expect(within(sidebar()).getByRole('link', { name: 'SOS' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('marks only SOS on the SOS page', () => {
+    setup('/admin/care/sos', scopes);
+    expect(current(sidebar())).toEqual(['SOS']);
+  });
+
+  it('keeps an SOS case under SOS, not under history', () => {
+    setup('/admin/care/sos/case-9', scopes);
+    expect(current(sidebar())).toEqual(['SOS']);
+  });
+
+  it('marks one item at a time on the phone bottom bar too', () => {
+    setup('/admin/care/sos/history', scopes);
+    expect(current(bottom()).length).toBeLessThanOrEqual(1);
+    expect(current(bottom())).not.toContain('SOS');
+  });
+
+  it('gives every page button the admin control size without the page asking for it', () => {
+    setup('/admin/care/sos', scopes);
+    expect(screen.getByRole('button', { name: 'Page action' })).toHaveAttribute('data-size', 'control');
   });
 });
 

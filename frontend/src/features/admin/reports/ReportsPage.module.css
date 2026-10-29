@@ -48,17 +48,8 @@
   height: 100%;
   background: var(--gold);
 }
-.exportForm {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.8rem;
-  align-items: end;
-}
 @media (min-width: 700px) {
   .stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .exportForm {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .stats article,
@@ -68,9 +59,6 @@
 }
 @media (min-width: 1040px) {
   .stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .exportForm {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

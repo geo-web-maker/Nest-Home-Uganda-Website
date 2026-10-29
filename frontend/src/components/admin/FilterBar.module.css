@@ -1,0 +1,60 @@
+/*
+ * One row of filter fields plus their buttons.
+ *
+ * Alignment contract: Field's bottom margin is zeroed here (--field-gap) and the row is
+ * bottom-aligned, so a button sits on the same bottom edge as the inputs beside it. Buttons in
+ * `actions` use the `control` size (48px), which is Field's control height.
+ */
+.bar {
+  --field-gap: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  min-width: 0;
+  margin-block: 0 16px;
+}
+
+.framed {
+  padding: 16px;
+  background: var(--surf);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+}
+
+/* Every field shares the row evenly; a phone gets one per line. */
+.bar > * {
+  flex: 1 1 11rem;
+  min-width: 0;
+}
+
+.bar > .grow {
+  flex: 2 1 16rem;
+}
+
+.bar > .actions {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.bar > .meta {
+  flex: 0 1 auto;
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  margin: 0;
+  color: var(--mut);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 560px) {
+  .bar > .actions {
+    flex: 1 1 100%;
+  }
+  .bar > .actions > * {
+    flex: 1 1 auto;
+  }
+}

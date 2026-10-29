@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { DataTable, type DataColumn } from '../../../components/admin/DataTable';
 import { FilterTabs } from '../../../components/admin/FilterTabs';
 import { PageHeader } from '../../../components/admin/PageHeader';
+import { SearchBar } from '../../../components/admin/SearchBar';
 import { Pagination } from '../../../components/admin/Pagination';
 import { Badge, type BadgeTone } from '../../../components/ui/Badge';
 import { Button } from '../../../components/ui/Button';
@@ -109,67 +110,51 @@ export function EnquiriesPage() {
     <>
       <PageHeader title={t('nav.enquiries')} />
 
-      <form
-        role="search"
-        className={styles.filters}
-        onSubmit={(event) => {
-          event.preventDefault();
-          const value = new FormData(event.currentTarget).get('q');
-          update({ q: typeof value === 'string' ? value.trim() : '' });
-        }}
+      <SearchBar
+        label={t('enquiries.filtersLabel')}
+        searchLabel={t('enquiries.search')}
+        placeholder={t('enquiries.searchPlaceholder')}
+        buttonLabel={t('enquiries.searchButton')}
+        value={filters.q}
+        onSearch={(q) => update({ q })}
       >
-        <div className={styles.searchRow}>
-          <Field
-            key={filters.q}
-            type="search"
-            name="q"
-            label={t('enquiries.search')}
-            placeholder={t('enquiries.searchPlaceholder')}
-            defaultValue={filters.q}
-            maxLength={80}
-            className={styles.search}
-          />
-          <Button type="submit">{t('enquiries.searchButton')}</Button>
-        </div>
-        <div className={styles.row}>
-          <Field
-            kind="select"
-            label={t('enquiries.service')}
-            value={filters.service}
-            onChange={(event) => update({ service: event.target.value })}
-          >
-            <option value="">{t('enquiries.allServices')}</option>
-            {services.data?.map((service) => (
-              <option key={service.id} value={service.id}>
-                {service.name}
-              </option>
-            ))}
-          </Field>
-          <Field
-            type="date"
-            label={t('enquiries.from')}
-            value={filters.from}
-            max={filters.to || undefined}
-            onChange={(event) => update({ from: event.target.value })}
-          />
-          <Field
-            type="date"
-            label={t('enquiries.to')}
-            value={filters.to}
-            min={filters.from || undefined}
-            onChange={(event) => update({ to: event.target.value })}
-          />
-          <Field
-            kind="select"
-            label={t('enquiries.sort')}
-            value={filters.sort}
-            onChange={(event) => update({ sort: event.target.value as EnquirySort })}
-          >
-            <option value="-created_at">{t('enquiries.newest')}</option>
-            <option value="created_at">{t('enquiries.oldest')}</option>
-          </Field>
-        </div>
-      </form>
+        <Field
+          kind="select"
+          label={t('enquiries.service')}
+          value={filters.service}
+          onChange={(event) => update({ service: event.target.value })}
+        >
+          <option value="">{t('enquiries.allServices')}</option>
+          {services.data?.map((service) => (
+            <option key={service.id} value={service.id}>
+              {service.name}
+            </option>
+          ))}
+        </Field>
+        <Field
+          type="date"
+          label={t('enquiries.from')}
+          value={filters.from}
+          max={filters.to || undefined}
+          onChange={(event) => update({ from: event.target.value })}
+        />
+        <Field
+          type="date"
+          label={t('enquiries.to')}
+          value={filters.to}
+          min={filters.from || undefined}
+          onChange={(event) => update({ to: event.target.value })}
+        />
+        <Field
+          kind="select"
+          label={t('enquiries.sort')}
+          value={filters.sort}
+          onChange={(event) => update({ sort: event.target.value as EnquirySort })}
+        >
+          <option value="-created_at">{t('enquiries.newest')}</option>
+          <option value="created_at">{t('enquiries.oldest')}</option>
+        </Field>
+      </SearchBar>
 
       <FilterTabs
         label={t('enquiries.statusFilter')}

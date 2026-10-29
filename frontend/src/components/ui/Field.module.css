@@ -1,5 +1,6 @@
 .field {
-  margin-bottom: 12px;
+  /* Layout containers (FilterBar) set --field-gap: 0 so controls share one bottom edge with buttons. */
+  margin-bottom: var(--field-gap, 12px);
 }
 
 .label {

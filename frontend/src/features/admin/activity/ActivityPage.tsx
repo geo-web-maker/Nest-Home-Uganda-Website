@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTable, type DataColumn } from '../../../components/admin/DataTable';
+import { FilterBar } from '../../../components/admin/FilterBar';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Pagination } from '../../../components/admin/Pagination';
 import { Field } from '../../../components/ui/Field';
@@ -47,12 +48,10 @@ export function ActivityPage() {
   return (
     <>
       <PageHeader title={t('nav.activity')} subtitle={t('activity.subtitle')} />
-      <form
-        className={styles.filters}
-        onSubmit={(event) => {
-          event.preventDefault();
-          setPage(1);
-        }}
+      <FilterBar
+        label={t('activity.filtersLabel')}
+        onSubmit={() => setPage(1)}
+        actions={<Button type="submit">{t('activity.apply')}</Button>}
       >
         <Field
           label={t('activity.from')}
@@ -74,8 +73,7 @@ export function ActivityPage() {
             setPage(1);
           }}
         />
-        <Button type="submit">{t('activity.apply')}</Button>
-      </form>
+      </FilterBar>
       {activity.isError ? (
         <div className={styles.error} role="alert">
           <p>{t('activity.error')}</p>

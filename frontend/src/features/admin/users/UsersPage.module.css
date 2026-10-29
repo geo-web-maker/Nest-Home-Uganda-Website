@@ -26,6 +26,9 @@
   margin-block: 0 0.5rem;
   font-size: 1rem;
 }
+.fullRow {
+  min-width: 0;
+}
 .scope {
   display: flex;
   align-items: center;
@@ -36,12 +39,6 @@
   width: 1.15rem;
   height: 1.15rem;
 }
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-}
 @media (min-width: 700px) {
   .editor {
     padding: 1.5rem;
@@ -50,7 +47,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .scopeFieldset,
-  .actions {
+  .fullRow {
     grid-column: 1/-1;
   }
 }

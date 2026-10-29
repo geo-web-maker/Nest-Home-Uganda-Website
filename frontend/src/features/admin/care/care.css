@@ -35,13 +35,6 @@
   border-bottom: 1px solid var(--line);
 }
 
-.care-data-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
 button.care-danger-button,
 a.care-danger-button {
   border-color: var(--danger);
@@ -59,18 +52,6 @@ a.care-danger-button {
   overflow-wrap: anywhere;
 }
 
-.care-row-actions {
-  min-width: 11rem;
-}
-.care-row-actions button {
-  margin: 0 0.35rem 0.35rem 0;
-  white-space: nowrap;
-}
-@media (max-width: 720px) {
-  .care-row-actions {
-    min-width: 9rem;
-  }
-}
 
 .care-review {
   display: grid;
