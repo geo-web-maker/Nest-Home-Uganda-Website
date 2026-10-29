@@ -36,7 +36,7 @@ export function AppShell({ children, online, queued, authenticated, message, sos
   const bannerLabel = backOnline ? copy.shell.backOnlineLabel : online ? copy.shell.onlineLabel : copy.shell.offlineLabel;
   const bannerText = syncing ? copy.shell.syncing : syncProblem ? copy.shell.problem : online && queued === 0 ? copy.shell.saved : online ? copy.shell.online : copy.shell.offline;
   return (
-    <div className="nurse-app">
+    <div className={authenticated ? 'nurse-app' : 'nurse-app nurse-app--guest'}>
       <header className="app-header">
         <p className="eyebrow">{copy.organisation}</p>
         <h1>{copy.appName}</h1>

@@ -23,7 +23,8 @@ export function InviteNurseSheet({ onClose, onCreated }: { onClose: () => void; 
       if (!alive) return;
       const list = Array.isArray(items) ? items : [];
       setOptions(list);
-      if (list.length === 1) setSupervisorId(list[0].id);
+      const only = list.length === 1 ? list[0] : undefined;
+      if (only) setSupervisorId(only.id);
     }).catch(() => {
       if (alive) setError('The list of supervisors could not be loaded. Close this sheet and try again.');
     }).finally(() => { if (alive) setOptionsLoaded(true); });
