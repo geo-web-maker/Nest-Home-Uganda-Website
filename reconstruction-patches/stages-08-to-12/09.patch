@@ -1,0 +1,115 @@
+diff --git a/frontend/src/components/brand/Logo.tsx b/frontend/src/components/brand/Logo.tsx
+index fd1f61d..98e4b79 100644
+--- a/frontend/src/components/brand/Logo.tsx
++++ b/frontend/src/components/brand/Logo.tsx
+@@ -29,17 +29,17 @@ export function LogoMark({ variant = 'site' }: { variant?: LogoVariant }) {
+       aria-hidden="true"
+       focusable="false"
+     >
+-      <path d="M20 1v6M17 4h6" stroke="#C79A3B" strokeWidth="2" strokeLinecap="round" />
+-      <ellipse cx="14" cy="16" rx="5" ry="6.5" fill="#E9DDB8" />
+-      <ellipse cx="22" cy="14.5" rx="5" ry="6.5" fill="#F4F1DF" />
+-      <ellipse cx="29" cy="17" rx="4.5" ry="6" fill="#E9DDB8" />
++      <path d="M20 1v6M17 4h6" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" />
++      <ellipse cx="14" cy="16" rx="5" ry="6.5" fill="var(--straw)" />
++      <ellipse cx="22" cy="14.5" rx="5" ry="6.5" fill="var(--onf)" />
++      <ellipse cx="29" cy="17" rx="4.5" ry="6" fill="var(--straw)" />
+       <path
+         d={
+           variant === 'admin'
+             ? 'M3 21c4 11 30 11 34 0'
+             : 'M3 21c4 11 30 11 34 0M6 23c6 7 22 7 28 0M10 26c5 4 15 4 20 0'
+         }
+-        stroke="#C79A3B"
++        stroke="var(--gold)"
+         strokeWidth="1.8"
+         strokeLinecap="round"
+       />
+diff --git a/nurse/src/app/AppShell.tsx b/nurse/src/app/AppShell.tsx
+index e9bd876..112589f 100644
+--- a/nurse/src/app/AppShell.tsx
++++ b/nurse/src/app/AppShell.tsx
+@@ -31,24 +31,24 @@ export function AppShell({ children, online, queued, authenticated, message, sos
+       {message && <p className="notice" role="status">{message}</p>}
+       {authenticated && (
+         <nav className="desktop-rail" aria-label={copy.shell.mainNavigation}>
+-          <p className="desktop-rail-title">Your workspace</p>
++          <p className="desktop-rail-title">{copy.today.heading}</p>
+           <NavLink to="/" end aria-current={location.pathname === '/' ? 'page' : undefined}>
+-            <span className="rail-icon" aria-hidden="true">◷</span><span>{copy.tabs.today}</span>
++            <span className="rail-icon" aria-hidden="true">▣</span><span>{copy.tabs.today}</span>
+           </NavLink>
+           <NavLink to="/history" aria-current={location.pathname === '/history' ? 'page' : undefined}>
+-            <span className="rail-icon" aria-hidden="true">↺</span><span>{copy.tabs.history}</span>
++            <span className="rail-icon" aria-hidden="true">◷</span><span>{copy.tabs.history}</span>
+           </NavLink>
+           <NavLink to="/profile" aria-current={location.pathname === '/profile' ? 'page' : undefined}>
+-            <span className="rail-icon" aria-hidden="true">◎</span><span>{copy.tabs.profile}</span>
++            <span className="rail-icon" aria-hidden="true">♙</span><span>{copy.tabs.profile}</span>
+           </NavLink>
+         </nav>
+       )}
+       <main className="app-shell">{children}</main>
+       {authenticated && (
+         <nav className="bottom-tabs" aria-label={copy.shell.mainNavigation}>
+-          <NavLink to="/" end aria-current={location.pathname === '/' ? 'page' : undefined}>{copy.tabs.today}</NavLink>
+-          <NavLink to="/history" aria-current={location.pathname === '/history' ? 'page' : undefined}>{copy.tabs.history}</NavLink>
+-          <NavLink to="/profile" aria-current={location.pathname === '/profile' ? 'page' : undefined}>{copy.tabs.profile}</NavLink>
++          <NavLink to="/" end aria-current={location.pathname === '/' ? 'page' : undefined}><span aria-hidden="true">▣</span><span>{copy.tabs.today}</span></NavLink>
++          <NavLink to="/history" aria-current={location.pathname === '/history' ? 'page' : undefined}><span aria-hidden="true">◷</span><span>{copy.tabs.history}</span></NavLink>
++          <NavLink to="/profile" aria-current={location.pathname === '/profile' ? 'page' : undefined}><span aria-hidden="true">♙</span><span>{copy.tabs.profile}</span></NavLink>
+         </nav>
+       )}
+       {authenticated && (
+diff --git a/nurse/src/styles.css b/nurse/src/styles.css
+index f67f27f..85e8126 100644
+--- a/nurse/src/styles.css
++++ b/nurse/src/styles.css
+@@ -230,3 +230,47 @@ small, .muted, .hint { color: var(--mut); }
+ .theme-choice { display: flex; flex-wrap: wrap; gap: 0.65rem; }
+ .theme-choice button { flex: 1 1 7rem; min-height: 48px; }
+ .theme-choice button[aria-pressed='true'] { border-color: var(--gold); box-shadow: inset 0 0 0 2px var(--gold); }
++
++
++/* Stage 09 visual reconstruction: phone-first nurse shell. Behaviour and theme tokens remain unchanged. */
++.nurse-app { background: var(--bg); }
++.app-header { display: none; }
++.app-shell { padding: 0.9rem 1rem 1.25rem; }
++.connection-banner { width: calc(100% - 2rem); max-width: 760px; margin: 0.65rem auto 0; padding: 0.72rem 0.9rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--surf); box-shadow: var(--shadow-1); }
++.connection-banner strong { color: var(--mut); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; }
++.connection-banner span { color: var(--mut); }
++.connection-banner.is-offline { border-color: var(--gold); }
++.connection-banner.is-online { border-color: var(--line); }
++.connection-banner.is-online strong::before { width: .5rem; height: .5rem; }
++.screen { gap: .8rem; }
++.panel, .status-card, .empty-state { border: 6px solid color-mix(in srgb, var(--mint) 90%, var(--line)); border-radius: 1.45rem; background: var(--surf); box-shadow: var(--shadow-1); }
++.visit-list { gap: .7rem; }
++.visit-card { padding: .9rem 1rem; border: 6px solid color-mix(in srgb, var(--mint) 90%, var(--line)); border-radius: 1.35rem; background: var(--surf); box-shadow: var(--shadow-1); }
++.visit-card--in_progress { border-color: var(--gold); background: var(--forest); color: var(--onf); box-shadow: 0 0 0 2px var(--gold), var(--shadow-1); }
++.visit-card--in_progress p, .visit-card--in_progress h3 { color: var(--onf); }
++.visit-card--in_progress .status-chip { background: color-mix(in srgb, var(--leaf) 30%, var(--forest)); color: var(--onf); border-color: transparent; }
++.visit-card h3 { font-size: 1.05rem; }
++.status-chip { min-height: 1.55rem; padding: .2rem .6rem; background: transparent; font-size: .68rem; letter-spacing: .07em; text-transform: uppercase; }
++.status-chip--scheduled { border-color: var(--line); color: var(--mut); }
++.active-marker { margin-top: .65rem !important; color: var(--gold) !important; font-family: var(--serif); font-size: 1.35rem; }
++.visit-card-actions { margin-top: .55rem; }
++.visit-card-actions a, .visit-card-actions button { min-height: 42px; }
++.button-secondary { background: var(--mint); }
++.bottom-tabs { right: .75rem; bottom: .75rem; left: .75rem; grid-template-columns: repeat(3, 1fr); gap: .25rem; padding: .35rem; border: 1px solid var(--line); border-radius: 2rem; background: color-mix(in srgb, var(--surf) 94%, transparent); box-shadow: var(--shadow-1); }
++.bottom-tabs a { flex-direction: column; gap: .12rem; min-height: 52px; border-radius: 1.7rem; font-size: .72rem; }
++.bottom-tabs a span:first-child { font-size: 1.05rem; line-height: 1; }
++.bottom-tabs a[aria-current='page'] { background: var(--forest); color: var(--onf); }
++.sos-dock { right: 1rem; bottom: calc(5.9rem + env(safe-area-inset-bottom)); }
++.sos-button { width: 4.4rem; height: 4.4rem; min-width: 4.4rem; min-height: 4.4rem; border: 5px solid var(--surf); box-shadow: 0 0 0 6px color-mix(in srgb, var(--danger) 20%, transparent), 0 14px 28px color-mix(in srgb, var(--danger) 35%, transparent); }
++.theme-choice { display: flex; flex-wrap: wrap; gap: .65rem; }
++.theme-choice button { flex: 1 1 7rem; min-height: 48px; }
++.theme-choice button[aria-pressed='true'] { border-color: var(--gold); box-shadow: inset 0 0 0 2px var(--gold); }
++.desktop-rail { border-right: 1px solid var(--line); background: var(--surf); box-shadow: var(--shadow-1); }
++.desktop-rail a[aria-current='page'] { background: var(--forest); color: var(--onf); }
++.desktop-rail .rail-icon { color: var(--gold); }
++@media (min-width: 820px) {
++  .nurse-app { padding-left: 224px; }
++  .app-shell { width: min(100%, 1120px); padding: 1.5rem 2rem 2.5rem; }
++  .connection-banner { width: min(100% - 3rem, 1120px); }
++  .bottom-tabs { display: none; }
++}

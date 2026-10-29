@@ -28,6 +28,7 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { path: '/admin/content', labelKey: 'content', scopes: ['content:read'], icon: 'content', group: 'website' },
   { path: '/admin/settings', labelKey: 'settings', scopes: ['settings:read'], icon: 'settings', group: 'website' },
   { path: '/admin/users', labelKey: 'users', scopes: ['users:read'], icon: 'users', group: 'website' },
+  { path: '/admin/permissions', labelKey: 'permissions', scopes: ['users:read'], icon: 'shield', group: 'website' },
   { path: '/admin/reports', labelKey: 'reports', scopes: ['reports:read'], icon: 'reports', group: 'website' },
   { path: '/admin/activity', labelKey: 'activity', scopes: ['activity:read'], icon: 'activity', group: 'website' },
   // Care operations
@@ -35,19 +36,32 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { path: '/admin/care/places', labelKey: 'places', scopes: ['places:read'], icon: 'pin', group: 'careOperations' },
   { path: '/admin/care/nurses', labelKey: 'nurses', scopes: ['nurses:read'], icon: 'users', group: 'careOperations' },
   { path: '/admin/care/visits', labelKey: 'visits', scopes: ['visits:read'], icon: 'calendar', group: 'careOperations' },
+  { path: '/admin/care/schedule', labelKey: 'schedule', scopes: ['visits:read'], icon: 'calendar', group: 'careOperations' },
   { path: '/admin/care/flags', labelKey: 'flags', scopes: ['flags:read'], icon: 'flag', group: 'careOperations' },
   { path: '/admin/care/team', labelKey: 'team', scopes: ['visits:read'], icon: 'users', group: 'careOperations' },
   // Monitoring
+  { path: '/admin/care/dashboard', labelKey: 'liveDashboard', scopes: ['dashboard:view'], icon: 'dashboard', group: 'monitoring' },
+  { path: '/admin/care/executive', labelKey: 'executiveCharts', scopes: ['dashboard:view'], icon: 'chart', group: 'monitoring' },
+  { path: '/admin/care/map', labelKey: 'lastSeenMap', scopes: ['visits:read'], icon: 'pin', group: 'monitoring' },
   { path: '/admin/care/alerts', labelKey: 'alerts', scopes: ['alerts:read'], icon: 'bell', group: 'monitoring' },
   { path: '/admin/care/timesheets', labelKey: 'timesheets', scopes: ['timesheets:read'], icon: 'timer', group: 'monitoring' },
   { path: '/admin/care/photos', labelKey: 'photos', scopes: ['photos:read'], icon: 'photo', group: 'monitoring' },
   { path: '/admin/care/reports/visits', labelKey: 'careReports', scopes: ['care-reports:read'], icon: 'chart', group: 'monitoring' },
+  { path: '/admin/care/notifications', labelKey: 'notificationLog', scopes: ['carecfg:read'], icon: 'bell', group: 'monitoring' },
   // Safety
   { path: '/admin/care/sos', labelKey: 'sos', scopes: ['alerts:read'], icon: 'alert', group: 'safety' },
+  { path: '/admin/care/sos/history', labelKey: 'sosHistory', scopes: ['alerts:read'], icon: 'activity', group: 'safety' },
+  { path: '/admin/care/on-call', labelKey: 'onCallRoster', scopes: ['carecfg:read'], icon: 'users', group: 'safety' },
+  { path: '/admin/care/sos-procedure', labelKey: 'sosProcedure', scopes: ['carecfg:read'], icon: 'shield', group: 'safety' },
   // Setup and compliance
   { path: '/admin/care/settings', labelKey: 'careSettings', scopes: ['carecfg:read'], icon: 'gear', group: 'setup' },
+  { path: '/admin/care/setting-catalogue', labelKey: 'settingCatalogue', scopes: ['carecfg:read'], icon: 'settings', group: 'setup' },
+  { path: '/admin/care/data-retention', labelKey: 'dataRetention', scopes: ['carecfg:read'], icon: 'shield', group: 'setup' },
+  { path: '/admin/care/sms', labelKey: 'smsSettings', scopes: ['carecfg:read'], icon: 'settings', group: 'setup' },
   { path: '/admin/care/readiness', labelKey: 'readiness', scopes: ['carecfg:read'], icon: 'check', group: 'setup' },
   { path: '/admin/care/data-requests', labelKey: 'dataRequests', scopes: ['system:manage'], icon: 'shield', group: 'setup' },
+  { path: '/admin/app-releases', labelKey: 'appReleases', scopes: ['system:manage'], icon: 'download', group: 'setup' },
+  { path: '/admin/backups', labelKey: 'backupsHealth', scopes: ['system:manage'], icon: 'shield', group: 'setup' },
 ];
 
 const BOTTOM_NAV_SLOTS = 4;

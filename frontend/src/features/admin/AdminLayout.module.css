@@ -73,7 +73,7 @@
 }
 
 .item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--onf) 8%, transparent);
 }
 
 .item svg {
@@ -118,7 +118,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  height: 58px;
+  min-height: 58px;
+  height: auto;
+  padding-block: 6px;
   padding-inline: 16px;
   background: var(--surf);
   border-bottom: 1px solid var(--line);
@@ -314,4 +316,15 @@
     clip-path: none;
     white-space: normal;
   }
+}
+
+
+/* Stage 43: accessible, theme-token-based visual refinement. */
+.item:focus-visible,
+.signOut:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+@media (max-width: 699px) {
+  .item { min-height: 48px; }
 }

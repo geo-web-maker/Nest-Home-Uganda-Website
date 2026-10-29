@@ -15,9 +15,11 @@ from tests.conftest import auth, make_token
 
 FAKE_ID = "0" * 24
 WRITE_METHODS = {"POST", "PATCH", "PUT", "DELETE"}
-# This is the sole admin-path exception: access is a short-lived HMAC URL, issued only
-# after a scope/reach check and audited on every successful byte delivery.
+# Admin and field photo streams are the only exceptions: access is a short-lived HMAC URL,
+# issued only after a scope/reach (or own-visit) check; the signature is verified in the handler.
 SIGNED_PHOTO_STREAM = "/api/v1/admin/care/visits/{visit_id}/photos/{photo_id}/stream"
+SIGNED_FIELD_PHOTO_STREAM = "/api/v1/field/visits/{visit_id}/photos/{photo_id}/stream"
+SIGNED_PHOTO_STREAMS = {SIGNED_PHOTO_STREAM, SIGNED_FIELD_PHOTO_STREAM}
 SUPERADMIN_ONLY_PATHS = {"/api/v1/admin/app-releases"}
 
 
@@ -26,7 +28,7 @@ def admin_cases() -> list[tuple[str, str]]:
     for path, route in iter_api_routes():
         if (
             path.startswith("/api/v1/admin") or path.startswith("/api/v1/field")
-        ) and path != SIGNED_PHOTO_STREAM:
+        ) and path not in SIGNED_PHOTO_STREAMS:
             for method in sorted(route.methods - {"HEAD", "OPTIONS"}):
                 cases.append((method, path))
     return cases

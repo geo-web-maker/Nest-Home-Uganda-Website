@@ -18,6 +18,12 @@ describe('Button', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+  it('renders a decorative arrow without changing the accessible name', () => {
+    renderInRouter(<Button href="/contact" arrow>Book a home visit</Button>);
+    const button = screen.getByRole('link', { name: 'Book a home visit' });
+    expect(button.querySelector('[aria-hidden="true"]')).toHaveTextContent('→');
+  });
+
   it('allows type submit for forms', () => {
     renderInRouter(<Button type="submit">Send</Button>);
     expect(screen.getByRole('button', { name: 'Send' })).toHaveAttribute('type', 'submit');

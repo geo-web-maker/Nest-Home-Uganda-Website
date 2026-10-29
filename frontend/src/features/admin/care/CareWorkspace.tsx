@@ -2,6 +2,12 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError, apiClient } from '../../../lib/api/client';
 import './care.css';
+import { PlacesPanel } from './places/PlacesPanel';
+import { ScheduleVisitPanel } from './visits/ScheduleVisitPanel';
+import { VisitReviewPanel } from './visits/VisitReviewPanel';
+import { CreateClientPanel } from './clients/CreateClientPanel';
+import { ResolveFlagPanel } from './flags/ResolveFlagPanel';
+import { DataToolsPanel } from './data/DataToolsPanel';
 
 type CareTab =
   | 'nurses'
@@ -433,462 +439,71 @@ export function CareWorkspace() {
       {loading && <p role="status">{String(copy.loading ?? 'Loading care data')}</p>}
 
       {tab === 'places' && (
-        <section className="care-form" aria-labelledby="place-management-title">
-          <h2 id="place-management-title">Places and client stays</h2>
-          <label htmlFor="place-client">
-            Client
-            <select
-              id="place-client"
-              value={placeClientId}
-              onChange={(event) => setPlaceClientId(event.target.value)}
-            >
-              <option value="">Choose a client</option>
-              {items.map((item) => (
-                <option key={String(item.id)} value={String(item.id)}>
-                  {String(item.display_name ?? item.id)}
-                </option>
-              ))}
-            </select>
-          </label>
-          {placeClientId && (
-            <>
-              <form onSubmit={createPlace} className="care-form">
-                <h3>Add place</h3>
-                <label>
-                  Place label
-                  <input
-                    required
-                    maxLength={80}
-                    value={placeLabel}
-                    onChange={(event) => setPlaceLabel(event.target.value)}
-                  />
-                </label>
-                <label>
-                  Address
-                  <input
-                    required
-                    maxLength={300}
-                    value={placeAddress}
-                    onChange={(event) => setPlaceAddress(event.target.value)}
-                  />
-                </label>
-                <label>
-                  Latitude
-                  <input
-                    required
-                    type="number"
-                    min="-90"
-                    max="90"
-                    step="any"
-                    value={placeLat}
-                    onChange={(event) => setPlaceLat(event.target.value)}
-                  />
-                </label>
-                <label>
-                  Longitude
-                  <input
-                    required
-                    type="number"
-                    min="-180"
-                    max="180"
-                    step="any"
-                    value={placeLng}
-                    onChange={(event) => setPlaceLng(event.target.value)}
-                  />
-                </label>
-                <label>
-                  Verification radius in metres
-                  <input
-                    required
-                    type="number"
-                    min="50"
-                    max="1000"
-                    value={placeRadius}
-                    onChange={(event) => setPlaceRadius(event.target.value)}
-                  />
-                </label>
-                <button type="submit" disabled={busy}>
-                  Save place
-                </button>
-              </form>
-              <h3>Existing places</h3>
-              {placeItems.map((place) => (
-                <article className="visit-card" key={String(place.id)}>
-                  <strong>{String(place.label ?? 'Place')}</strong>
-                  <p>{String(place.address_text ?? '')}</p>
-                  <p>Place ID: {String(place.id)}</p>
-                  <button type="button" onClick={() => setStayPlaceId(String(place.id))}>
-                    Use for new stay
-                  </button>
-                </article>
-              ))}
-              <form onSubmit={moveClient} className="care-form">
-                <h3>Move client</h3>
-                <label>
-                  New place
-                  <select
-                    required
-                    value={stayPlaceId}
-                    onChange={(event) => setStayPlaceId(event.target.value)}
-                  >
-                    <option value="">Choose a place</option>
-                    {placeItems.map((place) => (
-                      <option key={String(place.id)} value={String(place.id)}>
-                        {String(place.label ?? place.id)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Stay begins on
-                  <input
-                    required
-                    type="date"
-                    value={stayStart}
-                    onChange={(event) => setStayStart(event.target.value)}
-                  />
-                </label>
-                <button type="submit" disabled={busy || !stayPlaceId}>
-                  Record move
-                </button>
-              </form>
-              <h3>Stay history</h3>
-              {stayItems.map((stay) => (
-                <article className="visit-card" key={String(stay.id)}>
-                  <p>Place: {String(stay.place_id)}</p>
-                  <p>
-                    From: {String(stay.starts_on)} to {String(stay.ends_on ?? 'Current stay')}
-                  </p>
-                </article>
-              ))}
-            </>
-          )}
-        </section>
+        <PlacesPanel
+          clients={items}
+          clientId={placeClientId} setClientId={setPlaceClientId}
+          places={placeItems} stays={stayItems}
+          label={placeLabel} setLabel={setPlaceLabel}
+          address={placeAddress} setAddress={setPlaceAddress}
+          lat={placeLat} setLat={setPlaceLat}
+          lng={placeLng} setLng={setPlaceLng}
+          radius={placeRadius} setRadius={setPlaceRadius}
+          stayPlaceId={stayPlaceId} setStayPlaceId={setStayPlaceId}
+          stayStart={stayStart} setStayStart={setStayStart}
+          busy={busy} onCreatePlace={createPlace} onMoveClient={moveClient}
+        />
       )}
 
       {tab === 'visits' && (
-        <form className="care-form" onSubmit={scheduleVisit}>
-          <h2>Schedule a visit</h2>
-          <p>
-            Use IDs from the client, nurse, and place records. The server validates assignment,
-            place ownership, and scheduling conflicts.
-          </p>
-          <label>
-            Client ID
-            <input
-              required
-              value={scheduleClientId}
-              onChange={(event) => setScheduleClientId(event.target.value)}
-            />
-          </label>
-          <label>
-            Nurse user ID
-            <input
-              required
-              value={scheduleNurseId}
-              onChange={(event) => setScheduleNurseId(event.target.value)}
-            />
-          </label>
-          <label>
-            Place ID
-            <input
-              required
-              value={schedulePlaceId}
-              onChange={(event) => setSchedulePlaceId(event.target.value)}
-            />
-          </label>
-          <label>
-            Start time
-            <input
-              required
-              type="datetime-local"
-              value={scheduleStart}
-              onChange={(event) => setScheduleStart(event.target.value)}
-            />
-          </label>
-          <label>
-            End time
-            <input
-              required
-              type="datetime-local"
-              value={scheduleEnd}
-              onChange={(event) => setScheduleEnd(event.target.value)}
-            />
-          </label>
-          <label>
-            Instructions for nurse
-            <textarea
-              maxLength={1000}
-              value={scheduleInstructions}
-              onChange={(event) => setScheduleInstructions(event.target.value)}
-            />
-          </label>
-          <button type="submit" disabled={busy}>
-            Schedule visit
-          </button>
-        </form>
+        <ScheduleVisitPanel
+          clientId={scheduleClientId} setClientId={setScheduleClientId}
+          nurseId={scheduleNurseId} setNurseId={setScheduleNurseId}
+          placeId={schedulePlaceId} setPlaceId={setSchedulePlaceId}
+          start={scheduleStart} setStart={setScheduleStart}
+          end={scheduleEnd} setEnd={setScheduleEnd}
+          instructions={scheduleInstructions} setInstructions={setScheduleInstructions}
+          busy={busy} onSubmit={scheduleVisit}
+        />
       )}
 
       {tab === 'clients' && (
-        <form className="care-form" onSubmit={createClient}>
-          <h2>Create client</h2>
-          <label>
-            Client display name
-            <input
-              required
-              maxLength={120}
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </label>
-          <label>
-            Notes for nurse
-            <textarea
-              maxLength={280}
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-            />
-          </label>
-          <button type="submit">{String(copy.createClient ?? 'Create client')}</button>
-        </form>
+        <CreateClientPanel
+          name={name} setName={setName}
+          notes={notes} setNotes={setNotes}
+          onSubmit={createClient}
+          createLabel={String(copy.createClient ?? 'Create client')}
+        />
       )}
 
       {tab === 'flags' && selectedFlag && (
-        <form className="care-form" onSubmit={resolveFlag}>
-          <h2>Resolve flag</h2>
-          <label>
-            Resolution note
-            <textarea
-              required
-              minLength={3}
-              maxLength={500}
-              value={resolution}
-              onChange={(event) => setResolution(event.target.value)}
-            />
-          </label>
-          <button type="submit">{String(copy.resolve ?? 'Resolve')}</button>
-          <button type="button" onClick={() => setSelectedFlag('')}>
-            Cancel
-          </button>
-        </form>
+        <ResolveFlagPanel
+          resolution={resolution} setResolution={setResolution}
+          onSubmit={resolveFlag} onCancel={() => setSelectedFlag('')}
+          resolveLabel={String(copy.resolve ?? 'Resolve')}
+          cancelLabel="Cancel"
+        />
       )}
 
       {tab === 'data' && (
-        <section className="care-form" aria-labelledby="care-data-title">
-          <h2 id="care-data-title">Data subject tools</h2>
-          <p>
-            Use only after confirming the requester's identity and authority. Every export and
-            anonymisation action is audited.
-          </p>
-          <label htmlFor="care-data-client-id">Client ID</label>
-          <input
-            id="care-data-client-id"
-            required
-            maxLength={160}
-            value={dataClientId}
-            onChange={(event) => setDataClientId(event.target.value)}
-          />
-          <div className="care-data-actions">
-            <button
-              type="button"
-              onClick={() => void exportClientData()}
-              disabled={busy || !dataClientId.trim()}
-            >
-              {busy ? 'Working' : 'Export client data'}
-            </button>
-            <button
-              type="button"
-              className="care-danger-button"
-              onClick={() => void anonymiseClientData()}
-              disabled={busy || !dataClientId.trim()}
-            >
-              Anonymise client
-            </button>
-          </div>
-          {dataActionMessage && <p role="status">{dataActionMessage}</p>}
-          {exportedData && (
-            <pre className="care-data-export">{JSON.stringify(exportedData, null, 2)}</pre>
-          )}
-        </section>
+        <DataToolsPanel
+          clientId={dataClientId} setClientId={setDataClientId}
+          busy={busy} message={dataActionMessage} exportedData={exportedData}
+          onExport={() => void exportClientData()}
+          onAnonymise={() => void anonymiseClientData()}
+        />
       )}
 
       {tab === 'visits' && reviewVisitId && (
-        <section className="care-review" aria-labelledby="visit-review-title">
-          <header className="care-review-header">
-            <div>
-              <h2 id="visit-review-title">Visit review</h2>
-              <p>Visit ID: {reviewVisitId}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setReviewVisitId('');
-                setVisitReview(null);
-                setReviewPhotoPanelOpen(false);
-              }}
-            >
-              Close review
-            </button>
-          </header>
-          {reviewLoading && <p role="status">Loading visit timeline and audit details.</p>}
-          {visitReview?.visit && (
-            <>
-              <dl className="care-review-summary">
-                {(
-                  [
-                    'status',
-                    'nurse_id',
-                    'client_id',
-                    'scheduled_start',
-                    'scheduled_end',
-                    'adhoc',
-                  ] as const
-                ).map((key) => (
-                  <div key={key}>
-                    <dt>{key.replaceAll('_', ' ')}</dt>
-                    <dd>{printable(visitReview.visit?.[key])}</dd>
-                  </div>
-                ))}
-              </dl>
-              <section aria-labelledby="visit-events-title">
-                <h3 id="visit-events-title">Visit timeline</h3>
-                {[...(visitReview.events ?? [])].sort((a, b) =>
-                  String(a.at ?? a.created_at ?? '').localeCompare(
-                    String(b.at ?? b.created_at ?? ''),
-                  ),
-                ).length === 0 ? (
-                  <p>No visit events are recorded.</p>
-                ) : (
-                  <ol className="care-timeline">
-                    {[...(visitReview.events ?? [])]
-                      .sort((a, b) =>
-                        String(a.at ?? a.created_at ?? '').localeCompare(
-                          String(b.at ?? b.created_at ?? ''),
-                        ),
-                      )
-                      .map((item, index) => (
-                        <li key={String(item.id ?? `${item.type ?? 'event'}-${index}`)}>
-                          <strong>{String(item.type ?? item.event_type ?? 'Visit event')}</strong>
-                          <time>{printable(item.at ?? item.created_at)}</time>
-                          <p>{String(item.verification ?? item.status ?? '')}</p>
-                        </li>
-                      ))}
-                  </ol>
-                )}
-              </section>
-              <section aria-labelledby="visit-notes-title">
-                <h3 id="visit-notes-title">Nurse notes</h3>
-                {(visitReview.notes ?? []).length ? (
-                  <ul>
-                    {visitReview.notes?.map((item, index) => (
-                      <li key={String(item.id ?? index)}>
-                        {String(item.body ?? item.note ?? item.text ?? 'Note')}{' '}
-                        <small>{printable(item.created_at ?? item.at)}</small>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No notes are recorded.</p>
-                )}
-              </section>
-              <section aria-labelledby="visit-flags-title">
-                <h3 id="visit-flags-title">Flags</h3>
-                {(visitReview.flags ?? []).length ? (
-                  <ul>
-                    {visitReview.flags?.map((item, index) => (
-                      <li key={String(item.id ?? index)}>
-                        {String(item.reason ?? item.type ?? 'Visit flag')} ·{' '}
-                        {String(item.status ?? 'open')}{' '}
-                        {item.status === 'open' && (
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() => void resolveReviewFlag(String(item.id ?? ''))}
-                          >
-                            Resolve flag
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No flags are recorded.</p>
-                )}
-              </section>
-              <section aria-labelledby="visit-photos-title">
-                <h3 id="visit-photos-title">Photos</h3>
-                <button
-                  type="button"
-                  aria-expanded={reviewPhotoPanelOpen}
-                  onClick={() => setReviewPhotoPanelOpen((open) => !open)}
-                >
-                  {reviewPhotoPanelOpen ? 'Hide photo records' : 'Open photo records'} (
-                  {visitReview.photos?.length ?? 0})
-                </button>
-                {reviewPhotoPanelOpen && (
-                  <div className="care-photo-records">
-                    {(visitReview.photos ?? []).length ? (
-                      visitReview.photos?.map((photo, index) => (
-                        <article key={String(photo.id ?? index)}>
-                          <strong>Photo record {String(photo.id ?? index + 1)}</strong>
-                          <p>Status: {printable(photo.status)}</p>
-                          <p>Added: {printable(photo.created_at)}</p>
-                          <p>
-                            Image preview is unavailable until the audited private image endpoint is
-                            implemented.
-                          </p>
-                        </article>
-                      ))
-                    ) : (
-                      <p>No photo records are attached to this visit.</p>
-                    )}
-                  </div>
-                )}
-              </section>
-              <section aria-labelledby="visit-annotations-title">
-                <h3 id="visit-annotations-title">Annotations</h3>
-                {(visitReview.annotations ?? []).map((item, index) => (
-                  <p key={String(item.id ?? index)}>
-                    {String(item.comment ?? '')}{' '}
-                    <small>{printable(item.created_at ?? item.at)}</small>
-                  </p>
-                ))}
-                <form className="care-form" onSubmit={saveAnnotation}>
-                  <label htmlFor="visit-annotation">
-                    Add annotation
-                    <textarea
-                      id="visit-annotation"
-                      required
-                      minLength={3}
-                      maxLength={1000}
-                      value={annotation}
-                      onChange={(event) => setAnnotation(event.target.value)}
-                    />
-                  </label>
-                  <button type="submit" disabled={busy || annotation.trim().length < 3}>
-                    Save annotation
-                  </button>
-                </form>
-              </section>
-              <section aria-labelledby="visit-audit-title">
-                <h3 id="visit-audit-title">Audit trail</h3>
-                {(visitReview.audit ?? []).length ? (
-                  <ol>
-                    {visitReview.audit?.map((item, index) => (
-                      <li key={String(item.id ?? index)}>
-                        {String(item.action ?? item.event ?? 'Recorded action')} ·{' '}
-                        {printable(item.at ?? item.created_at)} ·{' '}
-                        {printable(item.actor_id ?? item.user_id)}
-                      </li>
-                    ))}
-                  </ol>
-                ) : (
-                  <p>No audit entries are attached to this visit.</p>
-                )}
-              </section>
-            </>
-          )}
-        </section>
+        <VisitReviewPanel
+          visitId={reviewVisitId} review={visitReview}
+          loading={reviewLoading} busy={busy}
+          photoPanelOpen={reviewPhotoPanelOpen} setPhotoPanelOpen={setReviewPhotoPanelOpen}
+          annotation={annotation} setAnnotation={setAnnotation}
+          onClose={() => { setReviewVisitId(''); setVisitReview(null); setReviewPhotoPanelOpen(false); }}
+          onResolveFlag={(flagId) => void resolveReviewFlag(flagId)}
+          onSaveAnnotation={saveAnnotation}
+          printable={printable}
+        />
       )}
 
       {items.length === 0 && !loading && tab !== 'data' && tab !== 'places' ? (

@@ -24,7 +24,7 @@ function setup() {
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
   const get = vi.fn();
-  const client = { get, post: vi.fn(), patch: vi.fn() } satisfies ApiClient;
+  const client = { get, post: vi.fn(), patch: vi.fn(), put: vi.fn() } satisfies ApiClient;
   return { queryClient, wrapper, get, client };
 }
 

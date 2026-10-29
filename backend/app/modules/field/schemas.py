@@ -52,5 +52,6 @@ class FieldVisitResponse(BaseModel):
     check_out_at: datetime | None
     verification_label: str
     photo_count: int
-    photo_rules: dict[str, bool]
+    photo_types: list[str] = Field(default_factory=list)
+    photo_rules: dict[str, bool | str | None]
     safety_state: str

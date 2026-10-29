@@ -16,6 +16,7 @@ from tests.conftest import auth, make_token
 # Exercise one representative route from every C8-C14 area.
 ROUTE_MATRIX = [
     ("C8 field", "GET", "/api/v1/field/me", None),
+    ("C14 own field timesheets", "GET", "/api/v1/field/timesheets", None),
     ("C9 field_ops", "POST", "/api/v1/field/sync/push", {"operations": []}),
     ("C10 clients", "GET", "/api/v1/admin/care/clients", None),
     ("C10 places", "GET", "/api/v1/admin/care/clients/client-0000001/places", None),

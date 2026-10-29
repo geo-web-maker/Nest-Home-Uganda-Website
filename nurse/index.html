@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="noindex,nofollow" />
     <meta name="theme-color" content="#123524" />
+    <script>
+      (function () {
+        var theme = 'light';
+        try {
+          var saved = window.localStorage.getItem('nest-theme');
+          if (saved === 'light' || saved === 'dark') theme = saved;
+        } catch (_) {
+          /* Storage can be blocked; keep the reviewed light default. */
+        }
+        document.documentElement.dataset.theme = theme;
+        var meta = document.querySelector('meta[name=theme-color]');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#091410' : '#123524');
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
     <title>Well Nest Home Care Uganda Nurse</title>

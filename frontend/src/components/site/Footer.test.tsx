@@ -15,9 +15,11 @@ function setup(initialEntry = '/') {
 }
 
 describe('Footer', () => {
-  it('shows the brand column with tagline, office and a tel link', () => {
+  it('shows the brand logo with tagline, office and a tel link', () => {
     setup();
     expect(screen.getByText('Trusted · Reliable · Compassionate.')).toBeInTheDocument();
+    expect(screen.getByText('Well Nest Home Care Uganda')).toBeInTheDocument();
+    expect(screen.getByText('Uganda · Kampala')).toBeInTheDocument();
     expect(screen.getByText(/Office: Kampala, Uganda/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '0787 499 988' })).toHaveAttribute(
       'href',
@@ -45,12 +47,12 @@ describe('Footer', () => {
       ['Areas we serve', '/areas'],
       ['FAQ and care tips', '/faq'],
       ['About us', '/about'],
-      ['Careers', '/careers'],
       ['Privacy and terms', '/privacy'],
       ['Staff login', '/admin/login'],
     ] as const) {
       expect(within(company).getByRole('link', { name })).toHaveAttribute('href', href);
     }
+    expect(within(company).queryByRole('link', { name: 'Careers' })).not.toBeInTheDocument();
   });
 
   it('marks the current footer destination', () => {

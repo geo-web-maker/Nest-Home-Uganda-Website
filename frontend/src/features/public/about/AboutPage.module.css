@@ -1,49 +1,19 @@
-.story,
-.credentials {
-  padding-block: 52px;
-  background: var(--bg);
-  color: var(--ink);
-}
-.storyGrid {
-  display: grid;
-  gap: 28px;
-  align-items: start;
-}
-.story h2,
-.promise h2,
-.credentials h2 {
-  margin: 0 0 18px;
-  font-family: var(--serif);
-  font-size: clamp(1.7rem, 6vw, 2.8rem);
-  line-height: 1.1;
-}
-.story p,
-.credentials p {
-  max-width: 62ch;
-  color: var(--mut);
-  line-height: 1.6;
-}
-.promise {
-  padding-block: 52px;
-  background: var(--forest);
-  color: var(--onf);
-  text-align: center;
-}
-.promise h2 {
-  max-width: 20ch;
-  margin-inline: auto;
-}
-.credentials {
-  background: var(--mint);
-}
-@media (min-width: 1040px) {
-  .story,
-  .credentials,
-  .promise {
-    padding-block: 84px;
-  }
-  .storyGrid {
-    grid-template-columns: 1.1fr 0.9fr;
-    gap: 60px;
-  }
-}
+.page > :global(section:first-of-type) { padding-block: 0; }
+.page > :global(section:first-of-type) :global(nav[aria-label='Breadcrumb']) { display: none; }
+.story, .credentials { padding-block: 56px; background: var(--bg); color: var(--ink); }
+.storyGrid { display: grid; gap: 28px; align-items: start; }
+.story h2, .promise h2, .credentials h2 { margin: 0 0 18px; font-family: var(--serif); font-size: clamp(1.7rem, 6vw, 2.8rem); line-height: 1.1; }
+.story p, .credentials p { max-width: 62ch; color: var(--mut); line-height: 1.6; }
+.promise { padding-block: 56px; background: var(--forest); color: var(--onf); text-align: left; }
+.promise h2 { max-width: 20ch; margin-bottom: 20px; }
+.promise :global(ul) { display: grid; grid-template-columns: 1fr; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.promise :global(li) { padding: 18px; border: 0; border-radius: 22px; background: var(--surf); color: var(--ink); box-shadow: var(--shadow-1); }
+.promise :global(li h3) { margin: 0 0 4px; font-family: var(--sans); font-size: 1rem; }
+.promise :global(li p) { margin: 0; color: var(--mut); }
+.credentials { background: var(--bg); }
+.credentials :global(ul) { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 18px; }
+.credentials :global(li) { padding: 0; border: 0; }
+.credentials :global(li::before) { display: none; }
+.credentials :global(li span) { display: block; padding: 12px 14px; border: 1px dashed var(--gold); border-radius: 14px; background: color-mix(in srgb, var(--gold) 7%, transparent); color: var(--mut); font-style: italic; }
+@media (min-width: 700px) { .story, .credentials, .promise { padding-block: 72px; } .storyGrid { grid-template-columns: 1.1fr .9fr; gap: 60px; } .promise :global(ul) { grid-template-columns: repeat(3, 1fr); } .credentials :global(ul) { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1040px) { .story, .credentials, .promise { padding-block: 84px; } }

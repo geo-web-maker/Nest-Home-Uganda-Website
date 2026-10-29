@@ -4,6 +4,7 @@ from app.core.config import get_settings
 from app.core.phone import is_mobile, normalise_e164
 from app.modules.auth.models import User
 from app.modules.care_ops.models import CareAlert, SOSCase
+from app.modules.care_ops.roster import recipient_numbers
 from app.modules.care_ops.sms_templates import render_sms
 from app.modules.notifications.config import load_config
 from app.modules.notifications.providers import get_sms_provider
@@ -16,6 +17,8 @@ from app.modules.settings.care_service import care_values
 async def _send_numbers(numbers: list[str], message: str, template: str) -> int:
     config = await load_config()
     provider = get_sms_provider()
+    values = await care_values()
+    monthly_cap = int(values.get("sms.monthly_cap", 1000))
     sent = 0
     if not config.staff_enabled:
         return 0
@@ -31,6 +34,7 @@ async def _send_numbers(numbers: list[str], message: str, template: str) -> int:
             audience="staff",
             template=template,
             enquiry=None,
+            monthly_cap=monthly_cap,
         ):
             sent += 1
     return sent
@@ -45,10 +49,7 @@ async def notify_sos(case: SOSCase) -> dict:
         message = "[TEST] " + render_sms("sos", url)
         sms = await _send_numbers([test_number] if test_number else [], message, "care_sos_test")
         return {"sms_sent": sms, "test": True}
-    recipients = []
-    contacts = values.get("sos.on_call_contacts", {})
-    if isinstance(contacts, dict):
-        recipients.extend(str(value) for value in contacts.values())
+    recipients = recipient_numbers(values, timezone_name=settings.tz)
     profile = await NurseProfile.find_one(NurseProfile.user_id == case.nurse_id)
     if profile and profile.supervisor_id:
         supervisor = await User.get(profile.supervisor_id)
@@ -86,9 +87,7 @@ async def notify_alert(alert: CareAlert) -> None:
     if alert.severity == "critical":
         values = await care_values()
         numbers = []
-        contacts = values.get("sos.on_call_contacts", {})
-        if isinstance(contacts, dict):
-            numbers.extend(str(value) for value in contacts.values())
+        numbers.extend(recipient_numbers(values, timezone_name=get_settings().tz))
         await _send_numbers(
             numbers,
             render_sms(

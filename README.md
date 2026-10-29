@@ -75,3 +75,12 @@ node scripts/pre-apk-release.mjs --backend-only
 ```
 
 See `docs/PRE_APK_RELEASE_TEST_SUITE.md` for the release criteria and failure scenarios. A production APK should only be created from a passing release candidate, followed by native Android smoke tests.
+
+## Stage 13–19 reconstruction and verification
+
+The consolidated nurse-module reconstruction, stage-by-stage decisions, test results, and remaining environment/device checks are documented in [`docs/RECONSTRUCTION_STAGE_13_TO_19.md`](docs/RECONSTRUCTION_STAGE_13_TO_19.md). That audit distinguishes checks actually run from integration/frontend suites that remain unverified because the current runtime is missing dependencies.
+
+
+## Stage 20–29 reconstruction and security verification
+
+The Stage 20–29 consolidation, nurse-safe timesheet route, admin scope guards, client and nurse detail workflows, tests, merge decisions, validation results, and remaining integration blockers are documented in [`docs/RECONSTRUCTION_STAGE_20_TO_29.md`](docs/RECONSTRUCTION_STAGE_20_TO_29.md). Stage bundles were treated as overlapping patches rather than blindly overlaid snapshots; the report distinguishes static checks that ran from backend/frontend suites that need the locked dependencies and test database.

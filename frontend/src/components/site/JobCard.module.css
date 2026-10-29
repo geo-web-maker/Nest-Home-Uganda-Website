@@ -3,9 +3,9 @@
   display: grid;
   gap: 10px;
   margin-top: 12px;
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: 22px;
+  padding: 16px;
+  border: 6px solid color-mix(in srgb, var(--mint) 90%, var(--line));
+  border-radius: 26px;
   background: var(--surf);
   transition: border-color var(--dur-base) var(--ease-standard);
 }
@@ -21,7 +21,7 @@
 }
 @media (hover: hover) and (pointer: fine) {
   .card:hover {
-    border-color: var(--gold);
+    border-color: color-mix(in srgb, var(--gold) 75%, var(--mint));
   }
   .card:hover::after {
     opacity: 1;

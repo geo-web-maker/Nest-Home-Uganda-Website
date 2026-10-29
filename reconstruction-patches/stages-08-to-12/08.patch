@@ -1,0 +1,448 @@
+diff --git a/frontend/src/features/public/about/AboutPage.module.css b/frontend/src/features/public/about/AboutPage.module.css
+index 42b112e..32646af 100644
+--- a/frontend/src/features/public/about/AboutPage.module.css
++++ b/frontend/src/features/public/about/AboutPage.module.css
+@@ -1,49 +1,19 @@
+-.story,
+-.credentials {
+-  padding-block: 52px;
+-  background: var(--bg);
+-  color: var(--ink);
+-}
+-.storyGrid {
+-  display: grid;
+-  gap: 28px;
+-  align-items: start;
+-}
+-.story h2,
+-.promise h2,
+-.credentials h2 {
+-  margin: 0 0 18px;
+-  font-family: var(--serif);
+-  font-size: clamp(1.7rem, 6vw, 2.8rem);
+-  line-height: 1.1;
+-}
+-.story p,
+-.credentials p {
+-  max-width: 62ch;
+-  color: var(--mut);
+-  line-height: 1.6;
+-}
+-.promise {
+-  padding-block: 52px;
+-  background: var(--forest);
+-  color: var(--onf);
+-  text-align: center;
+-}
+-.promise h2 {
+-  max-width: 20ch;
+-  margin-inline: auto;
+-}
+-.credentials {
+-  background: var(--mint);
+-}
+-@media (min-width: 1040px) {
+-  .story,
+-  .credentials,
+-  .promise {
+-    padding-block: 84px;
+-  }
+-  .storyGrid {
+-    grid-template-columns: 1.1fr 0.9fr;
+-    gap: 60px;
+-  }
+-}
++.page > :global(section:first-of-type) { padding-block: 0; }
++.page > :global(section:first-of-type) :global(nav[aria-label='Breadcrumb']) { display: none; }
++.story, .credentials { padding-block: 56px; background: var(--bg); color: var(--ink); }
++.storyGrid { display: grid; gap: 28px; align-items: start; }
++.story h2, .promise h2, .credentials h2 { margin: 0 0 18px; font-family: var(--serif); font-size: clamp(1.7rem, 6vw, 2.8rem); line-height: 1.1; }
++.story p, .credentials p { max-width: 62ch; color: var(--mut); line-height: 1.6; }
++.promise { padding-block: 56px; background: var(--forest); color: var(--onf); text-align: left; }
++.promise h2 { max-width: 20ch; margin-bottom: 20px; }
++.promise :global(ul) { display: grid; grid-template-columns: 1fr; gap: 14px; margin: 0; padding: 0; list-style: none; }
++.promise :global(li) { padding: 18px; border: 0; border-radius: 22px; background: var(--surf); color: var(--ink); box-shadow: var(--shadow-1); }
++.promise :global(li h3) { margin: 0 0 4px; font-family: var(--sans); font-size: 1rem; }
++.promise :global(li p) { margin: 0; color: var(--mut); }
++.credentials { background: var(--bg); }
++.credentials :global(ul) { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 18px; }
++.credentials :global(li) { padding: 0; border: 0; }
++.credentials :global(li::before) { display: none; }
++.credentials :global(li span) { display: block; padding: 12px 14px; border: 1px dashed var(--gold); border-radius: 14px; background: color-mix(in srgb, var(--gold) 7%, transparent); color: var(--mut); font-style: italic; }
++@media (min-width: 700px) { .story, .credentials, .promise { padding-block: 72px; } .storyGrid { grid-template-columns: 1.1fr .9fr; gap: 60px; } .promise :global(ul) { grid-template-columns: repeat(3, 1fr); } .credentials :global(ul) { grid-template-columns: repeat(2, 1fr); } }
++@media (min-width: 1040px) { .story, .credentials, .promise { padding-block: 84px; } }
+diff --git a/frontend/src/features/public/about/AboutPage.test.tsx b/frontend/src/features/public/about/AboutPage.test.tsx
+index c46e14a..751e6d9 100644
+--- a/frontend/src/features/public/about/AboutPage.test.tsx
++++ b/frontend/src/features/public/about/AboutPage.test.tsx
+@@ -36,7 +36,7 @@ describe('AboutPage', () => {
+       .spyOn(apiClient, 'get')
+       .mockResolvedValue({ id: '1', key: 'about_story', title: '', body: '' });
+     setup();
+-    expect(await screen.findAllByText('client to supply')).toHaveLength(2);
++    expect(await screen.findAllByText('client to supply')).toHaveLength(6);
+     expect(get).toHaveBeenCalledWith('/public/pages/about_story', { params: { lang: 'en' } });
+     expect(get).toHaveBeenCalledWith('/public/pages/about_credentials', { params: { lang: 'en' } });
+   });
+diff --git a/frontend/src/features/public/about/AboutPage.tsx b/frontend/src/features/public/about/AboutPage.tsx
+index 039391b..1ae6402 100644
+--- a/frontend/src/features/public/about/AboutPage.tsx
++++ b/frontend/src/features/public/about/AboutPage.tsx
+@@ -29,19 +29,11 @@ export function AboutPage() {
+   });
+   const rings = [
+     { id: 'trusted', title: t('about.promise.trustedTitle'), text: t('about.promise.trustedText') },
+-    {
+-      id: 'reliable',
+-      title: t('about.promise.reliableTitle'),
+-      text: t('about.promise.reliableText'),
+-    },
+-    {
+-      id: 'compassionate',
+-      title: t('about.promise.compassionateTitle'),
+-      text: t('about.promise.compassionateText'),
+-    },
++    { id: 'reliable', title: t('about.promise.reliableTitle'), text: t('about.promise.reliableText') },
++    { id: 'compassionate', title: t('about.promise.compassionateTitle'), text: t('about.promise.compassionateText') },
+   ];
+   return (
+-    <>
++    <div className={styles.page}>
+       <Seo title={t('about.seoTitle')} description={t('about.seoDescription')} path="/about" />
+       <PageHero
+         rule={t('about.rule')}
+@@ -105,9 +97,9 @@ export function AboutPage() {
+       </section>
+       <CtaBand
+         heading={t('about.ctaHeading')}
+-        bookLabel={t('about.ctaBook')}
++        bookLabel={tc('actions.book')}
+         whatsappLabel={tc('actions.whatsapp')}
+       />
+-    </>
++    </div>
+   );
+ }
+diff --git a/frontend/src/features/public/faq/FaqPage.module.css b/frontend/src/features/public/faq/FaqPage.module.css
+index 6cbc80d..cc01473 100644
+--- a/frontend/src/features/public/faq/FaqPage.module.css
++++ b/frontend/src/features/public/faq/FaqPage.module.css
+@@ -1,47 +1,16 @@
+-.section {
+-  padding-block: 52px;
+-  background: var(--bg);
+-  color: var(--ink);
+-}
+-.columns {
+-  display: grid;
+-  gap: 34px;
+-}
+-.columns h2 {
+-  margin: 0 0 18px;
+-  font-family: var(--serif);
+-  font-size: clamp(1.5rem, 5vw, 2.2rem);
+-  line-height: 1.15;
+-}
+-.articles {
+-  display: grid;
+-  gap: 12px;
+-  margin: 0;
+-  padding: 0;
+-  list-style: none;
+-}
+-.articles li {
+-  padding: 16px;
+-  border: 1px solid var(--line);
+-  border-radius: 18px;
+-  background: var(--surf);
+-}
+-.articles a {
+-  color: var(--ink);
+-  font-weight: 600;
+-  text-decoration: underline;
+-  text-underline-offset: 3px;
+-}
+-.articles a:focus-visible {
+-  outline: 3px solid var(--gold);
+-  outline-offset: 3px;
+-}
+-@media (min-width: 1040px) {
+-  .section {
+-    padding-block: 84px;
+-  }
+-  .columns {
+-    grid-template-columns: 1.1fr 0.9fr;
+-    gap: 60px;
+-  }
+-}
++.page > :global(section:first-of-type) { padding-block: 0; }
++.page > :global(section:first-of-type) :global(nav[aria-label='Breadcrumb']) { display: none; }
++.section { padding-block: 68px; background: var(--bg); color: var(--ink); }
++.section > :global(.container) { display: grid; gap: 48px; }
++.questions details { padding: 0; border-bottom: 1px solid var(--line); }
++.questions summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; font-weight: 700; list-style: none; cursor: pointer; }
++.questions summary::-webkit-details-marker { display: none; }
++.questions summary::after { content: '+'; color: var(--gold); font-size: 1.35rem; }
++.questions details[open] summary::after { content: '–'; }
++.questions details[open] summary { color: var(--ink); }
++.questions details p { margin: 0 0 14px; padding: 12px 14px; border: 1px dashed var(--gold); border-radius: 14px; background: color-mix(in srgb, var(--gold) 7%, transparent); color: var(--mut); font-style: italic; }
++.tips h2 { margin: 0 0 12px; font-family: var(--serif); }
++.tips ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
++.tips li { padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surf); }
++.tips a { color: var(--ink); font-weight: 650; }
++@media (min-width: 1040px) { .section { padding-block: 84px; } .section > :global(.container) { display: block; } .tips { display: none; } }
+diff --git a/frontend/src/features/public/faq/FaqPage.test.tsx b/frontend/src/features/public/faq/FaqPage.test.tsx
+index 9c7865f..d02e24f 100644
+--- a/frontend/src/features/public/faq/FaqPage.test.tsx
++++ b/frontend/src/features/public/faq/FaqPage.test.tsx
+@@ -38,6 +38,7 @@ describe('FaqPage', () => {
+     setup();
+     expect(await screen.findByText('Question from content?')).toBeInTheDocument();
+     expect(screen.getByText('Answer from content.')).toBeInTheDocument();
++    expect(screen.getByText('Question from content?').closest('details')).toHaveAttribute('open');
+   });
+   it('links published articles to their detail route', async () => {
+     vi.spyOn(apiClient, 'get').mockResolvedValue([
+diff --git a/frontend/src/features/public/faq/FaqPage.tsx b/frontend/src/features/public/faq/FaqPage.tsx
+index 9caf3b2..e0f7d1f 100644
+--- a/frontend/src/features/public/faq/FaqPage.tsx
++++ b/frontend/src/features/public/faq/FaqPage.tsx
+@@ -1,80 +1,30 @@
+ import { useQuery } from '@tanstack/react-query';
+-import { Link } from 'react-router-dom';
+ import { useTranslation } from 'react-i18next';
+-import { Accordion } from '../../../components/ui/Accordion';
++import { Link } from 'react-router-dom';
+ import { CtaBand } from '../../../components/site/CtaBand';
+ import { PageHero } from '../../../components/site/PageHero';
+ import { Seo } from '../../../components/site/Seo';
+ import { apiClient } from '../../../lib/api/client';
+ import type { ArticlePublic, FaqPublic } from './types';
+-import { Reveal } from '../../../components/ui/Reveal';
+ import styles from './FaqPage.module.css';
+ 
++function accentLastWord(value: string) {
++  const split = value.lastIndexOf(' ');
++  if (split < 0) return value;
++  return <>{value.slice(0, split)} <em className={styles.accent}>{value.slice(split + 1)}</em></>;
++}
++
+ export function FaqPage() {
+   const { t } = useTranslation('site');
+   const { t: tc } = useTranslation('common');
+-  const faqs = useQuery({
+-    queryKey: ['public', 'faqs'],
+-    queryFn: () => apiClient.get<FaqPublic[]>('/public/faqs', { params: { lang: 'en' } }),
+-  });
+-  const articles = useQuery({
+-    queryKey: ['public', 'articles'],
+-    queryFn: () => apiClient.get<ArticlePublic[]>('/public/articles', { params: { lang: 'en' } }),
+-  });
++  const faqs = useQuery({ queryKey: ['public', 'faqs'], queryFn: () => apiClient.get<FaqPublic[]>('/public/faqs', { params: { lang: 'en' } }) });
++  const articles = useQuery({ queryKey: ['public', 'articles'], queryFn: () => apiClient.get<ArticlePublic[]>('/public/articles', { params: { lang: 'en' } }) });
+   return (
+-    <>
++    <div className={styles.page}>
+       <Seo title={t('faq.seoTitle')} description={t('faq.seoDescription')} path="/faq" />
+-      <PageHero
+-        rule={t('faq.rule')}
+-        title={t('faq.title')}
+-        lead={t('faq.lead')}
+-        breadcrumb={[{ label: tc('nav.home'), to: '/' }, { label: t('faq.rule') }]}
+-      />
+-      <section className={styles.section}>
+-        <div className={`container ${styles.columns}`}>
+-          <div>
+-            <h2>{t('faq.questionsHeading')}</h2>
+-            {faqs.isError ? (
+-              <p role="alert">{t('faq.error')}</p>
+-            ) : faqs.data?.length ? (
+-              <Reveal>
+-                <Accordion
+-                  items={faqs.data.map((item) => ({
+-                    id: item.id,
+-                    summary: item.question,
+-                    content: item.answer,
+-                  }))}
+-                />
+-              </Reveal>
+-            ) : (
+-              <p aria-busy={!faqs.data}>{faqs.data ? t('faq.clientToSupply') : t('faq.loading')}</p>
+-            )}
+-          </div>
+-          <aside>
+-            <h2>{t('faq.tipsHeading')}</h2>
+-            {articles.isError ? (
+-              <p role="alert">{t('faq.articlesError')}</p>
+-            ) : articles.data?.length ? (
+-              <ul className={styles.articles}>
+-                {articles.data.map((article, index) => (
+-                  <Reveal as="li" index={index} key={article.id}>
+-                    <Link to={`/faq/${article.slug}`}>{article.title}</Link>
+-                  </Reveal>
+-                ))}
+-              </ul>
+-            ) : (
+-              <p aria-busy={!articles.data}>
+-                {articles.data ? t('faq.articleComingSoon') : t('faq.loading')}
+-              </p>
+-            )}
+-          </aside>
+-        </div>
+-      </section>
+-      <CtaBand
+-        heading={t('faq.ctaHeading')}
+-        bookLabel={t('faq.ctaBook')}
+-        whatsappLabel={tc('actions.whatsapp')}
+-      />
+-    </>
++      <PageHero rule={t('faq.rule')} title={accentLastWord(t('faq.title'))} lead={t('faq.lead')} breadcrumb={[{ label: tc('nav.home'), to: '/' }, { label: t('faq.rule') }]} />
++      <section className={styles.section}><div className="container"><div className={styles.questions}>{faqs.isError ? <p role="alert">{t('faq.error')}</p> : faqs.data?.length ? faqs.data.map((item, index) => <details key={item.id} open={index === 0}><summary>{item.question}</summary><p>{item.answer}</p></details>) : <p aria-busy={!faqs.data}>{faqs.data ? t('faq.clientToSupply') : t('faq.loading')}</p>}</div><aside className={styles.tips}><h2>{t('faq.tipsHeading')}</h2>{articles.isError ? <p role="alert">{t('faq.articlesError')}</p> : articles.data?.length ? <ul>{articles.data.map((article) => <li key={article.id}><Link to={`/faq/${article.slug}`}>{article.title}</Link></li>)}</ul> : <p aria-busy={!articles.data}>{articles.data ? t('faq.articleComingSoon') : t('faq.loading')}</p>}</aside></div></section>
++      <CtaBand heading={t('faq.ctaHeading')} bookLabel={tc('actions.book')} whatsappLabel={tc('actions.whatsapp')} />
++    </div>
+   );
+ }
+diff --git a/frontend/src/features/public/how-it-works/HowItWorksPage.module.css b/frontend/src/features/public/how-it-works/HowItWorksPage.module.css
+index 6b4b3dc..03b1705 100644
+--- a/frontend/src/features/public/how-it-works/HowItWorksPage.module.css
++++ b/frontend/src/features/public/how-it-works/HowItWorksPage.module.css
+@@ -1,76 +1,20 @@
+-.steps {
+-  padding-block: 52px;
+-  background: var(--bg);
+-}
+-.pricing {
+-  padding-block: 52px;
+-  background: var(--mint);
+-  color: var(--ink);
+-}
+-.rule {
+-  margin: 0 0 12px;
+-  color: var(--leaf);
+-  font-size: 0.74rem;
+-  font-weight: 700;
+-  letter-spacing: 0.14em;
+-  text-transform: uppercase;
+-}
+-.pricing h2 {
+-  max-width: 20ch;
+-  margin: 0;
+-  font-family: var(--serif);
+-  font-size: clamp(1.7rem, 6vw, 2.8rem);
+-  line-height: 1.1;
+-}
+-.cards {
+-  display: grid;
+-  gap: 14px;
+-  margin-top: 28px;
+-}
+-.payment {
+-  margin: 22px 0 0;
+-  color: var(--mut);
+-  font-size: 0.94rem;
+-}
+-.retry {
+-  min-height: 44px;
+-  padding-inline: 16px;
+-  border: 1px solid var(--line);
+-  border-radius: 999px;
+-  background: var(--surf);
+-  color: var(--ink);
+-  font: inherit;
+-  cursor: pointer;
+-}
+-.retry:focus-visible {
+-  outline: 3px solid var(--gold);
+-  outline-offset: 3px;
+-}
+-@media (min-width: 700px) {
+-  .steps,
+-  .pricing {
+-    padding-block: 64px;
+-  }
+-  .cards {
+-    grid-template-columns: repeat(3, minmax(0, 1fr));
+-  }
+-}
+-@media (min-width: 1040px) {
+-  .steps,
+-  .pricing {
+-    padding-block: 84px;
+-  }
+-}
+-
+-/* Heading for screen readers only, so the steps below sit under an h2 rather than jumping from h1 to h3. */
+-.srOnly {
+-  position: absolute;
+-  width: 1px;
+-  height: 1px;
+-  margin: -1px;
+-  padding: 0;
+-  overflow: hidden;
+-  clip-path: inset(50%);
+-  white-space: nowrap;
+-  border: 0;
+-}
++.page > :global(section:first-of-type) { padding-block: 0; }
++.page > :global(section:first-of-type) :global(nav[aria-label='Breadcrumb']) { display: none; }
++.steps { padding-block: 56px; background: var(--bg); }
++.steps :global(ol) { display: grid; gap: 30px; margin: 0; padding: 0; list-style: none; }
++.steps :global(ol li) { display: grid; grid-template-columns: 40px 1fr; gap: 14px; }
++.steps :global(ol li > span) { color: var(--gold); font: 700 2rem/1 var(--serif); }
++.steps :global(ol li h3) { margin: 0 0 6px; font: 700 1rem/1.2 var(--sans); }
++.steps :global(ol li p) { margin: 0; color: var(--mut); }
++.pricing { padding-block: 56px; background: var(--bg); color: var(--ink); }
++.rule { margin: 0 0 12px; color: var(--gold); font-size: .74rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
++.pricing h2 { max-width: 20ch; margin: 0; font-family: var(--serif); font-size: clamp(1.7rem, 6vw, 2.8rem); line-height: 1.1; }
++.cards { display: grid; gap: 14px; margin-top: 28px; }
++.cards :global(article) { padding: 18px; border: 6px solid color-mix(in srgb, var(--mint) 90%, var(--line)); border-radius: 24px; background: var(--surf); box-shadow: var(--shadow-1); }
++.cards :global(article p:first-child) { display: none; }
++.cards :global(article h3) { margin: 0 0 10px; font: 700 1rem/1.2 var(--sans); }
++.cards :global(article p:last-child) { margin: 0; padding: 11px 13px; border: 1px dashed var(--gold); border-radius: 14px; background: color-mix(in srgb, var(--gold) 7%, transparent); color: var(--mut); font-style: italic; }
++.payment { margin: 22px 0 0; color: var(--mut); font-size: .94rem; }
++.retry { min-height: 48px; padding-inline: 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--surf); color: var(--ink); font: inherit; cursor: pointer; }
++@media (min-width: 700px) { .steps, .pricing { padding-block: 72px; } .steps :global(ol), .cards { grid-template-columns: repeat(3, 1fr); } .steps :global(ol li) { grid-template-columns: 1fr; } }
++@media (min-width: 1040px) { .steps, .pricing { padding-block: 84px; } }
+diff --git a/frontend/src/features/public/how-it-works/HowItWorksPage.tsx b/frontend/src/features/public/how-it-works/HowItWorksPage.tsx
+index a03d11e..c5b3c14 100644
+--- a/frontend/src/features/public/how-it-works/HowItWorksPage.tsx
++++ b/frontend/src/features/public/how-it-works/HowItWorksPage.tsx
+@@ -10,6 +10,12 @@ import type { PricingBlockPublic } from './types';
+ import { Reveal } from '../../../components/ui/Reveal';
+ import styles from './HowItWorksPage.module.css';
+ 
++function accentLastWord(value: string) {
++  const split = value.lastIndexOf(' ');
++  if (split < 0) return value;
++  return <>{value.slice(0, split)} <em className={styles.accent}>{value.slice(split + 1)}</em></>;
++}
++
+ export function HowItWorksPage() {
+   const { t } = useTranslation('site');
+   const { t: tc } = useTranslation('common');
+@@ -39,7 +45,7 @@ export function HowItWorksPage() {
+     },
+   ];
+   return (
+-    <>
++    <div className={styles.page}>
+       <Seo
+         title={t('howItWorks.seoTitle')}
+         description={t('howItWorks.seoDescription')}
+@@ -47,7 +53,7 @@ export function HowItWorksPage() {
+       />
+       <PageHero
+         rule={t('howItWorks.rule')}
+-        title={t('howItWorks.title')}
++        title={accentLastWord(t('howItWorks.title'))}
+         lead={t('howItWorks.lead')}
+         breadcrumb={[{ label: tc('nav.home'), to: '/' }, { label: t('howItWorks.rule') }]}
+       />
+@@ -93,6 +99,6 @@ export function HowItWorksPage() {
+         bookLabel={t('howItWorks.ctaBook')}
+         whatsappLabel={tc('actions.whatsapp')}
+       />
+-    </>
++    </div>
+   );
+ }

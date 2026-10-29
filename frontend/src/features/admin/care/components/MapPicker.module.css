@@ -1,48 +1,13 @@
-.wrap {
-  display: grid;
-  gap: 12px;
-}
-.map {
-  min-height: 220px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background-size: 256px 256px;
-  background-repeat: repeat;
-  display: grid;
-  place-items: center;
-  position: relative;
-  overflow: hidden;
-}
-.pin {
-  font-size: 32px;
-  border: 2px solid currentColor;
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  display: grid;
-  place-items: center;
-  background: var(--surface);
-}
-.caption {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  background: var(--surface);
-  padding: 4px 8px;
-  border-radius: 6px;
-}
-.fields {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-@media (max-width: 700px) {
-  .fields {
-    grid-template-columns: 1fr;
-  }
-}
-
-.marker {
-  font-size: 26px;
-  font-weight: 800;
-}
+.wrap { display: grid; gap: 12px; min-width: 0; }
+.addressSearch { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: end; gap: 10px; }
+.map { min-height: 220px; border: 1px solid var(--line); border-radius: 12px; position: relative; overflow: hidden; isolation: isolate; background: var(--surf); }
+.mapFrame { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 220px; border: 0; }
+.mapPlaceholder { min-height: 220px; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--mut); background-size: cover; background-position: center; }
+.pin { position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%,-50%); display: grid; place-items: center; width: 38px; height: 38px; border: 2px solid var(--forest); border-radius: 50% 50% 50% 0; background: var(--surf); color: var(--forest); font-size: 25px; font-weight: 800; rotate: -45deg; pointer-events: none; }
+.pin::first-letter { rotate: 45deg; }
+.radiusRing { position: absolute; z-index: 1; left: 50%; top: 50%; width: 34%; aspect-ratio: 1; transform: translate(-50%,-50%); border: 2px solid var(--forest); border-radius: 50%; background: color-mix(in srgb, var(--leaf) 18%, transparent); pointer-events: none; }
+.marker { position: absolute; z-index: 3; left: 12px; top: 12px; font-size: 26px; font-weight: 800; color: var(--gold); }
+.mapCaption { color: var(--mut); font-size: .82rem; margin: 0; }
+.fields { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.error { margin: 0; color: var(--danger, var(--ink)); }
+@media (max-width: 700px) { .fields, .addressSearch { grid-template-columns: 1fr; } }

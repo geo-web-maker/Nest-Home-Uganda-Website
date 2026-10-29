@@ -17,6 +17,7 @@ def test_field_payload_schema_is_explicit_and_minimal():
         "check_out_at",
         "verification_label",
         "photo_count",
+        "photo_types",
         "photo_rules",
         "safety_state",
     }

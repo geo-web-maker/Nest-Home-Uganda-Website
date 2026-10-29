@@ -36,6 +36,7 @@ export type ApiClient = {
   get<T>(path: string, options?: RequestOptions): Promise<T>;
   post<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T>;
   patch<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T>;
+  put<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T>;
 };
 
 function buildUrl(baseUrl: string, path: string, params: RequestOptions['params']): string {
@@ -112,6 +113,7 @@ export function createApiClient({
     get: (path, options) => request('GET', path, undefined, options),
     post: (path, body, options) => request('POST', path, body, options),
     patch: (path, body, options) => request('PATCH', path, body, options),
+    put: (path, body, options) => request('PUT', path, body, options),
   };
 }
 

@@ -1,0 +1,231 @@
+diff --git a/nurse/index.html b/nurse/index.html
+--- a/nurse/index.html
++++ b/nurse/index.html
+@@ -15,6 +15,8 @@
+           /* Storage can be blocked; keep the reviewed light default. */
+         }
+         document.documentElement.dataset.theme = theme;
++        var meta = document.querySelector('meta[name=theme-color]');
++        if (meta) meta.setAttribute('content', theme === 'dark' ? '#091410' : '#123524');
+       })();
+     </script>
+     <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+diff --git a/nurse/src/components/ThemeSwitch.test.tsx b/nurse/src/components/ThemeSwitch.test.tsx
+--- /dev/null
++++ b/nurse/src/components/ThemeSwitch.test.tsx
+@@ -0,0 +1,17 @@
++import { render, screen, fireEvent } from '@testing-library/react';
++import { afterEach, describe, expect, it } from 'vitest';
++import { ThemeSwitch } from './ThemeSwitch';
++
++afterEach(() => { window.localStorage.clear(); document.documentElement.removeAttribute('data-theme'); });
++
++describe('nurse ThemeSwitch', () => {
++  it('offers accessible Light and Dark buttons and persists selection', () => {
++    render(<ThemeSwitch />);
++    expect(screen.getByRole('group', { name: /choose colour theme/i })).toBeInTheDocument();
++    const dark = screen.getByRole('button', { name: 'Dark' });
++    fireEvent.click(dark);
++    expect(dark).toHaveAttribute('aria-pressed', 'true');
++    expect(window.localStorage.getItem('nest-theme')).toBe('dark');
++    expect(document.documentElement.dataset.theme).toBe('dark');
++  });
++});
+diff --git a/nurse/src/components/ThemeSwitch.tsx b/nurse/src/components/ThemeSwitch.tsx
+--- /dev/null
++++ b/nurse/src/components/ThemeSwitch.tsx
+@@ -0,0 +1,18 @@
++import { useState } from 'react';
++import { copy } from '../copy';
++import { getTheme, setTheme, type Theme } from '../lib/theme';
++
++export function ThemeSwitch() {
++  const [theme, updateTheme] = useState<Theme>(() => getTheme());
++  const choose = (next: Theme) => {
++    setTheme(next);
++    updateTheme(next);
++  };
++  return <section className="panel theme-panel" aria-labelledby="theme-heading">
++    <h3 id="theme-heading">{copy.theme.heading}</h3>
++    <div className="theme-choice" role="group" aria-label={copy.theme.label}>
++      <button type="button" className="button-secondary" aria-pressed={theme === 'light'} onClick={() => choose('light')}>{copy.theme.light}</button>
++      <button type="button" className="button-secondary" aria-pressed={theme === 'dark'} onClick={() => choose('dark')}>{copy.theme.dark}</button>
++    </div>
++  </section>;
++}
+diff --git a/nurse/src/copy.ts b/nurse/src/copy.ts
+--- a/nurse/src/copy.ts
++++ b/nurse/src/copy.ts
+@@ -1,5 +1,6 @@
+ /** User-facing copy shared by the nurse app. Keep sensitive health details out of alerts. */
+ export const copy = {
++  theme: { heading: 'Appearance', label: 'Choose colour theme', light: 'Light', dark: 'Dark' },
+   appName: 'Well Nest Home Care Uganda Nurse',
+   appShortName: 'Well Nest Home Care Uganda Nurse',
+   manifestDescription: 'Offline-first visit workspace for authorised Well Nest Home Care Uganda nurses.',
+diff --git a/nurse/src/lib/theme.test.ts b/nurse/src/lib/theme.test.ts
+--- /dev/null
++++ b/nurse/src/lib/theme.test.ts
+@@ -0,0 +1,45 @@
++import { afterEach, describe, expect, it, vi } from 'vitest';
++import { getTheme, initTheme, setTheme } from './theme';
++
++describe('nurse theme helper', () => {
++  afterEach(() => {
++    vi.restoreAllMocks();
++    vi.unstubAllGlobals();
++    window.localStorage.clear();
++    document.documentElement.removeAttribute('data-theme');
++    document.querySelector('meta[name="theme-color"]')?.remove();
++  });
++
++  it('defaults to light and ignores the OS preference', () => {
++    window.localStorage.removeItem('nest-theme');
++    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
++    expect(getTheme()).toBe('light');
++    expect(initTheme()).toBe('light');
++    expect(document.documentElement.dataset.theme).toBe('light');
++  });
++
++  it('persists a chosen theme and updates html and theme-color meta', () => {
++    const meta = document.createElement('meta');
++    meta.name = 'theme-color';
++    document.head.append(meta);
++    setTheme('dark');
++    expect(window.localStorage.getItem('nest-theme')).toBe('dark');
++    expect(document.documentElement.dataset.theme).toBe('dark');
++    expect(meta.content).toBe('#091410');
++    setTheme('light');
++    expect(meta.content).toBe('#123524');
++  });
++
++  it('does not throw when localStorage is blocked', () => {
++    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
++    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
++    expect(() => setTheme('dark')).not.toThrow();
++    expect(document.documentElement.dataset.theme).toBe('dark');
++    expect(() => initTheme()).not.toThrow();
++  });
++
++  it('ignores invalid saved values', () => {
++    window.localStorage.setItem('nest-theme', 'auto');
++    expect(getTheme()).toBe('light');
++  });
++});
+diff --git a/nurse/src/lib/theme.ts b/nurse/src/lib/theme.ts
+--- /dev/null
++++ b/nurse/src/lib/theme.ts
+@@ -0,0 +1,46 @@
++export type Theme = 'light' | 'dark';
++
++const STORAGE_KEY = 'nest-theme';
++const THEME_COLORS: Record<Theme, string> = {
++  light: '#123524',
++  dark: '#091410',
++};
++
++function isTheme(value: string | null): value is Theme {
++  return value === 'light' || value === 'dark';
++}
++
++/** Read the explicit saved preference. System colour-scheme is deliberately ignored. */
++export function getTheme(): Theme {
++  try {
++    const saved = window.localStorage.getItem(STORAGE_KEY);
++    if (isTheme(saved)) return saved;
++  } catch {
++    // Private browsing / storage policies may disable localStorage.
++  }
++  const applied = typeof document === 'undefined' ? null : document.documentElement.dataset.theme;
++  return isTheme(applied ?? null) ? (applied as Theme) : 'light';
++}
++
++function applyTheme(theme: Theme): void {
++  if (typeof document === 'undefined') return;
++  document.documentElement.dataset.theme = theme;
++  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
++  if (meta) meta.content = THEME_COLORS[theme];
++}
++
++export function setTheme(theme: Theme): void {
++  applyTheme(theme);
++  try {
++    window.localStorage.setItem(STORAGE_KEY, theme);
++  } catch {
++    // The active page still changes theme even when persistence is unavailable.
++  }
++}
++
++/** Apply a valid saved preference, otherwise choose light without consulting the OS. */
++export function initTheme(): Theme {
++  const theme = getTheme();
++  applyTheme(theme);
++  return theme;
++}
+diff --git a/nurse/src/main.tsx b/nurse/src/main.tsx
+--- a/nurse/src/main.tsx
++++ b/nurse/src/main.tsx
+@@ -1,8 +1,11 @@
++import { initTheme } from './lib/theme';
+ import React from 'react';
+ import { createRoot } from 'react-dom/client';
+ import { App } from './app/App';
+ import './styles.css';
+ 
++initTheme();
++
+ createRoot(document.getElementById('root')!).render(
+   <React.StrictMode><App /></React.StrictMode>,
+ );
+diff --git a/nurse/src/screens/LoginScreen.test.tsx b/nurse/src/screens/LoginScreen.test.tsx
+--- a/nurse/src/screens/LoginScreen.test.tsx
++++ b/nurse/src/screens/LoginScreen.test.tsx
+@@ -8,6 +8,7 @@
+     render(<LoginScreen identifier="" password="" busy={false} online={false} onIdentifier={vi.fn()} onPassword={vi.fn()} onSubmit={onSubmit} />);
+     expect(screen.getByRole('status').textContent).toMatch(/connect to the internet/i);
+     expect((screen.getByRole('button', { name: /sign in/i }) as HTMLButtonElement).disabled).toBe(true);
++    expect(screen.getByRole('group', { name: /choose colour theme/i })).toBeInTheDocument();
+     expect(onSubmit).not.toHaveBeenCalled();
+   });
+ 
+diff --git a/nurse/src/screens/LoginScreen.tsx b/nurse/src/screens/LoginScreen.tsx
+--- a/nurse/src/screens/LoginScreen.tsx
++++ b/nurse/src/screens/LoginScreen.tsx
+@@ -1,9 +1,10 @@
+ import type { FormEvent } from 'react';
+ import { copy } from '../copy';
++import { ThemeSwitch } from '../components/ThemeSwitch';
+ 
+ type Props = { identifier: string; password: string; busy: boolean; online: boolean; onIdentifier: (value: string) => void; onPassword: (value: string) => void; onSubmit: (event: FormEvent) => void };
+ export function LoginScreen({ identifier, password, busy, online, onIdentifier, onPassword, onSubmit }: Props) {
+-  return <section className="panel login-panel"><h2>{copy.login.heading}</h2>
++  return <><section className="panel login-panel"><h2>{copy.login.heading}</h2>
+     {!online && <p role="status">{copy.login.offline}</p>}
+     <form onSubmit={onSubmit}>
+       <label htmlFor="identifier">{copy.login.identifier}</label>
+@@ -12,5 +13,5 @@
+       <input id="password" type="password" autoComplete="current-password" value={password} onChange={(event) => onPassword(event.target.value)} required />
+       <button type="submit" disabled={busy || !online}>{busy ? copy.login.working : copy.login.submit}</button>
+     </form>
+-  </section>;
++  </section><ThemeSwitch /></>;
+ }
+diff --git a/nurse/src/screens/ProfileScreen.tsx b/nurse/src/screens/ProfileScreen.tsx
+--- a/nurse/src/screens/ProfileScreen.tsx
++++ b/nurse/src/screens/ProfileScreen.tsx
+@@ -2,6 +2,7 @@
+ import type { CachedVisit } from '../offline/db';
+ import { UpdateNotice } from '../features/update/UpdateNotice';
+ import { copy } from '../copy';
++import { ThemeSwitch } from '../components/ThemeSwitch';
+ 
+ type InboxItem = { id: string; title: string; body: string; created_at?: string };
+ type VersionInfo = { latest: string; min_supported: string; download_path?: string | null };
+@@ -18,6 +19,7 @@
+     <section className="panel"><h3>{copy.profile.privacy}</h3><p>{copy.profile.locationPrivacy}</p><p>{copy.profile.notePrivacy}</p></section>
+     <section className="panel"><div className="screen-heading"><h3>{copy.profile.inbox}</h3><span className="status-chip">{props.inboxEnabled ? copy.profile.inboxEnabled : copy.profile.notConfigured}</span></div>{!props.inboxEnabled ? <p>{copy.profile.inboxUnavailable}</p> : props.inboxMessage ? <p role="status">{props.inboxMessage}</p> : props.inbox.length === 0 ? <p>{copy.profile.noNotifications}</p> : props.inbox.map((item) => <article className="inbox-item" key={item.id}><h4>{item.title}</h4><p>{item.body}</p>{item.created_at && <small>{item.created_at}</small>}</article>)}</section>
+     <section className="panel"><h3>{copy.profile.savedWork}</h3><p>{props.visits.filter((visit) => visit.status === 'in_progress').length} {copy.profile.activeCached}</p><button type="button" className="button-secondary" onClick={props.onSync} disabled={props.busy}>{props.busy ? copy.today.syncing : copy.profile.syncNow}</button></section>
++    <ThemeSwitch />
+     <section className="panel"><h3>{copy.profile.signOutHeading}</h3><p>{copy.profile.signOutHint}</p><button type="button" className="button-danger" onClick={props.onLogout}>{copy.profile.signOut}</button></section>
+   </section>;
+ }

@@ -4,6 +4,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { cx } from '../../lib/cx';
 import { useAuth } from './auth/useAuth';
 import { AdminIcon } from './icons';
+import { ThemeSwitch } from '../../components/ui/ThemeSwitch';
 import { ADMIN_NAV, bottomNav, visibleNav, type AdminNavItem } from './nav';
 import styles from './AdminLayout.module.css';
 
@@ -102,6 +103,12 @@ export function AdminLayout() {
       <div className={styles.body}>
         <header className={styles.topBar}>
           <p className={styles.title}>{title ? label(title) : ''}</p>
+          <ThemeSwitch
+            compact
+            label={t('layout.themeLabel')}
+            lightLabel={t('layout.light')}
+            darkLabel={t('layout.dark')}
+          />
           <div className={styles.user}>
             <span className={styles.userText}>
               <span className={styles.userName}>{user?.name}</span>

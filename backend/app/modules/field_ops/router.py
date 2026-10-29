@@ -1,6 +1,7 @@
 import json
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -26,6 +27,12 @@ from app.modules.field_ops.models import SyncPushReceipt
 from app.modules.field_ops.sync_rules import sync_payload_too_large
 from app.modules.nurses.models import Device
 from app.modules.settings.care_service import care_values
+from app.modules.sos_events.rules import (
+    can_start_live_follow,
+    is_live_follow_active,
+    live_follow_deadline,
+    ping_retry_after,
+)
 from app.modules.visits.models import Visit, VisitPhoto
 
 router = APIRouter(prefix="/field", tags=["field-sync"])
@@ -54,12 +61,25 @@ class PhotoSign(BaseModel):
     visit_id: str
     content_type: str
     bytes: int = Field(gt=0, le=20_000_000)
+    photo_type: Literal["arrival", "departure", "other"] = "other"
 
 
 class SOSIn(BaseModel):
     id: str = Field(min_length=8, max_length=160)
     visit_id: str | None = None
     test: bool = False
+
+
+class SOSFollowPingIn(BaseModel):
+    id: str = Field(min_length=8, max_length=160)
+    lat: float = Field(ge=-90, le=90)
+    lng: float = Field(ge=-180, le=180)
+    accuracy_m: float = Field(ge=0, le=5000)
+    captured_at: datetime | None = None
+
+
+class SOSFollowActionIn(BaseModel):
+    id: str = Field(min_length=8, max_length=160)
 
 
 CanUse = Depends(require_current_consent)
@@ -464,6 +484,7 @@ async def sign_photo(body: PhotoSign, principal: Principal = CanUse):
                 nurse_id=principal.user_id,
                 cloudinary_public_id=f"{PHOTO_FOLDER}/{body.id}",
                 delivery_type="private",
+                photo_type=body.photo_type,
                 status="pending",
             ).insert()
         except Exception:
@@ -480,7 +501,7 @@ async def sign_photo(body: PhotoSign, principal: Principal = CanUse):
         action="care.photo.sign",
         item_type="visit_photo",
         item_id=body.id,
-        after={"visit_id": body.visit_id, "bytes": body.bytes},
+        after={"visit_id": body.visit_id, "bytes": body.bytes, "photo_type": body.photo_type},
     ).insert()
     return signed
 
@@ -514,6 +535,247 @@ async def send_sos(body: SOSIn, principal: Principal = Depends(require_sos_acces
     ).insert()
     await notify_sos(case)
     return {"id": case.id, "status": "sent"}
+
+
+async def _owned_sos_case(case_id: str, principal: Principal) -> SOSCase:
+    # A uniform 404 prevents nurses probing whether another nurse has an SOS case.
+    case = await SOSCase.find_one(SOSCase.id == case_id)
+    if case is None or case.nurse_id != principal.user_id:
+        raise HTTPException(404, detail="SOS case not found")
+    return case
+
+
+@router.post("/sos/{case_id}/follow/start")
+async def start_sos_live_follow(
+    case_id: str,
+    body: SOSFollowActionIn,
+    principal: Principal = Depends(require_sos_access),
+):
+    """Open a server-bounded live-follow window for the nurse's own SOS."""
+    now = datetime.now(UTC)
+    values = await care_values()
+    if not values.get("sos.live_follow_enabled", False):
+        raise HTTPException(409, detail="SOS live follow is not enabled by your organisation")
+    case = await _owned_sos_case(case_id, principal)
+    if not can_start_live_follow(case.status):
+        raise HTTPException(409, detail="Live follow cannot start for a closed SOS case")
+    event_id = f"{body.id}:follow-start"
+    existing_start = await SOSEvent.find_one(SOSEvent.id == event_id)
+    if existing_start is not None and (
+        existing_start.case_id != case.id
+        or existing_start.actor_id != principal.user_id
+        or existing_start.type != "follow_started"
+    ):
+        raise HTTPException(409, detail="SOS follow event identifier conflict")
+    if case.live_follow_started_at is not None:
+        if is_live_follow_active(
+            case.live_follow_started_at, case.live_follow_until, case.live_follow_stopped_at, now
+        ):
+            return {
+                "id": case.id,
+                "active": True,
+                "started_at": case.live_follow_started_at,
+                "until": case.live_follow_until,
+                "interval_seconds": int(values.get("sos.live_follow_interval_seconds", 30) or 30),
+                "duplicate": True,
+            }
+        raise HTTPException(409, detail="The live-follow window has already ended")
+
+    duration = int(values.get("sos.live_follow_minutes", 30) or 30)
+    try:
+        deadline = live_follow_deadline(now, duration)
+    except ValueError as exc:
+        raise HTTPException(503, detail="SOS live-follow settings are invalid") from exc
+    case.live_follow_started_at = now
+    case.live_follow_until = deadline
+    case.live_follow_stopped_at = None
+    await case.save()
+    await SOSEvent(
+        id=event_id,
+        case_id=case.id,
+        type="follow_started",
+        actor_id=principal.user_id,
+        details={"until": deadline.isoformat(), "duration_minutes": duration},
+    ).insert()
+    await AuditLog(
+        action="care.sos.follow.start",
+        item_type="sos_case",
+        item_id=case.id,
+        after={"until": deadline.isoformat(), "duration_minutes": duration},
+    ).insert()
+    return {
+        "id": case.id,
+        "active": True,
+        "started_at": now,
+        "until": deadline,
+        "interval_seconds": int(values.get("sos.live_follow_interval_seconds", 30) or 30),
+    }
+
+
+@router.post("/sos/{case_id}/follow/ping")
+async def ping_sos_live_follow(
+    case_id: str,
+    body: SOSFollowPingIn,
+    principal: Principal = Depends(require_sos_access),
+):
+    """Record one foreground location snapshot; rate is enforced by server time."""
+    now = datetime.now(UTC)
+    case = await _owned_sos_case(case_id, principal)
+    existing = await SOSEvent.find_one(SOSEvent.id == body.id)
+    if existing is not None:
+        if (
+            existing.case_id != case.id
+            or existing.actor_id != principal.user_id
+            or existing.type != "follow_ping"
+            or existing.details.get("lat") != body.lat
+            or existing.details.get("lng") != body.lng
+            or existing.details.get("accuracy_m") != body.accuracy_m
+        ):
+            raise HTTPException(409, detail="SOS follow event identifier conflict")
+        return {
+            "id": body.id,
+            "accepted": True,
+            "duplicate": True,
+            "received_at": existing.created_at,
+        }
+
+    values = await care_values()
+    if not values.get("sos.live_follow_enabled", False):
+        raise HTTPException(409, detail="SOS live follow is not enabled by your organisation")
+    if not is_live_follow_active(
+        case.live_follow_started_at, case.live_follow_until, case.live_follow_stopped_at, now
+    ):
+        raise HTTPException(410, detail="SOS live-follow window has ended")
+    if not can_start_live_follow(case.status):
+        raise HTTPException(409, detail="Live follow is closed for this SOS case")
+
+    interval = int(values.get("sos.live_follow_interval_seconds", 30) or 30)
+    latest = (
+        await SOSEvent.find({"case_id": case.id, "type": "follow_ping"})
+        .sort("-created_at")
+        .first_or_none()
+    )
+    retry = ping_retry_after(latest.created_at if latest else None, now, interval)
+    if retry > 0:
+        raise HTTPException(
+            429,
+            detail={"code": "live_follow_rate_limited", "retry_after_seconds": retry},
+            headers={"Retry-After": str(retry)},
+        )
+
+    details = {
+        "lat": body.lat,
+        "lng": body.lng,
+        "accuracy_m": body.accuracy_m,
+        "captured_at": body.captured_at.isoformat() if body.captured_at else None,
+        "capture_source": "foreground",
+    }
+    await SOSEvent(
+        id=body.id,
+        case_id=case.id,
+        type="follow_ping",
+        actor_id=principal.user_id,
+        created_at=now,
+        details=details,
+    ).insert()
+    await AuditLog(
+        action="care.sos.follow.ping",
+        item_type="sos_case",
+        item_id=case.id,
+        after={"snapshot_recorded": True, "captured_at": details["captured_at"]},
+    ).insert()
+    return {"id": body.id, "accepted": True, "duplicate": False, "received_at": now}
+
+
+@router.post("/sos/{case_id}/follow/stop")
+async def stop_sos_live_follow(
+    case_id: str,
+    body: SOSFollowActionIn,
+    principal: Principal = Depends(require_sos_access),
+):
+    """Stop further location collection; repeated safe actions are idempotent."""
+    now = datetime.now(UTC)
+    case = await _owned_sos_case(case_id, principal)
+    if case.live_follow_started_at is None:
+        raise HTTPException(409, detail="Live follow has not started for this SOS case")
+    if case.live_follow_stopped_at is not None:
+        return {
+            "id": case.id,
+            "active": False,
+            "stopped_at": case.live_follow_stopped_at,
+            "duplicate": True,
+        }
+    case.live_follow_stopped_at = now
+    await case.save()
+    await SOSEvent(
+        id=f"{body.id}:follow-stop",
+        case_id=case.id,
+        type="follow_stopped",
+        actor_id=principal.user_id,
+        created_at=now,
+        details={"reason": "nurse_confirmed_safe"},
+    ).insert()
+    await AuditLog(
+        action="care.sos.follow.stop",
+        item_type="sos_case",
+        item_id=case.id,
+        after={"reason": "nurse_confirmed_safe", "stopped_at": now.isoformat()},
+    ).insert()
+    return {"id": case.id, "active": False, "stopped_at": now, "duplicate": False}
+
+
+@router.post("/sos/{case_id}/safe")
+async def report_sos_safe(
+    case_id: str, body: SOSFollowActionIn, principal: Principal = Depends(require_sos_access)
+):
+    """Record the nurse's safe signal and stop live follow without resolving the SOS case."""
+    case = await _owned_sos_case(case_id, principal)
+    if case.nurse_reported_safe_at is not None:
+        return {
+            "id": case.id,
+            "confirmed": True,
+            "duplicate": True,
+            "safe_at": case.nurse_reported_safe_at,
+        }
+    event_id = f"{body.id}:safe"
+    existing = await SOSEvent.find_one(SOSEvent.id == event_id)
+    if existing is not None and (
+        existing.case_id != case.id
+        or existing.actor_id != principal.user_id
+        or existing.type != "nurse_reported_safe"
+    ):
+        raise HTTPException(409, detail="SOS safe event identifier conflict")
+    now = datetime.now(UTC)
+    follow_stopped = case.live_follow_started_at is not None and case.live_follow_stopped_at is None
+    case.nurse_reported_safe_at = now
+    if follow_stopped:
+        case.live_follow_stopped_at = now
+    case.events.append(
+        {"type": "nurse_reported_safe", "at": now.isoformat(), "by": principal.user_id}
+    )
+    await case.save()
+    if existing is None:
+        await SOSEvent(
+            id=event_id,
+            case_id=case.id,
+            type="nurse_reported_safe",
+            actor_id=principal.user_id,
+            created_at=now,
+            details={"follow_stopped": follow_stopped},
+        ).insert()
+    await AuditLog(
+        action="care.sos.nurse_reported_safe",
+        item_type="sos_case",
+        item_id=case.id,
+        after={"safe_at": now.isoformat(), "follow_stopped": follow_stopped},
+    ).insert()
+    return {
+        "id": case.id,
+        "confirmed": True,
+        "duplicate": False,
+        "safe_at": now,
+        "follow_stopped": follow_stopped,
+    }
 
 
 @router.post("/device/revoke")

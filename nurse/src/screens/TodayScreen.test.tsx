@@ -24,10 +24,11 @@ describe('Today screen', () => {
     expect(names).toEqual(['Active client', 'Scheduled client']);
   });
 
-  it('does not render unscheduled visit controls unless allowed', () => {
+  it('does not render unscheduled visit controls unless allowed and opens a client-only sheet when enabled', () => {
     const { rerender } = render(<MemoryRouter><TodayScreen {...baseProps} /></MemoryRouter>);
     expect(screen.queryByRole('button', { name: /unscheduled visit/i })).toBeNull();
-    rerender(<MemoryRouter><TodayScreen {...baseProps} adhocAllowed /></MemoryRouter>);
-    expect(screen.getByRole('button', { name: /unscheduled visit/i })).toBeTruthy();
+    rerender(<MemoryRouter><TodayScreen {...baseProps} adhocAllowed adhocOpen /></MemoryRouter>);
+    expect(screen.getByRole('dialog', { name: /who did you visit/i })).toBeInTheDocument();
+    expect(screen.getByText(/choose from your own clients/i)).toBeInTheDocument();
   });
 });

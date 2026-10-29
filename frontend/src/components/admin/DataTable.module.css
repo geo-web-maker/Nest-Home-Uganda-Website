@@ -156,3 +156,15 @@
     font-weight: 600;
   }
 }
+
+
+/* Stage 43: clearer row hierarchy and keyboard affordances in both themes. */
+.clickable:focus-visible,
+.link:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .row, .link { transition: none; }
+}

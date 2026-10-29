@@ -87,6 +87,7 @@ class VisitPhoto(Document):
     delivery_type: str = (
         "upload"  # old records remain accessible; new registrations use private delivery
     )
+    photo_type: str = "other"
     status: str = "pending"
     hidden_at: datetime | None = None
     hidden_by: str | None = None

@@ -36,3 +36,11 @@ async def test_client_consent_recording_requires_clients_write(client):
         json={"type": "privacy_notice", "version": "v1"},
     )
     assert response.status_code == 403
+
+
+async def test_live_follow_snapshots_require_alerts_read_scope(client):
+    response = await client.get(
+        "/api/v1/admin/care/sos/sos-case-0001/follow",
+        headers=auth(make_token(["field:use", "sos:send"])),
+    )
+    assert response.status_code == 403

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import { cx } from '../../lib/cx';
+import { Logo } from '../brand/Logo';
 import { normaliseUgPhone } from '../../lib/phone';
 import { useSiteSettings } from '../../lib/queries/site';
 import styles from './Footer.module.css';
@@ -16,7 +17,6 @@ const COMPANY = [
   { to: '/areas', label: 'site:footer.areas' },
   { to: '/faq', label: 'site:footer.faq' },
   { to: '/about', label: 'site:footer.aboutUs' },
-  { to: '/careers', label: 'common:nav.careers' },
   { to: '/privacy', label: 'site:footer.privacy' },
   { to: '/admin/login', label: 'common:nav.staffLogin' },
 ] as const;
@@ -24,8 +24,7 @@ const COMPANY = [
 function isCurrentLink(to: string, pathname: string): boolean {
   return (
     pathname === to ||
-    (to === '/services' && pathname.startsWith('/services/')) ||
-    (to === '/careers' && pathname.startsWith('/careers/'))
+    (to === '/services' && pathname.startsWith('/services/'))
   );
 }
 
@@ -40,7 +39,7 @@ export function Footer() {
     <footer className={styles.footer}>
       <div className={cx('container', styles.columns)}>
         <section>
-          <h2 className={styles.heading}>{t('site:brand.name')}</h2>
+          <h2 className={styles.brandHeading}><Logo name={t('site:brand.name')} subtitle={t('site:brand.subtitle')} /></h2>
           <p>{t('site:footer.tagline')}</p>
           <p>
             {t('site:footer.office', { office })} ·{' '}

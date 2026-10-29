@@ -7,11 +7,13 @@ from app.core.errors import Conflict, NotFound, ValidationFailed
 from app.modules.audit import service as audit
 from app.modules.auth import repository as auth_repo
 from app.modules.auth.models import PasswordReset
+from app.modules.care_ops.models import CareConsent
 from app.modules.nurses.models import Device, NurseProfile
 from app.modules.nurses.schemas import (
     AdhocOverride,
     DeviceRegistration,
     DeviceRevocation,
+    NurseDetailsResponse,
     NurseInvite,
     NursePatch,
     NurseProfileResponse,
@@ -100,6 +102,68 @@ async def get_nurse_profile(
     ):
         raise HTTPException(status_code=404, detail="Nurse profile not found")
     return profile
+
+
+@router.get("/{user_id}/details", response_model=NurseDetailsResponse)
+async def get_nurse_details(
+    user_id: str,
+    _: Principal = Depends(require_scopes("nurses:read")),
+    ctx: ReachContext = Depends(get_care_actor),
+):
+    """Return a reach-filtered nurse detail without device credentials or auth secrets."""
+    profile = await profile_for_user(user_id)
+    if profile is None or (
+        not ctx.is_superadmin
+        and ctx.reach != "all"
+        and profile.user_id not in ctx.team_nurse_ids
+        and profile.user_id != ctx.user_id
+    ):
+        raise HTTPException(status_code=404, detail="Nurse profile not found")
+
+    user = await auth_repo.user_by_id(user_id)
+    devices = await Device.find(Device.user_id == user_id).sort("-created_at").to_list()
+    consents = await CareConsent.find(CareConsent.user_id == user_id).sort("-accepted_at").to_list()
+    return {
+        "person": {
+            "name": user.name if user and user.kind == "nurse" else None,
+            "email": user.email if user and user.kind == "nurse" else None,
+            "phone_e164": user.phone_e164 if user and user.kind == "nurse" else profile.phone_e164,
+            "is_active": user.is_active if user and user.kind == "nurse" else False,
+        },
+        "profile": {
+            "user_id": profile.user_id,
+            "staff_number": profile.staff_number,
+            "supervisor_id": profile.supervisor_id,
+            "team_id": profile.team_id,
+            "active": profile.active,
+            "phone_e164": profile.phone_e164,
+            "last_seen_at": profile.last_seen_at,
+            "app_version": profile.app_version,
+            "battery_pct": profile.battery_pct,
+            "adhoc_override": profile.adhoc_override,
+            "consent_versions": profile.consent_versions,
+        },
+        "devices": [
+            {
+                "device_id": device.device_id,
+                "platform": device.platform,
+                "registered_at": device.created_at,
+                "revoked_at": device.revoked_at,
+                "push_token_updated_at": device.push_token_updated_at,
+                "has_push_token": bool(device.push_token),
+            }
+            for device in devices
+        ],
+        "consents": [
+            {
+                "type": consent.type,
+                "version": consent.version,
+                "source": consent.source,
+                "accepted_at": consent.accepted_at,
+            }
+            for consent in consents
+        ],
+    }
 
 
 @router.patch("/{user_id}", response_model=NurseProfileResponse)

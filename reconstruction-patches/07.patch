@@ -1,0 +1,261 @@
+diff --git a/frontend/src/components/site/ServiceCard.module.css b/frontend/src/components/site/ServiceCard.module.css
+--- a/frontend/src/components/site/ServiceCard.module.css
++++ b/frontend/src/components/site/ServiceCard.module.css
+@@ -1,132 +1,34 @@
+ .card {
+   position: relative;
+   display: flex;
++  flex-direction: column;
+   align-items: flex-start;
+-  gap: 14px;
+-  padding: 20px;
++  gap: 12px;
++  min-height: 100%;
++  padding: 14px;
++  border: 1px solid color-mix(in srgb, var(--leaf) 20%, var(--line));
++  border-bottom: 4px solid color-mix(in srgb, var(--leaf) 22%, var(--line));
++  border-radius: 22px;
+   background: var(--surf);
+-  border: 1px solid var(--line);
+-  border-radius: 24px;
+   color: var(--ink);
+   text-align: left;
+   text-decoration: none;
+-  transition:
+-    border-color var(--dur-base) var(--ease-standard),
+-    transform var(--dur-base) var(--ease-out);
++  box-shadow: var(--shadow-1);
++  transition: border-color var(--dur-base) var(--ease-standard), transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+ }
+-
+-/* Shadow lives on a pseudo-element so only opacity animates. */
+-.card::after {
+-  content: '';
+-  position: absolute;
+-  inset: 0;
+-  border-radius: inherit;
+-  box-shadow: var(--shadow-2);
+-  opacity: 0;
+-  pointer-events: none;
+-  transition: opacity var(--dur-base) var(--ease-out);
+-}
+-
++.card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--shadow-2); opacity: 0; pointer-events: none; transition: opacity var(--dur-base) var(--ease-out); }
++.thumb { flex: none; width: 48px; height: 58px; overflow: hidden; border: 1px solid var(--gold); border-radius: var(--arch); background: var(--leaf); }
++.photo { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform var(--dur-slow) var(--ease-out); }
++.tile { display: grid; place-items: center; width: 100%; height: 100%; background: var(--leaf); color: var(--on-leaf); }
++.tile svg { width: 28px; height: 28px; }
++.number { color: var(--on-leaf); font: 700 1rem var(--serif); }
++.body { display: block; min-width: 0; }
++.name { color: var(--ink); font-size: 1.02rem; line-height: 1.25; }
++.summary { display: block; margin-top: 6px; color: var(--mut); font-size: 0.88rem; line-height: 1.5; }
+ @media (hover: hover) and (pointer: fine) {
+-  .card:hover {
+-    border-color: var(--gold);
+-    transform: translateY(-3px);
+-  }
+-
+-  .card:hover::after {
+-    opacity: 1;
+-  }
+-
+-  .card:hover .photo {
+-    transform: scale(1.03);
+-  }
+-}
+-
+-.card:active {
+-  transform: scale(0.99);
+-}
+-
+-/* Phone: row layout, 68 x 84 arch thumb on the left. */
+-.thumb {
+-  flex: none;
+-  width: 68px;
+-  height: 84px;
+-  overflow: hidden;
+-  border: 2px solid var(--gold);
+-  border-radius: var(--arch);
+-  background: var(--leaf);
+-}
+-
+-.photo {
+-  display: block;
+-  width: 100%;
+-  height: 100%;
+-  object-fit: cover;
+-  transition: transform var(--dur-slow) var(--ease-out);
+-}
+-
+-.tile {
+-  display: grid;
+-  place-items: center;
+-  width: 100%;
+-  height: 100%;
+-  background: var(--leaf);
+-}
+-
+-.tile svg {
+-  width: 34px;
+-  height: 34px;
+-}
+-
+-.number {
+-  color: #fff;
+-  font: 700 1.05rem var(--serif);
+-}
+-
+-.body {
+-  display: block;
+-  min-width: 0;
+-}
+-
+-.name {
+-  font-size: 1.15rem;
+-  line-height: 1.2;
+-}
+-
+-.summary {
+-  display: block;
+-  margin-top: 4px;
+-  color: var(--mut);
+-  font-size: 0.95rem;
+-}
+-
+-/* Tablet and up: column layout, full-width thumb. */
+-@media (min-width: 700px) {
+-  .card {
+-    flex-direction: column;
+-    align-items: stretch;
+-  }
+-
+-  .thumb {
+-    width: 100%;
+-    height: 190px;
+-    border-radius: 18px;
+-  }
+-
+-  .tile svg {
+-    width: 52px;
+-    height: 52px;
+-  }
+-}
+-
+-/* Desktop: four columns, so the thumb is shorter. */
+-@media (min-width: 1040px) {
+-  .thumb {
+-    height: 150px;
+-  }
+-
+-  .tile svg {
+-    width: 48px;
+-    height: 48px;
+-  }
++  .card:hover { border-color: var(--gold); transform: translateY(-3px); }
++  .card:hover::after { opacity: 1; }
++  .card:hover .photo { transform: scale(1.03); }
+ }
++.card:active { transform: scale(0.99); }
++@media (min-width: 700px) { .card { padding: 18px; } .thumb { width: 50px; height: 60px; } }
+diff --git a/frontend/src/components/site/TeamCard.module.css b/frontend/src/components/site/TeamCard.module.css
+--- a/frontend/src/components/site/TeamCard.module.css
++++ b/frontend/src/components/site/TeamCard.module.css
+@@ -1,50 +1,43 @@
+ .card {
+   min-width: 0;
++  padding: 10px 10px 16px;
++  border: 1px solid color-mix(in srgb, var(--leaf) 18%, var(--line));
++  border-bottom: 4px solid color-mix(in srgb, var(--leaf) 22%, var(--line));
++  border-radius: 22px;
++  background: var(--surf);
+   text-align: center;
++  box-shadow: var(--shadow-1);
+ }
+ .photoFrame {
+   display: grid;
+   place-items: center;
+-  aspect-ratio: 3/4;
++  aspect-ratio: 4 / 3;
+   overflow: hidden;
+-  border: 2px solid var(--gold);
+-  border-radius: var(--arch);
+-  margin-bottom: 10px;
+-  background: var(--surf);
+-}
+-.photo {
+-  display: block;
+-  width: 100%;
+-  height: 100%;
+-  object-fit: cover;
+-  object-position: center 30%;
+-  transition: transform var(--dur-slow) var(--ease-out);
+-}
+-@media (hover: hover) and (pointer: fine) {
+-  .card:hover .photo {
+-    transform: scale(1.03);
+-  }
++  border: 1px solid var(--line);
++  border-radius: 15px;
++  margin-bottom: 14px;
++  background: var(--straw);
+ }
++.photo { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; transition: transform var(--dur-slow) var(--ease-out); }
++@media (hover: hover) and (pointer: fine) { .card:hover .photo { transform: scale(1.03); } }
+ .placeholder {
+   display: grid;
+   place-items: center;
+   width: 100%;
+   height: 100%;
+-  background:
+-    repeating-linear-gradient(135deg, var(--straw) 0 8px, transparent 8px 16px), var(--surf);
++  padding: 10px;
++  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--straw) 88%, var(--surf)) 0 8px, var(--surf) 8px 16px);
+   color: var(--mut);
+-  font-size: 0.78rem;
+-}
+-.name {
+-  margin: 0 0 4px;
+-  color: var(--ink);
+-  font-family: var(--sans);
+-  font-size: 1rem;
+-  font-weight: 700;
++  font-size: 0.82rem;
+ }
++.name { margin: 0 0 8px; color: var(--ink); font: 700 1rem var(--sans); }
+ .role {
++  display: inline-block;
+   margin: 0;
++  padding: 6px 10px;
++  border: 1px dashed color-mix(in srgb, var(--gold) 70%, var(--line));
++  border-radius: var(--r-sm, 12px);
+   color: var(--mut);
+-  font-size: 0.88rem;
+-  line-height: 1.45;
++  font-size: 0.8rem;
++  line-height: 1.4;
+ }
+diff --git a/frontend/src/features/public/areas/AreasPage.module.css b/frontend/src/features/public/areas/AreasPage.module.css
+--- a/frontend/src/features/public/areas/AreasPage.module.css
++++ b/frontend/src/features/public/areas/AreasPage.module.css
+@@ -13,17 +13,17 @@
+   display: flex;
+   flex-wrap: wrap;
+   gap: 10px;
+-  margin: 0 0 28px;
++  margin: 0 0 32px;
+   padding: 0;
+   list-style: none;
+ }
+ .chip {
+   padding: 9px 16px;
+-  border: 2px solid var(--line);
++  border: 1px solid color-mix(in srgb, var(--gold) 42%, var(--line));
+   border-radius: 999px;
+-  background: var(--surf);
++  background: color-mix(in srgb, var(--straw) 35%, var(--surf));
+   color: var(--ink);
+-  font-weight: 500;
++  font-weight: 600;
+   text-align: center;
+ }
+ .note {

@@ -14,7 +14,7 @@
   max-width: 36rem;
   margin: 1rem 0;
   padding: 1rem;
-  border: 1px solid var(--border, #d9e1da);
+  border: 1px solid var(--line);
   border-radius: 0.75rem;
 }
 .care-form label {
@@ -27,7 +27,7 @@
   min-height: 2.75rem;
   padding: 0.6rem;
   font: inherit;
-  border: 1px solid #8c9c91;
+  border: 1px solid var(--line);
   border-radius: 0.4rem;
 }
 .care-table-wrap {
@@ -42,7 +42,7 @@
 .care-table-wrap td {
   padding: 0.7rem;
   text-align: left;
-  border-bottom: 1px solid #d9e1da;
+  border-bottom: 1px solid var(--line);
 }
 
 .care-data-actions {
@@ -53,8 +53,8 @@
 }
 
 .care-danger-button {
-  border: 1px solid var(--danger, #a52828);
-  color: var(--danger, #a52828);
+  border: 1px solid var(--danger);
+  color: var(--danger);
 }
 
 .care-data-export {
@@ -62,7 +62,7 @@
   overflow: auto;
   margin-top: 1rem;
   padding: 1rem;
-  border: 1px solid var(--line, #d5d5d5);
+  border: 1px solid var(--line);
   border-radius: 0.75rem;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -89,7 +89,7 @@
   gap: 1.25rem;
   margin: 1.5rem 0;
   padding: 1.25rem;
-  border: 1px solid var(--border, #d9e1da);
+  border: 1px solid var(--line);
   border-radius: 0.75rem;
 }
 .care-review-header {
@@ -110,12 +110,12 @@
 .care-review-summary div {
   padding: 0.75rem;
   border-radius: 0.5rem;
-  background: var(--surface-muted, #f4f6f4);
+  background: var(--mint);
 }
 .care-review-summary dt {
   font-size: 0.85rem;
   text-transform: capitalize;
-  color: var(--muted, #526157);
+  color: var(--mut);
 }
 .care-review-summary dd {
   margin: 0.25rem 0 0;
@@ -132,7 +132,7 @@
 .care-timeline time {
   display: block;
   font-size: 0.875rem;
-  color: var(--muted, #526157);
+  color: var(--mut);
 }
 .care-photo-records {
   display: grid;
@@ -141,7 +141,7 @@
 }
 .care-photo-records article {
   padding: 0.75rem;
-  border: 1px solid var(--border, #d9e1da);
+  border: 1px solid var(--line);
   border-radius: 0.5rem;
 }
 @media (max-width: 720px) {

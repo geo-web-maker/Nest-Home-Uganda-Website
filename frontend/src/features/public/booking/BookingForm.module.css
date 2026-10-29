@@ -1,8 +1,10 @@
 .card {
   background: var(--surf);
-  border: 1px solid rgba(199, 154, 59, 0.4);
+  box-shadow: var(--shadow-1);
+  border: 1px solid color-mix(in srgb, var(--gold) 38%, var(--line));
   border-radius: 28px;
   padding: 24px 20px;
+  color: var(--ink);
 }
 
 .title {
@@ -121,4 +123,14 @@
   .card[data-state='success'] {
     animation: none;
   }
+}
+
+.failure {
+  background: color-mix(in srgb, var(--danger) 6%, var(--surf));
+}
+.card[data-state='success'] {
+  border-color: color-mix(in srgb, var(--leaf) 44%, var(--line));
+}
+@media (min-width: 700px) {
+  .card { padding: 30px; }
 }

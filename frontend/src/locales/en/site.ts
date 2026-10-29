@@ -174,6 +174,7 @@ export const siteEn = {
     whatsappUs: 'WhatsApp us',
     officeLabel: 'Office',
     hoursLabel: 'Hours',
+    hoursMissing: 'Add opening hours',
     mapLabel: 'Map of our office',
     mapDescription: 'Map location to be confirmed by the client.',
   },

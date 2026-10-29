@@ -3,12 +3,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ApiError, apiClient } from '../../../lib/api/client';
-import { DataTable, type DataColumn } from '../../../components/admin/DataTable';
+import type { DataColumn } from '../../../components/admin/DataTable';
+import { CareTable } from './components/CareTable';
+import { CareSheet } from './components/CareSheet';
+import { CareScreenNav } from './components/CareScreenNav';
+import { InviteNurseSheet } from './nurses/InviteNurseSheet';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
 import { MapPicker } from './components/MapPicker';
 import { VisitReviewPage } from './VisitReviewPage';
+import { VisitListPage } from './VisitListAndPhotosPages';
 import { RequireScopes } from '../auth/guards';
 import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
@@ -109,7 +114,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
   const navigate = useNavigate();
   const [rows, setRows] = useState<Row[]>([]);
   const [nextCursor, setNextCursor] = useState('');
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [filter, setFilter] = useState('');
@@ -130,6 +135,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
   const [end, setEnd] = useState('');
   const [settings, setSettings] = useState<Row[]>([]);
   const [readiness, setReadiness] = useState<Row | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [auditFilters, setAuditFilters] = useState({
     actor: '',
     entity: '',
@@ -230,64 +236,76 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
       header: key.replaceAll('_', ' '),
       cell: (r: Row) => actionText(r[key]),
     }));
-    if (['nurses', 'visits', 'flags', 'photos', 'alerts', 'timesheets', 'sos'].includes(screen))
+    if (['nurses', 'clients', 'visits', 'flags', 'photos', 'alerts', 'timesheets', 'sos'].includes(screen))
       base.push({
         key: 'actions',
         header: 'Actions',
         cell: (r: Row) => (
           <span className="care-row-actions">
+            {screen === 'clients' && (
+              <Button type="button" variant="outline" onClick={() => navigate(`/admin/care/clients/${encodeURIComponent(String(r.id ?? ''))}`)}>
+                Details
+              </Button>
+            )}
             {screen === 'nurses' && (
               <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    act(`/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}/invite`)
-                  }
-                >
-                  Resend invite
+                <Button type="button" variant="outline" onClick={() => navigate(`/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}`)}>
+                  Details
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    const device = window.prompt('Device ID to revoke');
-                    if (device)
-                      void act(
-                        `/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}/revoke-device`,
-                        { device_id: device },
-                      );
-                  }}
-                >
-                  Revoke device
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    void act(
-                      `/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}`,
-                      { active: !r.active },
-                      'patch',
-                    )
-                  }
-                >
-                  {r.active ? 'Deactivate' : 'Activate'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    const supervisor = window.prompt('Supervisor ID (blank clears)');
-                    void act(
-                      `/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}/supervisor`,
-                      { supervisor_id: supervisor?.trim() || null },
-                      'patch',
-                    );
-                  }}
-                >
-                  Supervisor
-                </Button>
+                {hasScopes(user, ['nurses:write']) && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() =>
+                        act(`/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}/invite`)
+                      }
+                    >
+                      Resend invite
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const device = window.prompt('Device ID to revoke');
+                        if (device)
+                          void act(
+                            `/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}/revoke-device`,
+                            { device_id: device },
+                          );
+                      }}
+                    >
+                      Revoke device
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() =>
+                        void act(
+                          `/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}`,
+                          { active: !r.active },
+                          'patch',
+                        )
+                      }
+                    >
+                      {r.active ? 'Deactivate' : 'Activate'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const supervisor = window.prompt('Supervisor ID (blank clears)');
+                        void act(
+                          `/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}/supervisor`,
+                          { supervisor_id: supervisor?.trim() || null },
+                          'patch',
+                        );
+                      }}
+                    >
+                      Supervisor
+                    </Button>
+                  </>
+                )}
               </>
             )}
             {screen === 'visits' && (
@@ -301,24 +319,26 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                 >
                   Review
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    const nurse = window.prompt('Replacement nurse ID');
-                    if (nurse)
-                      void act(
-                        `/admin/care/visits/${encodeURIComponent(String(r.id ?? ''))}`,
-                        { nurse_id: nurse },
-                        'patch',
-                      );
-                  }}
-                >
-                  Reassign
-                </Button>
+                {hasScopes(user, ['visits:write']) && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const nurse = window.prompt('Replacement nurse ID');
+                      if (nurse)
+                        void act(
+                          `/admin/care/visits/${encodeURIComponent(String(r.id ?? ''))}`,
+                          { nurse_id: nurse },
+                          'patch',
+                        );
+                    }}
+                  >
+                    Reassign
+                  </Button>
+                )}
               </>
             )}
-            {screen === 'flags' && (
+            {screen === 'flags' && hasScopes(user, ['flags:write']) && (
               <Button
                 type="button"
                 variant="outline"
@@ -353,7 +373,8 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                 >
                   View
                 </Button>
-                <Button
+                {hasScopes(user, ['photos:hide']) && (
+                  <Button
                   type="button"
                   variant="outline"
                   onClick={() => {
@@ -364,12 +385,13 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                         { note: note.trim() },
                       );
                   }}
-                >
-                  Hide
-                </Button>
+                  >
+                    Hide
+                  </Button>
+                )}
               </>
             )}
-            {screen === 'alerts' && (
+            {screen === 'alerts' && hasScopes(user, ['alerts:write']) && (
               <>
                 <Button
                   type="button"
@@ -398,7 +420,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                 </Button>
               </>
             )}
-            {screen === 'timesheets' && (
+            {screen === 'timesheets' && hasScopes(user, ['timesheets:write']) && (
               <>
                 <Button
                   type="button"
@@ -442,7 +464,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                 </Button>
               </>
             )}
-            {screen === 'sos' && (
+            {screen === 'sos' && hasScopes(user, ['alerts:write']) && (
               <Button
                 type="button"
                 variant="outline"
@@ -458,10 +480,11 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
       } as any);
     return base as DataColumn<Row>[];
   })();
-  async function act(path: string, body: Row = {}, method: 'post' | 'patch' = 'post') {
+  async function act(path: string, body: Row = {}, method: 'post' | 'patch' | 'put' = 'post') {
     try {
       setNotice('');
       if (method === 'patch') await apiClient.patch(path, body);
+      else if (method === 'put') await apiClient.put(path, body);
       else await apiClient.post(path, body);
       setNotice('Action completed.');
       await load();
@@ -472,7 +495,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
     }
   }
   function renderForm() {
-    if (screen === 'clients')
+    if (screen === 'clients' && hasScopes(user, ['clients:write']))
       return (
         <form
           className="care-form"
@@ -493,7 +516,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
           <Button type="submit">Create client</Button>
         </form>
       );
-    if (screen === 'places')
+    if (screen === 'places' && (hasScopes(user, ['places:write']) || hasScopes(user, ['clients:write'])))
       return (
         <div className="care-form">
           <Field
@@ -503,30 +526,34 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
             required
             requiredLabel="required"
           />
-          <MapPicker
-            tileUrl={mapTileUrl}
-            lat={coords.lat}
-            lng={coords.lng}
-            radius={coords.radius}
-            onChange={setCoords}
-          />
-          <Button
-            type="button"
-            onClick={async () => {
-              if (!clientId) return;
-              await act(`/admin/care/clients/${encodeURIComponent(clientId)}/places`, {
-                id: crypto.randomUUID(),
-                label: 'Home',
-                address_text: '',
-                lat: Number(coords.lat),
-                lng: Number(coords.lng),
-                radius_m: Number(coords.radius),
-                is_primary: true,
-              });
-            }}
-          >
-            Add place
-          </Button>
+          {hasScopes(user, ['places:write']) && (
+            <>
+              <MapPicker
+                tileUrl={mapTileUrl}
+                lat={coords.lat}
+                lng={coords.lng}
+                radius={coords.radius}
+                onChange={setCoords}
+              />
+              <Button
+                type="button"
+                onClick={async () => {
+                  if (!clientId) return;
+                  await act(`/admin/care/clients/${encodeURIComponent(clientId)}/places`, {
+                    id: crypto.randomUUID(),
+                    label: 'Home',
+                    address_text: '',
+                    lat: Number(coords.lat),
+                    lng: Number(coords.lng),
+                    radius_m: Number(coords.radius),
+                    is_primary: true,
+                  });
+                }}
+              >
+                Add place
+              </Button>
+            </>
+          )}
           <Field
             label="Place ID for stay"
             value={stayPlaceId}
@@ -538,22 +565,24 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
             value={stayStart}
             onChange={(e) => setStayStart(e.target.value)}
           />
-          <Button
-            type="button"
-            onClick={() => {
-              if (clientId && stayPlaceId && stayStart)
-                void act(`/admin/care/clients/${encodeURIComponent(clientId)}/stays`, {
-                  id: crypto.randomUUID(),
-                  place_id: stayPlaceId,
-                  starts_on: stayStart,
-                });
-            }}
-          >
-            Move client
-          </Button>
+          {hasScopes(user, ['clients:write']) && (
+            <Button
+              type="button"
+              onClick={() => {
+                if (clientId && stayPlaceId && stayStart)
+                  void act(`/admin/care/clients/${encodeURIComponent(clientId)}/stays`, {
+                    id: crypto.randomUUID(),
+                    place_id: stayPlaceId,
+                    starts_on: stayStart,
+                  });
+              }}
+            >
+              Move client
+            </Button>
+          )}
         </div>
       );
-    if (screen === 'visits')
+    if (screen === 'visits' && hasScopes(user, ['visits:write']))
       return (
         <form
           className="care-form"
@@ -638,43 +667,29 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
       );
     if (screen === 'nurses')
       return (
-        <form
-          className="care-form"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const f = e.currentTarget,
-              d = new FormData(f);
-            await act('/admin/care/nurses', {
-              name: String(d.get('name')),
-              email: String(d.get('email')),
-              phone: String(d.get('phone')),
-              staff_number: String(d.get('staff')),
-              supervisor_id: String(d.get('supervisor') || '') || null,
-            });
-            f.reset();
-          }}
-        >
-          <Field label="Name" name="name" required requiredLabel="required" />
-          <Field label="Email" name="email" type="email" required requiredLabel="required" />
-          <Field label="Phone" name="phone" required requiredLabel="required" />
-          <Field label="Staff number" name="staff" required requiredLabel="required" />
-          <Field label="Supervisor ID" name="supervisor" />
-          <Button type="submit">Invite nurse</Button>
-        </form>
+        <div className="care-form">
+          <h2>Nurse accounts</h2>
+          <p>Open a nurse profile to review assignments, registered devices, and consent records.</p>
+          {hasScopes(user, ['nurses:write']) && (
+            <Button type="button" onClick={() => setInviteOpen(true)}>Invite nurse</Button>
+          )}
+        </div>
       );
     if (screen === 'sos')
       return (
         <div className="care-actions">
-          <Button type="button" onClick={() => act('/admin/care/sos/test-sms')}>
-            Send test SMS
-          </Button>
-          <form
+          {hasScopes(user, ['carecfg:write']) && (
+            <Button type="button" onClick={() => act('/admin/care/sos/test-sms')}>
+              Send test SMS
+            </Button>
+          )}
+          {hasScopes(user, ['carecfg:write']) && <form
             onSubmit={async (e) => {
               e.preventDefault();
               const input = e.currentTarget.elements.namedItem('roster') as HTMLTextAreaElement;
               try {
                 const value = JSON.parse(input.value);
-                await act('/admin/care/settings/sos.on_call_contacts', { value });
+                await act('/admin/care/settings/sos.on_call_contacts', { value }, 'put');
               } catch {
                 setError('On-call roster must be valid JSON.');
               }
@@ -682,7 +697,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
           >
             <Field label="On-call roster JSON" name="roster" kind="textarea" defaultValue="{}" />
             <Button type="submit">Save roster</Button>
-          </form>
+          </form>}
           <p>
             Test delivery uses the configured <code>sms.test_number</code> and does not create an
             SOS case.
@@ -709,19 +724,21 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
           <Button type="button" onClick={() => void load()}>
             Preview
           </Button>
-          <Button
-            type="button"
-            onClick={() => {
-              const q = new URLSearchParams({ format: 'csv' });
+          {hasScopes(user, ['care-reports:export']) && (
+            <Button
+              type="button"
+              onClick={() => {
+                const q = new URLSearchParams({ format: 'csv' });
               if (nurseId) q.set('nurse', nurseId);
               if (clientId) q.set('client', clientId);
               if (reportFrom) q.set('from', reportFrom);
               if (reportTo) q.set('to', reportTo);
-              window.location.assign(`/api/v1/admin/care/reports/visits?${q.toString()}`);
-            }}
-          >
-            Download CSV
-          </Button>
+                window.location.assign(`/api/v1/admin/care/reports/visits?${q.toString()}`);
+              }}
+            >
+              Download CSV
+            </Button>
+          )}
           <p>
             Exports are audited and require <code>care-reports:export</code>.
           </p>
@@ -781,11 +798,12 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
               className="care-setting"
               onSubmit={async (e) => {
                 e.preventDefault();
+                if (!hasScopes(user, ['carecfg:write'])) return;
                 const input = e.currentTarget.elements.namedItem('value') as HTMLInputElement;
                 let value: any = input.value;
                 if (s.type === 'boolean') value = input.checked;
                 if (s.type === 'integer') value = Number(input.value);
-                await act(`/admin/care/settings/${encodeURIComponent(s.id)}`, { value });
+                await act(`/admin/care/settings/${encodeURIComponent(s.id)}`, { value }, 'put');
               }}
             >
               <Field
@@ -793,6 +811,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                 name="value"
                 defaultValue={s.type === 'boolean' ? undefined : s.value}
                 type={s.type === 'integer' ? 'number' : 'text'}
+                disabled={!hasScopes(user, ['carecfg:write'])}
               />
               {s.type === 'boolean' && (
                 <input
@@ -800,12 +819,13 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                   name="value"
                   type="checkbox"
                   defaultChecked={Boolean(s.value)}
+                  disabled={!hasScopes(user, ['carecfg:write'])}
                 />
               )}
               <small>
                 Source: {s.source}; group: {s.group}
               </small>
-              <Button type="submit">Save</Button>
+              {hasScopes(user, ['carecfg:write']) && <Button type="submit">Save</Button>}
             </form>
           ))}
         </div>
@@ -855,19 +875,17 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
           </Button>
         }
       />
-      <nav className="care-subnav" aria-label="Care screens">
-        {(Object.keys(CARE_SCREEN_PATHS) as ScreenKey[])
-          .filter((k) => k !== 'audit' && hasScopes(user, CARE_SCREEN_SCOPES[k]))
-          .map((k) => (
-            <button
-              key={k}
-              className={k === screen ? 'active' : ''}
-              onClick={() => navigate(`/admin/care/${CARE_SCREEN_PATHS[k]}`)}
-            >
-              {titles[k]}
-            </button>
-          ))}
-      </nav>
+      <CareScreenNav
+        active={screen}
+        links={(Object.keys(CARE_SCREEN_PATHS) as ScreenKey[])
+          .filter((key) => key !== 'audit' && hasScopes(user, CARE_SCREEN_SCOPES[key]))
+          .map((key) => ({
+            value: key,
+            label: titles[key],
+            path: `/admin/care/${CARE_SCREEN_PATHS[key]}`,
+          }))}
+        onChange={navigate}
+      />
       {error && (
         <div role="alert" className="care-error">
           {error}
@@ -879,6 +897,16 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
         </div>
       )}
       {renderForm()}
+      {screen === 'nurses' && inviteOpen && (
+        <InviteNurseSheet
+          onClose={() => setInviteOpen(false)}
+          onCreated={() => {
+            setInviteOpen(false);
+            setNotice('Nurse invitation created.');
+            void load();
+          }}
+        />
+      )}
       {screen === 'photos' && (
         <p className="care-note">
           Photos are private by default. Open a row to request its short-lived audited stream;
@@ -895,10 +923,11 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
       )}
       {screen !== 'settings' && screen !== 'readiness' && screen !== 'data' && (
         <>
-          <DataTable
+          <CareTable
             columns={columns}
             rows={visibleRows}
             getRowKey={(r) => String(r.id ?? JSON.stringify(r))}
+            loading={loading}
             labels={{
               caption: `${titles[screen]} table`,
               loading: 'Loading',
@@ -916,10 +945,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
         </>
       )}
       {selected && screen !== 'data' && (
-        <aside className="care-detail">
-          <Button variant="outline" onClick={() => setSelected(null)}>
-            Close
-          </Button>
+        <CareSheet title={`${titles[screen]} details`} onClose={() => setSelected(null)}>
           {screen === 'photos' && selected.original_path?.path && (
             <img
               src={selected.original_path.path}
@@ -929,7 +955,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
             />
           )}
           <pre>{JSON.stringify(selected, null, 2)}</pre>
-        </aside>
+        </CareSheet>
       )}
     </>
   );
@@ -938,6 +964,12 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
 export function CareScreenRouter() {
   const location = useLocation();
   const tail = location.pathname.replace(/^\/admin\/care\/?/, '');
+  if (tail === 'visits')
+    return (
+      <RequireScopes scopes={CARE_SCREEN_SCOPES.visits}>
+        <VisitListPage />
+      </RequireScopes>
+    );
   if (tail.startsWith('visits/') && tail !== 'visits/')
     return (
       <RequireScopes scopes={CARE_SCREEN_SCOPES.visits}>

@@ -29,16 +29,17 @@ export type CachedVisit = {
   safety_checkout_pending?: boolean;
   verification_label?: string;
   safety_state?: string;
-  photo_rules?: { allowed: boolean; required_on_checkout?: boolean };
+  photo_types?: Array<'arrival' | 'departure' | 'other'>;
+  photo_rules?: { allowed: boolean; required_on_checkout?: boolean; required_mode?: 'none' | 'arrival' | 'departure' | 'either' | 'both'; guidance_text?: string | null };
   photo_count?: number;
   updatedAt: string;
 };
 export type LocalConsent = { id: string; type: string; version: string; acceptedAt: string };
-export type CachedHistoryVisit = { id: string; scheduled_start: string; scheduled_end: string; status: string };
-export type CachedClient = { id: string; display_name: string };
+export type CachedHistoryVisit = { id: string; client_display_name?: string; scheduled_start: string; scheduled_end: string; check_in_at?: string | null; check_out_at?: string | null; status: string; verification_label?: 'verified' | 'needs_review' | 'pending_sync' | null };
+export type CachedClient = { id: string; display_name: string; photo_allowed?: boolean; photo_required?: 'none' | 'arrival' | 'departure' | 'either' | 'both' | null; photo_guidance_text?: string | null };
 export type SyncVisit = Omit<CachedVisit, 'updatedAt'> & { updated_at?: string; updatedAt?: string };
 export type SyncPullPage = { items: SyncVisit[]; removed_visit_ids?: string[]; cursor?: string | null; has_more?: boolean };
-export type LocalPhoto = { id: string; visitId: string; ownerUserId?: string; blob: Blob; thumbnail?: Blob; mime: string; createdAt: string; uploadStage?: 'pending_upload' | 'uploaded'; state: 'queued' | 'sending' | 'needs_attention'; attempts: number; lastError?: string; retryAfter?: string }; 
+export type LocalPhoto = { id: string; visitId: string; ownerUserId?: string; blob: Blob; thumbnail?: Blob; mime: string; photoType?: 'arrival' | 'departure' | 'other'; createdAt: string; uploadStage?: 'pending_upload' | 'uploaded'; state: 'queued' | 'sending' | 'needs_attention'; attempts: number; lastError?: string; retryAfter?: string }; 
 
 class NurseDatabase extends Dexie {
   outbox!: EntityTable<OutboxOperation, 'id'>;

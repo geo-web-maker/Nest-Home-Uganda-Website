@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import { cx } from '../../lib/cx';
 import styles from './Button.module.css';
 
-export type ButtonVariant = 'primary' | 'outline' | 'whatsapp';
+export type ButtonVariant = 'primary' | 'outline' | 'whatsapp' | 'forest';
 export type ButtonSize = 'default' | 'header';
 
 interface CommonProps {
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
+  arrow?: boolean;
   className?: string;
   children: ReactNode;
 }
@@ -33,10 +34,11 @@ function isInternal(href: string): boolean {
  * links (tel, wa.me), and a button element when there is no href.
  */
 export function Button(props: ButtonProps) {
-  const { variant = 'primary', size = 'default', fullWidth = false, className, children } = props;
+  const { variant = 'primary', size = 'default', fullWidth = false, arrow = false, className, children } = props;
   const classes = cx(
     styles.button,
     styles[variant],
+    arrow && styles.withArrow,
     size === 'header' && styles.header,
     fullWidth && styles.full,
     className,
@@ -48,6 +50,7 @@ export function Button(props: ButtonProps) {
       variant: _v,
       size: _s,
       fullWidth: _f,
+      arrow: _a,
       className: _c,
       children: _ch,
       ...rest
@@ -56,12 +59,14 @@ export function Button(props: ButtonProps) {
       return (
         <Link to={href} className={classes} data-variant={variant} {...rest}>
           {children}
+          {arrow && <span className={styles.arrow} aria-hidden="true">→</span>}
         </Link>
       );
     }
     return (
       <a href={href} className={classes} data-variant={variant} {...rest}>
         {children}
+        {arrow && <span className={styles.arrow} aria-hidden="true">→</span>}
       </a>
     );
   }
@@ -70,6 +75,7 @@ export function Button(props: ButtonProps) {
     variant: _v,
     size: _s,
     fullWidth: _f,
+    arrow: _a,
     className: _c,
     children: _ch,
     type = 'button',
@@ -78,6 +84,7 @@ export function Button(props: ButtonProps) {
   return (
     <button type={type} className={classes} data-variant={variant} {...rest}>
       {children}
+      {arrow && <span className={styles.arrow} aria-hidden="true">→</span>}
     </button>
   );
 }

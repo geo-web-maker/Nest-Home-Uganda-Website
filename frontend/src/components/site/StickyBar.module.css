@@ -6,7 +6,7 @@
   z-index: 8;
   display: flex;
   gap: 8px;
-  filter: drop-shadow(0 6px 14px rgba(18, 53, 36, 0.28));
+  filter: drop-shadow(0 6px 14px color-mix(in srgb, var(--forest) 28%, transparent));
   /* One-time slide-up on first paint. Visible by default, so pre-rendered HTML is complete. */
   animation: bar-in var(--dur-slow) var(--ease-out) both;
 }

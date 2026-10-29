@@ -3,6 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#123524" />
+    <script>
+      (function () {
+        var theme = 'light';
+        try {
+          var saved = window.localStorage.getItem('nest-theme');
+          if (saved === 'light' || saved === 'dark') theme = saved;
+        } catch (_) {
+          /* Storage can be blocked; keep the reviewed light default. */
+        }
+        document.documentElement.dataset.theme = theme;
+        var meta = document.querySelector('meta[name=theme-color]');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#091410' : '#123524');
+      })();
+    </script>
     <link
       rel="preload"
       href="/fonts/fraunces-latin-700-normal.woff2"

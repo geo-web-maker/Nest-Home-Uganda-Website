@@ -442,6 +442,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/care/last-seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Last Seen Positions
+         * @description Latest accepted coordinate-bearing visit event per nurse within caller reach.
+         */
+        get: operations["last_seen_positions_api_v1_admin_care_last_seen_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/care/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Notification Log
+         * @description Safe delivery-attempt log. Message bodies and provider secrets are never returned.
+         */
+        get: operations["notification_log_api_v1_admin_care_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/care/nurses": {
         parameters: {
             query?: never;
@@ -493,6 +533,26 @@ export interface paths {
         head?: never;
         /** Set Adhoc Override */
         patch: operations["set_adhoc_override_api_v1_admin_care_nurses__user_id__adhoc_override_patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/care/nurses/{user_id}/details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Nurse Details
+         * @description Return a reach-filtered nurse detail without device credentials or auth secrets.
+         */
+        get: operations["get_nurse_details_api_v1_admin_care_nurses__user_id__details_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/admin/care/nurses/{user_id}/invite": {
@@ -687,6 +747,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/care/sms/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sms Provider Balance
+         * @description Explicit, user-triggered balance lookup; unavailable for the console provider.
+         */
+        post: operations["sms_provider_balance_api_v1_admin_care_sms_balance_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/care/sms/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sms Settings Snapshot
+         * @description Return an allow-list only; never expose API keys or arbitrary environment values.
+         */
+        get: operations["sms_settings_snapshot_api_v1_admin_care_sms_settings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/care/sos": {
         parameters: {
             query?: never;
@@ -699,6 +799,27 @@ export interface paths {
         put?: never;
         /** Create Sos */
         post: operations["create_sos_api_v1_admin_care_sos_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/care/sos/drills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sos Drills */
+        get: operations["list_sos_drills_api_v1_admin_care_sos_drills_get"];
+        put?: never;
+        /**
+         * Record Sos Drill
+         * @description Record an administrator-entered drill result; this does not create a live SOS case.
+         */
+        post: operations["record_sos_drill_api_v1_admin_care_sos_drills_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -733,6 +854,43 @@ export interface paths {
         put?: never;
         /** Acknowledge Sos */
         post: operations["acknowledge_sos_api_v1_admin_care_sos__case_id__acknowledge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/care/sos/{case_id}/follow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Sos Live Follow
+         * @description Return current snapshots only to a responder whose reach includes this nurse.
+         */
+        get: operations["get_sos_live_follow_api_v1_admin_care_sos__case_id__follow_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/care/sos/{case_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve Sos Case */
+        post: operations["resolve_sos_case_api_v1_admin_care_sos__case_id__resolve_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1855,7 +2013,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** History */
+        /**
+         * History
+         * @description Return read-only history for the signed-in nurse, without distance data.
+         */
         get: operations["history_api_v1_field_history_get"];
         put?: never;
         post?: never;
@@ -1973,6 +2134,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/field/sos/{case_id}/follow/ping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ping Sos Live Follow
+         * @description Record one foreground location snapshot; rate is enforced by server time.
+         */
+        post: operations["ping_sos_live_follow_api_v1_field_sos__case_id__follow_ping_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/sos/{case_id}/follow/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Sos Live Follow
+         * @description Open a server-bounded live-follow window for the nurse's own SOS.
+         */
+        post: operations["start_sos_live_follow_api_v1_field_sos__case_id__follow_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/sos/{case_id}/follow/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop Sos Live Follow
+         * @description Stop further location collection; repeated safe actions are idempotent.
+         */
+        post: operations["stop_sos_live_follow_api_v1_field_sos__case_id__follow_stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/sos/{case_id}/safe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Sos Safe
+         * @description Record the nurse's safe signal and stop live follow without resolving the SOS case.
+         */
+        post: operations["report_sos_safe_api_v1_field_sos__case_id__safe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/field/sync/pull": {
         parameters: {
             query?: never;
@@ -2004,6 +2245,30 @@ export interface paths {
         put?: never;
         /** Sync Push */
         post: operations["sync_push_api_v1_field_sync_push_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/timesheets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Own Timesheets
+         * @description Return read-only, minimal timesheet summaries for the authenticated nurse only.
+         *
+         *     This is intentionally separate from /admin/care/timesheets, which continues to require
+         *     the explicit timesheets:read scope and the admin reach check. Do not accept nurse_id from
+         *     query parameters or a request body: the principal is the sole ownership authority.
+         */
+        get: operations["own_timesheets_api_v1_field_timesheets_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2109,6 +2374,46 @@ export interface paths {
         put?: never;
         /** Add Note */
         post: operations["add_note_api_v1_field_visits__visit_id__notes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/visits/{visit_id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Field Visit Photos
+         * @description List photos only for the nurse's own visit; hidden and expired assets stay hidden.
+         */
+        get: operations["field_visit_photos_api_v1_field_visits__visit_id__photos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/visits/{visit_id}/photos/{photo_id}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Field Visit Photo
+         * @description Short-lived signed photo access, bound to the nurse who owns the visit.
+         */
+        get: operations["stream_field_visit_photo_api_v1_field_visits__visit_id__photos__photo_id__stream_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2911,6 +3216,10 @@ export interface components {
              * @default false
              */
             photo_allowed: boolean;
+            /** Photo Guidance Text */
+            photo_guidance_text?: string | null;
+            /** Photo Required */
+            photo_required?: string | null;
             /** Supervisor Id */
             supervisor_id?: string | null;
         };
@@ -3386,6 +3695,50 @@ export interface components {
             /** Sort Order */
             sort_order?: number | null;
         };
+        /** FieldTimesheetIssue */
+        FieldTimesheetIssue: {
+            /** Explanation */
+            explanation?: string | null;
+            /** Number */
+            number: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "explained" | "needs_explanation";
+        };
+        /** FieldTimesheetItem */
+        FieldTimesheetItem: {
+            /** Approved At */
+            approved_at?: string | null;
+            /** Completed Visits */
+            completed_visits: number;
+            /** Id */
+            id: string;
+            /** Issue Count */
+            issue_count: number;
+            /** Issues */
+            issues: components["schemas"]["FieldTimesheetIssue"][];
+            /** Period End */
+            period_end: string;
+            /** Period Kind */
+            period_kind: string;
+            /** Period Start */
+            period_start: string;
+            /** Sent Back Reason */
+            sent_back_reason?: string | null;
+            /** Status */
+            status: string;
+            /** Submitted At */
+            submitted_at?: string | null;
+            /** Total Minutes */
+            total_minutes: number;
+        };
+        /** FieldTimesheetsResponse */
+        FieldTimesheetsResponse: {
+            /** Items */
+            items: components["schemas"]["FieldTimesheetItem"][];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -3657,6 +4010,85 @@ export interface components {
             /** Note */
             note: string;
         };
+        /** NurseDetailsConsent */
+        NurseDetailsConsent: {
+            /**
+             * Accepted At
+             * Format: date-time
+             */
+            accepted_at: string;
+            /** Source */
+            source: string;
+            /** Type */
+            type: string;
+            /** Version */
+            version: string;
+        };
+        /** NurseDetailsDevice */
+        NurseDetailsDevice: {
+            /** Device Id */
+            device_id: string;
+            /** Has Push Token */
+            has_push_token: boolean;
+            /** Platform */
+            platform: string;
+            /** Push Token Updated At */
+            push_token_updated_at?: string | null;
+            /**
+             * Registered At
+             * Format: date-time
+             */
+            registered_at: string;
+            /** Revoked At */
+            revoked_at?: string | null;
+        };
+        /** NurseDetailsPerson */
+        NurseDetailsPerson: {
+            /** Email */
+            email?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Name */
+            name?: string | null;
+            /** Phone E164 */
+            phone_e164?: string | null;
+        };
+        /** NurseDetailsProfile */
+        NurseDetailsProfile: {
+            /** Active */
+            active: boolean;
+            /** Adhoc Override */
+            adhoc_override?: boolean | null;
+            /** App Version */
+            app_version?: string | null;
+            /** Battery Pct */
+            battery_pct?: number | null;
+            /** Consent Versions */
+            consent_versions: {
+                [key: string]: string;
+            };
+            /** Last Seen At */
+            last_seen_at?: string | null;
+            /** Phone E164 */
+            phone_e164?: string | null;
+            /** Staff Number */
+            staff_number: string;
+            /** Supervisor Id */
+            supervisor_id?: string | null;
+            /** Team Id */
+            team_id?: string | null;
+            /** User Id */
+            user_id: string;
+        };
+        /** NurseDetailsResponse */
+        NurseDetailsResponse: {
+            /** Consents */
+            consents: components["schemas"]["NurseDetailsConsent"][];
+            /** Devices */
+            devices: components["schemas"]["NurseDetailsDevice"][];
+            person: components["schemas"]["NurseDetailsPerson"];
+            profile: components["schemas"]["NurseDetailsProfile"];
+        };
         /** NurseInvite */
         NurseInvite: {
             /**
@@ -3671,7 +4103,7 @@ export interface components {
             /** Staff Number */
             staff_number: string;
             /** Supervisor Id */
-            supervisor_id?: string | null;
+            supervisor_id: string;
             /** Team Id */
             team_id?: string | null;
         };
@@ -3691,7 +4123,7 @@ export interface components {
             /** App Version */
             app_version?: string | null;
             /** Last Seen At */
-            last_seen_at?: unknown | null;
+            last_seen_at?: string | null;
             /** Phone E164 */
             phone_e164?: string | null;
             /** Staff Number */
@@ -3859,6 +4291,12 @@ export interface components {
             content_type: string;
             /** Id */
             id: string;
+            /**
+             * Photo Type
+             * @default other
+             * @enum {string}
+             */
+            photo_type: "arrival" | "departure" | "other";
             /** Visit Id */
             visit_id: string;
         };
@@ -4070,6 +4508,31 @@ export interface components {
             /** Visit Id */
             visit_id?: string | null;
         };
+        /** SOSDrillBody */
+        SOSDrillBody: {
+            /** Notes */
+            notes: string;
+            /** Outcome */
+            outcome: string;
+        };
+        /** SOSFollowActionIn */
+        SOSFollowActionIn: {
+            /** Id */
+            id: string;
+        };
+        /** SOSFollowPingIn */
+        SOSFollowPingIn: {
+            /** Accuracy M */
+            accuracy_m: number;
+            /** Captured At */
+            captured_at?: string | null;
+            /** Id */
+            id: string;
+            /** Lat */
+            lat: number;
+            /** Lng */
+            lng: number;
+        };
         /** SOSIn */
         SOSIn: {
             /** Id */
@@ -4081,6 +4544,13 @@ export interface components {
             test: boolean;
             /** Visit Id */
             visit_id?: string | null;
+        };
+        /** SOSOutcomeBody */
+        SOSOutcomeBody: {
+            /** Notes */
+            notes: string;
+            /** Outcome */
+            outcome: string;
         };
         /** ScopeOut */
         ScopeOut: {
@@ -5993,6 +6463,46 @@ export interface operations {
             };
         };
     };
+    last_seen_positions_api_v1_admin_care_last_seen_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    notification_log_api_v1_admin_care_notifications_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     list_nurses_api_v1_admin_care_nurses_get: {
         parameters: {
             query?: never;
@@ -6134,6 +6644,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NurseProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_nurse_details_api_v1_admin_care_nurses__user_id__details_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NurseDetailsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -6534,6 +7075,46 @@ export interface operations {
             };
         };
     };
+    sms_provider_balance_api_v1_admin_care_sms_balance_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    sms_settings_snapshot_api_v1_admin_care_sms_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     list_sos_api_v1_admin_care_sos_get: {
         parameters: {
             query?: never;
@@ -6587,6 +7168,59 @@ export interface operations {
             };
         };
     };
+    list_sos_drills_api_v1_admin_care_sos_drills_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    record_sos_drill_api_v1_admin_care_sos_drills_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SOSDrillBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     test_sos_sms_api_v1_admin_care_sos_test_sms_post: {
         parameters: {
             query?: never;
@@ -6617,6 +7251,72 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sos_live_follow_api_v1_admin_care_sos__case_id__follow_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_sos_case_api_v1_admin_care_sos__case_id__resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SOSOutcomeBody"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -8461,26 +9161,6 @@ export interface operations {
             };
         };
     };
-    admin_system_list_api_v1_admin_settings_system_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SettingEntry"][];
-                };
-            };
-        };
-    };
     admin_sms_patch_api_v1_admin_settings_sms_patch: {
         parameters: {
             query?: never;
@@ -8512,6 +9192,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_system_list_api_v1_admin_settings_system_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingEntry"][];
                 };
             };
         };
@@ -9747,6 +10447,146 @@ export interface operations {
             };
         };
     };
+    ping_sos_live_follow_api_v1_field_sos__case_id__follow_ping_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SOSFollowPingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_sos_live_follow_api_v1_field_sos__case_id__follow_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SOSFollowActionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stop_sos_live_follow_api_v1_field_sos__case_id__follow_stop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SOSFollowActionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_sos_safe_api_v1_field_sos__case_id__safe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SOSFollowActionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     sync_pull_api_v1_field_sync_pull_get: {
         parameters: {
             query?: {
@@ -9809,6 +10649,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    own_timesheets_api_v1_field_timesheets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FieldTimesheetsResponse"];
                 };
             };
         };
@@ -9995,6 +10855,74 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    field_visit_photos_api_v1_field_visits__visit_id__photos_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                visit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_field_visit_photo_api_v1_field_visits__visit_id__photos__photo_id__stream_get: {
+        parameters: {
+            query: {
+                actor_id: string;
+                expires: number;
+                signature: string;
+                variant?: string;
+            };
+            header?: never;
+            path: {
+                visit_id: string;
+                photo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

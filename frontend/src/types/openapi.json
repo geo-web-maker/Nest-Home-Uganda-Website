@@ -1286,6 +1286,30 @@
             "title": "Photo Allowed",
             "type": "boolean"
           },
+          "photo_guidance_text": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Guidance Text"
+          },
+          "photo_required": {
+            "anyOf": [
+              {
+                "pattern": "^(none|arrival|departure|either|both)$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Required"
+          },
           "supervisor_id": {
             "anyOf": [
               {
@@ -2551,6 +2575,146 @@
         "title": "FaqUpdate",
         "type": "object"
       },
+      "FieldTimesheetIssue": {
+        "properties": {
+          "explanation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Explanation"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "explained",
+              "needs_explanation"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "number",
+          "status"
+        ],
+        "title": "FieldTimesheetIssue",
+        "type": "object"
+      },
+      "FieldTimesheetItem": {
+        "properties": {
+          "approved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved At"
+          },
+          "completed_visits": {
+            "title": "Completed Visits",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "issue_count": {
+            "title": "Issue Count",
+            "type": "integer"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/FieldTimesheetIssue"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "period_end": {
+            "title": "Period End",
+            "type": "string"
+          },
+          "period_kind": {
+            "title": "Period Kind",
+            "type": "string"
+          },
+          "period_start": {
+            "title": "Period Start",
+            "type": "string"
+          },
+          "sent_back_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent Back Reason"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submitted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submitted At"
+          },
+          "total_minutes": {
+            "title": "Total Minutes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "period_start",
+          "period_end",
+          "period_kind",
+          "status",
+          "completed_visits",
+          "total_minutes",
+          "issue_count",
+          "issues"
+        ],
+        "title": "FieldTimesheetItem",
+        "type": "object"
+      },
+      "FieldTimesheetsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FieldTimesheetItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "FieldTimesheetsResponse",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -3273,6 +3437,279 @@
         "title": "NoteBody",
         "type": "object"
       },
+      "NurseDetailsConsent": {
+        "properties": {
+          "accepted_at": {
+            "format": "date-time",
+            "title": "Accepted At",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "version",
+          "source",
+          "accepted_at"
+        ],
+        "title": "NurseDetailsConsent",
+        "type": "object"
+      },
+      "NurseDetailsDevice": {
+        "properties": {
+          "device_id": {
+            "title": "Device Id",
+            "type": "string"
+          },
+          "has_push_token": {
+            "title": "Has Push Token",
+            "type": "boolean"
+          },
+          "platform": {
+            "title": "Platform",
+            "type": "string"
+          },
+          "push_token_updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Push Token Updated At"
+          },
+          "registered_at": {
+            "format": "date-time",
+            "title": "Registered At",
+            "type": "string"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          }
+        },
+        "required": [
+          "device_id",
+          "platform",
+          "registered_at",
+          "has_push_token"
+        ],
+        "title": "NurseDetailsDevice",
+        "type": "object"
+      },
+      "NurseDetailsPerson": {
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "phone_e164": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone E164"
+          }
+        },
+        "title": "NurseDetailsPerson",
+        "type": "object"
+      },
+      "NurseDetailsProfile": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "adhoc_override": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adhoc Override"
+          },
+          "app_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Version"
+          },
+          "battery_pct": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Battery Pct"
+          },
+          "consent_versions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Consent Versions",
+            "type": "object"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
+          "phone_e164": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone E164"
+          },
+          "staff_number": {
+            "title": "Staff Number",
+            "type": "string"
+          },
+          "supervisor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supervisor Id"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Id"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "staff_number",
+          "active",
+          "consent_versions"
+        ],
+        "title": "NurseDetailsProfile",
+        "type": "object"
+      },
+      "NurseDetailsResponse": {
+        "properties": {
+          "consents": {
+            "items": {
+              "$ref": "#/components/schemas/NurseDetailsConsent"
+            },
+            "title": "Consents",
+            "type": "array"
+          },
+          "devices": {
+            "items": {
+              "$ref": "#/components/schemas/NurseDetailsDevice"
+            },
+            "title": "Devices",
+            "type": "array"
+          },
+          "person": {
+            "$ref": "#/components/schemas/NurseDetailsPerson"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/NurseDetailsProfile"
+          }
+        },
+        "required": [
+          "person",
+          "profile",
+          "devices",
+          "consents"
+        ],
+        "title": "NurseDetailsResponse",
+        "type": "object"
+      },
       "NurseInvite": {
         "properties": {
           "email": {
@@ -3299,15 +3736,10 @@
             "type": "string"
           },
           "supervisor_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Supervisor Id"
+            "maxLength": 160,
+            "minLength": 8,
+            "title": "Supervisor Id",
+            "type": "string"
           },
           "team_id": {
             "anyOf": [
@@ -3325,7 +3757,8 @@
           "name",
           "email",
           "phone",
-          "staff_number"
+          "staff_number",
+          "supervisor_id"
         ],
         "title": "NurseInvite",
         "type": "object"
@@ -3392,7 +3825,10 @@
           },
           "last_seen_at": {
             "anyOf": [
-              {},
+              {
+                "format": "date-time",
+                "type": "string"
+              },
               {
                 "type": "null"
               }
@@ -3887,6 +4323,16 @@
             "title": "Id",
             "type": "string"
           },
+          "photo_type": {
+            "default": "other",
+            "enum": [
+              "arrival",
+              "departure",
+              "other"
+            ],
+            "title": "Photo Type",
+            "type": "string"
+          },
           "visit_id": {
             "title": "Visit Id",
             "type": "string"
@@ -4371,6 +4817,90 @@
         "title": "SOSBody",
         "type": "object"
       },
+      "SOSDrillBody": {
+        "properties": {
+          "notes": {
+            "maxLength": 1000,
+            "minLength": 3,
+            "title": "Notes",
+            "type": "string"
+          },
+          "outcome": {
+            "pattern": "^(passed|failed|blocked)$",
+            "title": "Outcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome",
+          "notes"
+        ],
+        "title": "SOSDrillBody",
+        "type": "object"
+      },
+      "SOSFollowActionIn": {
+        "properties": {
+          "id": {
+            "maxLength": 160,
+            "minLength": 8,
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "SOSFollowActionIn",
+        "type": "object"
+      },
+      "SOSFollowPingIn": {
+        "properties": {
+          "accuracy_m": {
+            "maximum": 5000.0,
+            "minimum": 0.0,
+            "title": "Accuracy M",
+            "type": "number"
+          },
+          "captured_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Captured At"
+          },
+          "id": {
+            "maxLength": 160,
+            "minLength": 8,
+            "title": "Id",
+            "type": "string"
+          },
+          "lat": {
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Lat",
+            "type": "number"
+          },
+          "lng": {
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Lng",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "lat",
+          "lng",
+          "accuracy_m"
+        ],
+        "title": "SOSFollowPingIn",
+        "type": "object"
+      },
       "SOSIn": {
         "properties": {
           "id": {
@@ -4400,6 +4930,27 @@
           "id"
         ],
         "title": "SOSIn",
+        "type": "object"
+      },
+      "SOSOutcomeBody": {
+        "properties": {
+          "notes": {
+            "maxLength": 1000,
+            "minLength": 3,
+            "title": "Notes",
+            "type": "string"
+          },
+          "outcome": {
+            "pattern": "^(safe|referred|closed_no_contact)$",
+            "title": "Outcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome",
+          "notes"
+        ],
+        "title": "SOSOutcomeBody",
         "type": "object"
       },
       "ScopeOut": {
@@ -8230,6 +8781,56 @@
         ]
       }
     },
+    "/api/v1/admin/care/last-seen": {
+      "get": {
+        "description": "Latest accepted coordinate-bearing visit event per nurse within caller reach.",
+        "operationId": "last_seen_positions_api_v1_admin_care_last_seen_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Last Seen Positions",
+        "tags": [
+          "care-operations"
+        ]
+      }
+    },
+    "/api/v1/admin/care/notifications": {
+      "get": {
+        "description": "Safe delivery-attempt log. Message bodies and provider secrets are never returned.",
+        "operationId": "notification_log_api_v1_admin_care_notifications_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Notification Log",
+        "tags": [
+          "care-operations"
+        ]
+      }
+    },
     "/api/v1/admin/care/nurses": {
       "get": {
         "operationId": "list_nurses_api_v1_admin_care_nurses_get",
@@ -8458,6 +9059,54 @@
           }
         ],
         "summary": "Set Adhoc Override",
+        "tags": [
+          "care-nurses"
+        ]
+      }
+    },
+    "/api/v1/admin/care/nurses/{user_id}/details": {
+      "get": {
+        "description": "Return a reach-filtered nurse detail without device credentials or auth secrets.",
+        "operationId": "get_nurse_details_api_v1_admin_care_nurses__user_id__details_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NurseDetailsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Nurse Details",
         "tags": [
           "care-nurses"
         ]
@@ -9114,6 +9763,56 @@
         ]
       }
     },
+    "/api/v1/admin/care/sms/balance": {
+      "post": {
+        "description": "Explicit, user-triggered balance lookup; unavailable for the console provider.",
+        "operationId": "sms_provider_balance_api_v1_admin_care_sms_balance_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Sms Provider Balance",
+        "tags": [
+          "care-operations"
+        ]
+      }
+    },
+    "/api/v1/admin/care/sms/settings": {
+      "get": {
+        "description": "Return an allow-list only; never expose API keys or arbitrary environment values.",
+        "operationId": "sms_settings_snapshot_api_v1_admin_care_sms_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Sms Settings Snapshot",
+        "tags": [
+          "care-operations"
+        ]
+      }
+    },
     "/api/v1/admin/care/sos": {
       "get": {
         "operationId": "list_sos_api_v1_admin_care_sos_get",
@@ -9175,6 +9874,73 @@
           }
         ],
         "summary": "Create Sos",
+        "tags": [
+          "care-operations"
+        ]
+      }
+    },
+    "/api/v1/admin/care/sos/drills": {
+      "get": {
+        "operationId": "list_sos_drills_api_v1_admin_care_sos_drills_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Sos Drills",
+        "tags": [
+          "care-operations"
+        ]
+      },
+      "post": {
+        "description": "Record an administrator-entered drill result; this does not create a live SOS case.",
+        "operationId": "record_sos_drill_api_v1_admin_care_sos_drills_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SOSDrillBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Record Sos Drill",
         "tags": [
           "care-operations"
         ]
@@ -9244,6 +10010,107 @@
           }
         ],
         "summary": "Acknowledge Sos",
+        "tags": [
+          "care-operations"
+        ]
+      }
+    },
+    "/api/v1/admin/care/sos/{case_id}/follow": {
+      "get": {
+        "description": "Return current snapshots only to a responder whose reach includes this nurse.",
+        "operationId": "get_sos_live_follow_api_v1_admin_care_sos__case_id__follow_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Sos Live Follow",
+        "tags": [
+          "care-operations"
+        ]
+      }
+    },
+    "/api/v1/admin/care/sos/{case_id}/resolve": {
+      "post": {
+        "operationId": "resolve_sos_case_api_v1_admin_care_sos__case_id__resolve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SOSOutcomeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Resolve Sos Case",
         "tags": [
           "care-operations"
         ]
@@ -14195,6 +15062,7 @@
     },
     "/api/v1/field/history": {
       "get": {
+        "description": "Return read-only history for the signed-in nurse, without distance data.",
         "operationId": "history_api_v1_field_history_get",
         "parameters": [
           {
@@ -14520,6 +15388,230 @@
         ]
       }
     },
+    "/api/v1/field/sos/{case_id}/follow/ping": {
+      "post": {
+        "description": "Record one foreground location snapshot; rate is enforced by server time.",
+        "operationId": "ping_sos_live_follow_api_v1_field_sos__case_id__follow_ping_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SOSFollowPingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Ping Sos Live Follow",
+        "tags": [
+          "field-sync"
+        ]
+      }
+    },
+    "/api/v1/field/sos/{case_id}/follow/start": {
+      "post": {
+        "description": "Open a server-bounded live-follow window for the nurse's own SOS.",
+        "operationId": "start_sos_live_follow_api_v1_field_sos__case_id__follow_start_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SOSFollowActionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Start Sos Live Follow",
+        "tags": [
+          "field-sync"
+        ]
+      }
+    },
+    "/api/v1/field/sos/{case_id}/follow/stop": {
+      "post": {
+        "description": "Stop further location collection; repeated safe actions are idempotent.",
+        "operationId": "stop_sos_live_follow_api_v1_field_sos__case_id__follow_stop_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SOSFollowActionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Stop Sos Live Follow",
+        "tags": [
+          "field-sync"
+        ]
+      }
+    },
+    "/api/v1/field/sos/{case_id}/safe": {
+      "post": {
+        "description": "Record the nurse's safe signal and stop live follow without resolving the SOS case.",
+        "operationId": "report_sos_safe_api_v1_field_sos__case_id__safe_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SOSFollowActionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Report Sos Safe",
+        "tags": [
+          "field-sync"
+        ]
+      }
+    },
     "/api/v1/field/sync/pull": {
       "get": {
         "description": "Return a stable page of changed visits and removal tombstones for this nurse.",
@@ -14643,6 +15735,33 @@
         "summary": "Sync Push",
         "tags": [
           "field-sync"
+        ]
+      }
+    },
+    "/api/v1/field/timesheets": {
+      "get": {
+        "description": "Return read-only, minimal timesheet summaries for the authenticated nurse only.\n\nThis is intentionally separate from /admin/care/timesheets, which continues to require\nthe explicit timesheets:read scope and the admin reach check. Do not accept nurse_id from\nquery parameters or a request body: the principal is the sole ownership authority.",
+        "operationId": "own_timesheets_api_v1_field_timesheets_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FieldTimesheetsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Own Timesheets",
+        "tags": [
+          "field"
         ]
       }
     },
@@ -14942,6 +16061,140 @@
           }
         ],
         "summary": "Add Note",
+        "tags": [
+          "field"
+        ]
+      }
+    },
+    "/api/v1/field/visits/{visit_id}/photos": {
+      "get": {
+        "description": "List photos only for the nurse's own visit; hidden and expired assets stay hidden.",
+        "operationId": "field_visit_photos_api_v1_field_visits__visit_id__photos_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Field Visit Photos",
+        "tags": [
+          "field"
+        ]
+      }
+    },
+    "/api/v1/field/visits/{visit_id}/photos/{photo_id}/stream": {
+      "get": {
+        "description": "Short-lived signed photo access, bound to the nurse who owns the visit.",
+        "operationId": "stream_field_visit_photo_api_v1_field_visits__visit_id__photos__photo_id__stream_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visit_id",
+            "required": true,
+            "schema": {
+              "title": "Visit Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "photo_id",
+            "required": true,
+            "schema": {
+              "title": "Photo Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actor_id",
+            "required": true,
+            "schema": {
+              "title": "Actor Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expires",
+            "required": true,
+            "schema": {
+              "title": "Expires",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "signature",
+            "required": true,
+            "schema": {
+              "title": "Signature",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "variant",
+            "required": false,
+            "schema": {
+              "default": "original",
+              "pattern": "^(thumbnail|original)$",
+              "title": "Variant",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stream Field Visit Photo",
         "tags": [
           "field"
         ]

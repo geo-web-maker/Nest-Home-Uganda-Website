@@ -1,3 +1,4 @@
+import re
 from datetime import UTC, datetime
 
 import httpx
@@ -23,6 +24,7 @@ from app.modules.care_ops.models import (
     SOSCase,
     SOSEvent,
 )
+from app.modules.care_ops.roster import recipient_numbers, scheduled_numbers
 from app.modules.care_retention.retention import (
     purge_notes_for_data_request,
     purge_photo_for_data_request,
@@ -58,6 +60,16 @@ class SOSBody(BaseModel):
     id: str = Field(min_length=8, max_length=160)
     visit_id: str | None = None
     test: bool = False
+
+
+class SOSOutcomeBody(BaseModel):
+    outcome: str = Field(pattern="^(safe|referred|closed_no_contact)$")
+    notes: str = Field(min_length=3, max_length=1000)
+
+
+class SOSDrillBody(BaseModel):
+    outcome: str = Field(pattern="^(passed|failed|blocked)$")
+    notes: str = Field(min_length=3, max_length=1000)
 
 
 async def audit(actor, action, kind, item_id, before=None, after=None):
@@ -108,6 +120,12 @@ async def care_dashboard(
     visits = [v for v in visits if await _visit_in_reach(v, ctx)]
     alerts = await CareAlert.find(CareAlert.status == "open").to_list()
     alerts = [a for a in alerts if await _alert_in_reach(a, ctx)]
+    now = datetime.now(UTC)
+    values = await care_values()
+    settings = get_settings()
+    schedule = values.get("sos.on_call_roster", {})
+    scheduled = scheduled_numbers(schedule, now=now, timezone_name=settings.tz)
+    actual_recipients = recipient_numbers(values, now=now, timezone_name=settings.tz)
     return {
         "visit_counts": {
             status: sum(v.status == status for v in visits)
@@ -115,8 +133,154 @@ async def care_dashboard(
         },
         "open_alerts": len(alerts),
         "critical_alerts": sum(a.severity == "critical" for a in alerts),
-        "as_of": datetime.now(UTC),
+        "on_call_now": len(actual_recipients),
+        "on_call_schedule_enabled": bool(
+            isinstance(schedule, dict)
+            and schedule.get("enabled") is True
+            and schedule.get("approved") is True
+        ),
+        "on_call_schedule_matches": len(scheduled),
+        "on_call_schedule_gap": bool(
+            isinstance(schedule, dict)
+            and schedule.get("enabled") is True
+            and schedule.get("approved") is True
+            and not scheduled
+        ),
+        "as_of": now,
     }
+
+
+@router.get("/last-seen")
+async def last_seen_positions(
+    _: Principal = Depends(require_scopes("visits:read")),
+    ctx: ReachContext = Depends(get_care_actor),
+):
+    """Latest accepted coordinate-bearing visit event per nurse within caller reach."""
+    events = await VisitEvent.find().sort("-received_at").to_list()
+    visits_by_id = {row.id: row for row in await Visit.find().to_list()}
+    seen: set[str] = set()
+    items = []
+    for event in events:
+        if event.nurse_id in seen or event.result != "accepted":
+            continue
+        if event.lat is None or event.lng is None:
+            continue
+        if not (-90 <= event.lat <= 90 and -180 <= event.lng <= 180):
+            continue
+        visit = visits_by_id.get(event.visit_id)
+        if not await _visit_in_reach(visit, ctx):
+            continue
+        seen.add(event.nurse_id)
+        items.append(
+            {
+                "nurse_id": event.nurse_id,
+                "visit_id": event.visit_id,
+                "captured_at": event.received_at,
+                "device_time": event.device_time,
+                "lat": event.lat,
+                "lng": event.lng,
+                "accuracy_m": event.accuracy_m,
+                "verification": event.verification,
+                "event_type": event.type,
+            }
+        )
+    return {"items": items, "total": len(items), "as_of": datetime.now(UTC)}
+
+
+def _safe_log_error(value: object) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    message = " ".join(value.split())[:240]
+    message = re.sub(
+        r"(?i)(api[_ -]?key|authorization|token)\s*[:=]?\s*\S+", r"\1=[redacted]", message
+    )
+    message = re.sub(
+        r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", "[redacted email]", message, flags=re.I
+    )
+    message = re.sub(r"\+?\d[\d ()-]{7,}\d", "[redacted number]", message)
+    return message
+
+
+@router.get("/notifications")
+async def notification_log(_: Principal = Depends(require_scopes("carecfg:read"))):
+    """Safe delivery-attempt log. Message bodies and provider secrets are never returned."""
+    from app.modules.notifications.models import SmsLog
+
+    rows = await SmsLog.find().sort("-at").limit(100).to_list()
+    return {
+        "items": [
+            {
+                "id": str(row.id),
+                "at": row.at,
+                "provider": row.provider,
+                "audience": row.audience,
+                "template": row.template,
+                "to_hint": row.to_hint,
+                "status": row.status,
+                "error": _safe_log_error(row.error),
+                "cost": row.cost,
+                "related_type": row.related_type,
+                "related_id": row.related_id,
+            }
+            for row in rows
+        ]
+    }
+
+
+@router.get("/sms/settings")
+async def sms_settings_snapshot(_: Principal = Depends(require_scopes("carecfg:read"))):
+    """Return an allow-list only; never expose API keys or arbitrary environment values."""
+    from app.modules.notifications.config import load_config
+
+    runtime = get_settings()
+    config = await load_config(runtime)
+    values = await care_values()
+    return {
+        "provider": runtime.sms_provider,
+        "sender_id": config.sender_id,
+        "message_category": config.category,
+        "staff_enabled": config.staff_enabled,
+        "visitor_enabled": config.visitor_enabled,
+        "visitor_text": config.visitor_text,
+        "daily_limit": config.daily_limit,
+        "monthly_cap": int(values.get("sms.monthly_cap", 0)),
+        "test_number": str(values.get("sms.test_number", "")),
+        "test_message_only": True,
+        "delivery_receipts_supported": False,
+    }
+
+
+@router.post("/sms/balance")
+async def sms_provider_balance(principal: Principal = Depends(require_scopes("carecfg:write"))):
+    """Explicit, user-triggered balance lookup; unavailable for the console provider."""
+    runtime = get_settings()
+    if runtime.sms_provider != "mambosms":
+        raise HTTPException(
+            409, detail="Provider balance is unavailable while the console provider is configured"
+        )
+    from app.modules.notifications.providers import get_sms_provider
+
+    try:
+        balance = await get_sms_provider(runtime).balance()
+    except Exception as exc:
+        await audit(
+            principal,
+            "care.sms.balance_failed",
+            "sms_provider",
+            None,
+            None,
+            {"error": type(exc).__name__},
+        )
+        raise HTTPException(502, detail="Provider balance could not be retrieved") from None
+    await audit(
+        principal,
+        "care.sms.balance_checked",
+        "sms_provider",
+        None,
+        None,
+        {"balance_returned": True},
+    )
+    return {"provider": runtime.sms_provider, "balance": balance, "provider_reported": True}
 
 
 @router.post("/devices", status_code=201)
@@ -191,6 +355,7 @@ async def list_photos(
             "id": x.id,
             "visit_id": x.visit_id,
             "nurse_id": x.nurse_id,
+            "photo_type": x.photo_type,
             "status": x.status,
             "created_at": x.created_at,
         }
@@ -689,6 +854,71 @@ async def list_sos(
     }
 
 
+@router.get("/sos/{case_id}/follow")
+async def get_sos_live_follow(
+    case_id: str,
+    _: Principal = Depends(require_scopes("alerts:read")),
+    ctx: ReachContext = Depends(get_care_actor),
+):
+    """Return current snapshots only to a responder whose reach includes this nurse."""
+    case = await SOSCase.find_one(SOSCase.id == case_id)
+    in_reach = bool(
+        case
+        and (
+            ctx.is_superadmin
+            or ctx.reach == "all"
+            or (
+                case.nurse_id == ctx.user_id
+                if ctx.reach == "own"
+                else case.nurse_id in ctx.team_nurse_ids
+            )
+        )
+    )
+    if case is None or not in_reach:
+        raise HTTPException(404, detail="SOS case not found")
+    values = await care_values()
+    now = datetime.now(UTC)
+    active = bool(
+        values.get("sos.live_follow_enabled", False)
+        and case.live_follow_started_at is not None
+        and case.live_follow_until is not None
+        and case.live_follow_stopped_at is None
+        and case.live_follow_started_at <= now < case.live_follow_until
+        and case.status not in {"resolved", "closed", "cancelled"}
+    )
+    snapshots = []
+    if active:
+        events = (
+            await SOSEvent.find({"case_id": case.id, "type": "follow_ping"})
+            .sort("-created_at")
+            .limit(10)
+            .to_list()
+        )
+        snapshots = [
+            {
+                "id": event.id,
+                "recorded_at": event.created_at,
+                "captured_at": event.details.get("captured_at"),
+                "lat": event.details.get("lat"),
+                "lng": event.details.get("lng"),
+                "accuracy_m": event.details.get("accuracy_m"),
+            }
+            for event in events
+            if isinstance(event.details.get("lat"), (int, float))
+            and isinstance(event.details.get("lng"), (int, float))
+        ]
+    return {
+        "case_id": case.id,
+        "nurse_id": case.nurse_id,
+        "active": active,
+        "started_at": case.live_follow_started_at,
+        "until": case.live_follow_until,
+        "stopped_at": case.live_follow_stopped_at,
+        "nurse_reported_safe_at": case.nurse_reported_safe_at,
+        "snapshots": snapshots,
+    }
+
+
 @router.post("/sos/{case_id}/acknowledge")
 async def acknowledge_sos(
     case_id: str,
@@ -723,6 +953,112 @@ async def acknowledge_sos(
         principal, "care.sos.acknowledge", "sos_case", case_id, None, {"status": case.status}
     )
     return case
+
+
+@router.post("/sos/{case_id}/resolve")
+async def resolve_sos_case(
+    case_id: str,
+    body: SOSOutcomeBody,
+    principal: Principal = Depends(require_scopes("alerts:write")),
+    ctx: ReachContext = Depends(get_care_actor),
+):
+    case = await SOSCase.find_one(SOSCase.id == case_id)
+    if not case or not (
+        ctx.is_superadmin
+        or ctx.reach == "all"
+        or (
+            case.nurse_id == ctx.user_id
+            if ctx.reach == "own"
+            else case.nurse_id in ctx.team_nurse_ids
+        )
+    ):
+        raise HTTPException(404, detail="SOS case not found")
+    if case.status in {"resolved", "closed", "cancelled"}:
+        raise HTTPException(409, detail="SOS case is already closed")
+    now = datetime.now(UTC)
+    before = {"status": case.status, "outcome": case.outcome}
+    case.status = "resolved"
+    case.resolved_at = now
+    case.resolved_by = principal.user_id
+    case.outcome = body.outcome
+    case.response_notes = body.notes.strip()
+    if body.outcome == "safe":
+        case.nurse_reported_safe_at = now
+    event = {
+        "type": "resolved",
+        "at": now.isoformat(),
+        "by": principal.user_id,
+        "outcome": body.outcome,
+        "notes": body.notes.strip(),
+    }
+    case.events.append(event)
+    await case.save()
+    await SOSEvent(
+        id=f"{case_id}:resolved:{int(now.timestamp())}",
+        case_id=case_id,
+        type="resolved",
+        actor_id=principal.user_id,
+        details={"outcome": body.outcome, "notes": body.notes.strip()},
+    ).insert()
+    linked_alert = await CareAlert.find_one(CareAlert.id == f"sos:{case_id}")
+    if linked_alert and linked_alert.status != "resolved":
+        linked_alert.status = "resolved"
+        linked_alert.resolved_at = now
+        linked_alert.resolved_by = principal.user_id
+        linked_alert.history.append(
+            {
+                "action": "resolved",
+                "at": now.isoformat(),
+                "note": body.notes.strip(),
+                "outcome": body.outcome,
+            }
+        )
+        await linked_alert.save()
+    await audit(
+        principal,
+        "care.sos.resolve",
+        "sos_case",
+        case_id,
+        before,
+        {"status": case.status, "outcome": case.outcome, "notes": body.notes.strip()},
+    )
+    return case
+
+
+@router.get("/sos/drills")
+async def list_sos_drills(_: Principal = Depends(require_scopes("carecfg:read"))):
+    rows = await AuditLog.find(AuditLog.action == "care.sos.drill").sort("-at").limit(100).to_list()
+    return {
+        "items": [
+            {
+                "id": row.item_id,
+                "at": row.at,
+                "outcome": (row.after or {}).get("outcome"),
+                "notes": (row.after or {}).get("notes"),
+                "actor_id": str(row.user_id) if row.user_id else None,
+            }
+            for row in rows
+        ]
+    }
+
+
+@router.post("/sos/drills", status_code=201)
+async def record_sos_drill(
+    body: SOSDrillBody, principal: Principal = Depends(require_scopes("carecfg:write"))
+):
+    """Record an administrator-entered drill result; this does not create a live SOS case."""
+    from uuid import uuid4
+
+    drill_id = f"sos-drill-{uuid4()}"
+    await audit(
+        principal,
+        "care.sos.drill",
+        "sos_drill",
+        drill_id,
+        None,
+        {"outcome": body.outcome, "notes": body.notes.strip(), "test_only": True},
+    )
+    return {"id": drill_id, "outcome": body.outcome, "test_only": True}
 
 
 @router.get("/data-requests")

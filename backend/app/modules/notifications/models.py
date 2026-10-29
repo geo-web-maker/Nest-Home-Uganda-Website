@@ -19,7 +19,8 @@ class SmsLog(Document):
     audience: str  # staff | visitor
     template: str  # new_enquiry | visitor_confirm | reminder
     to_hint: str
-    status: str  # sent | failed | skipped
+    status: str  # sent = provider accepted request; not a delivery receipt
+    cost: float | None = None  # present only when the provider explicitly reported a cost
     error: str | None = None
     related_type: str | None = None
     related_id: str | None = None

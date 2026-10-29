@@ -6,6 +6,7 @@ export type NurseRouteViews = {
   today: ReactNode;
   onboarding: ReactNode;
   history: ReactNode;
+  timesheets: ReactNode;
   profile: ReactNode;
   sync: ReactNode;
   visit: (visitId: string) => ReactNode;
@@ -22,6 +23,7 @@ export function NurseRoutes({ views, authenticated }: { views: NurseRouteViews; 
     <Route path="/" element={authenticated ? views.today : views.login} />
     <Route path="/onboarding" element={authenticated ? views.onboarding : views.login} />
     <Route path="/history" element={authenticated ? views.history : views.login} />
+    <Route path="/timesheets" element={authenticated ? views.timesheets : views.login} />
     <Route path="/profile" element={authenticated ? views.profile : views.login} />
     <Route path="/sync" element={authenticated ? views.sync : views.login} />
     <Route path="/visit/:visitId" element={authenticated ? <VisitRoute render={views.visit} /> : views.login} />

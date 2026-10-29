@@ -5,6 +5,9 @@ import { RequireAuth, RequireScopes } from './auth/guards';
 import { LoginPage } from './auth/LoginPage';
 import { SetPasswordPage } from './auth/SetPasswordPage';
 import { ApplicantDetailPage } from './applications/ApplicantDetailPage';
+import { ClientDetailPage } from './care/clients/ClientDetailPage';
+import { NurseDetailPage } from './care/nurses/NurseDetailPage';
+import { SOSConsolePage } from './care/SafetyAndSetupPages';
 import { EnquiryDetailPage } from './enquiry-detail';
 import { JobEditorPage } from './jobs/JobEditorPage';
 import { ADMIN_NAV, scopesFor } from './nav';
@@ -63,6 +66,30 @@ export function Component() {
               element={
                 <RequireScopes scopes={scopesFor('/admin/careers')}>
                   <JobEditorPage />
+                </RequireScopes>
+              }
+            />
+            <Route
+              path="care/clients/:id"
+              element={
+                <RequireScopes scopes={['clients:read']}>
+                  <ClientDetailPage />
+                </RequireScopes>
+              }
+            />
+            <Route
+              path="care/nurses/:userId"
+              element={
+                <RequireScopes scopes={['nurses:read']}>
+                  <NurseDetailPage />
+                </RequireScopes>
+              }
+            />
+            <Route
+              path="care/sos/:id"
+              element={
+                <RequireScopes scopes={['alerts:read']}>
+                  <SOSConsolePage />
                 </RequireScopes>
               }
             />

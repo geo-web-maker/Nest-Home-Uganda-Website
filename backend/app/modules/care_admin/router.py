@@ -13,8 +13,10 @@ from pydantic import BaseModel, Field
 from app.core.config import get_settings
 from app.core.db import get_care_database, start_session
 from app.core.deps import Principal, ReachContext, get_care_actor, require_scopes
+from app.core.errors import Conflict
 from app.modules.audit.models import AuditLog
 from app.modules.care_clients.models import CareClient
+from app.modules.care_ops.procedure import approved_procedure_error
 from app.modules.flags.models import VisitFlag
 from app.modules.nurses.models import NurseProfile
 from app.modules.places.models import CarePlace, PlaceStay
@@ -46,6 +48,10 @@ class ClientIn(BaseModel):
     supervisor_id: str | None = None
     assigned_nurse_ids: list[str] = Field(default_factory=list)
     photo_allowed: bool = False
+    photo_required: str | None = Field(
+        default=None, pattern=r"^(none|arrival|departure|either|both)$"
+    )
+    photo_guidance_text: str | None = Field(default=None, max_length=2000)
 
 
 class PlaceIn(BaseModel):
@@ -211,6 +217,31 @@ async def list_settings(_: Principal = Depends(require_scopes("carecfg:read"))):
 async def update_setting(
     key: str, payload: SettingIn, principal: Principal = Depends(require_scopes("carecfg:write"))
 ):
+    # The responder rota affects live safety notifications. Only system managers may change
+    # an activated/approved schedule; care editors can still prepare an inactive draft.
+    if key == "sos.on_call_roster" and isinstance(payload.value, dict):
+        current_values = await care_values()
+        current_roster = current_values.get("sos.on_call_roster", {})
+        current_active = isinstance(current_roster, dict) and (
+            current_roster.get("enabled") is True or current_roster.get("approved") is True
+        )
+        next_active = payload.value.get("enabled") is True or payload.value.get("approved") is True
+        if (current_active or next_active) and not principal.has("system:manage"):
+            raise HTTPException(
+                403, detail="Changing an active or approved on-call schedule requires system:manage"
+            )
+    if key == "sos.procedure" and isinstance(payload.value, str):
+        approval_error = approved_procedure_error(payload.value)
+        if approval_error:
+            if not principal.has("system:manage"):
+                raise HTTPException(
+                    403, detail="Approving the SOS procedure requires system:manage"
+                )
+            raise HTTPException(422, detail=approval_error)
+        if "Status: APPROVED BY DESIGNATED OWNER" in payload.value and not principal.has(
+            "system:manage"
+        ):
+            raise HTTPException(403, detail="Approving the SOS procedure requires system:manage")
     try:
         result = await save_care_value(key, payload.value, principal.user_id)
     except KeyError:
@@ -278,10 +309,29 @@ async def patch_client(
         "assigned_nurse_ids",
         "supervisor_id",
         "photo_allowed",
+        "photo_required",
+        "photo_guidance_text",
     }
     for key, value in body.items():
-        if key in allowed:
-            setattr(row, key, value)
+        if key not in allowed:
+            continue
+        if key == "photo_guidance_text" and value is not None:
+            if not isinstance(value, str) or len(value) > 2000:
+                raise HTTPException(
+                    422, detail="photo_guidance_text must be text of at most 2000 characters"
+                )
+        if key == "photo_required" and value is not None:
+            if not isinstance(value, str) or value not in {
+                "none",
+                "arrival",
+                "departure",
+                "either",
+                "both",
+            }:
+                raise HTTPException(
+                    422, detail="photo_required must be none, arrival, departure, either, or both"
+                )
+        setattr(row, key, value)
     row.updated_at = datetime.now(UTC)
     await row.save()
     await _audit(
@@ -420,10 +470,35 @@ async def visits(
         and (not client_id or v.client_id == client_id)
         and (adhoc is None or v.adhoc == adhoc)
     ]
+    page_rows = rows[(page - 1) * page_size : page * page_size]
+    page_ids = [visit.id for visit in page_rows]
+    latest_event_by_visit = {}
+    if page_ids:
+        # Enrich only the current, already-reach-filtered page. The event query is
+        # deliberately scoped to those visit IDs and the UI never sees unrelated events.
+        events = (
+            await VisitEvent.find(VisitEvent.visit_id.in_(page_ids)).sort("-received_at").to_list()
+        )
+        for event in events:
+            if event.result != "accepted" or event.visit_id in latest_event_by_visit:
+                continue
+            latest_event_by_visit[event.visit_id] = event
+    items = []
+    for visit in page_rows:
+        item = visit.model_dump(exclude={"_id"})
+        event = latest_event_by_visit.get(visit.id)
+        item.update(
+            {
+                "latest_verification": event.verification if event else None,
+                "last_event_at": event.received_at if event else None,
+                "last_event_type": event.type if event else None,
+                "last_event_distance_m": event.distance_m if event else None,
+                "last_event_accuracy_m": event.accuracy_m if event else None,
+            }
+        )
+        items.append(item)
     return {
-        "items": [
-            v.model_dump(exclude={"_id"}) for v in rows[(page - 1) * page_size : page * page_size]
-        ],
+        "items": items,
         "total": len(rows),
         "page": page,
         "page_size": page_size,
@@ -465,8 +540,9 @@ async def create_visit(
     except VisitRuleError as exc:
         msg = str(exc)
         if msg.startswith("nurse_busy:"):
-            raise HTTPException(
-                409, detail={"code": "nurse_busy", "visit_ids": msg.split(":", 1)[1].split(",")}
+            raise Conflict(
+                "This nurse has an overlapping scheduled visit.",
+                {"code": "nurse_busy", "visit_ids": msg.split(":", 1)[1]},
             ) from exc
         raise HTTPException(422, detail=msg) from exc
     row = Visit(
@@ -503,7 +579,20 @@ async def visit_detail(
         "events": await VisitEvent.find(VisitEvent.visit_id == visit_id).to_list(),
         "notes": await VisitNote.find(VisitNote.visit_id == visit_id).to_list(),
         "flags": await VisitFlag.find(VisitFlag.visit_id == visit_id).to_list(),
-        "photos": await VisitPhoto.find(VisitPhoto.visit_id == visit_id).to_list(),
+        # Return metadata only. Permanent storage identifiers must stay server-side;
+        # actual image bytes are served by the signed, audited photo-stream endpoint.
+        "photos": [
+            {
+                "id": photo.id,
+                "visit_id": photo.visit_id,
+                "nurse_id": photo.nurse_id,
+                "photo_type": photo.photo_type,
+                "status": photo.status,
+                "created_at": photo.created_at,
+                "hidden_at": photo.hidden_at,
+            }
+            for photo in await VisitPhoto.find(VisitPhoto.visit_id == visit_id).to_list()
+        ],
         "annotations": await VisitAnnotation.find(VisitAnnotation.visit_id == visit_id).to_list(),
         "audit": await AuditLog.find(AuditLog.item_id == visit_id).sort("-at").to_list(),
     }
@@ -642,7 +731,10 @@ async def resolve_flag(
     ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await VisitFlag.find_one(VisitFlag.id == flag_id)
-    if not row:
+    visit = await Visit.find_one(Visit.id == row.visit_id) if row else None
+    # The queue filters flags by visit reach, so the mutation must enforce the same
+    # boundary even when a caller supplies an ID directly instead of using the queue.
+    if not row or not visit or not await _visit_reachable(visit, ctx):
         raise HTTPException(404, detail="Flag not found")
     row.status = "resolved"
     row.resolved_at = datetime.now(UTC)

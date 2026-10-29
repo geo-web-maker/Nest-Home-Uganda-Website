@@ -12,7 +12,7 @@ The primary header navigation follows the mockup order: **Home, Services, About,
 
 Public page coverage includes Home, Services and service detail, About, How it works, Team, Areas, FAQ and article detail, Privacy, Careers and job detail, and Contact. The careers listing uses a responsive role-card grid (one column on narrow phones, two at tablet widths, three on desktop); application forms live in the job/general-interest flow rather than beside the entire listing. Keep one main page heading, useful title/description metadata, the shared header/footer, and no horizontal overflow at the reference widths (320/390 phone, 820 tablet, 1280 desktop). The Home composition follows the mockup's hero, location strip, services, promise, how-it-works and CTA sections; testimonials/team content remains configuration-driven where the product already supports it.
 
-Use the design tokens in `frontend/src/design/tokens.css`. The reference palette is light-only; OS dark-mode preference must not silently replace the reviewed mockup palette. If a dark theme is designed later, it should be a deliberate, documented design variant rather than an implicit browser preference.
+Use the design tokens in `frontend/src/design/tokens.css`. The reference palette is the default light theme. The OS dark-mode preference must not silently replace the reviewed mockup palette; users may explicitly choose Dark with the Light/Dark switch, persisted as `nest-theme`. Dark mode is a deliberate, documented design variant rather than an implicit browser preference.
 
 ## Nurse application
 

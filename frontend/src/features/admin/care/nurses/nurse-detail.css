@@ -1,0 +1,16 @@
+.nurse-detail { display: grid; gap: 18px; }
+.nurse-detail .eyebrow { margin: 0 0 6px; color: var(--mut); font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.nurse-header-actions, .nurse-override-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.nurse-detail-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,320px),1fr)); gap: 16px; align-items: start; }
+.nurse-facts { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,190px),1fr)); gap: 0 18px; }
+.nurse-facts div { border-bottom: 1px solid var(--line); padding: 10px 0; min-width: 0; }
+.nurse-facts dt { color: var(--mut); font-size: .82rem; }
+.nurse-facts dd { margin: 4px 0 0; font-weight: 650; overflow-wrap: anywhere; }
+.nurse-supervisor-form { margin-top: 16px; }
+.nurse-device-list, .nurse-consent-list { display: grid; gap: 10px; }
+.nurse-device, .nurse-consent { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surf); }
+.nurse-device p, .nurse-consent p { margin: 5px 0; overflow-wrap: anywhere; }
+.nurse-device small, .nurse-consent time { color: var(--mut); font-size: .82rem; }
+.nurse-device-state { white-space: nowrap; color: var(--leaf); font-weight: 700; }
+.nurse-device-state.is-revoked { color: var(--mut); }
+@media (max-width: 700px) { .nurse-device, .nurse-consent { align-items: stretch; flex-direction: column; } }

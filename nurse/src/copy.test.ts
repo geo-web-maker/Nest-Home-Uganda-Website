@@ -3,8 +3,8 @@ import { copy, operationKindLabel, visitStatusLabel } from './copy';
 
 describe('shared nurse UI labels', () => {
   it('uses the approved nurse app name and organisation branding', () => {
-    expect(copy.appName).toBe('Well Nest Home Care Uganda Nurse');
-    expect(copy.appShortName).toBe('Well Nest Home Care Uganda Nurse');
+    expect(copy.appName).toBe('Well Nest Home Care Uganda');
+    expect(copy.appShortName).toBe('Well Nest Home Care Uganda');
     expect(copy.organisation).toBe('Well Nest Home Care Uganda Ltd');
   });
 

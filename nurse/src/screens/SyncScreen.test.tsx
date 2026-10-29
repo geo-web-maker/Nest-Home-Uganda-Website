@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { OutboxOperation } from '../offline/db';
+import type { LocalPhoto, OutboxOperation } from '../offline/db';
 import { SyncScreen } from './SyncScreen';
 
 function operation(id: string, ownerUserId: string, state: OutboxOperation['state'] = 'needs_attention', lastError?: string): OutboxOperation {
@@ -29,6 +29,19 @@ describe('sync status screen', () => {
     expect(onDiscard).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: /confirm discard/i }));
     expect(onDiscard).toHaveBeenCalledWith('own-item');
+  });
+
+  it('does not allow discarding a photo whose remote upload awaits registration', () => {
+    const photo: LocalPhoto = {
+      id: 'photo-uploaded-pending', visitId: 'visit-1', ownerUserId: 'nurse-a', blob: new Blob(['image']),
+      mime: 'image/jpeg', createdAt: '2026-10-25T10:00:00.000Z', uploadStage: 'uploaded',
+      state: 'needs_attention', attempts: 1, lastError: 'Registration was not confirmed',
+    };
+    const onDiscardPhoto = vi.fn();
+    render(<SyncScreen operations={[]} photos={[photo]} userId="nurse-a" online busy={false} wifiOnly={false} onSync={vi.fn()} onRetry={vi.fn()} onDiscard={vi.fn()} onApplyAgain={vi.fn()} onRetryPhoto={vi.fn()} onUploadPhotoNow={vi.fn()} onDiscardPhoto={onDiscardPhoto} />);
+    const discard = screen.getByRole('button', { name: /discard saved photo/i }) as HTMLButtonElement;
+    expect(discard.disabled).toBe(true);
+    expect(onDiscardPhoto).not.toHaveBeenCalled();
   });
 
   it('does not offer apply-again for a visit that is no longer assigned', () => {

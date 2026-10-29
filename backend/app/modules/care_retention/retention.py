@@ -88,14 +88,18 @@ async def purge_coordinates(db, cutoff: datetime) -> dict[str, int]:
 
 
 async def purge_sos_locations(db, cutoff: datetime) -> int:
-    """Clear location values from old SOS event payloads without removing the case."""
-    from app.modules.care_ops.models import SOSCase
+    """Redact old SOS coordinates in both the legacy case array and event stream."""
+    from app.modules.care_ops.models import SOSCase, SOSEvent
 
-    result = await db[SOSCase.Settings.name].update_many(
+    legacy_result = await db[SOSCase.Settings.name].update_many(
         {"created_at": {"$lt": cutoff}},
         {"$unset": {"events.$[].lat": "", "events.$[].lng": "", "events.$[].accuracy_m": ""}},
     )
-    return int(result.modified_count)
+    event_result = await db[SOSEvent.Settings.name].update_many(
+        {"created_at": {"$lt": cutoff}, "details.lat": {"$exists": True}},
+        {"$unset": {"details.lat": "", "details.lng": "", "details.accuracy_m": ""}},
+    )
+    return int(legacy_result.modified_count) + int(event_result.modified_count)
 
 
 async def purge_expired_photos(now: datetime, months: int, settings: Settings) -> int:

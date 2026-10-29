@@ -1,0 +1,234 @@
+diff --git a/frontend/src/components/site/JobCard.module.css b/frontend/src/components/site/JobCard.module.css
+index 6a28e57..4740515 100644
+--- a/frontend/src/components/site/JobCard.module.css
++++ b/frontend/src/components/site/JobCard.module.css
+@@ -3,9 +3,9 @@
+   display: grid;
+   gap: 10px;
+   margin-top: 12px;
+-  padding: 18px;
+-  border: 1px solid var(--line);
+-  border-radius: 22px;
++  padding: 16px;
++  border: 6px solid color-mix(in srgb, var(--mint) 90%, var(--line));
++  border-radius: 26px;
+   background: var(--surf);
+   transition: border-color var(--dur-base) var(--ease-standard);
+ }
+@@ -21,7 +21,7 @@
+ }
+ @media (hover: hover) and (pointer: fine) {
+   .card:hover {
+-    border-color: var(--gold);
++    border-color: color-mix(in srgb, var(--gold) 75%, var(--mint));
+   }
+   .card:hover::after {
+     opacity: 1;
+diff --git a/frontend/src/features/public/careers/CareersPage.module.css b/frontend/src/features/public/careers/CareersPage.module.css
+index d246a4f..98b6305 100644
+--- a/frontend/src/features/public/careers/CareersPage.module.css
++++ b/frontend/src/features/public/careers/CareersPage.module.css
+@@ -1,40 +1,10 @@
+-.section {
+-  padding-block: 3rem 5rem;
+-}
+-.columns {
+-  display: block;
+-}
+-.jobs {
+-  display: grid;
+-  grid-template-columns: minmax(0, 1fr);
+-  gap: 1rem;
+-  margin: 0;
+-  padding: 0;
+-  list-style: none;
+-}
+-.srOnly {
+-  position: absolute;
+-  width: 1px;
+-  height: 1px;
+-  margin: -1px;
+-  padding: 0;
+-  overflow: hidden;
+-  clip-path: inset(50%);
+-  white-space: nowrap;
+-  border: 0;
+-}
+-.general {
+-  margin-block-start: 1.5rem;
+-}
+-@media (min-width: 700px) {
+-  .jobs {
+-    grid-template-columns: repeat(2, minmax(0, 1fr));
+-    gap: 1.25rem;
+-  }
+-}
+-@media (min-width: 1040px) {
+-  .jobs {
+-    grid-template-columns: repeat(3, minmax(0, 1fr));
+-    gap: 1.5rem;
+-  }
+-}
++.page > :global(section:first-of-type) { padding-block: 0; }
++.page > :global(section:first-of-type) :global(nav[aria-label='Breadcrumb']) { display: none; }
++.section { padding-block: 72px 84px; background: var(--bg); }
++.columns { display: block; }
++.jobs { display: grid; grid-template-columns: 1fr; gap: 14px; margin: 0; padding: 0; list-style: none; }
++.srOnly { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
++.general { margin-block-start: 20px; color: var(--mut); }
++.general a { color: var(--ink); font-weight: 700; }
++@media (min-width: 700px) { .jobs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; } }
++@media (min-width: 1040px) { .jobs { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; } }
+diff --git a/frontend/src/features/public/careers/CareersPage.tsx b/frontend/src/features/public/careers/CareersPage.tsx
+index d2db35d..334bb9a 100644
+--- a/frontend/src/features/public/careers/CareersPage.tsx
++++ b/frontend/src/features/public/careers/CareersPage.tsx
+@@ -17,7 +17,7 @@ export function CareersPage() {
+     queryFn: () => apiClient.get<JobPublic[]>('/public/jobs', { params: { lang: 'en' } }),
+   });
+   return (
+-    <>
++    <div className={styles.page}>
+       <Seo
+         title={t('careers.seoTitle')}
+         description={t('careers.seoDescription')}
+@@ -64,6 +64,6 @@ export function CareersPage() {
+           </div>
+         </div>
+       </section>
+-    </>
++    </div>
+   );
+ }
+diff --git a/frontend/src/features/public/privacy/PrivacyPage.module.css b/frontend/src/features/public/privacy/PrivacyPage.module.css
+index 9dc52b3..d87aa6b 100644
+--- a/frontend/src/features/public/privacy/PrivacyPage.module.css
++++ b/frontend/src/features/public/privacy/PrivacyPage.module.css
+@@ -1,29 +1,9 @@
+-.section {
+-  padding-block: 3rem 5rem;
+-}
+-.body {
+-  max-width: 62ch;
+-  margin-inline: auto;
+-}
+-.block {
+-  margin-block: 0 2rem;
+-}
+-.block h2 {
+-  margin-bottom: 0.6rem;
+-  font-family: var(--serif);
+-  font-size: clamp(1.35rem, 3vw, 1.8rem);
+-}
+-.block p {
+-  line-height: 1.7;
+-  white-space: pre-line;
+-}
+-.notice {
+-  border-left: 3px solid var(--gold);
+-  padding-inline-start: 1rem;
+-  color: var(--mut);
+-}
+-@media (min-width: 700px) {
+-  .section {
+-    padding-block: 4rem 6rem;
+-  }
+-}
++.page > :global(section:first-of-type) { padding-block: 0; }
++.page > :global(section:first-of-type) :global(nav[aria-label='Breadcrumb']) { display: none; }
++.section { padding-block: 72px 84px; background: var(--bg); }
++.body { max-width: none; }
++.block { margin: 0 0 18px; }
++.block h2 { margin: 0 0 7px; font-family: var(--sans); font-size: 1.05rem; }
++.block p { margin: 0; padding: 14px; border: 1px dashed var(--gold); border-radius: 14px; background: color-mix(in srgb, var(--gold) 7%, transparent); color: var(--mut); font-style: italic; line-height: 1.6; white-space: pre-line; }
++.notice { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--mut); }
++@media (min-width: 700px) { .body { max-width: 1108px; margin-inline: auto; } .section { padding-block: 84px; } }
+diff --git a/frontend/src/features/public/privacy/PrivacyPage.test.tsx b/frontend/src/features/public/privacy/PrivacyPage.test.tsx
+index 2b0d30e..3074629 100644
+--- a/frontend/src/features/public/privacy/PrivacyPage.test.tsx
++++ b/frontend/src/features/public/privacy/PrivacyPage.test.tsx
+@@ -23,7 +23,7 @@ describe('PrivacyPage', () => {
+   });
+   it('uses the exact client-supplied placeholder for draft legal text', () => {
+     setup();
+-    expect(screen.getAllByText('client to supply')).toHaveLength(6);
++    expect(screen.getAllByText('client to supply')).toHaveLength(3);
+   });
+   it('displays the legal review notice', () => {
+     setup();
+@@ -33,6 +33,6 @@ describe('PrivacyPage', () => {
+     vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('offline'));
+     setup();
+     expect(await screen.findByRole('alert')).toBeInTheDocument();
+-    expect(screen.getAllByText('client to supply')).toHaveLength(6);
++    expect(screen.getAllByText('client to supply')).toHaveLength(3);
+   });
+ });
+diff --git a/frontend/src/features/public/privacy/PrivacyPage.tsx b/frontend/src/features/public/privacy/PrivacyPage.tsx
+index 7d9022b..195d290 100644
+--- a/frontend/src/features/public/privacy/PrivacyPage.tsx
++++ b/frontend/src/features/public/privacy/PrivacyPage.tsx
+@@ -11,50 +11,20 @@ const PLACEHOLDER = 'client to supply';
+ export function PrivacyPage() {
+   const { t } = useTranslation('site');
+   const { t: tc } = useTranslation('common');
+-  const page = useQuery({
+-    queryKey: ['public', 'pages', 'privacy'],
+-    queryFn: () =>
+-      apiClient.get<PublicPageContent>('/public/pages/privacy', { params: { lang: 'en' } }),
+-  });
++  const page = useQuery({ queryKey: ['public', 'pages', 'privacy'], queryFn: () => apiClient.get<PublicPageContent>('/public/pages/privacy', { params: { lang: 'en' } }) });
+   const suppliedBody = page.data?.body?.trim();
+-  const blocks =
+-    suppliedBody && suppliedBody !== PLACEHOLDER
+-      ? [{ heading: page.data?.title || t('privacy.title'), body: suppliedBody }]
+-      : [
+-          { heading: t('privacy.collectHeading'), body: PLACEHOLDER },
+-          { heading: t('privacy.useHeading'), body: PLACEHOLDER },
+-          { heading: t('privacy.choicesHeading'), body: PLACEHOLDER },
+-          { heading: t('privacy.cookiesHeading'), body: PLACEHOLDER },
+-          { heading: t('privacy.retentionHeading'), body: PLACEHOLDER },
+-          { heading: t('privacy.contactHeading'), body: PLACEHOLDER },
+-        ];
++  const blocks = suppliedBody && suppliedBody !== PLACEHOLDER
++    ? [{ heading: page.data?.title || t('privacy.title'), body: suppliedBody }]
++    : [
++        { heading: t('privacy.collectHeading'), body: PLACEHOLDER },
++        { heading: t('privacy.useHeading'), body: PLACEHOLDER },
++        { heading: t('privacy.choicesHeading'), body: PLACEHOLDER },
++      ];
+   return (
+-    <>
+-      <Seo
+-        title={t('privacy.seoTitle')}
+-        description={t('privacy.seoDescription')}
+-        path="/privacy"
+-      />
+-      <PageHero
+-        rule={t('privacy.rule')}
+-        title={t('privacy.title')}
+-        lead={t('privacy.lead')}
+-        breadcrumb={[{ label: tc('nav.home'), to: '/' }, { label: t('privacy.rule') }]}
+-      />
+-      <section className={styles.section}>
+-        <div className="container">
+-          <div className={styles.body}>
+-            {page.isError && <p role="alert">{t('privacy.error')}</p>}
+-            {blocks.map((block) => (
+-              <Reveal as="section" className={styles.block} key={block.heading}>
+-                <h2>{block.heading}</h2>
+-                <p>{block.body}</p>
+-              </Reveal>
+-            ))}
+-            <p className={styles.notice}>{t('privacy.reviewNotice')}</p>
+-          </div>
+-        </div>
+-      </section>
+-    </>
++    <div className={styles.page}>
++      <Seo title={t('privacy.seoTitle')} description={t('privacy.seoDescription')} path="/privacy" />
++      <PageHero rule={t('privacy.rule')} title={t('privacy.title')} lead={t('privacy.lead')} breadcrumb={[{ label: tc('nav.home'), to: '/' }, { label: t('privacy.rule') }]} />
++      <section className={styles.section}><div className="container"><div className={styles.body}>{page.isError && <p role="alert">{t('privacy.error')}</p>}{blocks.map((block) => <Reveal as="section" className={styles.block} key={block.heading}><h2>{block.heading}</h2><p>{block.body}</p></Reveal>)}<p className={styles.notice}>{t('privacy.reviewNotice')}</p></div></div></section>
++    </div>
+   );
+ }

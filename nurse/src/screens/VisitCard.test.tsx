@@ -23,12 +23,15 @@ describe('visit card action matrix', () => {
     expect(onLeave).not.toHaveBeenCalled();
   });
 
-  it('offers departure and an active marker for an in-progress visit', () => {
+  it('offers departure and a running elapsed marker for an in-progress visit', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(baseVisit.scheduled_start));
     const activeVisit = { ...baseVisit, status: 'in_progress' as const, check_in_at: baseVisit.scheduled_start };
     const { onArrive, onLeave } = renderCard(activeVisit);
-    expect(screen.getByText('Active visit')).toBeTruthy();
+    expect(screen.getByText('00:00:00')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Leave' }));
     expect(onLeave).toHaveBeenCalledWith(activeVisit);
     expect(onArrive).not.toHaveBeenCalled();
+    vi.useRealTimers();
   });
 });

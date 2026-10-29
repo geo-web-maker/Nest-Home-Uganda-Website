@@ -29,19 +29,11 @@ export function AboutPage() {
   });
   const rings = [
     { id: 'trusted', title: t('about.promise.trustedTitle'), text: t('about.promise.trustedText') },
-    {
-      id: 'reliable',
-      title: t('about.promise.reliableTitle'),
-      text: t('about.promise.reliableText'),
-    },
-    {
-      id: 'compassionate',
-      title: t('about.promise.compassionateTitle'),
-      text: t('about.promise.compassionateText'),
-    },
+    { id: 'reliable', title: t('about.promise.reliableTitle'), text: t('about.promise.reliableText') },
+    { id: 'compassionate', title: t('about.promise.compassionateTitle'), text: t('about.promise.compassionateText') },
   ];
   return (
-    <>
+    <div className={styles.page}>
       <Seo title={t('about.seoTitle')} description={t('about.seoDescription')} path="/about" />
       <PageHero
         rule={t('about.rule')}
@@ -105,9 +97,9 @@ export function AboutPage() {
       </section>
       <CtaBand
         heading={t('about.ctaHeading')}
-        bookLabel={t('about.ctaBook')}
+        bookLabel={tc('actions.book')}
         whatsappLabel={tc('actions.whatsapp')}
       />
-    </>
+    </div>
   );
 }

@@ -12,6 +12,10 @@ class CareClient(Document):
     supervisor_id: str | None = None
     assigned_nurse_ids: list[str] = Field(default_factory=list)
     photo_allowed: bool = False
+    photo_required: str | None = Field(
+        default=None, pattern=r"^(none|arrival|departure|either|both)$"
+    )
+    photo_guidance_text: str | None = Field(default=None, max_length=2000)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 

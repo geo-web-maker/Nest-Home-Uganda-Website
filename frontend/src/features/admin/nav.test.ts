@@ -19,13 +19,9 @@ describe('hasScopes', () => {
 
 describe('mockup-aligned admin navigation', () => {
   it('declares implemented screens in the reference information architecture', () => {
-    expect(ADMIN_NAV.map((item) => item.group)).toEqual([
-      'website', 'website', 'website', 'website', 'website', 'website', 'website', 'website', 'website',
-      'careOperations', 'careOperations', 'careOperations', 'careOperations', 'careOperations', 'careOperations',
-      'monitoring', 'monitoring', 'monitoring', 'monitoring', 'safety',
-      'setup', 'setup', 'setup',
-    ]);
-    expect(paths(visibleNav(user([], true)))).toHaveLength(23);
+    expect(ADMIN_NAV).toHaveLength(37);
+    expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 10, careOperations: 7, monitoring: 8, safety: 4, setup: 8 });
+    expect(paths(visibleNav(user([], true)))).toHaveLength(37);
     expect(visibleNav(user([], true)).some((item) => item.path.includes('/care/patients'))).toBe(false);
   });
 
@@ -40,18 +36,21 @@ describe('mockup-aligned admin navigation', () => {
 
   it('lets system managers reach system controls and data requests without general settings access', () => {
     const systemManager = user(['system:manage']);
-    expect(paths(visibleNav(systemManager))).toEqual(['/admin/settings', '/admin/care/data-requests']);
+    expect(paths(visibleNav(systemManager))).toEqual(['/admin/settings', '/admin/care/data-requests', '/admin/app-releases', '/admin/backups']);
     expect(firstReachablePath(systemManager)).toBe('/admin/settings');
   });
 
   it('shows only the care routes granted by the assigned read scopes', () => {
     expect(paths(visibleNav(user(['visits:read'])))).toEqual([
       '/admin/care/visits',
+      '/admin/care/schedule',
       '/admin/care/team',
+      '/admin/care/map',
     ]);
     expect(paths(visibleNav(user(['alerts:read'])))).toEqual([
       '/admin/care/alerts',
       '/admin/care/sos',
+      '/admin/care/sos/history',
     ]);
     expect(paths(visibleNav(user(['clients:read'])))).toEqual(['/admin/care/clients']);
   });
@@ -64,7 +63,7 @@ describe('mockup-aligned admin navigation', () => {
       '/admin/care/alerts',
       '/admin/care/sos',
     ]);
-    expect(bottomNav(all).more).toHaveLength(19);
+    expect(bottomNav(all).more).toHaveLength(33);
     expect(paths(bottomNav(user(['content:read'])).primary)).toEqual(['/admin/content']);
     expect(bottomNav(user(['content:read'])).more).toEqual([]);
   });
@@ -77,6 +76,8 @@ describe('mockup-aligned admin navigation', () => {
   it('gives route config the scopes for a path and throws for an unknown one', () => {
     expect(scopesFor('/admin/users')).toEqual(['users:read']);
     expect(scopesFor('/admin/care/visits')).toEqual(['visits:read']);
+    expect(scopesFor('/admin/care/schedule')).toEqual(['visits:read']);
+    expect(scopesFor('/admin/care/sos-procedure')).toEqual(['carecfg:read']);
     expect(() => scopesFor('/admin/nope')).toThrow();
   });
 });

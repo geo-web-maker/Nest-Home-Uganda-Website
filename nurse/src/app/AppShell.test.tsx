@@ -13,16 +13,19 @@ describe('nurse app shell', () => {
     expect(screen.getByText('Offline')).toBeTruthy();
     expect(screen.getByRole('link', { name: /3 waiting/i })).toBeTruthy();
     expect(screen.getByText('Saved locally')).toBeTruthy();
+    expect(screen.getByText('Offline')).toBeTruthy();
   });
 
-  it('marks the current tab and keeps the shell tabs predictable', () => {
-    renderShell('/history', true);
+  it('renders the compact connection status and marks the current tab predictably', () => {
+    renderShell('/timesheets', true);
     // The shell renders two "Main navigation" landmarks (desktop rail and bottom tabs); CSS shows
     // one at a time, but jsdom applies no CSS, so both exist here and each must agree.
     const links = (name: string) => screen.getAllByRole('link', { name });
     expect(links('History')).toHaveLength(2);
-    for (const link of links('History')) expect(link.getAttribute('aria-current')).toBe('page');
+    for (const link of links('History')) expect(link.getAttribute('aria-current')).not.toBe('page');
+    for (const link of links('Timesheets')) expect(link.getAttribute('aria-current')).toBe('page');
     for (const link of links('Today')) expect(link.getAttribute('aria-current')).not.toBe('page');
     expect(links('Profile')).toHaveLength(2);
+    expect(links('Timesheets')).toHaveLength(2);
   });
 });

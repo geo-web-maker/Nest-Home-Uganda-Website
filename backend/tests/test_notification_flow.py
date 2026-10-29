@@ -31,7 +31,7 @@ class Scripted:
 def stub(monkeypatch):
     rows: list[tuple] = []
 
-    async def log(provider, audience, template, to, status, error, enquiry):
+    async def log(provider, audience, template, to, status, error, enquiry, cost=None):
         rows.append((template, status, error))
 
     async def within(config, now):

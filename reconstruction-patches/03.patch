@@ -1,0 +1,97 @@
+diff --git a/frontend/src/features/admin/AdminLayout.module.css b/frontend/src/features/admin/AdminLayout.module.css
+--- a/frontend/src/features/admin/AdminLayout.module.css
++++ b/frontend/src/features/admin/AdminLayout.module.css
+@@ -73,7 +73,7 @@
+ }
+ 
+ .item:hover {
+-  background: rgba(255, 255, 255, 0.08);
++  background: color-mix(in srgb, var(--onf) 8%, transparent);
+ }
+ 
+ .item svg {
+@@ -118,7 +118,9 @@
+   align-items: center;
+   justify-content: space-between;
+   gap: 12px;
+-  height: 58px;
++  min-height: 58px;
++  height: auto;
++  padding-block: 6px;
+   padding-inline: 16px;
+   background: var(--surf);
+   border-bottom: 1px solid var(--line);
+diff --git a/frontend/src/features/admin/AdminLayout.test.tsx b/frontend/src/features/admin/AdminLayout.test.tsx
+--- a/frontend/src/features/admin/AdminLayout.test.tsx
++++ b/frontend/src/features/admin/AdminLayout.test.tsx
+@@ -43,6 +43,11 @@
+   window.scrollTo = vi.fn();
+ });
+ 
++afterEach(() => {
++  window.localStorage.removeItem('nest-theme');
++  document.documentElement.removeAttribute('data-theme');
++});
++
+ describe('AdminLayout navigation', () => {
+   it('shows only reachable items in the reference Website group', () => {
+     setup('/admin/enquiries', ['enquiries:read', 'reports:read']);
+@@ -73,6 +78,21 @@
+ });
+ 
+ describe('AdminLayout top bar', () => {
++  it('provides a labelled Light/Dark theme switch in the top bar', async () => {
++    const user = userEvent.setup();
++    setup('/admin', ['dashboard:view']);
++    const header = screen.getByRole('banner');
++    const group = within(header).getByRole('group', { name: 'Theme' });
++    const light = within(group).getByRole('button', { name: 'Light' });
++    const dark = within(group).getByRole('button', { name: 'Dark' });
++
++    expect(light).toHaveAttribute('aria-pressed', 'true');
++    await user.click(dark);
++    expect(dark).toHaveAttribute('aria-pressed', 'true');
++    expect(document.documentElement.dataset.theme).toBe('dark');
++    expect(window.localStorage.getItem('nest-theme')).toBe('dark');
++  });
++
+   it('shows the page title and the user initial, with no role label for a scoped user', () => {
+     setup('/admin/enquiries', ['enquiries:read']);
+     const header = screen.getByRole('banner');
+diff --git a/frontend/src/features/admin/AdminLayout.tsx b/frontend/src/features/admin/AdminLayout.tsx
+--- a/frontend/src/features/admin/AdminLayout.tsx
++++ b/frontend/src/features/admin/AdminLayout.tsx
+@@ -4,6 +4,7 @@
+ import { cx } from '../../lib/cx';
+ import { useAuth } from './auth/useAuth';
+ import { AdminIcon } from './icons';
++import { ThemeSwitch } from '../../components/ui/ThemeSwitch';
+ import { ADMIN_NAV, bottomNav, visibleNav, type AdminNavItem } from './nav';
+ import styles from './AdminLayout.module.css';
+ 
+@@ -102,6 +103,12 @@
+       <div className={styles.body}>
+         <header className={styles.topBar}>
+           <p className={styles.title}>{title ? label(title) : ''}</p>
++          <ThemeSwitch
++            compact
++            label={t('layout.themeLabel')}
++            lightLabel={t('layout.light')}
++            darkLabel={t('layout.dark')}
++          />
+           <div className={styles.user}>
+             <span className={styles.userText}>
+               <span className={styles.userName}>{user?.name}</span>
+diff --git a/frontend/src/locales/en/admin.ts b/frontend/src/locales/en/admin.ts
+--- a/frontend/src/locales/en/admin.ts
++++ b/frontend/src/locales/en/admin.ts
+@@ -42,6 +42,9 @@
+     more: 'More',
+     signOut: 'Sign out',
+     superadmin: 'Superadmin',
++    themeLabel: 'Theme',
++    light: 'Light',
++    dark: 'Dark',
+   },
+   common: {
+     retry: 'Try again',

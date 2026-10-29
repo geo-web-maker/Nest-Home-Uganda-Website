@@ -1,0 +1,120 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { PageHeader } from '../../../components/admin/PageHeader';
+import { Button } from '../../../components/ui/Button';
+import { Field } from '../../../components/ui/Field';
+import { apiClient } from '../../../lib/api/client';
+import { useAuth } from '../auth/useAuth';
+import { hasScopes } from '../auth/hasScopes';
+import './stage30-38.css';
+
+type Row = Record<string, any> & { id: string };
+const dateTime = (value: unknown) => {
+  const date = new Date(String(value ?? ''));
+  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(date);
+};
+const human = (value: unknown) => String(value ?? '—').replaceAll('_', ' ');
+
+export function AlertsPage() {
+  const { user } = useAuth();
+  const canWrite = hasScopes(user, ['alerts:write']);
+  const [status, setStatus] = useState('open');
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [detail, setDetail] = useState<Row | null>(null);
+  const [resolveTarget, setResolveTarget] = useState<Row | null>(null);
+  const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
+  const load = useCallback(async () => {
+    setLoading(true); setError('');
+    try {
+      const result: any = await apiClient.get('/admin/care/alerts', { params: { status } });
+      setRows(Array.isArray(result) ? result : result.items ?? []);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Alerts could not be loaded.'); }
+    finally { setLoading(false); }
+  }, [status]);
+  useEffect(() => { void load(); }, [load]);
+  async function acknowledge(row: Row) {
+    if (!canWrite) return;
+    setSaving(true); setError('');
+    try { await apiClient.post(`/admin/care/alerts/${encodeURIComponent(row.id)}/acknowledge`, {}); setNotice('Alert acknowledged.'); await load(); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : 'Alert could not be acknowledged.'); }
+    finally { setSaving(false); }
+  }
+  async function resolve(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (!resolveTarget || !canWrite || note.trim().length < 3 || saving) return;
+    setSaving(true); setError('');
+    try { await apiClient.post(`/admin/care/alerts/${encodeURIComponent(resolveTarget.id)}/resolve`, { note: note.trim() }); setNotice('Alert resolved with an audit note.'); setResolveTarget(null); setNote(''); setDetail(null); await load(); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : 'Alert could not be resolved.'); }
+    finally { setSaving(false); }
+  }
+  const counts = useMemo(() => ({ critical: rows.filter((row) => row.severity === 'critical').length, missed: rows.filter((row) => /missed|check.?in/i.test(String(row.type))).length }), [rows]);
+  return <div className="stage-page">
+    <PageHeader title="Alerts" subtitle="Review care-operation signals. An acknowledgement is not the same as resolution." actions={<Button variant="outline" onClick={() => void load()}>Refresh</Button>} />
+    <div className="stage-summary-strip"><div><strong>{rows.length}</strong><span>{human(status)} alerts</span></div><div><strong>{counts.critical}</strong><span>Critical in this view</span></div><div><strong>{counts.missed}</strong><span>Missed check-ins</span></div><div><strong>{rows.filter((row) => row.acknowledged_at).length}</strong><span>With acknowledgement time</span></div></div>
+    <div className="stage-segment stage-alert-tabs" role="group" aria-label="Alert status">{['open', 'acknowledged', 'resolved'].map((value) => <Button key={value} variant={status === value ? 'primary' : 'outline'} aria-pressed={status === value} onClick={() => setStatus(value)}>{human(value)}</Button>)}</div>
+    {error && <div role="alert" className="stage-message stage-message--error">{error}</div>}{notice && <div role="status" className="stage-message">{notice}</div>}
+    {loading ? <p aria-busy="true">Loading alerts…</p> : rows.length === 0 ? <section className="stage-panel"><p>No {status} alerts.</p></section> : <section className="stage-panel"><div className="stage-table-scroll"><table className="stage-table"><caption>{human(status)} care alerts</caption><thead><tr><th>Alert</th><th>Severity</th><th>Raised</th><th>Nurse</th><th>Visit</th><th>Status</th><th>Action</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td><button className="stage-text-action" type="button" onClick={() => setDetail(row)}><strong>{human(row.type)}</strong><small>{String(row.message ?? row.id)}</small></button></td><td><span className={`stage-status ${row.severity === 'critical' ? 'stage-status--danger' : 'stage-status--warning'}`}>{human(row.severity)}</span></td><td>{dateTime(row.raised_at)}</td><td>{String(row.nurse_id ?? '—')}</td><td>{String(row.visit_id ?? '—')}</td><td>{human(row.status)}</td><td className="stage-row-actions"><Button variant="outline" onClick={() => setDetail(row)}>Details</Button>{canWrite && row.status === 'open' && <Button variant="outline" disabled={saving} onClick={() => void acknowledge(row)}>Acknowledge</Button>}{canWrite && row.status !== 'resolved' && <Button disabled={saving} onClick={() => { setResolveTarget(row); setNote(''); }}>Resolve</Button>}</td></tr>)}</tbody></table></div></section>}
+    {detail && <div className="stage-modal-backdrop"><section className="stage-modal" role="dialog" aria-modal="true" aria-labelledby="stage-alert-detail-title"><header><div><h2 id="stage-alert-detail-title">{human(detail.type)}</h2><p>{String(detail.message ?? 'Care alert')} · {dateTime(detail.raised_at)}</p></div><Button variant="outline" onClick={() => setDetail(null)}>Close</Button></header><div className="stage-detail-grid"><div><h3>Alert details</h3><dl><dt>Status</dt><dd>{human(detail.status)}</dd><dt>Severity</dt><dd>{human(detail.severity)}</dd><dt>Nurse</dt><dd>{String(detail.nurse_id ?? '—')}</dd><dt>Visit</dt><dd>{String(detail.visit_id ?? '—')}</dd><dt>Acknowledged</dt><dd>{dateTime(detail.acknowledged_at)}</dd><dt>Resolved</dt><dd>{dateTime(detail.resolved_at)}</dd></dl></div><div><h3>History</h3>{Array.isArray(detail.history) && detail.history.length ? <ol className="stage-event-list">{detail.history.map((event: Row, index: number) => <li key={`${event.action ?? 'event'}-${index}`}><strong>{human(event.action ?? event.type)}</strong><span>{dateTime(event.at ?? event.created_at)}</span>{event.note && <p>{String(event.note)}</p>}</li>)}</ol> : <p>No extra alert history is recorded.</p>}</div></div>{canWrite && detail.status !== 'resolved' && <div className="stage-modal-actions">{detail.status === 'open' && <Button variant="outline" onClick={() => void acknowledge(detail)}>Acknowledge</Button>}<Button onClick={() => { setResolveTarget(detail); setNote(''); }}>Resolve with note</Button></div>}</section></div>}
+    {resolveTarget && <div className="stage-modal-backdrop"><section className="stage-modal" role="dialog" aria-modal="true" aria-labelledby="stage-resolve-alert-title"><header><div><h2 id="stage-resolve-alert-title">Resolve alert</h2><p>{String(resolveTarget.message ?? resolveTarget.id)}</p></div><Button variant="outline" onClick={() => setResolveTarget(null)}>Close</Button></header><form className="stage-form" onSubmit={(event) => void resolve(event)}><Field label="Resolution note (required)" kind="textarea" value={note} onChange={(event) => setNote(event.target.value)} minLength={3} maxLength={500} requiredLabel="required" required /><div className="stage-modal-actions"><Button type="submit" disabled={saving || note.trim().length < 3}>{saving ? 'Saving…' : 'Save and resolve'}</Button><Button type="button" variant="outline" onClick={() => setResolveTarget(null)}>Cancel</Button></div></form></section></div>}
+  </div>;
+}
+
+export function TimesheetsPage() {
+  const { user } = useAuth();
+  const canWrite = hasScopes(user, ['timesheets:write']);
+  const [rows, setRows] = useState<Row[]>([]);
+  const [status, setStatus] = useState('submitted');
+  const [nurseId, setNurseId] = useState('');
+  const [selected, setSelected] = useState<Row | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [reason, setReason] = useState('');
+  const [minutes, setMinutes] = useState('');
+  const load = useCallback(async () => {
+    setError('');
+    try {
+      const result: any = await apiClient.get('/admin/care/timesheets', { params: { status: status || undefined, nurse_id: nurseId || undefined } });
+      setRows(Array.isArray(result) ? result : result.items ?? []);
+    } catch (reasonValue) { setError(reasonValue instanceof Error ? reasonValue.message : 'Timesheets could not be loaded.'); }
+  }, [status, nurseId]);
+  useEffect(() => { void load(); }, [load]);
+  async function mutate(action: 'approve' | 'send-back' | 'adjust') {
+    if (!selected || !canWrite || saving) return;
+    setSaving(true); setError('');
+    try {
+      const path = `/admin/care/timesheets/${encodeURIComponent(selected.id)}/${action === 'send-back' ? 'send-back' : action}`;
+      if (action === 'send-back') {
+        if (reason.trim().length < 3) throw new Error('Enter a reason of at least 3 characters.');
+        await apiClient.post(path, { note: reason.trim() });
+      } else if (action === 'adjust') {
+        if (!minutes.trim() || !Number.isInteger(Number(minutes)) || !reason.trim() || reason.trim().length < 3) throw new Error('Enter whole-minute adjustment and a reason of at least 3 characters.');
+        await apiClient.post(path, { minutes: Number(minutes), reason: reason.trim() });
+      } else { await apiClient.post(path, {}); }
+      setNotice(action === 'approve' ? 'Timesheet approved. Approved periods are locked.' : action === 'send-back' ? 'Timesheet sent back with the recorded reason.' : 'Adjustment saved and audited.'); setReason(''); setMinutes(''); await load();
+      const refreshed: any = await apiClient.get(`/admin/care/timesheets`, { params: { nurse_id: selected.nurse_id || undefined } });
+      const items = Array.isArray(refreshed) ? refreshed : refreshed.items ?? [];
+      setSelected(items.find((row: Row) => row.id === selected.id) ?? null);
+    } catch (reasonValue) { setError(reasonValue instanceof Error ? reasonValue.message : 'Timesheet action failed.'); }
+    finally { setSaving(false); }
+  }
+  async function exportApproved(row: Row) {
+    setError('');
+    try {
+      const result = await apiClient.get(`/admin/care/timesheets/${encodeURIComponent(row.id)}/export`);
+      const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = `timesheet-${row.id}.json`; anchor.click(); URL.revokeObjectURL(url);
+      setNotice('Approved timesheet detail exported as JSON.');
+    } catch (reasonValue) { setError(reasonValue instanceof Error ? reasonValue.message : 'Export failed.'); }
+  }
+  return <div className="stage-page">
+    <PageHeader title="Timesheets" subtitle="Review submitted periods and record decisions. Approved periods are locked." actions={<Button variant="outline" onClick={() => void load()}>Refresh</Button>} />
+    <div className="stage-toolbar"><Field label="Status" kind="select" value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All periods</option><option value="draft">Draft</option><option value="submitted">Submitted</option><option value="approved">Approved</option><option value="sent_back">Sent back</option></Field><Field label="Nurse ID" value={nurseId} onChange={(event) => setNurseId(event.target.value)} placeholder="Filter by nurse" /></div>
+    {error && <div role="alert" className="stage-message stage-message--error">{error}</div>}{notice && <div role="status" className="stage-message">{notice}</div>}
+    {rows.length === 0 ? <section className="stage-panel"><p>No timesheets match this filter.</p></section> : <section className="stage-panel"><div className="stage-table-scroll"><table className="stage-table"><caption>Timesheet periods</caption><thead><tr><th>Nurse</th><th>Period</th><th>Visits</th><th>Hours</th><th>Issues</th><th>Status</th><th>Action</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td>{String(row.nurse_name ?? row.nurse_id)}</td><td>{String(row.period_start)} – {String(row.period_end)}</td><td>{String(row.completed_visits ?? 0)}</td><td>{(Number(row.total_minutes ?? 0) / 60).toFixed(1)}</td><td>{Array.isArray(row.issue_ids) ? row.issue_ids.length : 0}</td><td><span className={`stage-status stage-status--${String(row.status).replace(/[^a-z0-9_-]/gi, '')}`}>{human(row.status)}</span></td><td className="stage-row-actions"><Button variant="outline" onClick={() => { setSelected(row); setReason(''); setMinutes(''); }}>Review</Button>{row.status === 'approved' && <Button variant="outline" onClick={() => void exportApproved(row)}>Export</Button>}</td></tr>)}</tbody></table></div></section>}
+    {selected && <div className="stage-modal-backdrop"><section className="stage-modal" role="dialog" aria-modal="true" aria-labelledby="stage-timesheet-detail-title"><header><div><h2 id="stage-timesheet-detail-title">Timesheet review</h2><p>{String(selected.nurse_id)} · {String(selected.period_start)} – {String(selected.period_end)}</p></div><Button variant="outline" onClick={() => setSelected(null)}>Close</Button></header><div className="stage-detail-grid"><div><h3>Period summary</h3><dl><dt>Status</dt><dd>{human(selected.status)}</dd><dt>Completed visits</dt><dd>{String(selected.completed_visits ?? 0)}</dd><dt>Total time</dt><dd>{Number(selected.total_minutes ?? 0)} minutes</dd><dt>Submitted</dt><dd>{dateTime(selected.submitted_at)}</dd><dt>Approved</dt><dd>{dateTime(selected.approved_at)}</dd><dt>Approval issues</dt><dd>{Array.isArray(selected.issue_ids) ? selected.issue_ids.join(', ') || 'None' : 'Not supplied'}</dd></dl></div><div><h3>Recorded adjustments</h3>{Array.isArray(selected.adjustments) && selected.adjustments.length ? <ul>{selected.adjustments.map((item: Row, index: number) => <li key={index}>{String(item.minutes)} min · {String(item.reason)} · {dateTime(item.at)}</li>)}</ul> : <p>No adjustments recorded.</p>}{selected.sent_back_reason && <p><strong>Send-back reason:</strong> {String(selected.sent_back_reason)}</p>}</div></div>{canWrite && selected.status !== 'approved' && <div className="stage-panel"><h3>Review actions</h3>{selected.status === 'submitted' && <div className="stage-modal-actions"><Button disabled={saving} onClick={() => void mutate('approve')}>Approve</Button><Button variant="outline" disabled={saving || reason.trim().length < 3} onClick={() => void mutate('send-back')}>Send back</Button></div>}<Field label="Reason (required for send-back or adjustment)" kind="textarea" value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} /><div className="stage-form-columns"><Field label="Adjustment minutes (+/-)" type="number" value={minutes} onChange={(event) => setMinutes(event.target.value)} min={-10080} max={10080} step={1} /><Button variant="outline" disabled={saving || !minutes.trim() || reason.trim().length < 3} onClick={() => void mutate('adjust')}>Save adjustment</Button></div><p className="stage-muted">The API rejects changes to approved periods. These controls are hidden from read-only accounts.</p></div>}</section></div>}
+  </div>;
+}

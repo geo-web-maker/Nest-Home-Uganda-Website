@@ -1,0 +1,286 @@
+diff --git a/design/tokens.css b/design/tokens.css
+--- a/design/tokens.css
++++ b/design/tokens.css
+@@ -45,6 +45,7 @@
+   --on-gold: #1B1706;
+   --on-straw: #F0E7C9;
+   --on-leaf: #06260F;
++  --danger: #F28B82;
+ }
+ 
+ /* Breakpoints: tablet @700px, desktop @1040px. */
+diff --git a/design/tokens.json b/design/tokens.json
+--- a/design/tokens.json
++++ b/design/tokens.json
+@@ -27,7 +27,8 @@
+       "moss": "#2F6B4A",
+       "gold": "#E3BB62",
+       "onLeaf": "#06260F",
+-      "onStraw": "#F0E7C9"
++      "onStraw": "#F0E7C9",
++      "danger": "#F28B82"
+     },
+     "fixed": {
+       "whatsapp": "#25D366",
+diff --git a/frontend/src/components/site/Rings.module.css b/frontend/src/components/site/Rings.module.css
+--- a/frontend/src/components/site/Rings.module.css
++++ b/frontend/src/components/site/Rings.module.css
+@@ -15,7 +15,7 @@
+   aspect-ratio: 1;
+   border: 2px solid var(--gold);
+   border-radius: 50%;
+-  outline: 1px solid rgba(199, 154, 59, 0.35);
++  outline: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+   outline-offset: 7px;
+   padding: 20px;
+   text-align: center;
+diff --git a/frontend/src/components/site/StickyBar.module.css b/frontend/src/components/site/StickyBar.module.css
+--- a/frontend/src/components/site/StickyBar.module.css
++++ b/frontend/src/components/site/StickyBar.module.css
+@@ -6,7 +6,7 @@
+   z-index: 8;
+   display: flex;
+   gap: 8px;
+-  filter: drop-shadow(0 6px 14px rgba(18, 53, 36, 0.28));
++  filter: drop-shadow(0 6px 14px color-mix(in srgb, var(--forest) 28%, transparent));
+   /* One-time slide-up on first paint. Visible by default, so pre-rendered HTML is complete. */
+   animation: bar-in var(--dur-slow) var(--ease-out) both;
+ }
+diff --git a/frontend/src/components/ui/Badge.module.css b/frontend/src/components/ui/Badge.module.css
+--- a/frontend/src/components/ui/Badge.module.css
++++ b/frontend/src/components/ui/Badge.module.css
+@@ -1,29 +1,12 @@
+-/* Admin is light only, so these are fixed values (spec 2.2). */
+ .badge {
+   composes: pill from '../../design/shapes.module.css';
+   display: inline-block;
+   padding: 3px 10px;
+-  background: #e3eee6;
+-  color: #1b5e3b;
++  background: var(--mint);
++  color: var(--ink);
+   font: 700 0.72rem var(--sans);
+ }
+-
+-.new {
+-  background: #fff1cc;
+-  color: #7a5a00;
+-}
+-
+-.blue {
+-  background: #dceafa;
+-  color: #1b4f8a;
+-}
+-
+-.purple {
+-  background: #ede6f7;
+-  color: #4b2e83;
+-}
+-
+-.red {
+-  background: #f4e1df;
+-  color: #8a2c24;
+-}
++.new { background: var(--straw); color: var(--on-straw); }
++.blue { background: color-mix(in srgb, var(--leaf) 16%, var(--surf)); color: var(--ink); }
++.purple { background: color-mix(in srgb, var(--moss) 18%, var(--surf)); color: var(--ink); }
++.red { background: color-mix(in srgb, var(--danger) 12%, var(--surf)); color: var(--danger); }
+diff --git a/frontend/src/components/ui/Chip.module.css b/frontend/src/components/ui/Chip.module.css
+--- a/frontend/src/components/ui/Chip.module.css
++++ b/frontend/src/components/ui/Chip.module.css
+@@ -23,7 +23,7 @@
+ .care[aria-pressed='true'] {
+   background: var(--moss);
+   border-color: var(--moss);
+-  color: #fff;
++  color: var(--onf);
+ }
+ 
+ .care:disabled {
+diff --git a/frontend/src/design/tokens.css b/frontend/src/design/tokens.css
+--- a/frontend/src/design/tokens.css
++++ b/frontend/src/design/tokens.css
+@@ -45,6 +45,7 @@
+   --on-gold: #1B1706;
+   --on-straw: #F0E7C9;
+   --on-leaf: #06260F;
++  --danger: #F28B82;
+ }
+ 
+ /* Breakpoints: tablet @700px, desktop @1040px. */
+@@ -78,7 +79,7 @@
+   --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px;
+   --space-6:32px; --space-7:48px; --space-8:64px; --space-9:80px; --space-10:104px;
+   --r-xs:8px; --r-sm:12px; --r-md:18px; --r-lg:24px; --r-xl:28px; --r-pill:999px;
+-  --shadow-1:0 1px 2px rgba(18,53,36,0.06),0 2px 8px rgba(18,53,36,0.06);
+-  --shadow-2:0 2px 4px rgba(18,53,36,0.06),0 12px 32px rgba(18,53,36,0.12);
++  --shadow-1: 0 1px 2px color-mix(in srgb, var(--forest) 6%, transparent), 0 2px 8px color-mix(in srgb, var(--forest) 8%, transparent);
++  --shadow-2: 0 2px 4px color-mix(in srgb, var(--forest) 6%, transparent), 0 12px 32px color-mix(in srgb, var(--forest) 12%, transparent);
+   --highlight-inset:inset 0 0 0 0 transparent;
+ }
+diff --git a/frontend/src/features/admin/care/care-screen.css b/frontend/src/features/admin/care/care-screen.css
+--- a/frontend/src/features/admin/care/care-screen.css
++++ b/frontend/src/features/admin/care/care-screen.css
+@@ -3,9 +3,9 @@
+   gap: 12px;
+   margin: 16px 0;
+   padding: 16px;
+-  border: 1px solid var(--border);
++  border: 1px solid var(--line);
+   border-radius: 12px;
+-  background: var(--surface);
++  background: var(--surf);
+ }
+ .care-actions {
+   display: flex;
+@@ -14,7 +14,7 @@
+   flex-wrap: wrap;
+   margin: 16px 0;
+   padding: 16px;
+-  border: 1px solid var(--border);
++  border: 1px solid var(--line);
+   border-radius: 12px;
+ }
+ .care-subnav {
+@@ -22,7 +22,7 @@
+   gap: 6px;
+   overflow: auto;
+   padding: 4px 0 12px;
+-  border-bottom: 1px solid var(--border);
++  border-bottom: 1px solid var(--line);
+   margin-bottom: 16px;
+ }
+ .care-subnav button {
+@@ -41,19 +41,19 @@
+ }
+ .care-notice {
+   padding: 12px;
+-  border: 1px solid var(--border);
++  border: 1px solid var(--line);
+   border-radius: 8px;
+   margin: 12px 0;
+ }
+ .care-note {
+   padding: 12px;
+-  background: var(--surface-muted);
++  background: var(--mint);
+   border-radius: 8px;
+ }
+ .care-detail {
+   margin-top: 16px;
+   padding: 16px;
+-  border: 1px solid var(--border);
++  border: 1px solid var(--line);
+   border-radius: 12px;
+ }
+ .care-detail pre,
+@@ -71,7 +71,7 @@
+   gap: 12px;
+   align-items: end;
+   padding: 12px;
+-  border: 1px solid var(--border);
++  border: 1px solid var(--line);
+   border-radius: 10px;
+ }
+ .care-readiness {
+@@ -84,7 +84,7 @@
+   grid-template-columns: 100px 1fr;
+   gap: 8px;
+   padding: 10px;
+-  border: 1px solid var(--border);
++  border: 1px solid var(--line);
+   border-radius: 8px;
+ }
+ .care-check small {
+diff --git a/frontend/src/features/admin/care/care.css b/frontend/src/features/admin/care/care.css
+--- a/frontend/src/features/admin/care/care.css
++++ b/frontend/src/features/admin/care/care.css
+@@ -14,7 +14,7 @@
+   max-width: 36rem;
+   margin: 1rem 0;
+   padding: 1rem;
+-  border: 1px solid var(--border, #d9e1da);
++  border: 1px solid var(--line);
+   border-radius: 0.75rem;
+ }
+ .care-form label {
+@@ -27,7 +27,7 @@
+   min-height: 2.75rem;
+   padding: 0.6rem;
+   font: inherit;
+-  border: 1px solid #8c9c91;
++  border: 1px solid var(--line);
+   border-radius: 0.4rem;
+ }
+ .care-table-wrap {
+@@ -42,7 +42,7 @@
+ .care-table-wrap td {
+   padding: 0.7rem;
+   text-align: left;
+-  border-bottom: 1px solid #d9e1da;
++  border-bottom: 1px solid var(--line);
+ }
+ 
+ .care-data-actions {
+@@ -53,8 +53,8 @@
+ }
+ 
+ .care-danger-button {
+-  border: 1px solid var(--danger, #a52828);
+-  color: var(--danger, #a52828);
++  border: 1px solid var(--danger);
++  color: var(--danger);
+ }
+ 
+ .care-data-export {
+@@ -62,7 +62,7 @@
+   overflow: auto;
+   margin-top: 1rem;
+   padding: 1rem;
+-  border: 1px solid var(--line, #d5d5d5);
++  border: 1px solid var(--line);
+   border-radius: 0.75rem;
+   white-space: pre-wrap;
+   overflow-wrap: anywhere;
+@@ -89,7 +89,7 @@
+   gap: 1.25rem;
+   margin: 1.5rem 0;
+   padding: 1.25rem;
+-  border: 1px solid var(--border, #d9e1da);
++  border: 1px solid var(--line);
+   border-radius: 0.75rem;
+ }
+ .care-review-header {
+@@ -110,12 +110,12 @@
+ .care-review-summary div {
+   padding: 0.75rem;
+   border-radius: 0.5rem;
+-  background: var(--surface-muted, #f4f6f4);
++  background: var(--mint);
+ }
+ .care-review-summary dt {
+   font-size: 0.85rem;
+   text-transform: capitalize;
+-  color: var(--muted, #526157);
++  color: var(--mut);
+ }
+ .care-review-summary dd {
+   margin: 0.25rem 0 0;
+@@ -132,7 +132,7 @@
+ .care-timeline time {
+   display: block;
+   font-size: 0.875rem;
+-  color: var(--muted, #526157);
++  color: var(--mut);
+ }
+ .care-photo-records {
+   display: grid;
+@@ -141,7 +141,7 @@
+ }
+ .care-photo-records article {
+   padding: 0.75rem;
+-  border: 1px solid var(--border, #d9e1da);
++  border: 1px solid var(--line);
+   border-radius: 0.5rem;
+ }
+ @media (max-width: 720px) {

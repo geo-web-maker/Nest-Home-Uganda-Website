@@ -2,11 +2,13 @@
 
 from datetime import UTC, datetime, timedelta
 
+from app.modules.care_clients.models import CareClient
 from app.modules.field.rules import clock_offset_s, verification_label
 from app.modules.flags.models import VisitFlag
 from app.modules.geo.rules import verify
 from app.modules.nurses.models import NurseProfile
-from app.modules.visits.models import Visit, VisitEvent, VisitNote
+from app.modules.visits.models import Visit, VisitEvent, VisitNote, VisitPhoto
+from app.modules.visits.photo_rules import missing_required_photo_evidence
 from app.modules.visits.rules import VisitRuleError, flags_for_event, next_status
 
 
@@ -32,6 +34,29 @@ async def record_event(
         new_status = next_status({"status": visit.status}, event_type)
     except VisitRuleError as exc:
         return {"status": "rejected", "reason": str(exc)}
+    if event_type == "check_out":
+        values = await care_values()
+        client = await CareClient.find_one(CareClient.id == visit.client_id)
+        required_mode = (
+            getattr(client, "photo_required", None)
+            if client is not None and getattr(client, "photo_required", None) is not None
+            else values.get("photos.required", "none")
+        )
+        photos = await VisitPhoto.find(
+            VisitPhoto.visit_id == visit_id, VisitPhoto.nurse_id == nurse_id
+        ).to_list()
+        registered_types = [
+            getattr(photo, "photo_type", "other")
+            for photo in photos
+            if photo.status == "uploaded"
+        ]
+        try:
+            photo_missing = missing_required_photo_evidence(required_mode, registered_types)
+        except ValueError:
+            # Fail closed on a corrupt stored setting rather than bypassing evidence policy.
+            return {"status": "rejected", "reason": "photo_requirement_invalid"}
+        if photo_missing:
+            return {"status": "rejected", "reason": "photo_required_on_checkout"}
     offset = clock_offset_s(received_at, payload.sent_at_device)
     snapshot = visit.place_snapshot or {"lat": 0, "lng": 0, "radius_m": 150}
     verification, distance = verify(

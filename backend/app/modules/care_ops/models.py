@@ -55,6 +55,16 @@ class SOSCase(Document):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     acknowledged_at: datetime | None = None
     acknowledged_by: str | None = None
+    # Live follow is opt-in and bounded on the server. Location snapshots are
+    # retained as append-only SOSEvent records and redacted by the SOS retention job.
+    live_follow_started_at: datetime | None = None
+    live_follow_until: datetime | None = None
+    live_follow_stopped_at: datetime | None = None
+    nurse_reported_safe_at: datetime | None = None
+    resolved_at: datetime | None = None
+    resolved_by: str | None = None
+    outcome: str | None = None
+    response_notes: str | None = None
     events: list[dict[str, Any]] = Field(default_factory=list)
 
     class Settings:

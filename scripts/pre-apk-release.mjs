@@ -55,6 +55,30 @@ const nurseScripts = ['typecheck', 'lint', 'test', 'build', 'test:reference', 't
 for (const script of frontendScripts) packageScript('frontend', script);
 for (const script of nurseScripts) packageScript('nurse', script);
 
+// The nurse tests use jest-dom matchers (toBeInTheDocument and friends). Fail here, with a clear
+// message, instead of 20 type errors later if the package, the setup file or its wiring is gone.
+function assertNurseJestDomSetup() {
+  assertFile('nurse/src/test-setup.ts', 'nurse test setup file');
+  const pkg = JSON.parse(readFileSync(join(root, 'nurse/package.json'), 'utf8'));
+  if (!pkg.devDependencies?.['@testing-library/jest-dom']) {
+    console.error('nurse/package.json must list @testing-library/jest-dom in devDependencies (run: cd nurse && npm install)');
+    process.exit(1);
+  }
+  if (!readFileSync(join(root, 'nurse/src/test-setup.ts'), 'utf8').includes('@testing-library/jest-dom/vitest')) {
+    console.error('nurse/src/test-setup.ts must import @testing-library/jest-dom/vitest');
+    process.exit(1);
+  }
+  if (!readFileSync(join(root, 'nurse/vitest.config.ts'), 'utf8').includes('src/test-setup.ts')) {
+    console.error('nurse/vitest.config.ts must load src/test-setup.ts through test.setupFiles');
+    process.exit(1);
+  }
+  if (!existsSync(join(root, 'nurse/node_modules/@testing-library/jest-dom'))) {
+    console.error('Nurse dependencies are not installed or are out of date. Run: cd nurse && npm ci');
+    process.exit(1);
+  }
+}
+assertNurseJestDomSetup();
+
 if (staticOnly) {
   console.log('\nSTATIC CHECK: PASS');
   process.exit(0);

@@ -1,11 +1,11 @@
 .section {
-  padding-block: 52px;
+  padding-block: 40px;
   background: var(--bg);
   color: var(--ink);
 }
 .columns {
   display: grid;
-  gap: 32px;
+  gap: 24px;
 }
 .left,
 .right {
@@ -24,11 +24,11 @@
 }
 @media (min-width: 1040px) {
   .section {
-    padding-block: 84px;
+    padding-block: 76px;
   }
   .columns {
-    grid-template-columns: 1.1fr 0.9fr;
-    gap: 60px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.96fr);
+    gap: 44px;
     align-items: start;
   }
 }

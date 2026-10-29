@@ -10,6 +10,12 @@ import type { PricingBlockPublic } from './types';
 import { Reveal } from '../../../components/ui/Reveal';
 import styles from './HowItWorksPage.module.css';
 
+function accentLastWord(value: string) {
+  const split = value.lastIndexOf(' ');
+  if (split < 0) return value;
+  return <>{value.slice(0, split)} <em className={styles.accent}>{value.slice(split + 1)}</em></>;
+}
+
 export function HowItWorksPage() {
   const { t } = useTranslation('site');
   const { t: tc } = useTranslation('common');
@@ -39,7 +45,7 @@ export function HowItWorksPage() {
     },
   ];
   return (
-    <>
+    <div className={styles.page}>
       <Seo
         title={t('howItWorks.seoTitle')}
         description={t('howItWorks.seoDescription')}
@@ -47,7 +53,7 @@ export function HowItWorksPage() {
       />
       <PageHero
         rule={t('howItWorks.rule')}
-        title={t('howItWorks.title')}
+        title={accentLastWord(t('howItWorks.title'))}
         lead={t('howItWorks.lead')}
         breadcrumb={[{ label: tc('nav.home'), to: '/' }, { label: t('howItWorks.rule') }]}
       />
@@ -93,6 +99,6 @@ export function HowItWorksPage() {
         bookLabel={t('howItWorks.ctaBook')}
         whatsappLabel={tc('actions.whatsapp')}
       />
-    </>
+    </div>
   );
 }

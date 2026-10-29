@@ -1,0 +1,159 @@
+diff --git a/frontend/src/features/public/booking/BookingForm.module.css b/frontend/src/features/public/booking/BookingForm.module.css
+--- a/frontend/src/features/public/booking/BookingForm.module.css
++++ b/frontend/src/features/public/booking/BookingForm.module.css
+@@ -1,8 +1,10 @@
+ .card {
+   background: var(--surf);
+-  border: 1px solid rgba(199, 154, 59, 0.4);
++  box-shadow: var(--shadow-1);
++  border: 1px solid color-mix(in srgb, var(--gold) 38%, var(--line));
+   border-radius: 28px;
+   padding: 24px 20px;
++  color: var(--ink);
+ }
+ 
+ .title {
+@@ -122,3 +124,13 @@
+     animation: none;
+   }
+ }
++
++.failure {
++  background: color-mix(in srgb, var(--danger) 6%, var(--surf));
++}
++.card[data-state='success'] {
++  border-color: color-mix(in srgb, var(--leaf) 44%, var(--line));
++}
++@media (min-width: 700px) {
++  .card { padding: 30px; }
++}
+diff --git a/frontend/src/features/public/booking/BookingForm.tsx b/frontend/src/features/public/booking/BookingForm.tsx
+--- a/frontend/src/features/public/booking/BookingForm.tsx
++++ b/frontend/src/features/public/booking/BookingForm.tsx
+@@ -126,6 +126,7 @@
+         <Button
+           variant="whatsapp"
+           fullWidth
++          arrow
+           href={result.whatsappUrl}
+           target="_blank"
+           rel="noopener noreferrer"
+@@ -147,6 +148,7 @@
+       <Button
+         variant="whatsapp"
+         fullWidth
++        arrow
+         href={plainWhatsappUrl(whatsappDigits)}
+         target="_blank"
+         rel="noopener noreferrer"
+@@ -293,11 +295,12 @@
+         <div className={styles.failure} role="alert">
+           <p>{phase === 'rate_limited' ? copy.rateLimited : copy.sendFailed}</p>
+           <div className={styles.fallbacks}>
+-            <Button href={callHref} onClick={() => onContactClick?.('call')}>
++            <Button href={callHref} arrow onClick={() => onContactClick?.('call')}>
+               {copy.callNow}
+             </Button>
+             <Button
+               variant="whatsapp"
++              arrow
+               href={plainWhatsappUrl(whatsappDigits)}
+               target="_blank"
+               rel="noopener noreferrer"
+@@ -309,7 +312,7 @@
+         </div>
+       ) : null}
+ 
+-      <Button type="submit" fullWidth disabled={busy} aria-busy={busy}>
++      <Button type="submit" fullWidth arrow disabled={busy} aria-busy={busy}>
+         {busy ? copy.sending : copy.send}
+       </Button>
+     </form>
+diff --git a/frontend/src/features/public/contact/ContactPage.module.css b/frontend/src/features/public/contact/ContactPage.module.css
+--- a/frontend/src/features/public/contact/ContactPage.module.css
++++ b/frontend/src/features/public/contact/ContactPage.module.css
+@@ -1,11 +1,11 @@
+ .section {
+-  padding-block: 52px;
++  padding-block: 40px;
+   background: var(--bg);
+   color: var(--ink);
+ }
+ .columns {
+   display: grid;
+-  gap: 32px;
++  gap: 24px;
+ }
+ .left,
+ .right {
+@@ -24,11 +24,11 @@
+ }
+ @media (min-width: 1040px) {
+   .section {
+-    padding-block: 84px;
++    padding-block: 76px;
+   }
+   .columns {
+-    grid-template-columns: 1.1fr 0.9fr;
+-    gap: 60px;
++    grid-template-columns: minmax(0, 1fr) minmax(0, 0.96fr);
++    gap: 44px;
+     align-items: start;
+   }
+ }
+diff --git a/frontend/src/features/public/contact/ContactPage.test.tsx b/frontend/src/features/public/contact/ContactPage.test.tsx
+--- a/frontend/src/features/public/contact/ContactPage.test.tsx
++++ b/frontend/src/features/public/contact/ContactPage.test.tsx
+@@ -45,11 +45,12 @@
+     );
+   });
+ 
+-  it('shows the office card and hides the hours card until hours exist', () => {
++  it('shows the hours placeholder until opening hours are supplied', () => {
+     setup();
+     expect(screen.getByText('Office')).toBeInTheDocument();
+     expect(screen.getByText('Kampala, Uganda')).toBeInTheDocument();
+-    expect(screen.queryByText('Hours')).not.toBeInTheDocument();
++    expect(screen.getByText('Hours')).toBeInTheDocument();
++    expect(screen.getByText('Add opening hours')).toBeInTheDocument();
+   });
+ 
+   it('renders the booking form and the map slot, with no call-to-action band', () => {
+diff --git a/frontend/src/features/public/contact/ContactPage.tsx b/frontend/src/features/public/contact/ContactPage.tsx
+--- a/frontend/src/features/public/contact/ContactPage.tsx
++++ b/frontend/src/features/public/contact/ContactPage.tsx
+@@ -51,12 +51,13 @@
+         <div className={`container ${styles.columns}`}>
+           <Reveal className={styles.left}>
+             <div className={styles.actions}>
+-              <Button href={`tel:${dial}`} onClick={() => trackClick('call', pathname, baseUrl)}>
++              <Button href={`tel:${dial}`} arrow onClick={() => trackClick('call', pathname, baseUrl)}>
+                 {t('contact.callBig', { phone })}
+               </Button>
+               <Button
+                 href={plainWhatsappUrl(whatsapp)}
+                 variant="whatsapp"
++                arrow
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 onClick={() => trackClick('whatsapp', pathname, baseUrl)}
+@@ -66,7 +67,7 @@
+             </div>
+             <div className={styles.cards}>
+               <InfoCard label={t('contact.officeLabel')} value={office} />
+-              {hours ? <InfoCard label={t('contact.hoursLabel')} value={hours} /> : null}
++              <InfoCard label={t('contact.hoursLabel')} value={hours || t('contact.hoursMissing')} />
+             </div>
+             <MapPlaceholder
+               label={t('contact.mapLabel')}
+diff --git a/frontend/src/locales/en/site.ts b/frontend/src/locales/en/site.ts
+--- a/frontend/src/locales/en/site.ts
++++ b/frontend/src/locales/en/site.ts
+@@ -174,6 +174,7 @@
+     whatsappUs: 'WhatsApp us',
+     officeLabel: 'Office',
+     hoursLabel: 'Hours',
++    hoursMissing: 'Add opening hours',
+     mapLabel: 'Map of our office',
+     mapDescription: 'Map location to be confirmed by the client.',
+   },

@@ -126,6 +126,7 @@ export function BookingForm({
         <Button
           variant="whatsapp"
           fullWidth
+          arrow
           href={result.whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
@@ -147,6 +148,7 @@ export function BookingForm({
       <Button
         variant="whatsapp"
         fullWidth
+        arrow
         href={plainWhatsappUrl(whatsappDigits)}
         target="_blank"
         rel="noopener noreferrer"
@@ -293,11 +295,12 @@ export function BookingForm({
         <div className={styles.failure} role="alert">
           <p>{phase === 'rate_limited' ? copy.rateLimited : copy.sendFailed}</p>
           <div className={styles.fallbacks}>
-            <Button href={callHref} onClick={() => onContactClick?.('call')}>
+            <Button href={callHref} arrow onClick={() => onContactClick?.('call')}>
               {copy.callNow}
             </Button>
             <Button
               variant="whatsapp"
+              arrow
               href={plainWhatsappUrl(whatsappDigits)}
               target="_blank"
               rel="noopener noreferrer"
@@ -309,7 +312,7 @@ export function BookingForm({
         </div>
       ) : null}
 
-      <Button type="submit" fullWidth disabled={busy} aria-busy={busy}>
+      <Button type="submit" fullWidth arrow disabled={busy} aria-busy={busy}>
         {busy ? copy.sending : copy.send}
       </Button>
     </form>

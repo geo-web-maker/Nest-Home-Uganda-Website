@@ -6,7 +6,7 @@
   padding-top: env(safe-area-inset-top);
   background: var(--forest);
   color: var(--onf);
-  border-bottom: 1px solid rgba(199, 154, 59, 0.4);
+  border-bottom: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
 }
 
 /* Scrolled shadow: opacity of a pseudo-element, set by data-scrolled from Header.tsx. */
@@ -206,7 +206,7 @@
 
   .list {
     flex-direction: row;
-    gap: 22px;
+    gap: 12px;
     overflow: visible;
   }
 
@@ -254,7 +254,7 @@
     padding: 8px 14px;
     overflow: visible;
     background: var(--forest);
-    border: 1px solid rgba(199, 154, 59, 0.4);
+    border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
     border-radius: 14px;
     transform: translateY(-6px);
     transition:
@@ -289,4 +289,10 @@
       transform var(--dur-fast) var(--ease-out),
       visibility 0s;
   }
+}
+
+.themeItem { list-style: none; }
+@media (min-width: 1040px) {
+  .themeItem { display: flex; align-items: center; margin-inline-start: 2px; }
+  .themeItem :global(button) { min-height: 34px; min-width: 42px; padding: 5px 8px; }
 }

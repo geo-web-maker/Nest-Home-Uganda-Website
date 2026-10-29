@@ -52,6 +52,30 @@ describe('runSync', () => {
     expect(permanent.rows.get('operation-0001')?.state).toBe('needs_attention');
   });
 
+  it('registers queued photos after the consent gate and before a checkout write', async () => {
+    const order: string[] = [];
+    const apiRequest = vi.fn(async (path: string) => { order.push(`write:${path}`); return { status: 'accepted' }; });
+    const kit = deps([op({ id: 'checkout-op-001', kind: 'check_out' })], apiRequest);
+    await runSync({
+      ...kit.dependencies,
+      beforeOperations: async () => { order.push('photo-preflight'); return { blockedCheckoutVisitIds: [] }; },
+    });
+    expect(order[0]).toBe('photo-preflight');
+    expect(order[1]).toContain('/check-out');
+  });
+
+  it('leaves checkout queued when required photo evidence is not registered', async () => {
+    const apiRequest = vi.fn(async () => ({ status: 'accepted' }));
+    const kit = deps([op({ id: 'checkout-op-002', kind: 'check_out' })], apiRequest);
+    const result = await runSync({
+      ...kit.dependencies,
+      beforeOperations: async () => ({ blockedCheckoutVisitIds: ['visit-0001'] }),
+    });
+    expect(apiRequest).not.toHaveBeenCalled();
+    expect(kit.rows.get('checkout-op-002')?.state).toBe('queued');
+    expect(result.photoRequirementBlockedCount).toBe(1);
+  });
+
   it('shares a single in-flight run across overlapping triggers', async () => {
     let resolveProfile!: (profile: { user_id: string; consents_required: never[] }) => void;
     const profilePromise = new Promise<{ user_id: string; consents_required: never[] }>((resolve) => { resolveProfile = resolve; });

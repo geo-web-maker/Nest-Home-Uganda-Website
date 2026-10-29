@@ -1,0 +1,172 @@
+diff --git a/nurse/src/app/AppShell.test.tsx b/nurse/src/app/AppShell.test.tsx
+index fb717b5..9f237cd 100644
+--- a/nurse/src/app/AppShell.test.tsx
++++ b/nurse/src/app/AppShell.test.tsx
+@@ -13,9 +13,10 @@ describe('nurse app shell', () => {
+     expect(screen.getByText('Offline')).toBeTruthy();
+     expect(screen.getByRole('link', { name: /3 waiting/i })).toBeTruthy();
+     expect(screen.getByText('Saved locally')).toBeTruthy();
++    expect(screen.getByText('Offline')).toBeTruthy();
+   });
+ 
+-  it('marks the current tab and keeps the shell tabs predictable', () => {
++  it('renders the compact connection status and marks the current tab predictably', () => {
+     renderShell('/history', true);
+     // The shell renders two "Main navigation" landmarks (desktop rail and bottom tabs); CSS shows
+     // one at a time, but jsdom applies no CSS, so both exist here and each must agree.
+diff --git a/nurse/src/app/AppShell.tsx b/nurse/src/app/AppShell.tsx
+index 112589f..965e306 100644
+--- a/nurse/src/app/AppShell.tsx
++++ b/nurse/src/app/AppShell.tsx
+@@ -1,5 +1,6 @@
+ import type { ReactNode } from 'react';
+ import { NavLink, Link, useLocation } from 'react-router-dom';
++import { useEffect, useRef } from 'react';
+ import { copy } from '../copy';
+ import { SosControl } from '../features/sos/SosSheet';
+ 
+@@ -16,6 +17,13 @@ type Props = {
+ 
+ export function AppShell({ children, online, queued, authenticated, message, sosEnabled, smsHref, onSendSos }: Props) {
+   const location = useLocation();
++  const previousOnline = useRef(online);
++  const backOnline = online && !previousOnline.current;
++  const syncing = message === copy.messages.syncStarted || message === copy.messages.notificationOpenedSyncing;
++  const syncProblem = message === copy.messages.syncFailed;
++  useEffect(() => { previousOnline.current = online; }, [online]);
++  const bannerLabel = backOnline ? copy.shell.backOnlineLabel : online ? copy.shell.onlineLabel : copy.shell.offlineLabel;
++  const bannerText = syncing ? copy.shell.syncing : syncProblem ? copy.shell.problem : online && queued === 0 ? copy.shell.saved : online ? copy.shell.online : copy.shell.offline;
+   return (
+     <div className="nurse-app">
+       <header className="app-header">
+@@ -24,8 +32,8 @@ export function AppShell({ children, online, queued, authenticated, message, sos
+         <p>{copy.offlinePurpose}</p>
+       </header>
+       <div className={`connection-banner ${online ? 'is-online' : 'is-offline'}`} role="status" aria-live="polite">
+-        <strong>{online ? copy.shell.onlineLabel : copy.shell.offlineLabel}</strong>
+-        <span>{online ? copy.shell.online : copy.shell.offline}</span>
++        <strong>{bannerLabel}</strong>
++        <span>{bannerText}</span>
+         <Link to="/sync">{queued} {copy.shell.waiting}</Link>
+       </div>
+       {message && <p className="notice" role="status">{message}</p>}
+diff --git a/nurse/src/copy.ts b/nurse/src/copy.ts
+index 9987bbf..9f90da0 100644
+--- a/nurse/src/copy.ts
++++ b/nurse/src/copy.ts
+@@ -6,7 +6,7 @@ export const copy = {
+   manifestDescription: 'Offline-first visit workspace for authorised Well Nest Home Care Uganda nurses.',
+   organisation: 'Well Nest Home Care Uganda Ltd',
+   offlinePurpose: 'Your visits stay available when the network is unavailable.',
+-  shell: { onlineLabel: 'Online', offlineLabel: 'Offline', online: 'A connection is available.', offline: 'Saved actions will stay on this device until reconnection.', waiting: 'waiting · Sync status', syncStatus: 'Sync status', safetyAlert: 'Safety alert', sosDisabled: 'SOS is not enabled by your organisation.', mainNavigation: 'Main navigation' },
++  shell: { onlineLabel: 'Online', offlineLabel: 'Offline', backOnlineLabel: 'Back online', online: 'A connection is available.', offline: 'Saved actions will stay on this device until reconnection.', waiting: 'waiting · Sync status', syncing: 'Syncing saved changes…', saved: 'All saved', problem: 'One saved item needs attention.', syncStatus: 'Sync status', safetyAlert: 'Safety alert', sosDisabled: 'SOS is not enabled by your organisation.', mainNavigation: 'Main navigation' },
+   login: {
+     heading: 'Welcome back',
+     subtitle: 'Sign in to see your day',
+diff --git a/nurse/src/screens/TodayScreen.test.tsx b/nurse/src/screens/TodayScreen.test.tsx
+index c224751..4290f05 100644
+--- a/nurse/src/screens/TodayScreen.test.tsx
++++ b/nurse/src/screens/TodayScreen.test.tsx
+@@ -24,10 +24,11 @@ describe('Today screen', () => {
+     expect(names).toEqual(['Active client', 'Scheduled client']);
+   });
+ 
+-  it('does not render unscheduled visit controls unless allowed', () => {
++  it('does not render unscheduled visit controls unless allowed and opens a client-only sheet when enabled', () => {
+     const { rerender } = render(<MemoryRouter><TodayScreen {...baseProps} /></MemoryRouter>);
+     expect(screen.queryByRole('button', { name: /unscheduled visit/i })).toBeNull();
+-    rerender(<MemoryRouter><TodayScreen {...baseProps} adhocAllowed /></MemoryRouter>);
+-    expect(screen.getByRole('button', { name: /unscheduled visit/i })).toBeTruthy();
++    rerender(<MemoryRouter><TodayScreen {...baseProps} adhocAllowed adhocOpen /></MemoryRouter>);
++    expect(screen.getByRole('dialog', { name: /who did you visit/i })).toBeInTheDocument();
++    expect(screen.getByText(/choose from your own clients/i)).toBeInTheDocument();
+   });
+ });
+diff --git a/nurse/src/screens/TodayScreen.tsx b/nurse/src/screens/TodayScreen.tsx
+index 19f5720..593cc5b 100644
+--- a/nurse/src/screens/TodayScreen.tsx
++++ b/nurse/src/screens/TodayScreen.tsx
+@@ -14,9 +14,8 @@ export function TodayScreen(props: Props) {
+   const ordered = [...props.visits].sort((a, b) => Number(b.status === 'in_progress') - Number(a.status === 'in_progress') || Date.parse(a.scheduled_start) - Date.parse(b.scheduled_start));
+   return <section className="screen" aria-labelledby="today-heading">
+     <div className="screen-heading"><div><p className="eyebrow">{copy.today.eyebrow}</p><h2 id="today-heading">{copy.today.heading}</h2></div><button type="button" className="button-secondary" onClick={props.onSync} disabled={props.loading}>{props.loading ? copy.today.syncing : copy.today.refresh}</button></div>
+-    {props.adhocAllowed && <section className="panel compact-panel"><button type="button" aria-expanded={props.adhocOpen} onClick={props.onAdhocOpen}>{copy.today.adhocOpen}</button>
+-      {props.adhocOpen && <form onSubmit={props.onStartAdhoc} className="stack-form"><label htmlFor="adhoc-client">{copy.today.assignedClient}</label><select id="adhoc-client" value={props.adhocClientId} onChange={(event) => props.onAdhocClient(event.target.value)} required><option value="">{copy.today.chooseClient}</option>{props.clients.map((client) => <option key={client.id} value={client.id}>{client.display_name}</option>)}</select><p>{copy.today.adhocExplanation}</p><div className="inline-actions"><button type="submit" disabled={!props.adhocClientId}>{copy.today.startVisit}</button><button type="button" className="button-secondary" onClick={props.onAdhocOpen}>{copy.generic.cancel}</button></div></form>}
+-    </section>}
++    {props.adhocAllowed && <section className="adhoc-launch"><button type="button" aria-expanded={props.adhocOpen} onClick={props.onAdhocOpen}>{copy.today.adhocOpen}<span aria-hidden="true">→</span></button></section>}
++    {props.adhocOpen && <div className="sheet-backdrop" role="presentation"><section className="sheet adhoc-sheet" role="dialog" aria-modal="true" aria-labelledby="adhoc-title"><div className="sheet-handle" aria-hidden="true" /><h2 id="adhoc-title">Who did you visit?</h2><p>Choose from your own clients. No typing.</p><form onSubmit={props.onStartAdhoc}><div className="adhoc-options">{props.clients.map((client) => <label key={client.id}><input type="radio" name="adhoc-client" value={client.id} checked={props.adhocClientId === client.id} onChange={(event) => props.onAdhocClient(event.target.value)} /><span>{client.display_name}</span></label>)}</div><p className="notice info">Your supervisor will review unscheduled visits.</p><div className="sheet-actions"><button type="submit" disabled={!props.adhocClientId}>{copy.today.startVisit}<span aria-hidden="true">→</span></button><button type="button" className="button-secondary" onClick={props.onAdhocOpen}>{copy.generic.cancel}</button></div></form></section></div>}
+     {props.pendingPhotoCount > 20 && <p role="status" className="notice">{copy.today.photoQueueWarning}</p>}
+     {ordered.length === 0 ? <div className="empty-state"><h3>{copy.visit.empty}</h3><p>{copy.today.emptyHint}</p><button type="button" onClick={props.onSync}>{copy.generic.syncSchedule}</button></div> : (
+       <div className="today-workspace">
+diff --git a/nurse/src/screens/VisitCard.test.tsx b/nurse/src/screens/VisitCard.test.tsx
+index 25ffa42..73a5d0c 100644
+--- a/nurse/src/screens/VisitCard.test.tsx
++++ b/nurse/src/screens/VisitCard.test.tsx
+@@ -23,10 +23,10 @@ describe('visit card action matrix', () => {
+     expect(onLeave).not.toHaveBeenCalled();
+   });
+ 
+-  it('offers departure and an active marker for an in-progress visit', () => {
++  it('offers departure and a running elapsed marker for an in-progress visit', () => {
+     const activeVisit = { ...baseVisit, status: 'in_progress' as const, check_in_at: baseVisit.scheduled_start };
+     const { onArrive, onLeave } = renderCard(activeVisit);
+-    expect(screen.getByText('Active visit')).toBeTruthy();
++    expect(screen.getByText('00:00:00')).toBeTruthy();
+     fireEvent.click(screen.getByRole('button', { name: 'Leave' }));
+     expect(onLeave).toHaveBeenCalledWith(activeVisit);
+     expect(onArrive).not.toHaveBeenCalled();
+diff --git a/nurse/src/screens/VisitCard.tsx b/nurse/src/screens/VisitCard.tsx
+index 17bafc9..0d90425 100644
+--- a/nurse/src/screens/VisitCard.tsx
++++ b/nurse/src/screens/VisitCard.tsx
+@@ -1,16 +1,20 @@
++import { useEffect, useState } from 'react';
+ import { Link } from 'react-router-dom';
+ import type { CachedVisit } from '../offline/db';
+-import { formatKampala } from '../lib/time';
++import { elapsed, formatElapsed, formatKampala } from '../lib/time';
+ import { copy, visitStatusLabel } from '../copy';
+ 
+ type Props = { visit: CachedVisit; photosEnabled: boolean; onArrive: (visit: CachedVisit) => void; onLeave: (visit: CachedVisit) => void; onNote: (visit: CachedVisit) => void; onPhoto: (visit: CachedVisit) => void };
+ export function VisitCard({ visit, photosEnabled, onArrive, onLeave, onNote, onPhoto }: Props) {
++  const [now, setNow] = useState(Date.now());
++  useEffect(() => { if (visit.status !== 'in_progress') return; const timer = window.setInterval(() => setNow(Date.now()), 1_000); return () => window.clearInterval(timer); }, [visit.status]);
++  const activeStart = visit.check_in_at ?? visit.scheduled_start;
+   return <article className={`visit-card visit-card--${visit.status}`}>
+     <div className="visit-card-heading"><p className="visit-time">{formatKampala(visit.scheduled_start)} – {formatKampala(visit.scheduled_end)}</p><span className={`status-chip status-chip--${visit.status}`}>{visitStatusLabel(visit.status)}</span></div>
+     <h3>{visit.client_display_name}</h3>
+     <p>{visit.place_address_text || copy.address.missingOffline}</p>
+     {visit.instructions && <p>{visit.instructions}</p>}
+-    {visit.status === 'in_progress' && <p className="active-marker">{copy.active.eyebrow}</p>}
++    {visit.status === 'in_progress' && <p className="active-marker">{formatElapsed(elapsed(activeStart, now) * 1000)}</p>}
+     <div className="visit-card-actions">
+       <Link to={visit.status === 'in_progress' ? `/active/${encodeURIComponent(visit.id)}` : `/visit/${encodeURIComponent(visit.id)}`}>{copy.generic.viewDetails}</Link>
+       {visit.status === 'scheduled' && <button type="button" onClick={() => onArrive(visit)}>{copy.visit.arrive}</button>}
+diff --git a/nurse/src/styles.css b/nurse/src/styles.css
+index 771058a..3e34105 100644
+--- a/nurse/src/styles.css
++++ b/nurse/src/styles.css
+@@ -310,3 +310,23 @@ small, .muted, .hint { color: var(--mut); }
+ .native-prompt h2 { font-family: var(--sans); font-size: 1rem; }
+ .native-options { display: grid; gap: .35rem; margin-top: .7rem; }
+ .native-options span { display: grid; min-height: 38px; place-items: center; border: 1px solid var(--line); border-radius: 999px; background: var(--surf); color: var(--mut); font-size: .72rem; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
++
++
++/* Stage 11: Today cards, connection states and unscheduled visit sheet. */
++.connection-banner { grid-template-columns: auto 1fr; }
++.connection-banner strong { grid-column: 1 / -1; }
++.connection-banner > a { justify-self: start; padding-top: .15rem; font-size: .82rem; }
++.adhoc-launch button { width: auto; min-height: 44px; padding: .45rem .55rem .45rem 1rem; border: 0; border-radius: 999px; background: var(--mint); color: var(--ink); }
++.adhoc-launch button span { width: 2rem; height: 2rem; display: grid; place-items: center; margin-left: .35rem; border-radius: 50%; background: color-mix(in srgb, var(--ink) 8%, transparent); }
++.adhoc-sheet { padding-top: .7rem; }
++.sheet-handle { width: 40px; height: 4px; margin: 0 auto 1rem; border-radius: 99px; background: var(--line); }
++.adhoc-sheet h2 { margin-bottom: .25rem; font-family: var(--serif); font-size: 1.4rem; }
++.adhoc-sheet > p { margin-top: 0; color: var(--mut); }
++.adhoc-options { display: grid; }
++.adhoc-options label { display: grid; grid-template-columns: 1.5rem 1fr; align-items: center; min-height: 50px; margin: 0; border-bottom: 1px solid var(--line); font-weight: 500; }
++.adhoc-options input { width: 1.35rem; min-height: 1.35rem; margin: 0; accent-color: var(--leaf); }
++.adhoc-sheet .notice.info { margin-top: .7rem; border: 0; border-radius: .75rem; background: color-mix(in srgb, var(--leaf) 12%, var(--mint)); color: var(--leaf); }
++.adhoc-sheet .sheet-actions { display: grid; grid-template-columns: 1fr; }
++.adhoc-sheet .sheet-actions button:first-child { justify-content: space-between; min-height: 56px; border-radius: 999px; background: var(--gold); color: var(--on-gold); }
++.adhoc-sheet .sheet-actions button:first-child span { width: 2.4rem; height: 2.4rem; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--on-gold) 12%, transparent); }
++@media (min-width: 820px) { .adhoc-sheet { width: min(540px, 92%); } }

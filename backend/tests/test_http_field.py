@@ -50,3 +50,30 @@ async def test_adhoc_visit_requires_field_scope(client):
 async def test_sync_pull_requires_authentication(client):
     response = await client.get("/api/v1/field/sync/pull")
     assert response.status_code == 401
+
+
+async def test_live_follow_requires_the_sos_send_scope(client):
+    response = await client.post(
+        "/api/v1/field/sos/sos-case-0001/follow/start",
+        json={"id": "follow-start-0001"},
+        headers=auth(make_token(["field:use"])),
+    )
+    assert response.status_code == 403
+
+
+async def test_live_follow_ping_requires_the_sos_send_scope(client):
+    response = await client.post(
+        "/api/v1/field/sos/sos-case-0001/follow/ping",
+        json={"id": "follow-ping-0001", "lat": 0, "lng": 32, "accuracy_m": 15},
+        headers=auth(make_token(["field:use"])),
+    )
+    assert response.status_code == 403
+
+
+async def test_live_follow_safe_requires_the_sos_send_scope(client):
+    response = await client.post(
+        "/api/v1/field/sos/sos-case-0001/safe",
+        json={"id": "follow-safe-0001"},
+        headers=auth(make_token(["field:use"])),
+    )
+    assert response.status_code == 403

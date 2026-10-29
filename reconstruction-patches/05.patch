@@ -1,0 +1,798 @@
+diff --git a/frontend/e2e/reference-fidelity.spec.ts b/frontend/e2e/reference-fidelity.spec.ts
+--- a/frontend/e2e/reference-fidelity.spec.ts
++++ b/frontend/e2e/reference-fidelity.spec.ts
+@@ -2,8 +2,11 @@
+ import { json, mockApi } from './helpers';
+ import { mockAdminApi, signInReferenceAdmin } from './admin-fixtures';
+ 
+-const PUBLIC_HEADER_LINKS = ['Home', 'How it works', 'FAQ', 'Contact'];
+-const ABOUT_MENU_LINKS = ['About', 'Team', 'Areas', 'Careers'];
++const DIRECT_HEADER_LINKS = ['Home', 'About', 'How it works', 'Team', 'Areas', 'FAQ', 'Contact'];
++const COMPANY_FOOTER_LINKS = [
++  'Our team', 'Areas we serve', 'FAQ and care tips', 'About us',
++  'Privacy and terms', 'Staff login',
++];
+ 
+ test.describe('public website vs reference mockup', () => {
+   test('desktop primary navigation follows the canonical page order', async ({ page }) => {
+@@ -12,37 +15,31 @@
+     await page.goto('/');
+     const nav = page.getByRole('navigation', { name: 'Main' });
+     const primaryLabels = await nav.locator(':scope > ul > li').evaluateAll((items) =>
+-      items.map((item) => item.querySelector('a, button')?.textContent?.trim() ?? ''),
++      items.map((item) => item.querySelector(':scope > a, :scope > button')?.textContent?.trim() ?? '').filter(Boolean),
+     );
+-    expect(primaryLabels).toEqual(['Home', 'Services', 'How it works', 'About', 'FAQ', 'Contact']);
+-    for (const label of PUBLIC_HEADER_LINKS) {
++    expect(primaryLabels).toEqual(['Home', 'Services', 'About', 'How it works', 'Team', 'Areas', 'FAQ', 'Contact']);
++    for (const label of DIRECT_HEADER_LINKS) {
+       await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
+     }
+     const servicesMenu = nav.getByRole('button', { name: 'Services' });
+     await expect(servicesMenu).toBeVisible();
+     await servicesMenu.click();
+     await expect(nav.getByRole('link', { name: 'Services', exact: true })).toBeVisible();
+-    const aboutMenu = nav.getByRole('button', { name: 'About', exact: true });
+-    await expect(aboutMenu).toBeVisible();
+-    await aboutMenu.click();
+-    await expect(aboutMenu).toHaveAttribute('aria-expanded', 'true');
+-    await expect(servicesMenu).toHaveAttribute('aria-expanded', 'false');
+-    for (const label of ABOUT_MENU_LINKS) {
+-      await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
+-    }
++    await expect(nav.getByRole('link', { name: 'Elder care', exact: true })).toBeVisible();
++    await expect(nav.getByRole('group', { name: 'Theme' })).toBeVisible();
++    await expect(nav.getByRole('link', { name: 'Careers', exact: true })).toHaveCount(0);
++
+     const footer = page.locator('footer');
+     const explore = footer.getByRole('navigation', { name: 'Explore' });
+     const company = footer.getByRole('navigation', { name: 'Company' });
+     await expect(explore).toBeVisible();
+-    expect(await explore.getByRole('link').allTextContents()).toEqual([
++    expect((await explore.getByRole('link').allTextContents()).map((label) => label.trim())).toEqual([
+       'Services', 'How it works', 'Contact',
+     ]);
+-    expect(await company.getByRole('link').allTextContents()).toEqual([
+-      'Our team', 'Areas we serve', 'FAQ and care tips', 'About us', 'Careers', 'Privacy and terms', 'Staff login',
+-    ]);
++    expect((await company.getByRole('link').allTextContents()).map((label) => label.trim())).toEqual(COMPANY_FOOTER_LINKS);
+   });
+ 
+-  test('phone/tablet menu stays collapsible and all primary destinations remain reachable', async ({ page }) => {
++  test('phone/tablet menu stays collapsible and primary destinations remain reachable', async ({ page }) => {
+     await mockApi(page);
+     for (const width of [320, 390, 820]) {
+       await page.setViewportSize({ width, height: 850 });
+@@ -51,12 +48,12 @@
+       await expect(menuButton).toBeVisible();
+       await menuButton.click();
+       const nav = page.getByRole('navigation', { name: 'Main' });
+-      await expect(nav.getByRole('link', { name: 'Home', exact: true })).toBeVisible();
+-      await expect(nav.getByRole('link', { name: 'FAQ', exact: true })).toBeVisible();
+-      await nav.getByRole('button', { name: 'About', exact: true }).click();
+-      for (const label of ABOUT_MENU_LINKS) {
++      for (const label of ['Home', 'About', 'How it works', 'Team', 'Areas', 'FAQ', 'Contact']) {
+         await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
+       }
++      await nav.getByRole('button', { name: 'Services', exact: true }).click();
++      await expect(nav.getByRole('link', { name: 'Services', exact: true })).toBeVisible();
++      await expect(nav.getByRole('group', { name: 'Theme' })).toBeVisible();
+       const dimensions = await page.evaluate(() => ({
+         viewport: document.documentElement.clientWidth,
+         content: document.documentElement.scrollWidth,
+@@ -65,7 +62,7 @@
+     }
+   });
+ 
+-  test('the homepage preserves the reference section structure and palette under dark OS preference', async ({ page }) => {
++  test('the light palette ignores dark OS preference until the user explicitly chooses Dark', async ({ page }) => {
+     await mockApi(page);
+     await page.emulateMedia({ colorScheme: 'dark' });
+     await page.setViewportSize({ width: 1280, height: 900 });
+@@ -80,6 +77,17 @@
+     }));
+     expect(tokens.background).toBe('#F3F8F1');
+     expect(tokens.scheme).toBe('light');
++
++    await page.getByRole('group', { name: 'Theme' }).getByRole('button', { name: 'Dark' }).click();
++    const darkTokens = await page.evaluate(() => ({
++      background: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),
++      scheme: getComputedStyle(document.documentElement).colorScheme,
++      meta: document.querySelector('meta[name="theme-color"]')?.getAttribute('content'),
++    }));
++    expect(darkTokens.background).toBe('#0C1A12');
++    expect(darkTokens.scheme).toBe('dark');
++    expect(darkTokens.meta).toBe('#091410');
++    await expect.poll(() => page.evaluate(() => window.localStorage.getItem('nest-theme'))).toBe('dark');
+   });
+ 
+   for (const width of [320, 390, 820, 1280]) {
+diff --git a/frontend/src/components/site/CtaBand.tsx b/frontend/src/components/site/CtaBand.tsx
+--- a/frontend/src/components/site/CtaBand.tsx
++++ b/frontend/src/components/site/CtaBand.tsx
+@@ -21,10 +21,11 @@
+       <div className="container">
+         <h2 className={styles.heading}>{heading}</h2>
+         <div className={styles.actions}>
+-          <Button href="/contact">{bookLabel}</Button>
++          <Button href="/contact" arrow>{bookLabel}</Button>
+           <Button
+             href={plainWhatsappUrl(site.business.whatsapp)}
+             variant="whatsapp"
++            arrow
+             target="_blank"
+             rel="noopener noreferrer"
+             onClick={() => trackClick('whatsapp', pathname, import.meta.env.VITE_API_URL ?? '')}
+diff --git a/frontend/src/components/site/Footer.module.css b/frontend/src/components/site/Footer.module.css
+--- a/frontend/src/components/site/Footer.module.css
++++ b/frontend/src/components/site/Footer.module.css
+@@ -2,7 +2,7 @@
+   padding: 34px 0 24px;
+   background: var(--forest);
+   color: var(--onf);
+-  border-top: 1px solid rgba(199, 154, 59, 0.4);
++  border-top: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+   font-size: 0.92rem;
+ }
+ 
+@@ -12,6 +12,12 @@
+   gap: 22px;
+ }
+ 
++.brandHeading {
++  margin: 0 0 12px;
++  color: inherit;
++  font: inherit;
++}
++
+ .heading {
+   margin-bottom: 8px;
+   font: 700 1rem var(--serif);
+diff --git a/frontend/src/components/site/Footer.test.tsx b/frontend/src/components/site/Footer.test.tsx
+--- a/frontend/src/components/site/Footer.test.tsx
++++ b/frontend/src/components/site/Footer.test.tsx
+@@ -15,9 +15,11 @@
+ }
+ 
+ describe('Footer', () => {
+-  it('shows the brand column with tagline, office and a tel link', () => {
++  it('shows the brand logo with tagline, office and a tel link', () => {
+     setup();
+     expect(screen.getByText('Trusted · Reliable · Compassionate.')).toBeInTheDocument();
++    expect(screen.getByText('Well Nest Home Care Uganda')).toBeInTheDocument();
++    expect(screen.getByText('Uganda · Kampala')).toBeInTheDocument();
+     expect(screen.getByText(/Office: Kampala, Uganda/)).toBeInTheDocument();
+     expect(screen.getByRole('link', { name: '0787 499 988' })).toHaveAttribute(
+       'href',
+@@ -45,12 +47,12 @@
+       ['Areas we serve', '/areas'],
+       ['FAQ and care tips', '/faq'],
+       ['About us', '/about'],
+-      ['Careers', '/careers'],
+       ['Privacy and terms', '/privacy'],
+       ['Staff login', '/admin/login'],
+     ] as const) {
+       expect(within(company).getByRole('link', { name })).toHaveAttribute('href', href);
+     }
++    expect(within(company).queryByRole('link', { name: 'Careers' })).not.toBeInTheDocument();
+   });
+ 
+   it('marks the current footer destination', () => {
+diff --git a/frontend/src/components/site/Footer.tsx b/frontend/src/components/site/Footer.tsx
+--- a/frontend/src/components/site/Footer.tsx
++++ b/frontend/src/components/site/Footer.tsx
+@@ -1,6 +1,7 @@
+ import { useTranslation } from 'react-i18next';
+ import { Link, useLocation } from 'react-router-dom';
+ import { cx } from '../../lib/cx';
++import { Logo } from '../brand/Logo';
+ import { normaliseUgPhone } from '../../lib/phone';
+ import { useSiteSettings } from '../../lib/queries/site';
+ import styles from './Footer.module.css';
+@@ -16,7 +17,6 @@
+   { to: '/areas', label: 'site:footer.areas' },
+   { to: '/faq', label: 'site:footer.faq' },
+   { to: '/about', label: 'site:footer.aboutUs' },
+-  { to: '/careers', label: 'common:nav.careers' },
+   { to: '/privacy', label: 'site:footer.privacy' },
+   { to: '/admin/login', label: 'common:nav.staffLogin' },
+ ] as const;
+@@ -24,8 +24,7 @@
+ function isCurrentLink(to: string, pathname: string): boolean {
+   return (
+     pathname === to ||
+-    (to === '/services' && pathname.startsWith('/services/')) ||
+-    (to === '/careers' && pathname.startsWith('/careers/'))
++    (to === '/services' && pathname.startsWith('/services/'))
+   );
+ }
+ 
+@@ -40,7 +39,7 @@
+     <footer className={styles.footer}>
+       <div className={cx('container', styles.columns)}>
+         <section>
+-          <h2 className={styles.heading}>{t('site:brand.name')}</h2>
++          <h2 className={styles.brandHeading}><Logo name={t('site:brand.name')} subtitle={t('site:brand.subtitle')} /></h2>
+           <p>{t('site:footer.tagline')}</p>
+           <p>
+             {t('site:footer.office', { office })} ·{' '}
+diff --git a/frontend/src/components/site/Header.module.css b/frontend/src/components/site/Header.module.css
+--- a/frontend/src/components/site/Header.module.css
++++ b/frontend/src/components/site/Header.module.css
+@@ -6,7 +6,7 @@
+   padding-top: env(safe-area-inset-top);
+   background: var(--forest);
+   color: var(--onf);
+-  border-bottom: 1px solid rgba(199, 154, 59, 0.4);
++  border-bottom: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+ }
+ 
+ /* Scrolled shadow: opacity of a pseudo-element, set by data-scrolled from Header.tsx. */
+@@ -206,7 +206,7 @@
+ 
+   .list {
+     flex-direction: row;
+-    gap: 22px;
++    gap: 12px;
+     overflow: visible;
+   }
+ 
+@@ -254,7 +254,7 @@
+     padding: 8px 14px;
+     overflow: visible;
+     background: var(--forest);
+-    border: 1px solid rgba(199, 154, 59, 0.4);
++    border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+     border-radius: 14px;
+     transform: translateY(-6px);
+     transition:
+@@ -291,5 +291,8 @@
+   }
+ }
+ 
+-.themeItem { display: flex; align-items: center; }
+-@media (max-width: 1039px) { .themeItem { width: 100%; } }
++.themeItem { list-style: none; }
++@media (min-width: 1040px) {
++  .themeItem { display: flex; align-items: center; margin-inline-start: 2px; }
++  .themeItem :global(button) { min-height: 34px; min-width: 42px; padding: 5px 8px; }
++}
+diff --git a/frontend/src/components/site/Header.test.tsx b/frontend/src/components/site/Header.test.tsx
+--- a/frontend/src/components/site/Header.test.tsx
++++ b/frontend/src/components/site/Header.test.tsx
+@@ -4,7 +4,6 @@
+ import userEvent from '@testing-library/user-event';
+ import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
+ import { Header } from './Header';
+-import { afterEach } from 'vitest';
+ 
+ vi.mock('../../lib/queries/services', () => ({
+   useServices: () => ({
+@@ -20,11 +19,6 @@
+   return <button onClick={() => void navigate('/about')}>go</button>;
+ }
+ 
+-afterEach(() => {
+-  window.localStorage.removeItem('nest-theme');
+-  document.documentElement.removeAttribute('data-theme');
+-});
+-
+ function setup(initialEntry = '/') {
+   render(
+     <QueryClientProvider client={createQueryClient()}>
+@@ -41,18 +35,6 @@
+ }
+ 
+ describe('Header', () => {
+-
+-  it('exposes an accessible explicit Light/Dark switch in the header', async () => {
+-    const { nav } = setup();
+-    const group = within(nav).getByRole('group', { name: 'Theme' });
+-    const light = within(group).getByRole('button', { name: 'Light' });
+-    const dark = within(group).getByRole('button', { name: 'Dark' });
+-    expect(light).toHaveAttribute('aria-pressed', 'true');
+-    await userEvent.click(dark);
+-    expect(dark).toHaveAttribute('aria-pressed', 'true');
+-    expect(document.documentElement.dataset.theme).toBe('dark');
+-    expect(window.localStorage.getItem('nest-theme')).toBe('dark');
+-  });
+   it('has the main nav links, the logo link home and a tel Call button', () => {
+     const { nav } = setup();
+     for (const [name, href] of [
+@@ -66,57 +48,39 @@
+     expect(screen.getByRole('link', { name: 'Call' })).toHaveAttribute('href', 'tel:+256787499988');
+   });
+ 
+-  it('groups About, Team, Areas and Careers under an About menu', () => {
++  it('uses the reference navigation order with About, Team and Areas as direct links', () => {
+     const { nav } = setup();
+-    const trigger = within(nav).getByRole('button', { name: 'About' });
+-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+-    expect(trigger).toHaveAttribute('aria-controls', 'about-menu');
++    const topLevel = Array.from(nav.querySelectorAll(':scope > ul > li')).map((li) => {
++      const link = li.querySelector(':scope > a, :scope > button');
++      return link?.textContent?.trim();
++    }).filter(Boolean);
++    expect(topLevel).toEqual(['Home', 'Services', 'About', 'How it works', 'Team', 'Areas', 'FAQ', 'Contact']);
+     for (const [name, href] of [
+       ['About', '/about'],
+       ['Team', '/team'],
+       ['Areas', '/areas'],
+-      ['Careers', '/careers'],
+     ] as const) {
+       expect(within(nav).getByRole('link', { name })).toHaveAttribute('href', href);
+     }
+-    // Grouped pages are no longer top-level links.
+-    expect(document.querySelector('#site-nav > ul > li > a[href="/team"]')).toBeNull();
+-    expect(document.querySelector('#site-nav > ul > li > a[href="/careers"]')).toBeNull();
++    expect(within(nav).getByRole('group', { name: 'Theme' })).toBeInTheDocument();
++    expect(within(nav).queryByRole('link', { name: 'Careers' })).not.toBeInTheDocument();
++    expect(nav.querySelector('#site-nav > ul > li > a[href="/careers"]')).toBeNull();
+   });
+ 
+-  it('expands the About menu on click and keeps only one menu open at a time', async () => {
++  it('expands the Services menu and closes it with Escape', async () => {
+     setup();
+-    const about = screen.getByRole('button', { name: 'About' });
+     const services = screen.getByRole('button', { name: 'Services' });
+     await userEvent.click(services);
+     expect(services).toHaveAttribute('aria-expanded', 'true');
+-    await userEvent.click(about);
+-    expect(about).toHaveAttribute('aria-expanded', 'true');
+-    expect(services).toHaveAttribute('aria-expanded', 'false');
+-    await userEvent.click(about);
+-    expect(about).toHaveAttribute('aria-expanded', 'false');
+-  });
+-
+-  it('opens the About menu with the keyboard and closes it on Escape', async () => {
+-    setup();
+-    const trigger = screen.getByRole('button', { name: 'About' });
+-    act(() => trigger.focus());
+-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+     await userEvent.keyboard('{Escape}');
+-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+-    expect(trigger).toHaveFocus();
++    expect(services).toHaveAttribute('aria-expanded', 'false');
++    expect(services).toHaveFocus();
+   });
+ 
+-  it('marks a grouped page as current on its link', () => {
+-    const { nav } = setup('/careers');
+-    expect(within(nav).getByRole('link', { name: 'Careers' })).toHaveAttribute(
+-      'aria-current',
+-      'page',
+-    );
+-    expect(within(nav).getByRole('button', { name: 'About' })).toHaveAttribute(
+-      'data-group-current',
+-      'true',
+-    );
++  it('marks direct top-level pages as current', () => {
++    const { nav } = setup('/about');
++    expect(within(nav).getByRole('link', { name: 'About' })).toHaveAttribute('aria-current', 'page');
++    expect(within(nav).getByRole('link', { name: 'Contact' })).not.toHaveAttribute('aria-current');
+   });
+ 
+   it('lists the services in the dropdown with a link to each', () => {
+@@ -128,15 +92,6 @@
+     expect(within(nav).getByRole('link', { name: 'Postnatal care' })).toBeInTheDocument();
+   });
+ 
+-  it('marks the current navigation destination', () => {
+-    const { nav } = setup('/about');
+-    expect(within(nav).getByRole('link', { name: 'About' })).toHaveAttribute(
+-      'aria-current',
+-      'page',
+-    );
+-    expect(within(nav).getByRole('link', { name: 'Contact' })).not.toHaveAttribute('aria-current');
+-  });
+-
+   it('toggles the phone menu and closes it on Escape and on route change', async () => {
+     const { nav, menuButton } = setup();
+     expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+diff --git a/frontend/src/components/site/Header.tsx b/frontend/src/components/site/Header.tsx
+--- a/frontend/src/components/site/Header.tsx
++++ b/frontend/src/components/site/Header.tsx
+@@ -10,7 +10,7 @@
+ import { ThemeSwitch } from '../ui/ThemeSwitch';
+ import styles from './Header.module.css';
+ 
+-type MenuId = 'services' | 'about';
++type MenuId = 'services';
+ 
+ interface MenuItem {
+   to: string;
+@@ -118,12 +118,6 @@
+       label: service.name,
+     })),
+   ];
+-  const aboutItems: MenuItem[] = [
+-    { to: '/about', label: t('common:nav.about') },
+-    { to: '/team', label: t('site:header.team') },
+-    { to: '/areas', label: t('site:header.areas') },
+-    { to: '/careers', label: t('common:nav.careers') },
+-  ];
+   const phone = site.business.phone;
+   const tel = `tel:${normaliseUgPhone(phone) ?? phone.replace(/\s/g, '')}`;
+ 
+@@ -166,6 +160,15 @@
+             />
+             <li>
+               <Link
++                to="/about"
++                className={styles.link}
++                aria-current={pathname === '/about' ? 'page' : undefined}
++              >
++                {t('common:nav.about')}
++              </Link>
++            </li>
++            <li>
++              <Link
+                 to="/how-it-works"
+                 className={styles.link}
+                 aria-current={pathname === '/how-it-works' ? 'page' : undefined}
+@@ -173,14 +176,24 @@
+                 {t('common:nav.howItWorks')}
+               </Link>
+             </li>
+-            <NavMenu
+-              id="about"
+-              label={t('common:nav.about')}
+-              items={aboutItems}
+-              pathname={pathname}
+-              open={isOpen('about')}
+-              onOpenChange={setMenuOpen('about')}
+-            />
++            <li>
++              <Link
++                to="/team"
++                className={styles.link}
++                aria-current={pathname === '/team' ? 'page' : undefined}
++              >
++                {t('common:nav.team')}
++              </Link>
++            </li>
++            <li>
++              <Link
++                to="/areas"
++                className={styles.link}
++                aria-current={pathname === '/areas' ? 'page' : undefined}
++              >
++                {t('common:nav.areas')}
++              </Link>
++            </li>
+             <li>
+               <Link
+                 to="/faq"
+@@ -200,13 +213,19 @@
+               </Link>
+             </li>
+             <li className={styles.themeItem}>
+-              <ThemeSwitch inverse compact label={t('common:theme.label')} lightLabel={t('common:theme.light')} darkLabel={t('common:theme.dark')} />
++              <ThemeSwitch
++                inverse
++                compact
++                label={t('common:theme.label')}
++                lightLabel={t('common:theme.light')}
++                darkLabel={t('common:theme.dark')}
++              />
+             </li>
+           </ul>
+         </nav>
+ 
+         <div className={styles.actions}>
+-          <Button href={tel} size="header">
++          <Button href={tel} size="header" arrow>
+             {t('common:actions.call')}
+           </Button>
+           <button
+diff --git a/frontend/src/components/ui/Button.module.css b/frontend/src/components/ui/Button.module.css
+--- a/frontend/src/components/ui/Button.module.css
++++ b/frontend/src/components/ui/Button.module.css
+@@ -4,7 +4,8 @@
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+-  min-height: 46px;
++  gap: 10px;
++  min-height: 52px;
+   padding-inline: 22px;
+   border: 2px solid var(--gold);
+   background: var(--gold);
+@@ -13,57 +14,54 @@
+   text-align: center;
+   text-decoration: none;
+   cursor: pointer;
+-  transition:
+-    background-color var(--dur-fast) var(--ease-standard),
+-    transform var(--dur-fast) var(--ease-out);
++  transition: background-color var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-out);
+ }
+-
++.withArrow { padding: 6px 6px 6px 24px; }
+ .outline {
+   --btn-hover: color-mix(in srgb, currentColor 12%, transparent);
+   background: transparent;
+   color: inherit;
+   border-color: currentColor;
+ }
+-
+ .whatsapp {
+   --btn-hover: color-mix(in srgb, var(--wa) 88%, var(--onf));
+   background: var(--wa);
+   border-color: var(--wa);
+   color: var(--on-wa);
+ }
+-
++.forest {
++  --btn-hover: color-mix(in srgb, var(--moss) 88%, var(--onf));
++  background: var(--moss);
++  border-color: var(--moss);
++  color: var(--onf);
++}
+ .header {
+   min-height: 40px;
+   padding-inline: 14px;
++  gap: 8px;
+   font-size: 0.88rem;
+ }
+-
+-.full {
+-  width: 100%;
++.header.withArrow { padding: 4px 4px 4px 14px; }
++.arrow {
++  display: inline-grid;
++  place-items: center;
++  flex: none;
++  width: 40px;
++  height: 40px;
++  border-radius: 50%;
++  background: color-mix(in srgb, currentColor 12%, transparent);
++  color: currentColor;
++  font-size: 1.3rem;
++  line-height: 1;
+ }
+-
+-/* Hover only for real pointers (motion.css rule 2). */
++.header .arrow { width: 28px; height: 28px; font-size: 1rem; }
++.full { width: 100%; }
+ @media (hover: hover) and (pointer: fine) {
+-  .button:not(:disabled):hover {
+-    background-color: var(--btn-hover);
+-    transform: translateY(-1px);
+-  }
+-}
+-
+-.button:not(:disabled):active {
+-  transform: scale(0.97);
+-}
+-
+-.button:disabled {
+-  opacity: 0.7;
+-  cursor: not-allowed;
+-}
+-
+-/* Pending state (Step 4I): set aria-busy="true" on the button; the label stays, a ring spins after it. */
+-.button[aria-busy='true'] {
+-  cursor: progress;
++  .button:not(:disabled):hover { background-color: var(--btn-hover); transform: translateY(-1px); }
+ }
+-
++.button:not(:disabled):active { transform: scale(0.97); }
++.button:disabled { opacity: 0.7; cursor: not-allowed; }
++.button[aria-busy='true'] { cursor: progress; }
+ .button[aria-busy='true']::after {
+   content: '';
+   flex: none;
+@@ -75,9 +73,11 @@
+   border-radius: 50%;
+   animation: button-spin calc(var(--dur-slow) * 2) linear infinite;
+ }
+-
+-@keyframes button-spin {
+-  to {
+-    transform: rotate(360deg);
+-  }
++@keyframes button-spin { to { transform: rotate(360deg); } }
++@media (max-width: 480px) {
++  .button { max-width: 100%; font-size: 0.92rem; }
++  .button.withArrow { padding-inline-start: 16px; }
++  .header.withArrow { padding: 4px 4px 4px 14px; }
++  .arrow { width: 34px; height: 34px; }
++  .header .arrow { width: 26px; height: 26px; }
+ }
+diff --git a/frontend/src/components/ui/Button.test.tsx b/frontend/src/components/ui/Button.test.tsx
+--- a/frontend/src/components/ui/Button.test.tsx
++++ b/frontend/src/components/ui/Button.test.tsx
+@@ -18,6 +18,12 @@
+     expect(onClick).toHaveBeenCalledTimes(1);
+   });
+ 
++  it('renders a decorative arrow without changing the accessible name', () => {
++    renderInRouter(<Button href="/contact" arrow>Book a home visit</Button>);
++    const button = screen.getByRole('link', { name: 'Book a home visit' });
++    expect(button.querySelector('[aria-hidden="true"]')).toHaveTextContent('→');
++  });
++
+   it('allows type submit for forms', () => {
+     renderInRouter(<Button type="submit">Send</Button>);
+     expect(screen.getByRole('button', { name: 'Send' })).toHaveAttribute('type', 'submit');
+diff --git a/frontend/src/components/ui/Button.tsx b/frontend/src/components/ui/Button.tsx
+--- a/frontend/src/components/ui/Button.tsx
++++ b/frontend/src/components/ui/Button.tsx
+@@ -3,13 +3,14 @@
+ import { cx } from '../../lib/cx';
+ import styles from './Button.module.css';
+ 
+-export type ButtonVariant = 'primary' | 'outline' | 'whatsapp';
++export type ButtonVariant = 'primary' | 'outline' | 'whatsapp' | 'forest';
+ export type ButtonSize = 'default' | 'header';
+ 
+ interface CommonProps {
+   variant?: ButtonVariant;
+   size?: ButtonSize;
+   fullWidth?: boolean;
++  arrow?: boolean;
+   className?: string;
+   children: ReactNode;
+ }
+@@ -33,10 +34,11 @@
+  * links (tel, wa.me), and a button element when there is no href.
+  */
+ export function Button(props: ButtonProps) {
+-  const { variant = 'primary', size = 'default', fullWidth = false, className, children } = props;
++  const { variant = 'primary', size = 'default', fullWidth = false, arrow = false, className, children } = props;
+   const classes = cx(
+     styles.button,
+     styles[variant],
++    arrow && styles.withArrow,
+     size === 'header' && styles.header,
+     fullWidth && styles.full,
+     className,
+@@ -48,6 +50,7 @@
+       variant: _v,
+       size: _s,
+       fullWidth: _f,
++      arrow: _a,
+       className: _c,
+       children: _ch,
+       ...rest
+@@ -56,12 +59,14 @@
+       return (
+         <Link to={href} className={classes} data-variant={variant} {...rest}>
+           {children}
++          {arrow && <span className={styles.arrow} aria-hidden="true">→</span>}
+         </Link>
+       );
+     }
+     return (
+       <a href={href} className={classes} data-variant={variant} {...rest}>
+         {children}
++        {arrow && <span className={styles.arrow} aria-hidden="true">→</span>}
+       </a>
+     );
+   }
+@@ -70,6 +75,7 @@
+     variant: _v,
+     size: _s,
+     fullWidth: _f,
++    arrow: _a,
+     className: _c,
+     children: _ch,
+     type = 'button',
+@@ -78,6 +84,7 @@
+   return (
+     <button type={type} className={classes} data-variant={variant} {...rest}>
+       {children}
++      {arrow && <span className={styles.arrow} aria-hidden="true">→</span>}
+     </button>
+   );
+ }
+diff --git a/frontend/src/features/public/home/HomePage.module.css b/frontend/src/features/public/home/HomePage.module.css
+--- a/frontend/src/features/public/home/HomePage.module.css
++++ b/frontend/src/features/public/home/HomePage.module.css
+@@ -32,7 +32,7 @@
+ .lead {
+   max-width: 36rem;
+   margin-block: 1.4rem;
+-  color: rgba(255, 255, 255, 0.86);
++  color: color-mix(in srgb, var(--onf) 86%, transparent);
+   font-size: 1.08rem;
+   line-height: 1.65;
+ }
+@@ -55,8 +55,8 @@
+   min-height: 10rem;
+   padding: 0.9rem 0.4rem;
+   border-radius: 50% 50% 44% 44%;
+-  background: var(--mint);
+-  color: var(--forest);
++  background: var(--straw);
++  color: var(--on-straw);
+   text-align: center;
+   transform: rotate(-3deg);
+ }
+@@ -74,11 +74,13 @@
+   line-height: 1.25;
+ }
+ .egg2 {
+-  background: var(--gold);
++  background: var(--leaf);
++  color: var(--on-leaf);
+   transform: translateY(-1rem) rotate(3deg);
+ }
+ .egg3 {
+-  background: var(--leaf);
++  background: var(--moss);
++  color: var(--onf);
+   transform: rotate(-2deg);
+ }
+ .services,
+diff --git a/frontend/src/features/public/home/HomePage.test.tsx b/frontend/src/features/public/home/HomePage.test.tsx
+--- a/frontend/src/features/public/home/HomePage.test.tsx
++++ b/frontend/src/features/public/home/HomePage.test.tsx
+@@ -1,4 +1,4 @@
+-import { render, screen } from '@testing-library/react';
++import { render, screen, within } from '@testing-library/react';
+ import { MemoryRouter } from 'react-router-dom';
+ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+ import { HomePage } from './HomePage';
+@@ -25,7 +25,13 @@
+     );
+     for (const link of screen.getAllByRole('link', { name: 'Book a home visit' }))
+       expect(link).toHaveAttribute('href', '/contact');
+-    expect(screen.getByRole('link', { name: 'Our services' })).toHaveAttribute('href', '/services');
++    const servicesLink = screen.getByRole('link', { name: 'Our services' });
++    expect(servicesLink).toHaveAttribute('href', '/services');
++    const hero = screen.getByRole('heading', { level: 1 }).closest('section');
++    expect(hero).not.toBeNull();
++    const primary = within(hero as HTMLElement).getByRole('link', { name: 'Book a home visit' });
++    expect(primary.querySelector('[aria-hidden="true"]')).toHaveTextContent('→');
++    expect(servicesLink).toHaveAttribute('data-variant', 'forest');
+   });
+   it('renders the promise and process sections', () => {
+     setup();
+diff --git a/frontend/src/features/public/home/HomePage.tsx b/frontend/src/features/public/home/HomePage.tsx
+--- a/frontend/src/features/public/home/HomePage.tsx
++++ b/frontend/src/features/public/home/HomePage.tsx
+@@ -62,8 +62,8 @@
+             </h1>
+             <p className={styles.lead}>{t('home.lead')}</p>
+             <div className={styles.actions}>
+-              <Button href="/contact">{t('home.primaryAction')}</Button>
+-              <Button href="/services" variant="outline">
++              <Button href="/contact" arrow>{t('home.primaryAction')}</Button>
++              <Button href="/services" variant="forest" arrow>
+                 {t('home.secondaryAction')}
+               </Button>
+             </div>
+@@ -103,7 +103,7 @@
+             <p aria-busy="true">{t('services.loading')}</p>
+           )}
+           <div className={styles.center}>
+-            <Button href="/services" variant="outline">
++            <Button href="/services" variant="outline" arrow>
+               {t('home.allServices')}
+             </Button>
+           </div>
+@@ -168,7 +168,7 @@
+               ))}
+             </ul>
+             <div className={styles.center}>
+-              <Button href="/team" variant="outline">
++              <Button href="/team" variant="outline" arrow>
+                 {t('home.meetTeam')}
+               </Button>
+             </div>
+diff --git a/frontend/src/locales/en/common.ts b/frontend/src/locales/en/common.ts
+--- a/frontend/src/locales/en/common.ts
++++ b/frontend/src/locales/en/common.ts
+@@ -8,8 +8,8 @@
+     careers: 'Careers',
+     staffLogin: 'Staff login',
+     contact: 'Contact',
+-    team: 'Our team',
+-    areas: 'Areas we serve',
++    team: 'Team',
++    areas: 'Areas',
+     faq: 'FAQ and care tips',
+     privacy: 'Privacy and terms',
+   },

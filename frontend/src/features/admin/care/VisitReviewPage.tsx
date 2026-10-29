@@ -41,11 +41,12 @@ export function VisitReviewPage() {
         <p>{error || 'Loading…'}</p>
       </>
     );
-  const events = [...(data.events ?? [])].sort((a, b) =>
-    String(a.server_received_at ?? a.device_time ?? '').localeCompare(
-      String(b.server_received_at ?? b.device_time ?? ''),
-    ),
-  );
+  const eventTimestamp = (event: any) => {
+    const value = event.received_at ?? event.server_received_at ?? event.device_time;
+    const timestamp = new Date(String(value ?? '')).getTime();
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  };
+  const events = [...(data.events ?? [])].sort((a, b) => eventTimestamp(a) - eventTimestamp(b));
   const pins = events.filter(
     (e) => Number.isFinite(Number(e.lat)) && Number.isFinite(Number(e.lng)),
   );
@@ -65,7 +66,7 @@ export function VisitReviewPage() {
         {events.map((event, i) => (
           <article key={String(event.id ?? i)} className="care-check">
             <b>{event.type}</b>
-            <span>{String(event.server_received_at ?? event.device_time ?? '')}</span>
+            <span>{String(event.received_at ?? event.server_received_at ?? event.device_time ?? '')}</span>
             <small>
               Verification: {String(event.verification ?? 'not recorded')} · Distance:{' '}
               {String(event.distance_m ?? '—')} m
@@ -124,7 +125,7 @@ export function VisitReviewPage() {
         <h2>Flags</h2>
         {(data.flags ?? []).map((f) => (
           <p key={String(f.id)}>
-            {String(f.type)} — {f.resolved ? 'resolved' : 'open'}
+            {String(f.type)} — {String(f.status ?? (f.resolved ? 'resolved' : 'open')).replaceAll('_', ' ')}{f.resolution_note ? ` · ${String(f.resolution_note)}` : ''}
           </p>
         ))}
       </section>
@@ -132,7 +133,7 @@ export function VisitReviewPage() {
         <h2>Photo metadata</h2>
         {(data.photos ?? []).map((p) => (
           <p key={String(p.id)}>
-            {String(p.kind ?? 'photo')} · {String(p.status ?? 'registered')}
+            {String(p.photo_type ?? p.kind ?? 'photo').replaceAll('_', ' ')} · {String(p.status ?? 'registered')}
           </p>
         ))}
       </section>

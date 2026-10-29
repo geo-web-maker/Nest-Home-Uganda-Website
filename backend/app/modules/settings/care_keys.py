@@ -68,8 +68,18 @@ for row in [
     ("consent.location_version", "text", "", True, ("org",), "consent"),
     ("app.location_disclosure", "text", "", True, ("org",), "app"),
     ("photos.guidance", "text", "", True, ("org",), "photos"),
+    ("photos.guidance_text", "text", "", False, ("org",), "photos"),
+    ("photos.required", "choice", "none", False, ("org", "client"), "photos"),
     ("sos.procedure", "text", "", False, ("org",), "sos"),
     ("sos.on_call_contacts", "map", {}, False, ("org",), "sos"),
+    (
+        "sos.on_call_roster",
+        "map",
+        {"enabled": False, "approved": False, "entries": []},
+        False,
+        ("org",),
+        "sos",
+    ),
     ("sms.test_number", "text", "", True, ("org",), "sms"),
     ("alerts.quiet_start", "time", "22:00", False, ("org",), "alerts"),
     ("alerts.quiet_end", "time", "06:00", False, ("org",), "alerts"),
@@ -83,6 +93,12 @@ for row in [
     ("sos.enabled", "boolean", False),
     ("sos.responder_configured", "boolean", False),
     ("sos.emergency_numbers", "list", []),
+    ("sos.hold_seconds", "integer", 2, False, ("org",), "sos", 1, 10),
+    ("sos.cancel_window_s", "integer", 5, False, ("org",), "sos", 1, 15),
+    # Live follow is disabled until an organisation explicitly enables it.
+    ("sos.live_follow_enabled", "boolean", False),
+    ("sos.live_follow_minutes", "integer", 30, False, ("org",), "sos", 1, 120),
+    ("sos.live_follow_interval_seconds", "integer", 30, False, ("org",), "sos", 15, 300),
     ("sms.enabled", "boolean", False),
     ("sms.test_number", "text", ""),
     ("photos.enabled", "boolean", False),
@@ -138,4 +154,6 @@ def validate_value(key: str, value: Any) -> Any:
         raise ValueError("auth.login_identifier must be email, phone, or either")
     if key == "timesheets.period_kind" and value not in {"weekly", "fortnightly", "monthly"}:
         raise ValueError("invalid timesheet period")
+    if key == "photos.required" and value not in {"none", "arrival", "departure", "either", "both"}:
+        raise ValueError("photos.required must be none, arrival, departure, either, or both")
     return value

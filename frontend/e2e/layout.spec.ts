@@ -262,6 +262,8 @@ for (const { width, height } of VIEWPORTS) {
           const style = getComputedStyle(shape);
           if (style.transform !== 'none' || parseFloat(style.borderTopLeftRadius) < 40) continue;
           if (!shape.checkVisibility() || !shape.textContent?.trim()) continue;
+          // Arrow buttons are deliberately lopsided: label padded left, arrow circle tucked in on the right.
+          if (shape.matches('[class*="withArrow"]')) continue;
           const range = document.createRange();
           range.selectNodeContents(shape);
           const text = range.getBoundingClientRect();

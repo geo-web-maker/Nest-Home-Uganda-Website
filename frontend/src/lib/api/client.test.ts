@@ -20,6 +20,13 @@ describe('createApiClient', () => {
     });
   });
 
+  it('sends a JSON PUT for settings updates', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(json(200, { saved: true }));
+    const client = createApiClient({ baseUrl: BASE, fetchImpl });
+    await expect(client.put('/admin/care/settings/sms.monthly_cap', { value: 500 })).resolves.toEqual({ saved: true });
+    expect(fetchImpl.mock.calls[0]?.[1]).toMatchObject({ method: 'PUT', body: '{"value":500}', credentials: 'include' });
+  });
+
   it('builds the query string and skips empty params', async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(json(200, []));
     await createApiClient({ baseUrl: BASE, fetchImpl }).get('/x', {

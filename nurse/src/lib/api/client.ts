@@ -1,6 +1,12 @@
 import { Capacitor } from '@capacitor/core';
 import { clearRefreshToken, readRefreshToken, saveRefreshToken } from '../../platform/secureTokenStorage';
 const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
+
+/** Resolve short-lived API asset paths against the configured API origin (including native builds). */
+export function apiAssetUrl(path: string): string {
+  const apiPath = path.startsWith('/api/v1/') ? path : `/api/v1${path.startsWith('/') ? path : `/${path}`}`;
+  return `${apiBase}${apiPath}`;
+}
 export type ApiError = { status: number; detail: string };
 
 export async function restoreNativeSession(): Promise<string | null> {

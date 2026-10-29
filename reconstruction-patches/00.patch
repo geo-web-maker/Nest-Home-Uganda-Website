@@ -1,0 +1,266 @@
+diff --git a/design/tokens.css b/design/tokens.css
+--- a/design/tokens.css
++++ b/design/tokens.css
+@@ -1,17 +1,50 @@
+-:root{
+-  --bg:#F3F8F1; --mint:#DFF0E6; --surf:#FFFFFF;
+-  --ink:#123524; --mut:#4A6354; --forest:#123524;
+-  --leaf:#1F8A5B; --moss:#2F6B4A; --gold:#C79A3B;
+-  --straw:#E9DDB8; --line:#CBD8C6; --onf:#F4F1DF;
+-  --wa:#25D366; --on-wa:#06260F; --on-gold:#1B1706; --on-straw:#2A2410; --danger:#B3261E;
+-  --serif:"Fraunces",Georgia,serif;
+-  --sans:"Figtree",system-ui,sans-serif;
+-  --script:"Cormorant Garamond",Georgia,serif;
+-  --egg:50% 50% 50% 50%/62% 62% 38% 38%;
+-  --arch:999px 999px 18px 18px;
+-  --container:1180px;
++/* Shared colour tokens: light is the default; dark is opt-in through html[data-theme="dark"]. */
++:root {
++  color-scheme: light;
++  --bg: #F3F8F1;
++  --mint: #DFF0E6;
++  --surf: #FFFFFF;
++  --ink: #123524;
++  --mut: #4A6354;
++  --forest: #123524;
++  --leaf: #18784D;
++  --moss: #2F6B4A;
++  --gold: #C79A3B;
++  --straw: #E9DDB8;
++  --line: #CBD8C6;
++  --onf: #F4F1DF;
++  --wa: #25D366;
++  --on-wa: #06260F;
++  --on-gold: #1B1706;
++  --on-straw: #2A2410;
++  --on-leaf: #FFFFFF;
++  --danger: #B3261E;
++  --serif: "Fraunces", Georgia, serif;
++  --sans: "Figtree", system-ui, sans-serif;
++  --script: "Cormorant Garamond", Georgia, serif;
++  --egg: 50% 50% 50% 50%/62% 62% 38% 38%;
++  --arch: 999px 999px 18px 18px;
++  --container: 1180px;
++  --shadow-1: 0 1px 2px color-mix(in srgb, var(--forest) 6%, transparent), 0 2px 8px color-mix(in srgb, var(--forest) 8%, transparent);
+ }
+-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+-  --bg:#0C1A12; --mint:#12281D; --surf:#14271C; --ink:#E8EFE2; --mut:#9DB5A4; --line:#244233; --straw:#3A3620; --forest:#091410;}}
+-:root[data-theme="dark"]{--bg:#0C1A12; --mint:#12281D; --surf:#14271C; --ink:#E8EFE2; --mut:#9DB5A4; --line:#244233; --straw:#3A3620; --forest:#091410}
+-/* breakpoints: tablet @media (min-width:700px), desktop @media (min-width:1040px) */
++
++:root[data-theme="dark"] {
++  color-scheme: dark;
++  --bg: #0C1A12;
++  --mint: #12281D;
++  --surf: #14271C;
++  --ink: #E8EFE2;
++  --mut: #9DB5A4;
++  --forest: #091410;
++  --leaf: #58BC88;
++  --moss: #2F6B4A;
++  --gold: #E3BB62;
++  --straw: #3A3620;
++  --line: #244233;
++  --onf: #F4F1DF;
++  --on-gold: #1B1706;
++  --on-straw: #F0E7C9;
++  --on-leaf: #06260F;
++}
++
++/* Breakpoints: tablet @700px, desktop @1040px. */
+diff --git a/design/tokens.json b/design/tokens.json
+--- a/design/tokens.json
++++ b/design/tokens.json
+@@ -7,7 +7,7 @@
+       "ink": "#123524",
+       "mut": "#4A6354",
+       "forest": "#123524",
+-      "leaf": "#1F8A5B",
++      "leaf": "#18784D",
+       "moss": "#2F6B4A",
+       "gold": "#C79A3B",
+       "straw": "#E9DDB8",
+@@ -22,7 +22,12 @@
+       "mut": "#9DB5A4",
+       "forest": "#091410",
+       "straw": "#3A3620",
+-      "line": "#244233"
++      "line": "#244233",
++      "leaf": "#58BC88",
++      "moss": "#2F6B4A",
++      "gold": "#E3BB62",
++      "onLeaf": "#06260F",
++      "onStraw": "#F0E7C9"
+     },
+     "fixed": {
+       "whatsapp": "#25D366",
+@@ -54,4 +59,4 @@
+     "egg": "50% 50% 50% 50%/62% 62% 38% 38%",
+     "arch": "999px 999px 18px 18px"
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/docs/UI_REFERENCE_GUIDE.md b/docs/UI_REFERENCE_GUIDE.md
+--- a/docs/UI_REFERENCE_GUIDE.md
++++ b/docs/UI_REFERENCE_GUIDE.md
+@@ -12,7 +12,7 @@
+ 
+ Public page coverage includes Home, Services and service detail, About, How it works, Team, Areas, FAQ and article detail, Privacy, Careers and job detail, and Contact. The careers listing uses a responsive role-card grid (one column on narrow phones, two at tablet widths, three on desktop); application forms live in the job/general-interest flow rather than beside the entire listing. Keep one main page heading, useful title/description metadata, the shared header/footer, and no horizontal overflow at the reference widths (320/390 phone, 820 tablet, 1280 desktop). The Home composition follows the mockup's hero, location strip, services, promise, how-it-works and CTA sections; testimonials/team content remains configuration-driven where the product already supports it.
+ 
+-Use the design tokens in `frontend/src/design/tokens.css`. The reference palette is light-only; OS dark-mode preference must not silently replace the reviewed mockup palette. If a dark theme is designed later, it should be a deliberate, documented design variant rather than an implicit browser preference.
++Use the design tokens in `frontend/src/design/tokens.css`. The reference palette is the default light theme. The OS dark-mode preference must not silently replace the reviewed mockup palette; users may explicitly choose Dark with the Light/Dark switch, persisted as `nest-theme`. Dark mode is a deliberate, documented design variant rather than an implicit browser preference.
+ 
+ ## Nurse application
+ 
+diff --git a/frontend/index.html b/frontend/index.html
+--- a/frontend/index.html
++++ b/frontend/index.html
+@@ -3,6 +3,19 @@
+   <head>
+     <meta charset="UTF-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1" />
++    <meta name="theme-color" content="#123524" />
++    <script>
++      (function () {
++        var theme = 'light';
++        try {
++          var saved = window.localStorage.getItem('nest-theme');
++          if (saved === 'light' || saved === 'dark') theme = saved;
++        } catch (_) {
++          /* Storage can be blocked; keep the reviewed light default. */
++        }
++        document.documentElement.dataset.theme = theme;
++      })();
++    </script>
+     <link
+       rel="preload"
+       href="/fonts/fraunces-latin-700-normal.woff2"
+diff --git a/frontend/src/design/tokens.css b/frontend/src/design/tokens.css
+--- a/frontend/src/design/tokens.css
++++ b/frontend/src/design/tokens.css
+@@ -1,18 +1,53 @@
+-:root{
+-  --bg:#F3F8F1; --mint:#DFF0E6; --surf:#FFFFFF;
+-  --ink:#123524; --mut:#4A6354; --forest:#123524;
+-  --leaf:#1F8A5B; --moss:#2F6B4A; --gold:#C79A3B;
+-  --straw:#E9DDB8; --line:#CBD8C6; --onf:#F4F1DF;
+-  --wa:#25D366; --on-wa:#06260F; --on-gold:#1B1706; --on-straw:#2A2410; --danger:#B3261E;
+-  --serif:"Fraunces",Georgia,serif;
+-  --sans:"Figtree",system-ui,sans-serif;
+-  --script:"Cormorant Garamond",Georgia,serif;
+-  --egg:50% 50% 50% 50%/62% 62% 38% 38%;
+-  --arch:999px 999px 18px 18px;
+-  --container:1180px;
++/* Shared colour tokens: light is the default; dark is opt-in through html[data-theme="dark"]. */
++:root {
++  color-scheme: light;
++  --bg: #F3F8F1;
++  --mint: #DFF0E6;
++  --surf: #FFFFFF;
++  --ink: #123524;
++  --mut: #4A6354;
++  --forest: #123524;
++  --leaf: #18784D;
++  --moss: #2F6B4A;
++  --gold: #C79A3B;
++  --straw: #E9DDB8;
++  --line: #CBD8C6;
++  --onf: #F4F1DF;
++  --wa: #25D366;
++  --on-wa: #06260F;
++  --on-gold: #1B1706;
++  --on-straw: #2A2410;
++  --on-leaf: #FFFFFF;
++  --danger: #B3261E;
++  --serif: "Fraunces", Georgia, serif;
++  --sans: "Figtree", system-ui, sans-serif;
++  --script: "Cormorant Garamond", Georgia, serif;
++  --egg: 50% 50% 50% 50%/62% 62% 38% 38%;
++  --arch: 999px 999px 18px 18px;
++  --container: 1180px;
++  --shadow-1: 0 1px 2px color-mix(in srgb, var(--forest) 6%, transparent), 0 2px 8px color-mix(in srgb, var(--forest) 8%, transparent);
++}
++
++:root[data-theme="dark"] {
++  color-scheme: dark;
++  --bg: #0C1A12;
++  --mint: #12281D;
++  --surf: #14271C;
++  --ink: #E8EFE2;
++  --mut: #9DB5A4;
++  --forest: #091410;
++  --leaf: #58BC88;
++  --moss: #2F6B4A;
++  --gold: #E3BB62;
++  --straw: #3A3620;
++  --line: #244233;
++  --onf: #F4F1DF;
++  --on-gold: #1B1706;
++  --on-straw: #F0E7C9;
++  --on-leaf: #06260F;
+ }
+-:root{color-scheme:light;}
+-/* Keep the palette light like the reference. Public header collapses below 1040px; admin groups expand at 1040px; nurse rail starts at 820px. */
++
++/* Breakpoints: tablet @700px, desktop @1040px. */
+ 
+ /* Motion tokens (Step 2A). Only these may carry raw ms or cubic-bezier values. */
+ :root{
+diff --git a/nurse/index.html b/nurse/index.html
+--- a/nurse/index.html
++++ b/nurse/index.html
+@@ -5,6 +5,18 @@
+     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+     <meta name="robots" content="noindex,nofollow" />
+     <meta name="theme-color" content="#123524" />
++    <script>
++      (function () {
++        var theme = 'light';
++        try {
++          var saved = window.localStorage.getItem('nest-theme');
++          if (saved === 'light' || saved === 'dark') theme = saved;
++        } catch (_) {
++          /* Storage can be blocked; keep the reviewed light default. */
++        }
++        document.documentElement.dataset.theme = theme;
++      })();
++    </script>
+     <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+     <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
+     <title>Well Nest Home Care Uganda Nurse</title>
+diff --git a/nurse/src/pwa/manifest.test.ts b/nurse/src/pwa/manifest.test.ts
+--- a/nurse/src/pwa/manifest.test.ts
++++ b/nurse/src/pwa/manifest.test.ts
+@@ -63,5 +63,9 @@
+     expect(html.match(/name="robots"/g)).toHaveLength(1);
+     expect(html.match(/name="theme-color"/g)).toHaveLength(1);
+     expect(html).toContain('apple-touch-icon');
++    expect(html).toContain("getItem('nest-theme')");
++    expect(html).toContain("document.documentElement.dataset.theme = theme");
++    expect(html.indexOf('nest-theme')).toBeLessThan(html.indexOf('id="root"'));
++    expect(html).not.toContain('prefers-color-scheme');
+   });
+ });
+diff --git a/nurse/src/styles.css b/nurse/src/styles.css
+--- a/nurse/src/styles.css
++++ b/nurse/src/styles.css
+@@ -9,9 +9,9 @@
+   text-rendering: optimizeLegibility;
+   -webkit-text-size-adjust: 100%;
+   font-smooth: always;
+-  color-scheme: light;
+ }
+ 
++:root[data-theme='dark'] { color-scheme: dark; }
+ * { box-sizing: border-box; }
+ html { min-width: 320px; min-height: 100%; background: var(--bg); }
+ body { min-width: 320px; min-height: 100vh; margin: 0; background: var(--bg); color: var(--ink); }
+@@ -226,3 +226,7 @@
+ @media (prefers-reduced-motion: reduce) {
+   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+ }
++
++.theme-choice { display: flex; flex-wrap: wrap; gap: 0.65rem; }
++.theme-choice button { flex: 1 1 7rem; min-height: 48px; }
++.theme-choice button[aria-pressed='true'] { border-color: var(--gold); box-shadow: inset 0 0 0 2px var(--gold); }

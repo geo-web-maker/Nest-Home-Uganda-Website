@@ -75,3 +75,18 @@ async def test_device_revocation_does_not_bypass_reach(client):
         assert response.status_code == 404
     finally:
         app.dependency_overrides.pop(get_care_actor, None)
+
+
+async def test_field_timesheets_requires_field_scope(client):
+    response = await client.get(
+        "/api/v1/field/timesheets", headers=auth(make_token(["nurses:read"]))
+    )
+    assert response.status_code == 403
+
+
+async def test_nurse_cannot_use_admin_timesheets_endpoint(client):
+    response = await client.get(
+        "/api/v1/admin/care/timesheets",
+        headers=auth(make_token(["field:use"], user_id="field-nurse-user")),
+    )
+    assert response.status_code == 403

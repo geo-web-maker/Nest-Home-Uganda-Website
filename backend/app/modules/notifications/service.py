@@ -55,9 +55,27 @@ async def _within_daily_limit(config: NotifyConfig, now: datetime) -> bool:
     return False
 
 
+async def _within_care_monthly_limit(cap: int, now: datetime) -> bool:
+    """Cap care-operation SMS separately from enquiry/visitor messaging."""
+    local = now.astimezone(local_tz())
+    start = local.replace(day=1, hour=0, minute=0, second=0, microsecond=0).astimezone(UTC)
+    rows = await SmsLog.find(SmsLog.at >= start).to_list()
+    sent = sum(row.status == "sent" and row.template.startswith("care_") for row in rows)
+    if sent < cap:
+        return True
+    already = await AuditLog.find_one(
+        AuditLog.action == "sms.care_monthly_cap_reached", AuditLog.at >= start
+    )
+    if already is None:
+        await audit.record(
+            None, "sms.care_monthly_cap_reached", "sms", item_label=f"monthly care cap {cap}"
+        )
+    return False
+
+
 async def _log(
     provider: SmsProvider, audience: str, template: str, to: str, status: str,
-    error: str | None, enquiry: Enquiry | None,
+    error: str | None, enquiry: Enquiry | None, cost: float | None = None,
 ) -> None:  # fmt: skip
     await SmsLog(
         provider=provider.name,
@@ -65,6 +83,7 @@ async def _log(
         template=template,
         to_hint=mask(to_local(to)),
         status=status,
+        cost=cost,
         error=error,
         related_type="enquiry" if enquiry else None,
         related_id=str(enquiry.id) if enquiry else None,
@@ -80,10 +99,21 @@ async def send_sms(
     audience: str,
     template: str,
     enquiry: Enquiry | None,
+    monthly_cap: int | None = None,
 ) -> bool:
     """One recipient, with at most 2 retries for failures a retry could fix. Never raises."""
     try:
-        if not await _within_daily_limit(config, datetime.now(UTC)):
+        now = datetime.now(UTC)
+        if (
+            monthly_cap is not None
+            and template.startswith("care_")
+            and not await _within_care_monthly_limit(monthly_cap, now)
+        ):
+            await _log(
+                provider, audience, template, to, "skipped", "monthly care SMS cap reached", enquiry
+            )
+            return False
+        if not await _within_daily_limit(config, now):
             await _log(provider, audience, template, to, "skipped", "daily limit reached", enquiry)
             return False
         error: str | None = None
@@ -96,6 +126,7 @@ async def send_sms(
             await _log(
                 provider, audience, template, to, "sent" if result.ok else "failed", result.error,
                 enquiry,
+                result.cost if result.ok else None,
             )  # fmt: skip
             if result.ok:
                 error = None

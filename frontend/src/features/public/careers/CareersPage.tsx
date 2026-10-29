@@ -17,7 +17,7 @@ export function CareersPage() {
     queryFn: () => apiClient.get<JobPublic[]>('/public/jobs', { params: { lang: 'en' } }),
   });
   return (
-    <>
+    <div className={styles.page}>
       <Seo
         title={t('careers.seoTitle')}
         description={t('careers.seoDescription')}
@@ -64,6 +64,6 @@ export function CareersPage() {
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 }

@@ -1,0 +1,157 @@
+diff --git a/nurse/src/screens/ActiveVisit.test.tsx b/nurse/src/screens/ActiveVisit.test.tsx
+index fc30d98..69e7d5e 100644
+--- a/nurse/src/screens/ActiveVisit.test.tsx
++++ b/nurse/src/screens/ActiveVisit.test.tsx
+@@ -1,4 +1,4 @@
+-import { render, screen } from '@testing-library/react';
++import { fireEvent, render, screen } from '@testing-library/react';
+ import { MemoryRouter } from 'react-router-dom';
+ import { afterEach, describe, expect, it, vi } from 'vitest';
+ import type { CachedVisit } from '../offline/db';
+@@ -8,17 +8,29 @@ const visit: CachedVisit = {
+   id: 'active-visit-1', client_display_name: 'Client One', place_address_text: '',
+   scheduled_start: '2026-10-25T08:00:00.000Z', scheduled_end: '2026-10-25T11:00:00.000Z',
+   status: 'in_progress', instructions: '', adhoc: false, check_in_at: '2026-10-25T09:00:00.000Z',
++  photo_rules: { allowed: true }, photo_count: 2, verification_label: 'Verified',
+   updatedAt: '2026-10-25T09:00:00.000Z',
+ };
+ 
+ afterEach(() => vi.useRealTimers());
+ 
+-describe('active visit elapsed timer', () => {
++describe('active visit screen', () => {
+   it('derives elapsed time from the persisted check-in timestamp', () => {
+     vi.useFakeTimers();
+     vi.setSystemTime(new Date('2026-10-25T10:00:00.000Z'));
+-    render(<MemoryRouter><ActiveVisit visit={visit} onNote={vi.fn()} onPhoto={vi.fn()} onLeave={vi.fn()} photosEnabled={false} /></MemoryRouter>);
++    render(<MemoryRouter><ActiveVisit visit={visit} onNote={vi.fn()} onPhoto={vi.fn()} onLeave={vi.fn()} photosEnabled /></MemoryRouter>);
+     expect(screen.getByText('01:00:00')).toBeTruthy();
+-    expect(screen.getByText(/timer is calculated from the saved visit time/i)).toBeTruthy();
++    expect(screen.getByText('Photos (2 of 5)')).toBeTruthy();
++  });
++
++  it('routes the visual quick-note and photo controls through existing callbacks', () => {
++    const onNote = vi.fn(); const onPhoto = vi.fn(); const onLeave = vi.fn();
++    render(<MemoryRouter><ActiveVisit visit={visit} onNote={onNote} onPhoto={onPhoto} onLeave={onLeave} photosEnabled /></MemoryRouter>);
++    fireEvent.click(screen.getByRole('button', { name: /write a short note/i }));
++    fireEvent.click(screen.getByRole('button', { name: /add$/i }));
++    fireEvent.click(screen.getByRole('button', { name: /leave/i }));
++    expect(onNote).toHaveBeenCalledWith(visit);
++    expect(onPhoto).toHaveBeenCalledWith(visit);
++    expect(onLeave).toHaveBeenCalledWith(visit);
+   });
+ });
+diff --git a/nurse/src/screens/ActiveVisit.tsx b/nurse/src/screens/ActiveVisit.tsx
+index ccf2d94..84c20c2 100644
+--- a/nurse/src/screens/ActiveVisit.tsx
++++ b/nurse/src/screens/ActiveVisit.tsx
+@@ -2,23 +2,20 @@ import { useEffect, useState } from 'react';
+ import { Link } from 'react-router-dom';
+ import type { CachedVisit } from '../offline/db';
+ import { elapsed, formatElapsed, formatKampala } from '../lib/time';
+-import { copy } from '../copy';
++import { copy, visitStatusLabel } from '../copy';
+ 
+ type Props = { visit: CachedVisit; onNote: (visit: CachedVisit) => void; onPhoto: (visit: CachedVisit) => void; onLeave: (visit: CachedVisit) => void; photosEnabled: boolean };
+ export function ActiveVisit({ visit, onNote, onPhoto, onLeave, photosEnabled }: Props) {
+   const [now, setNow] = useState(Date.now());
+-  useEffect(() => {
+-    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+-    return () => window.clearInterval(timer);
+-  }, []);
++  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 1_000); return () => window.clearInterval(timer); }, []);
+   const start = visit.check_in_at ?? visit.scheduled_start;
+-  return <section className="screen" aria-labelledby="active-visit-title">
+-    <Link to={`/visit/${encodeURIComponent(visit.id)}`}>{copy.active.back}</Link>
+-    <article className="panel active-visit-panel">
+-      <p className="eyebrow">{copy.active.eyebrow}</p><h2 id="active-visit-title">{visit.client_display_name}</h2>
+-      <p className="elapsed-timer" aria-live="off">{formatElapsed(elapsed(start, now) * 1000)}</p>
+-      <p>{copy.active.arrived} {formatKampala(start)}. {copy.active.timerExplanation}</p>
+-      <div className="visit-detail-actions"><button type="button" onClick={() => onNote(visit)}>{copy.visit.note}</button>{photosEnabled && visit.photo_rules?.allowed && <button type="button" className="button-secondary" onClick={() => onPhoto(visit)}>{copy.visit.photo}</button>}<button type="button" onClick={() => onLeave(visit)}>{copy.active.leave}</button></div>
+-    </article>
++  const photoCount = Math.max(0, visit.photo_count ?? 0);
++  return <section className="screen active-visit-screen" aria-labelledby="active-visit-title">
++    <header className="active-visit-heading"><div><h1 id="active-visit-title">{visit.client_display_name}</h1><p>{copy.active.arrived} {formatKampala(start)} · {visit.verification_label || 'Verified'}</p></div><span className={`status-chip status-chip--${visit.status}`}>{visitStatusLabel(visit.status)}</span></header>
++    <p className="elapsed-timer" aria-live="off">{formatElapsed(elapsed(start, now) * 1000)}</p>
++    <article className="panel active-section"><p className="eyebrow">Photos ({photoCount} of 5)</p><div className="photo-strip">{Array.from({ length: Math.min(photoCount, 2) }, (_, index) => <span key={index} className="photo-thumb" aria-label={`Saved photo ${index + 1}`}>✓</span>)}{photosEnabled && visit.photo_rules?.allowed && photoCount < 5 && <button type="button" className="photo-add" onClick={() => onPhoto(visit)}><span aria-hidden="true">▣</span><span>Add</span></button>}</div></article>
++    <article className="panel active-section"><p className="eyebrow">Quick note</p><button type="button" className="quick-note-input" onClick={() => onNote(visit)}>Write a short note</button><button type="button" className="quick-note-action button-secondary" onClick={() => onNote(visit)}>Add note <span aria-hidden="true">→</span></button></article>
++    <div className="detail-primary-action"><button type="button" onClick={() => onLeave(visit)}>{copy.active.leave}<span aria-hidden="true">→</span></button></div>
++    <Link className="active-back" to={`/visit/${encodeURIComponent(visit.id)}`}>{copy.active.back}</Link>
+   </section>;
+ }
+diff --git a/nurse/src/screens/VisitDetail.tsx b/nurse/src/screens/VisitDetail.tsx
+index 7ad5c78..f8bee9d 100644
+--- a/nurse/src/screens/VisitDetail.tsx
++++ b/nurse/src/screens/VisitDetail.tsx
+@@ -6,22 +6,19 @@ import { Link } from 'react-router-dom';
+ type Props = { visit: CachedVisit; photosEnabled: boolean; onArrive: (visit: CachedVisit) => void; onLeave: (visit: CachedVisit) => void; onNote: (visit: CachedVisit) => void; onPhoto: (visit: CachedVisit) => void };
+ export function VisitDetail({ visit, photosEnabled, onArrive, onLeave, onNote, onPhoto }: Props) {
+   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(visit.place_address_text)}`;
+-  return <section className="screen" aria-labelledby="visit-detail-heading">
+-    <Link to="/">{copy.generic.backToToday}</Link>
+-    <article className="panel visit-detail">
+-      <div className="screen-heading"><h2 id="visit-detail-heading">{visit.client_display_name}</h2><span className={`status-chip status-chip--${visit.status}`}>{visitStatusLabel(visit.status)}</span></div>
+-      <p>{formatKampala(visit.scheduled_start)} – {formatKampala(visit.scheduled_end)}</p>
+-      <h3>{copy.visit.address}</h3><p>{visit.place_address_text || copy.address.missingOffline}</p>
+-      {visit.place_address_text && <a href={mapUrl} target="_blank" rel="noreferrer">{copy.generic.openMaps}</a>}
+-      <h3>{copy.visit.instructions}</h3><p>{visit.instructions || copy.address.noInstructions}</p>
+-      <p>{copy.visit.locationHint}</p>
+-      <div className="visit-detail-actions">
+-        {visit.status === 'scheduled' && <button type="button" onClick={() => onArrive(visit)}>{copy.visit.arrive}</button>}
+-        {visit.status === 'in_progress' && <button type="button" onClick={() => onLeave(visit)}>{copy.visit.leave}</button>}
+-        {visit.status === 'in_progress' && <Link to={`/active/${encodeURIComponent(visit.id)}`}>{copy.active.openActive}</Link>}
+-        <button type="button" className="button-secondary" onClick={() => onNote(visit)}>{copy.visit.note}</button>
+-        {photosEnabled && visit.photo_rules?.allowed && <button type="button" className="button-secondary" onClick={() => onPhoto(visit)}>{copy.visit.photo}</button>}
+-      </div>
+-    </article>
++  return <section className="screen visit-detail-screen" aria-labelledby="visit-detail-heading">
++    <Link className="back-link" to="/">{copy.generic.backToToday}</Link>
++    <header className="visit-detail-heading"><div><h1 id="visit-detail-heading">{visit.client_display_name}</h1><p>{formatKampala(visit.scheduled_start)} – {formatKampala(visit.scheduled_end)}</p></div><span className={`status-chip status-chip--${visit.status}`}>{visitStatusLabel(visit.status)}</span></header>
++    <article className="panel detail-card"><p className="eyebrow">{copy.visit.address}</p><h2>{visit.place_address_text || copy.address.missingOffline}</h2>{visit.place_address_text && <a className="pill-link" href={mapUrl} target="_blank" rel="noreferrer">{copy.generic.openMaps}<span aria-hidden="true">→</span></a>}</article>
++    <article className="panel detail-card"><p className="eyebrow">{copy.visit.instructions}</p><p>{visit.instructions || copy.address.noInstructions}</p></article>
++    <div className="detail-primary-action">
++      {visit.status === 'scheduled' && <button type="button" onClick={() => onArrive(visit)}>{copy.visit.arrive}<span aria-hidden="true">→</span></button>}
++      {visit.status === 'in_progress' && <button type="button" onClick={() => onLeave(visit)}>{copy.visit.leave}<span aria-hidden="true">→</span></button>}
++    </div>
++    <div className="visit-secondary-actions">
++      {visit.status === 'in_progress' && <Link to={`/active/${encodeURIComponent(visit.id)}`}>{copy.active.openActive}</Link>}
++      <button type="button" className="button-secondary" onClick={() => onNote(visit)}>{copy.visit.note}</button>
++      {photosEnabled && visit.photo_rules?.allowed && <button type="button" className="button-secondary" onClick={() => onPhoto(visit)}>{copy.visit.photo}</button>}
++    </div>
+   </section>;
+ }
+diff --git a/nurse/src/styles.css b/nurse/src/styles.css
+index 3e34105..3b6ab58 100644
+--- a/nurse/src/styles.css
++++ b/nurse/src/styles.css
+@@ -330,3 +330,30 @@ small, .muted, .hint { color: var(--mut); }
+ .adhoc-sheet .sheet-actions button:first-child { justify-content: space-between; min-height: 56px; border-radius: 999px; background: var(--gold); color: var(--on-gold); }
+ .adhoc-sheet .sheet-actions button:first-child span { width: 2.4rem; height: 2.4rem; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--on-gold) 12%, transparent); }
+ @media (min-width: 820px) { .adhoc-sheet { width: min(540px, 92%); } }
++
++/* Stage 12: visit detail and active visit. */
++.visit-detail-screen, .active-visit-screen { max-width: 620px; margin-inline: auto; }
++.back-link, .active-back { color: var(--mut); font-size: .85rem; font-weight: 700; text-decoration: none; }
++.visit-detail-heading, .active-visit-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; }
++.visit-detail-heading h1, .active-visit-heading h1 { margin: 0; font-family: var(--serif); font-size: clamp(1.65rem, 7vw, 2rem); }
++.visit-detail-heading p, .active-visit-heading p { margin: .2rem 0 0; color: var(--mut); }
++.detail-card { padding: 1rem; }
++.detail-card h2 { margin: 0; font-family: var(--sans); font-size: 1rem; }
++.detail-card > p:last-child { margin-bottom: 0; color: var(--ink); }
++.pill-link { display: inline-flex; align-items: center; gap: .45rem; min-height: 42px; margin-top: .8rem; padding: .4rem .55rem .4rem 1rem; border-radius: 999px; background: var(--mint); color: var(--ink); font-weight: 750; text-decoration: none; }
++.pill-link span, .quick-note-action span { width: 2rem; height: 2rem; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--ink) 8%, transparent); }
++.detail-primary-action button { width: 100%; justify-content: space-between; min-height: 56px; border-radius: 999px; background: var(--gold); color: var(--on-gold); }
++.detail-primary-action button span { width: 2.4rem; height: 2.4rem; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--on-gold) 12%, transparent); }
++.visit-secondary-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
++.visit-secondary-actions a { min-height: 48px; display: inline-flex; align-items: center; padding: .55rem .75rem; font-weight: 750; }
++.active-visit-screen .elapsed-timer { margin: .1rem 0 .45rem; color: var(--forest); font-family: var(--serif); font-size: clamp(3rem, 16vw, 4.1rem); line-height: .95; text-align: center; }
++.active-section { padding: 1rem; }
++.photo-strip { display: flex; gap: .7rem; overflow-x: auto; }
++.photo-thumb, .photo-add { width: 72px; height: 72px; flex: 0 0 72px; display: grid; place-items: center; border-radius: 14px; }
++.photo-thumb { background: repeating-linear-gradient(45deg, var(--straw), var(--straw) 8px, color-mix(in srgb, var(--straw) 65%, var(--bg)) 8px, color-mix(in srgb, var(--straw) 65%, var(--bg)) 16px); color: var(--on-straw); }
++.photo-add { align-content: center; gap: .15rem; border: 1px dashed var(--mut); background: transparent; color: var(--mut); }
++.photo-add span:last-child { font-size: .75rem; }
++.quick-note-input { width: 100%; justify-content: flex-start; min-height: 48px; border: 1px solid var(--line); border-radius: 12px; background: var(--surf); color: var(--mut); font-weight: 400; text-align: left; }
++.quick-note-action { margin-top: .6rem; }
++.active-back { justify-self: center; }
++@media (min-width: 820px) { .visit-detail-screen, .active-visit-screen { margin-inline: 0; } }

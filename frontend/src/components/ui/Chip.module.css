@@ -23,7 +23,7 @@
 .care[aria-pressed='true'] {
   background: var(--moss);
   border-color: var(--moss);
-  color: #fff;
+  color: var(--onf);
 }
 
 .care:disabled {

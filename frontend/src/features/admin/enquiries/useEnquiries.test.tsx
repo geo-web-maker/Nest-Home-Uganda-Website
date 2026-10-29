@@ -21,7 +21,7 @@ function setup() {
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
   const get = vi.fn().mockResolvedValue({ items: [], total: 0, page: 1, page_size: 25 });
-  const client = { get, post: vi.fn(), patch: vi.fn() } satisfies ApiClient;
+  const client = { get, post: vi.fn(), patch: vi.fn(), put: vi.fn() } satisfies ApiClient;
   return { wrapper, get, client };
 }
 

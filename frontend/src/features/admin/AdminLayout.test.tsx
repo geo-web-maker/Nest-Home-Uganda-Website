@@ -43,6 +43,11 @@ beforeEach(() => {
   window.scrollTo = vi.fn();
 });
 
+afterEach(() => {
+  window.localStorage.removeItem('nest-theme');
+  document.documentElement.removeAttribute('data-theme');
+});
+
 describe('AdminLayout navigation', () => {
   it('shows only reachable items in the reference Website group', () => {
     setup('/admin/enquiries', ['enquiries:read', 'reports:read']);
@@ -73,6 +78,21 @@ describe('AdminLayout navigation', () => {
 });
 
 describe('AdminLayout top bar', () => {
+  it('provides a labelled Light/Dark theme switch in the top bar', async () => {
+    const user = userEvent.setup();
+    setup('/admin', ['dashboard:view']);
+    const header = screen.getByRole('banner');
+    const group = within(header).getByRole('group', { name: 'Theme' });
+    const light = within(group).getByRole('button', { name: 'Light' });
+    const dark = within(group).getByRole('button', { name: 'Dark' });
+
+    expect(light).toHaveAttribute('aria-pressed', 'true');
+    await user.click(dark);
+    expect(dark).toHaveAttribute('aria-pressed', 'true');
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(window.localStorage.getItem('nest-theme')).toBe('dark');
+  });
+
   it('shows the page title and the user initial, with no role label for a scoped user', () => {
     setup('/admin/enquiries', ['enquiries:read']);
     const header = screen.getByRole('banner');
@@ -115,19 +135,33 @@ describe('AdminLayout phone navigation', () => {
       'Content',
       'Site settings',
       'Users and scopes',
+      'Permissions',
       'Reports',
       'Audit log',
       'Clients',
       'Places & stays',
       'Nurses',
+      'Schedule',
       'Flags',
       'My team',
+      'Live dashboard',
+      'Executive charts',
+      'Last-seen map',
       'Timesheets',
       'Photo review',
       'Care reports',
+      'Notification log',
+      'SOS history & drills',
+      'On-call roster',
+      'SOS procedure',
       'Care settings',
+      'Setting catalogue',
+      'Data and retention',
+      'SMS provider & limits',
       'Go-live checklist',
       'Data requests',
+      'App releases',
+      'Backups and hosting',
     ]);
     await user.click(within(list).getByRole('button', { name: 'Sign out' }));
     expect(logout).toHaveBeenCalledTimes(1);

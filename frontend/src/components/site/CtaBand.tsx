@@ -21,10 +21,11 @@ export function CtaBand({ heading, bookLabel, whatsappLabel }: CtaBandProps) {
       <div className="container">
         <h2 className={styles.heading}>{heading}</h2>
         <div className={styles.actions}>
-          <Button href="/contact">{bookLabel}</Button>
+          <Button href="/contact" arrow>{bookLabel}</Button>
           <Button
             href={plainWhatsappUrl(site.business.whatsapp)}
             variant="whatsapp"
+            arrow
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => trackClick('whatsapp', pathname, import.meta.env.VITE_API_URL ?? '')}
