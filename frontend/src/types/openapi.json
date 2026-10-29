@@ -8905,6 +8905,31 @@
         ]
       }
     },
+    "/api/v1/admin/care/nurses/supervisor-options": {
+      "get": {
+        "description": "Active accounts that can be assigned as a nurse's supervisor, within the caller's reach.",
+        "operationId": "supervisor_options_api_v1_admin_care_nurses_supervisor_options_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Supervisor Options",
+        "tags": [
+          "care-nurses"
+        ]
+      }
+    },
     "/api/v1/admin/care/nurses/{user_id}": {
       "get": {
         "operationId": "get_nurse_profile_api_v1_admin_care_nurses__user_id__get",
