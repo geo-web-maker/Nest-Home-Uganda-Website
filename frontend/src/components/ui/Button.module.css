@@ -56,6 +56,7 @@
 }
 .header .arrow { width: 28px; height: 28px; font-size: 1rem; }
 .full { width: 100%; }
+.full.withArrow { justify-content: space-between; }
 @media (hover: hover) and (pointer: fine) {
   .button:not(:disabled):hover { background-color: var(--btn-hover); transform: translateY(-1px); }
 }

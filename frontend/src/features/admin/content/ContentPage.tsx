@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState, type ChangeEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { FilterTabs } from '../../../components/admin/FilterTabs';
 import { DataTable, type DataColumn } from '../../../components/admin/DataTable';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Badge } from '../../../components/ui/Badge';
@@ -254,25 +255,17 @@ export function ContentPage() {
           ) : undefined
         }
       />
-      <div className={styles.tabs} role="tablist" aria-label={t('content.tabsLabel')}>
-        {tabs.map((kind) => (
-          <button
-            key={kind}
-            type="button"
-            role="tab"
-            aria-selected={tab === kind}
-            className={tab === kind ? styles.activeTab : styles.tab}
-            onClick={() => {
-              setParams({ tab: kind });
-              setSelected(null);
-              setForm({});
-              setEditorOpen(false);
-            }}
-          >
-            {t(`content.tabs.${kind}`)}
-          </button>
-        ))}
-      </div>
+      <FilterTabs
+        label={t('content.tabsLabel')}
+        value={tab}
+        tabs={tabs.map((kind) => ({ value: kind, label: t(`content.tabs.${kind}`) }))}
+        onChange={(value) => {
+          setParams({ tab: value });
+          setSelected(null);
+          setForm({});
+          setEditorOpen(false);
+        }}
+      />
       {itemsQuery.isError ? (
         <div role="alert">
           <p>{t('content.error')}</p>

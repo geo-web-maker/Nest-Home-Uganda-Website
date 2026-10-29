@@ -278,7 +278,7 @@ small, .muted, .hint { color: var(--mut); }
 
 /* Stage 10: sign-in, disclosure and location explanation. */
 .login-screen { width: min(100%, 420px); margin: 1.2rem auto 0; display: grid; gap: .75rem; }
-.login-mark { display: grid; place-items: center; justify-self: center; width: 5.2rem; height: 5.2rem; padding: .6rem; border-radius: 1.5rem; background: #123524; box-shadow: var(--shadow-1); }
+.login-mark { display: block; width: 48px; height: 41px; margin: 0 0 .5rem; }
 .login-panel { padding: 1.45rem; }
 .login-panel h1 { margin: 0; font-family: var(--serif); font-size: clamp(1.8rem, 7vw, 2.2rem); }
 .login-subtitle { margin: .2rem 0 1.15rem; color: var(--mut); }

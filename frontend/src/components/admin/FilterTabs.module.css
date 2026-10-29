@@ -10,7 +10,7 @@
 .tab {
   composes: pill from '../../design/shapes.module.css';
   flex: none;
-  min-height: 38px;
+  min-height: 44px;
   padding: 0 14px;
   background: var(--surf);
   border: 2px solid var(--line);

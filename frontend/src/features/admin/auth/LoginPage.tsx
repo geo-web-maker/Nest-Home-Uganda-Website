@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Head } from 'vite-react-ssg';
 import { z } from 'zod';
+import { LoginMark } from '../../../components/brand/Logo';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
 import { ApiError } from '../../../lib/api/client';
@@ -85,7 +86,11 @@ export function LoginPage() {
         onSubmit={(event) => void handleSubmit(onValid)(event)}
         noValidate
       >
-        <h1 className={styles.title}>{t('login.title')}</h1>
+        <LoginMark />
+        <div>
+          <h1 className={styles.title}>{t('login.title')}</h1>
+          <p className={styles.subtitle}>{t('login.subtitle')}</p>
+        </div>
         <Field
           label={t('login.email')}
           type="email"
@@ -109,9 +114,13 @@ export function LoginPage() {
             {formError}
           </p>
         )}
-        <Button type="submit" fullWidth disabled={isSubmitting}>
+        <Button type="submit" fullWidth arrow disabled={isSubmitting}>
           {isSubmitting ? t('login.submitting') : t('login.submit')}
         </Button>
+        <p className={styles.forgot}>
+          <span>{t('login.forgot')}</span>
+          <small>{t('login.forgotHelp')}</small>
+        </p>
       </form>
     </main>
   );

@@ -28,4 +28,23 @@ describe('nurse app shell', () => {
     expect(links('Profile')).toHaveLength(2);
     expect(links('Timesheets')).toHaveLength(2);
   });
+
+  const renderGuest = (online: boolean) => render(<MemoryRouter initialEntries={['/']}><AppShell online={online} queued={0} authenticated={false} sosEnabled={false} smsHref="sms:?body=help" onSendSos={vi.fn(async () => undefined)}><h2>Sign in</h2></AppShell></MemoryRouter>);
+
+  it('reserves no side-rail space and hides the status banner on the sign-in screen while online', () => {
+    const { container } = renderGuest(true);
+    expect(container.querySelector('.nurse-app')).toHaveClass('nurse-app--guest');
+    expect(container.querySelector('.desktop-rail')).toBeNull();
+    expect(container.querySelector('.connection-banner')).toBeNull();
+  });
+
+  it('still tells a signed-out person when the device is offline', () => {
+    const { container } = renderGuest(false);
+    expect(container.querySelector('.connection-banner')).not.toBeNull();
+  });
+
+  it('keeps the side rail space for signed-in nurses', () => {
+    const { container } = renderShell('/', true);
+    expect(container.querySelector('.nurse-app')).not.toHaveClass('nurse-app--guest');
+  });
 });

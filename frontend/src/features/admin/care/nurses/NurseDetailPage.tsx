@@ -7,6 +7,7 @@ import { hasScopes } from '../../auth/hasScopes';
 import { useAuth } from '../../auth/useAuth';
 import '../care.css';
 import './nurse-detail.css';
+import { Notice } from '../../../../components/admin/Notice';
 
 type NurseDetails = {
   person: { name?: string | null; email?: string | null; phone_e164?: string | null; is_active?: boolean };
@@ -77,8 +78,8 @@ export function NurseDetailPage() {
         <div><p className="eyebrow">Nurse profile</p><h1 id="nurse-detail-title">{details.person.name ?? nurse.staff_number}</h1><p>{nurse.staff_number} · {details.person.email ?? 'No email recorded'}</p></div>
         <div className="nurse-header-actions"><Button variant="outline" onClick={() => navigate('/admin/care/nurses')}>Back to nurses</Button>{canWriteNurse && <Button type="button" disabled={busy} onClick={() => void runAction(() => apiClient.post(`/admin/care/nurses/${encodeURIComponent(userId)}/invite`, {}), 'Invitation resent.')}>Resend invite</Button>}</div>
       </header>
-      {error && <p className="care-error" role="alert">{error}</p>}
-      {notice && <p className="care-notice" role="status">{notice}</p>}
+      {error && <Notice tone="error">{error}</Notice>}
+      {notice && <Notice>{notice}</Notice>}
 
       <section className="nurse-detail-grid">
         <article className="care-form">

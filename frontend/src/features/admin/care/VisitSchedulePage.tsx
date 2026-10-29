@@ -2,12 +2,16 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../../components/admin/PageHeader';
+import { FilterTabs } from '../../../components/admin/FilterTabs';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
 import { ApiError, apiClient } from '../../../lib/api/client';
 import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
 import './stage30-38.css';
+import { Modal } from '../../../components/admin/Modal';
+import { Notice } from '../../../components/admin/Notice';
+import { StatusBadge } from '../../../components/ui/Badge';
 
 type Visit = Record<string, any> & {
   id: string;
@@ -245,7 +249,7 @@ export function VisitSchedulePage() {
       <td>{displayName(nurses, visit.nurse_id, 'nurse')}</td>
       <td>{displayName(clients, visit.client_id, 'client')}</td>
       <td>{String(visit.place_snapshot?.address_text ?? visit.place_snapshot?.label ?? visit.place_id ?? '—')}</td>
-      <td><span className={`stage-status stage-status--${String(visit.status).replace(/[^a-z0-9_-]/gi, '')}`}>{String(visit.status).replaceAll('_', ' ')}</span></td>
+      <td><StatusBadge status={String(visit.status ?? '')}>{String(visit.status).replaceAll('_', ' ')}</StatusBadge></td>
       <td className="stage-row-actions">
         <Button variant="outline" onClick={() => navigate(`/admin/care/visits/${encodeURIComponent(visit.id)}`)}>Review</Button>
         {canWrite && visit.status === 'scheduled' && <Button variant="outline" onClick={() => void openVisitAction(visit)}>Change</Button>}
@@ -257,10 +261,7 @@ export function VisitSchedulePage() {
     <div className="stage-page">
       <PageHeader title="Schedule" subtitle="Create, review and coordinate home visits." actions={canCreate ? <Button onClick={() => void loadCreateOptions()}>New visit</Button> : undefined} />
       <div className="stage-toolbar stage-toolbar--schedule">
-        <div className="stage-segment" role="group" aria-label="Schedule view">
-          <Button variant={view === 'day' ? 'primary' : 'outline'} aria-pressed={view === 'day'} onClick={() => setView('day')}>Day</Button>
-          <Button variant={view === 'week' ? 'primary' : 'outline'} aria-pressed={view === 'week'} onClick={() => setView('week')}>Week</Button>
-        </div>
+        <FilterTabs label="Schedule view" value={view} onChange={(value) => setView(value as 'day' | 'week')} tabs={[{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }]} />
         <div className="stage-date-navigation">
           <Button variant="outline" className="stage-nav-arrow" onClick={() => moveAnchor(-1)} aria-label="Previous period">‹</Button>
           <Field className="stage-date-field" label="Date" type="date" value={anchor} onChange={(event) => setAnchor(event.target.value)} />
@@ -269,23 +270,23 @@ export function VisitSchedulePage() {
         </div>
         <strong className="stage-range-label">{range.label}</strong>
       </div>
-      {error && <div className="stage-message stage-message--error" role="alert">{error}</div>}
-      {notice && <div className="stage-message" role="status">{notice}</div>}
+      {error && <Notice tone="error">{error}</Notice>}
+      {notice && <Notice>{notice}</Notice>}
       {loading ? <p aria-busy="true">Loading schedule…</p> : visibleVisits.length === 0 ? <section className="stage-panel"><p>No visits are scheduled for this period.</p></section> : (
         view === 'day' ? <section className="stage-panel"><div className="stage-table-scroll"><table className="stage-table"><caption>Visits for {range.label}</caption><thead><tr><th>Time</th><th>Nurse</th><th>Client</th><th>Place</th><th>Status</th><th>Actions</th></tr></thead><tbody>{visibleVisits.map(renderVisit)}</tbody></table></div></section> : (
-          <div className="stage-week-grid">{Array.from({ length: 7 }, (_, offset) => { const day = startOfWeek(dateFromKey(anchor)); day.setDate(day.getDate() + offset); const key = dateKey(day); const dayVisits = visibleVisits.filter((visit) => dateKey(new Date(visit.scheduled_start)) === key); return <section className="stage-panel stage-week-day" key={key}><h2>{new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(day)} <span>{day.getDate()}</span></h2>{dayVisits.length ? dayVisits.map((visit) => <article className="stage-calendar-visit" key={visit.id}><strong>{timeLabel(visit.scheduled_start)}</strong><span>{displayName(clients, visit.client_id, 'client')}</span><small>{displayName(nurses, visit.nurse_id, 'nurse')}</small><span className={`stage-status stage-status--${String(visit.status).replace(/[^a-z0-9_-]/gi, '')}`}>{String(visit.status).replaceAll('_', ' ')}</span><Button variant="outline" onClick={() => navigate(`/admin/care/visits/${encodeURIComponent(visit.id)}`)}>Review</Button>{canWrite && visit.status === 'scheduled' && <Button variant="outline" onClick={() => void openVisitAction(visit)}>Change</Button>}</article>) : <p className="stage-muted">No visits</p>}</section>; })}</div>
+          <div className="stage-week-grid">{Array.from({ length: 7 }, (_, offset) => { const day = startOfWeek(dateFromKey(anchor)); day.setDate(day.getDate() + offset); const key = dateKey(day); const dayVisits = visibleVisits.filter((visit) => dateKey(new Date(visit.scheduled_start)) === key); return <section className="stage-panel stage-week-day" key={key}><h2>{new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(day)} <span>{day.getDate()}</span></h2>{dayVisits.length ? dayVisits.map((visit) => <article className="stage-calendar-visit" key={visit.id}><strong>{timeLabel(visit.scheduled_start)}</strong><span>{displayName(clients, visit.client_id, 'client')}</span><small>{displayName(nurses, visit.nurse_id, 'nurse')}</small><StatusBadge status={String(visit.status ?? '')}>{String(visit.status).replaceAll('_', ' ')}</StatusBadge><Button variant="outline" onClick={() => navigate(`/admin/care/visits/${encodeURIComponent(visit.id)}`)}>Review</Button>{canWrite && visit.status === 'scheduled' && <Button variant="outline" onClick={() => void openVisitAction(visit)}>Change</Button>}</article>) : <p className="stage-muted">No visits</p>}</section>; })}</div>
         )
       )}
-      {createOpen && <div className="stage-modal-backdrop"><section className="stage-modal" role="dialog" aria-modal="true" aria-labelledby="stage-create-visit-title"><header><div><h2 id="stage-create-visit-title">New visit</h2><p>The visit keeps a snapshot of the client’s current stay place.</p></div><Button variant="outline" onClick={() => setCreateOpen(false)}>Close</Button></header><form onSubmit={(event) => void createVisit(event)} className="stage-form">
+      {createOpen && <Modal id="stage-create-visit-title" title="New visit" subtitle="The visit keeps a snapshot of the client’s current stay place." onClose={() => setCreateOpen(false)}><form onSubmit={(event) => void createVisit(event)} className="stage-form">
         <Field label="Client" kind="select" value={clientId} onChange={(event) => void chooseClient(event.target.value)} requiredLabel="required" required><option value="">Choose a client</option>{clients.map((client) => <option key={String(client.id)} value={String(client.id)}>{String(client.display_name ?? client.id)}</option>)}</Field>
         <Field label="Place (from current stay)" kind="select" value={placeId} onChange={(event) => setPlaceId(event.target.value)} requiredLabel="required" required disabled={!clientId || !currentStayId}><option value="">{currentStayId ? 'Choose the current place' : 'Select a client with a current stay'}</option>{places.map((place) => <option key={String(place.id)} value={String(place.id)}>{String(place.label ?? 'Home')} · {String(place.address_text ?? place.id)}</option>)}</Field>
-        {clientId && !currentStayId && <p className="stage-message stage-message--error" role="alert">No active stay was found for this client. Scheduling is blocked until the current stay is corrected.</p>}
+        {clientId && !currentStayId && <Notice tone="error">No active stay was found for this client. Scheduling is blocked until the current stay is corrected.</Notice>}
         <Field label="Nurse" kind="select" value={nurseId} onChange={(event) => setNurseId(event.target.value)} requiredLabel="required" required><option value="">Choose an assigned nurse</option>{nurses.filter((nurse) => nurse.active !== false && isNurseAssigned(nurse, clientId)).map((nurse) => <option key={String(nurse.user_id ?? nurse.id)} value={String(nurse.user_id ?? nurse.id)}>{String(nurse.display_name ?? nurse.staff_number ?? nurse.user_id ?? nurse.id)}</option>)}</Field>
         <div className="stage-form-columns"><Field label="Start" type="datetime-local" value={start} onChange={(event) => setStart(event.target.value)} requiredLabel="required" required /><Field label="End" type="datetime-local" value={end} onChange={(event) => setEnd(event.target.value)} requiredLabel="required" required /></div>
         <Field label="Instructions for the nurse" kind="textarea" value={instructions} onChange={(event) => setInstructions(event.target.value)} maxLength={1000} />
         <div className="stage-modal-actions"><Button type="submit" disabled={saving || !currentStayId}>{saving ? 'Saving…' : 'Create visit'}</Button><Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button></div>
-      </form></section></div>}
-      {actionVisit && <div className="stage-modal-backdrop"><section className="stage-modal" role="dialog" aria-modal="true" aria-labelledby="stage-change-visit-title"><header><div><h2 id="stage-change-visit-title">Reassign or cancel</h2><p>{displayName(clients, actionVisit.client_id, 'client')} · {timeLabel(actionVisit.scheduled_start)} · {displayDate(String(actionVisit.scheduled_start))}</p></div><Button variant="outline" onClick={() => setActionVisit(null)}>Close</Button></header><form onSubmit={(event) => void saveVisitAction(event)} className="stage-form"><div className="stage-panel"><h3>Reassign visit</h3>{canReassign ? <Field label="Replacement nurse" kind="select" value={replacementNurseId} onChange={(event) => setReplacementNurseId(event.target.value)}><option value="">Do not reassign</option>{nurses.filter((nurse) => nurse.active !== false && isNurseAssigned(nurse, String(actionVisit.client_id))).map((nurse) => <option key={String(nurse.user_id ?? nurse.id)} value={String(nurse.user_id ?? nurse.id)}>{String(nurse.display_name ?? nurse.staff_number ?? nurse.user_id ?? nurse.id)}</option>)}</Field> : <p className="stage-muted">Your role does not include the client and nurse read scopes needed to reassign. Cancellation remains available.</p>}<p className="stage-muted">The server checks assignment reach and writes the change to the audit log.</p></div><div className="stage-panel stage-danger-panel"><h3>Cancel visit</h3><Field label="Reason for cancellation (required if cancelling)" kind="textarea" value={cancelReason} onChange={(event) => { setCancelReason(event.target.value); setReplacementNurseId(''); }} minLength={3} maxLength={500} /><p className="stage-muted">Cancellation sends a tombstone to the nurse’s sync queue; it does not delete the visit record.</p></div><div className="stage-modal-actions"><Button type="submit" disabled={saving || (!replacementNurseId && cancelReason.trim().length < 3)}>{saving ? 'Saving…' : replacementNurseId ? 'Confirm reassign' : 'Confirm cancellation'}</Button><Button type="button" variant="outline" onClick={() => setActionVisit(null)}>Keep visit</Button></div></form></section></div>}
+      </form></Modal>}
+      {actionVisit && <Modal id="stage-change-visit-title" title="Reassign or cancel" subtitle={<>{displayName(clients, actionVisit.client_id, 'client')} · {timeLabel(actionVisit.scheduled_start)} · {displayDate(String(actionVisit.scheduled_start))}</>} onClose={() => setActionVisit(null)}><form onSubmit={(event) => void saveVisitAction(event)} className="stage-form"><div className="stage-panel"><h3>Reassign visit</h3>{canReassign ? <Field label="Replacement nurse" kind="select" value={replacementNurseId} onChange={(event) => setReplacementNurseId(event.target.value)}><option value="">Do not reassign</option>{nurses.filter((nurse) => nurse.active !== false && isNurseAssigned(nurse, String(actionVisit.client_id))).map((nurse) => <option key={String(nurse.user_id ?? nurse.id)} value={String(nurse.user_id ?? nurse.id)}>{String(nurse.display_name ?? nurse.staff_number ?? nurse.user_id ?? nurse.id)}</option>)}</Field> : <p className="stage-muted">Your role does not include the client and nurse read scopes needed to reassign. Cancellation remains available.</p>}<p className="stage-muted">The server checks assignment reach and writes the change to the audit log.</p></div><div className="stage-panel stage-danger-panel"><h3>Cancel visit</h3><Field label="Reason for cancellation (required if cancelling)" kind="textarea" value={cancelReason} onChange={(event) => { setCancelReason(event.target.value); setReplacementNurseId(''); }} minLength={3} maxLength={500} /><p className="stage-muted">Cancellation sends a tombstone to the nurse’s sync queue; it does not delete the visit record.</p></div><div className="stage-modal-actions"><Button type="submit" disabled={saving || (!replacementNurseId && cancelReason.trim().length < 3)}>{saving ? 'Saving…' : replacementNurseId ? 'Confirm reassign' : 'Confirm cancellation'}</Button><Button type="button" variant="outline" onClick={() => setActionVisit(null)}>Keep visit</Button></div></form></Modal>}
     </div>
   );
 }

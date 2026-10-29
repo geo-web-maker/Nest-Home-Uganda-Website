@@ -46,10 +46,18 @@ describe('LoginPage', () => {
 
   it('has an h1, two required labelled fields and a submit button', () => {
     setup();
-    expect(screen.getByRole('heading', { level: 1, name: 'Sign in' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Welcome back' })).toBeInTheDocument();
     expect(screen.getByLabelText('Email (required)')).toHaveAttribute('type', 'email');
     expect(screen.getByLabelText('Password (required)')).toHaveAttribute('type', 'password');
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeEnabled();
+  });
+
+  it('matches the nurse sign-in: logo, subtitle, arrow button and forgot-password help', () => {
+    const { container } = setup();
+    expect(container.querySelector('form svg')).not.toBeNull();
+    expect(screen.getByText('Sign in to see your day')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Sign in/ }).querySelector('span')).toHaveTextContent('→');
+    expect(screen.getByText('Forgot password?')).toBeInTheDocument();
   });
 
   it('shows both field errors and does not call the API when the form is empty', async () => {

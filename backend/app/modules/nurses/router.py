@@ -100,7 +100,12 @@ async def supervisor_options(
     if ctx.is_superadmin or ctx.reach == "all":
         users = [
             u for u in users
-            if u.kind != "nurse" and (u.is_superadmin or u.kind in {"supervisor", "admin", "executive"})
+            if u.kind != "nurse"
+            and (
+                u.is_superadmin
+                or u.kind in {"supervisor", "admin", "executive"}
+                or "nurses:write" in u.scopes
+            )
         ]
     else:
         users = [u for u in users if str(u.id) == ctx.user_id]

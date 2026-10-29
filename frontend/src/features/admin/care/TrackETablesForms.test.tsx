@@ -10,8 +10,8 @@ describe('Track E admin care table/form baseline', () => {
         <CareWorkspace />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('button', { name: 'Visits' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Alerts' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Visits' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Alerts' })).toBeInTheDocument();
   });
 
   it('exposes the operational screens needed for table/form coverage', () => {

@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -23,7 +24,7 @@ describe('VisitSchedulePage toolbar', () => {
         <VisitSchedulePage />
       </MemoryRouter>,
     );
-    const toolbar = (await screen.findByRole('group', { name: 'Schedule view' })).parentElement as HTMLElement;
+    const toolbar = (await screen.findByRole('tablist', { name: 'Schedule view' })).parentElement as HTMLElement;
     expect(toolbar).toHaveClass('stage-toolbar--schedule');
     expect(toolbar.querySelector('.stage-date-navigation')).not.toBeNull();
     expect(toolbar.querySelectorAll('.stage-nav-arrow')).toHaveLength(2);
@@ -31,5 +32,18 @@ describe('VisitSchedulePage toolbar', () => {
     expect(screen.getByRole('button', { name: 'Previous period' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Next period' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Today' })).toBeInTheDocument();
+  });
+
+  it('uses the shared tab control for Day and Week and switches between them', async () => {
+    render(
+      <MemoryRouter>
+        <VisitSchedulePage />
+      </MemoryRouter>,
+    );
+    const day = await screen.findByRole('tab', { name: 'Day' });
+    expect(day).toHaveAttribute('aria-selected', 'true');
+    await userEvent.click(screen.getByRole('tab', { name: 'Week' }));
+    expect(screen.getByRole('tab', { name: 'Week' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Day' })).toHaveAttribute('aria-selected', 'false');
   });
 });

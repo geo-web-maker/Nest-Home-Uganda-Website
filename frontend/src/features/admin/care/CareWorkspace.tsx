@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '../../../components/ui/Button';
+import { FilterTabs } from '../../../components/admin/FilterTabs';
 import { ApiError, apiClient } from '../../../lib/api/client';
 import './care.css';
 import { PlacesPanel } from './places/PlacesPanel';
@@ -416,24 +418,19 @@ export function CareWorkspace() {
           <h1 id="care-title">{String(copy.title ?? 'Care operations')}</h1>
           <p>{String(copy.subtitle ?? '')}</p>
         </div>
-        <button type="button" onClick={() => void load()} disabled={loading || busy}>
+        <Button variant="outline" type="button" onClick={() => void load()} disabled={loading || busy}>
           {String(copy.refresh ?? 'Refresh')}
-        </button>
+        </Button>
       </header>
-      <nav aria-label="Care sections" className="care-tabs">
-        {tabs.map((value) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={tab === value}
-            onClick={() => setTab(value)}
-          >
-            {String(
-              (copy.tabs as Record<string, unknown> | undefined)?.[value] ?? tabLabels[value],
-            )}
-          </button>
-        ))}
-      </nav>
+      <FilterTabs
+        label="Care sections"
+        value={tab}
+        onChange={(value) => setTab(value as CareTab)}
+        tabs={tabs.map((value) => ({
+          value,
+          label: String((copy.tabs as Record<string, unknown> | undefined)?.[value] ?? tabLabels[value]),
+        }))}
+      />
       {error && <p role="alert">{error}</p>}
       {actionMessage && <p role="status">{actionMessage}</p>}
       {loading && <p role="status">{String(copy.loading ?? 'Loading care data')}</p>}
@@ -551,16 +548,16 @@ export function CareWorkspace() {
                   {['visits', 'flags', 'photos', 'alerts', 'timesheets', 'sos'].includes(tab) && (
                     <td className="care-row-actions">
                       {tab === 'visits' && (
-                        <button
+                        <Button variant="outline"
                           type="button"
                           onClick={() => void openVisitReview(String(item.id ?? ''))}
                         >
                           Review visit
-                        </button>
+                        </Button>
                       )}
                       {tab === 'visits' && item.status === 'scheduled' && (
                         <>
-                          <button
+                          <Button variant="outline"
                             type="button"
                             onClick={() => {
                               const nurseId = window.prompt('New nurse user ID');
@@ -587,8 +584,8 @@ export function CareWorkspace() {
                             }}
                           >
                             Reassign
-                          </button>
-                          <button
+                          </Button>
+                          <Button variant="outline"
                             type="button"
                             onClick={() => {
                               const reason = window.prompt('Reason for cancelling this visit');
@@ -600,21 +597,21 @@ export function CareWorkspace() {
                             }}
                           >
                             Cancel visit
-                          </button>
+                          </Button>
                         </>
                       )}
                       {tab === 'flags' && (
-                        <button
+                        <Button variant="outline"
                           type="button"
                           onClick={() => setSelectedFlag(String(item.id ?? ''))}
                         >
                           Resolve
-                        </button>
+                        </Button>
                       )}
                       {tab === 'photos' &&
                         item.status !== 'hidden' &&
                         item.status !== 'expired' && (
-                          <button
+                          <Button variant="outline"
                             type="button"
                             onClick={() => {
                               const id = String(item.id ?? '');
@@ -627,11 +624,11 @@ export function CareWorkspace() {
                             }}
                           >
                             Hide photo
-                          </button>
+                          </Button>
                         )}
                       {tab === 'alerts' && item.status === 'open' && (
                         <>
-                          <button
+                          <Button variant="outline"
                             type="button"
                             onClick={() =>
                               void runRowAction(
@@ -640,8 +637,8 @@ export function CareWorkspace() {
                             }
                           >
                             Acknowledge
-                          </button>
-                          <button
+                          </Button>
+                          <Button variant="outline"
                             type="button"
                             onClick={() => {
                               const note = window.prompt('Resolution note');
@@ -653,12 +650,12 @@ export function CareWorkspace() {
                             }}
                           >
                             Resolve
-                          </button>
+                          </Button>
                         </>
                       )}
                       {tab === 'timesheets' && item.status === 'submitted' && (
                         <>
-                          <button
+                          <Button variant="outline"
                             type="button"
                             onClick={() =>
                               void runRowAction(
@@ -667,8 +664,8 @@ export function CareWorkspace() {
                             }
                           >
                             Approve
-                          </button>
-                          <button
+                          </Button>
+                          <Button variant="outline"
                             type="button"
                             onClick={() => {
                               const note = window.prompt('Reason for sending back');
@@ -680,11 +677,11 @@ export function CareWorkspace() {
                             }}
                           >
                             Send back
-                          </button>
+                          </Button>
                         </>
                       )}
                       {tab === 'sos' && item.status === 'sent' && (
-                        <button
+                        <Button variant="outline"
                           type="button"
                           onClick={() =>
                             void runRowAction(
@@ -693,7 +690,7 @@ export function CareWorkspace() {
                           }
                         >
                           Acknowledge SOS
-                        </button>
+                        </Button>
                       )}
                     </td>
                   )}

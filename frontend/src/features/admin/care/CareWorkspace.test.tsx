@@ -32,8 +32,8 @@ describe('CareWorkspace data subject tools and operational actions', () => {
       .mockResolvedValueOnce({ client: { display_name: 'Removed client' }, consents: [] });
     const user = userEvent.setup();
     setup();
-    await user.click(await screen.findByRole('button', { name: 'Data and retention' }));
-    await user.type(screen.getByLabelText('Client ID'), 'client-0001');
+    await user.click(await screen.findByRole('tab', { name: 'Data and retention' }));
+    await user.type(screen.getByLabelText(/^Client ID/), 'client-0001');
     await user.click(screen.getByRole('button', { name: 'Export client data' }));
 
     expect(await screen.findByText(/Removed client/)).toBeInTheDocument();
@@ -46,8 +46,8 @@ describe('CareWorkspace data subject tools and operational actions', () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
     const user = userEvent.setup();
     setup();
-    await user.click(await screen.findByRole('button', { name: 'Data and retention' }));
-    await user.type(screen.getByLabelText('Client ID'), 'client-0001');
+    await user.click(await screen.findByRole('tab', { name: 'Data and retention' }));
+    await user.type(screen.getByLabelText(/^Client ID/), 'client-0001');
     await user.click(screen.getByRole('button', { name: 'Anonymise client' }));
     await waitFor(() => expect(confirm).toHaveBeenCalled());
     expect(apiClient.post).not.toHaveBeenCalled();
@@ -66,7 +66,7 @@ describe('CareWorkspace data subject tools and operational actions', () => {
     });
     const user = userEvent.setup();
     setup();
-    await user.click(await screen.findByRole('button', { name: 'Alerts' }));
+    await user.click(await screen.findByRole('tab', { name: 'Alerts' }));
     await user.click(await screen.findByRole('button', { name: 'Acknowledge' }));
     await waitFor(() =>
       expect(apiClient.post).toHaveBeenCalledWith('/admin/care/alerts/alert-0001/acknowledge', {}),
@@ -104,7 +104,7 @@ it('opens a visit review with its timeline and keeps photo records collapsed unt
   });
   const user = userEvent.setup();
   setup();
-  await user.click(await screen.findByRole('button', { name: 'Visits' }));
+  await user.click(await screen.findByRole('tab', { name: 'Visits' }));
   await user.click(await screen.findByRole('button', { name: 'Review visit' }));
 
   expect(await screen.findByRole('heading', { name: 'Visit timeline' })).toBeInTheDocument();
@@ -138,9 +138,9 @@ it('saves a visit annotation with a minimum three-character comment', async () =
   });
   const user = userEvent.setup();
   setup();
-  await user.click(await screen.findByRole('button', { name: 'Visits' }));
+  await user.click(await screen.findByRole('tab', { name: 'Visits' }));
   await user.click(await screen.findByRole('button', { name: 'Review visit' }));
-  const field = await screen.findByLabelText('Add annotation');
+  const field = await screen.findByLabelText(/^Add annotation/);
   await user.type(field, 'Follow up completed');
   await user.click(screen.getByRole('button', { name: 'Save annotation' }));
   await waitFor(() =>

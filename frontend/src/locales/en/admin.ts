@@ -133,7 +133,10 @@ export const adminEn = {
     signOut: 'Sign out',
   },
   login: {
-    title: 'Sign in',
+    title: 'Welcome back',
+    subtitle: 'Sign in to see your day',
+    forgot: 'Forgot password?',
+    forgotHelp: 'Ask your administrator to help you reset your password.',
     email: 'Email',
     password: 'Password',
     required: '(required)',

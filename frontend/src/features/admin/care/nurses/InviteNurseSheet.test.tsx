@@ -29,4 +29,29 @@ describe('InviteNurseSheet', () => {
     }));
     expect(onCreated).toHaveBeenCalledOnce();
   });
+
+  it('lets the person retry and type a supervisor ID when the list cannot be loaded', async () => {
+    const user = userEvent.setup();
+    vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('down'));
+    render(<InviteNurseSheet onClose={vi.fn()} onCreated={vi.fn()} />);
+    expect(await screen.findByText(/list of supervisors could not be loaded/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Supervisor user ID/)).toBeRequired();
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    await screen.findByRole('option', { name: /Sam Supervisor/ });
+    expect(screen.queryByText(/could not be loaded/i)).not.toBeInTheDocument();
+    expect(apiClient.get).toHaveBeenCalledTimes(2);
+  });
+
+  it('sends a typed supervisor ID when the list is unavailable', async () => {
+    const user = userEvent.setup();
+    vi.mocked(apiClient.get).mockRejectedValue(new Error('down'));
+    render(<InviteNurseSheet onClose={vi.fn()} onCreated={vi.fn()} />);
+    await user.type(await screen.findByLabelText(/^Supervisor user ID/), 'abc123');
+    await user.type(screen.getByLabelText(/^Full name/), 'Grace Nurse');
+    await user.type(screen.getByLabelText(/^Email address/), 'grace@example.test');
+    await user.type(screen.getByLabelText(/^Phone number/), '+256700000000');
+    await user.type(screen.getByLabelText(/^Staff number/), 'N-014');
+    await user.click(screen.getByRole('button', { name: 'Create invitation' }));
+    await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/admin/care/nurses', expect.objectContaining({ supervisor_id: 'abc123' })));
+  });
 });

@@ -14,6 +14,12 @@ describe('nurse sign-in screen', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it('shows the nest logo inside the sign-in card, as in the approved mockup', () => {
+    const { container } = render(<LoginScreen identifier="" password="" busy={false} online onIdentifier={vi.fn()} onPassword={vi.fn()} onSubmit={vi.fn()} />);
+    expect(container.querySelector('.login-panel .login-mark svg')).not.toBeNull();
+    expect(container.textContent).not.toContain('✦');
+  });
+
   it('passes account and password changes to session state', () => {
     const onIdentifier = vi.fn(); const onPassword = vi.fn();
     render(<LoginScreen identifier="" password="" busy={false} online onIdentifier={onIdentifier} onPassword={onPassword} onSubmit={vi.fn()} />);

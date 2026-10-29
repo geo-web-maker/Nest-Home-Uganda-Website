@@ -91,7 +91,7 @@ describe('admin routes', () => {
   it('shows the login screen outside the public layout', async () => {
     renderAt('/admin/login');
     expect(
-      await screen.findByRole('heading', { name: 'Sign in' }, { timeout: 10000 }),
+      await screen.findByRole('heading', { name: 'Welcome back' }, { timeout: 10000 }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
   }, 15000);
@@ -99,7 +99,7 @@ describe('admin routes', () => {
   it('sends a signed-out visitor from an admin page to the login screen', async () => {
     renderAt('/admin/enquiries');
     expect(
-      await screen.findByRole('heading', { name: 'Sign in' }, { timeout: 10000 }),
+      await screen.findByRole('heading', { name: 'Welcome back' }, { timeout: 10000 }),
     ).toBeInTheDocument();
   }, 15000);
 });

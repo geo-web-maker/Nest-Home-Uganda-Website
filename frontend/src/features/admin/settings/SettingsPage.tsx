@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FilterTabs } from '../../../components/admin/FilterTabs';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
@@ -230,26 +231,18 @@ export function SettingsPage() {
   return (
     <>
       <PageHeader title={t('nav.settings')} subtitle={t('settings.subtitle')} />
-      <div className={styles.tabs} role="tablist" aria-label={t('settings.tabsLabel')}>
-        {tabs
+      <FilterTabs
+        label={t('settings.tabsLabel')}
+        value={activeTab}
+        tabs={tabs
           .filter((item) => (canReadSettings || item.id === 'sms' || item.id === 'system') &&
             (item.id !== 'sms' && item.id !== 'system' || canSystem))
-          .map((item) => (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === item.id}
-              className={activeTab === item.id ? styles.activeTab : styles.tab}
-              key={item.id}
-              onClick={() => {
-                setTab(item.id);
-                setEdited({});
-              }}
-            >
-              {t(`settings.tabs.${item.title}`)}
-            </button>
-          ))}
-      </div>
+          .map((item) => ({ value: item.id, label: t(`settings.tabs.${item.title}`) }))}
+        onChange={(value) => {
+          setTab(value as SettingsGroup);
+          setEdited({});
+        }}
+      />
       {data.isError ? (
         <div role="alert">
           <p>{t('settings.error')}</p>

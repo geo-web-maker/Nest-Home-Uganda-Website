@@ -90,3 +90,23 @@ async def test_nurse_cannot_use_admin_timesheets_endpoint(client):
         headers=auth(make_token(["field:use"], user_id="field-nurse-user")),
     )
     assert response.status_code == 403
+
+
+async def test_supervisor_options_requires_authentication(client):
+    response = await client.get("/api/v1/admin/care/nurses/supervisor-options")
+    assert response.status_code == 401
+
+
+async def test_supervisor_options_requires_write_scope(client):
+    response = await client.get(
+        "/api/v1/admin/care/nurses/supervisor-options", headers=auth(make_token(["nurses:read"]))
+    )
+    assert response.status_code == 403
+
+
+def test_supervisor_options_route_is_not_shadowed_by_the_user_id_route():
+    paths = [getattr(route, "path", "") for route in app.routes]
+    fixed = "/api/v1/admin/care/nurses/supervisor-options"
+    dynamic = "/api/v1/admin/care/nurses/{user_id}"
+    assert fixed in paths
+    assert paths.index(fixed) < paths.index(dynamic)

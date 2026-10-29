@@ -18,6 +18,7 @@ import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
 import './care.css';
 import './care-screen.css';
+import { Notice } from '../../../components/admin/Notice';
 
 type Row = Record<string, any>;
 type ScreenKey =
@@ -875,14 +876,14 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
         }
       />
       {error && (
-        <div role="alert" className="care-error">
+        <Notice tone="error">
           {error}
-        </div>
+        </Notice>
       )}
       {notice && (
-        <div role="status" className="care-notice">
+        <Notice>
           {notice}
-        </div>
+        </Notice>
       )}
       {renderForm()}
       {screen === 'nurses' && inviteOpen && (
@@ -896,15 +897,15 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
         />
       )}
       {screen === 'photos' && (
-        <p className="care-note">
+        <Notice tone="success" role={null}>
           Photos are private by default. Open a row to request its short-lived audited stream;
           hidden/expired photos are excluded.
-        </p>
+        </Notice>
       )}
       {screen === 'timesheets' && (
-        <p className="care-note">
+        <Notice tone="success" role={null}>
           Approved timesheets are locked. Export is available only after approval.
-        </p>
+        </Notice>
       )}
       {screen === 'flags' && (
         <Field label="Search flags" value={filter} onChange={(e) => setFilter(e.target.value)} />

@@ -9,6 +9,7 @@ import { hasScopes } from '../../auth/hasScopes';
 import { useAuth } from '../../auth/useAuth';
 import '../care.css';
 import './client-detail.css';
+import { Notice } from '../../../../components/admin/Notice';
 
 type Client = {
   id: string;
@@ -222,8 +223,8 @@ export function ClientDetailPage() {
         <div><p className="eyebrow">Client profile</p><h1 id="client-detail-title">{client.display_name}</h1><p>{client.id} · {client.status ?? 'active'}</p></div>
         <Button variant="outline" onClick={() => navigate('/admin/care/clients')}>Back to clients</Button>
       </header>
-      {error && <p className="care-error" role="alert">{error}</p>}
-      {notice && <p className="care-notice" role="status">{notice}</p>}
+      {error && <Notice tone="error">{error}</Notice>}
+      {notice && <Notice>{notice}</Notice>}
       <form className="care-form client-profile-form" onSubmit={saveClient}>
         <h2>Profile and care notes</h2>
         <Field label="Client display name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} required requiredLabel="required" maxLength={120} disabled={!canEditClient} />

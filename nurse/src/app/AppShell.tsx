@@ -42,11 +42,11 @@ export function AppShell({ children, online, queued, authenticated, message, sos
         <h1>{copy.appName}</h1>
         <p>{copy.offlinePurpose}</p>
       </header>
-      <div className={`connection-banner ${online ? 'is-online' : 'is-offline'}`} role="status" aria-live="polite">
+      {(authenticated || !online) && <div className={`connection-banner ${online ? 'is-online' : 'is-offline'}`} role="status" aria-live="polite">
         <strong role="heading" aria-level={2}>{bannerLabel}</strong>
         <span>{bannerText}</span>
         <Link to="/sync">{queued} {copy.shell.waiting}</Link>
-      </div>
+      </div>}
       {message && <p className="notice" role="status">{message}</p>}
       {authenticated && (
         <nav className="desktop-rail" aria-label={copy.shell.mainNavigation}>
