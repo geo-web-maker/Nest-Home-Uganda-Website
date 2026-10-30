@@ -84,6 +84,9 @@ if (staticOnly) {
   process.exit(0);
 }
 
+// Same script tests and static checks that nurse.yml runs in CI.
+run('Script tests', 'node --test scripts/__tests__/*.test.mjs');
+
 if (!webOnly) {
   run('Backend tests', 'python -m pytest', join(root, 'backend'));
   run('Backend lint', 'ruff check app tests', join(root, 'backend'));
@@ -114,6 +117,11 @@ run('Nurse typecheck', 'npm run typecheck', join(root, 'nurse'));
 run('Nurse lint', 'npm run lint', join(root, 'nurse'));
 run('Nurse unit/component tests', 'npm run test', join(root, 'nurse'));
 run('Nurse production build', 'npm run build', join(root, 'nurse'));
+run('Nurse no-external-URL check', 'node ../scripts/check-no-external.mjs dist', join(root, 'nurse'));
+run('Nurse bundle-size check', 'node ../scripts/check-bundle-size.mjs dist', join(root, 'nurse'));
+run('Nurse font check', 'node ../scripts/check-fonts.mjs', join(root, 'nurse'));
+run('Nurse string check', 'node ../scripts/check-strings.mjs dist', join(root, 'nurse'));
+run('Nurse style check', 'node ../scripts/check-nurse-styles.mjs src/styles.css', join(root, 'nurse'));
 
 if (!skipE2E) {
   run('Nurse reference fidelity', 'npm run test:reference', join(root, 'nurse'));

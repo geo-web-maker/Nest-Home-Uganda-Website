@@ -14,15 +14,16 @@ test.describe('Track E mocked nurse workflows', () => {
     await loginAsDemoNurse(page);
     await api.expectVisit();
     await context.setOffline(true);
-    await expect(page.getByRole('heading', { name: /offline/i })).toBeVisible();
+    await expect(page.locator('.connection-banner.is-offline strong')).toHaveText('Offline');
     await context.setOffline(false);
-    await expect(page.getByRole('heading', { name: /online/i })).toBeVisible();
+    await expect(page.locator('.connection-banner.is-offline')).toHaveCount(0);
     expect(api.getSyncPushCount()).toBe(0);
   });
 
   test('logout guard prevents leaving pending local work silently', async ({ page }) => {
     await installMockApi(page);
     await loginAsDemoNurse(page);
-    await expect(page.getByRole('heading', { name: /well nest home care uganda/i })).toBeVisible();
+    await expect(page.locator('#today-heading')).toBeVisible();
+    await expect(page.locator('.connection-banner.is-offline')).toHaveCount(0);
   });
 });

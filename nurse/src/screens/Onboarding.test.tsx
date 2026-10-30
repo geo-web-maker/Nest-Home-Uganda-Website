@@ -9,6 +9,7 @@ describe('nurse onboarding disclosure gate', () => {
     expect(screen.getByRole('heading', { name: /before you start/i })).toBeInTheDocument();
     expect(screen.getByText(/full privacy notice, version 1/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /accept and continue/i })).toBeDisabled();
+    expect(document.querySelectorAll('.onboarding-panel svg').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByLabelText(/read the privacy notice/i));
     expect(onAccept).not.toHaveBeenCalled();
     fireEvent.click(screen.getByLabelText(/agree to my location/i));
@@ -20,6 +21,7 @@ describe('nurse onboarding disclosure gate', () => {
     const onContinue = vi.fn();
     render(<Onboarding accepted onAccept={vi.fn()} onContinue={onContinue} onEnableNotifications={vi.fn()} showNotifications notificationsEnabled={false} />);
     expect(screen.getByRole('heading', { name: /why we ask for location/i })).toBeInTheDocument();
+    expect(document.querySelectorAll('.onboarding-panel svg').length).toBeGreaterThan(0);
     expect(screen.getByText(/only when you tap arrive or leave/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /continue/i }));
     expect(onContinue).toHaveBeenCalledTimes(1);

@@ -41,11 +41,24 @@ test.describe('nurse app reference fidelity', () => {
     await installMockApi(page);
     await page.setViewportSize({ width: 320, height: 740 });
     await loginAsDemoNurse(page);
-    await expect(page.getByText('Demo Client')).toBeVisible();
+    // The name also appears in the selected-visit pane and a summary row, so target the schedule card link.
+    await expect(page.getByRole('link', { name: /Demo Client/ }).first()).toBeVisible();
     const dimensions = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
       content: document.documentElement.scrollWidth,
     }));
     expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
   });
+});
+
+test('visit detail keeps Back to Today on phone and removes it at the tablet breakpoint', async ({ page }) => {
+  await installMockApi(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await loginAsDemoNurse(page);
+  await page.getByRole('link', { name: /Demo Client/i }).click();
+  await expect(page.getByRole('link', { name: /back to today/i })).toBeVisible();
+  await page.setViewportSize({ width: 700, height: 900 });
+  await expect(page.getByRole('link', { name: /back to today/i })).toBeHidden();
+  await page.setViewportSize({ width: 699, height: 900 });
+  await expect(page.getByRole('link', { name: /back to today/i })).toBeVisible();
 });

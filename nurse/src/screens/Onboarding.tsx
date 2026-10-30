@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Disclosure } from '../features/disclosure/Disclosure';
 import { copy } from '../copy';
+import { Icon } from '../ui/Icon';
+import { PillButton } from '../ui/PillButton';
 
 type Props = {
   accepted: boolean;
@@ -23,9 +25,9 @@ export function Onboarding({ accepted, onAccept, onContinue, showNotifications }
       <Disclosure
         title={copy.onboarding.disclosureTitle}
         items={[
-          { label: '⌖', text: copy.onboarding.locationWhen },
-          { label: '◷', text: copy.onboarding.locationTime },
-          { label: '◉', text: copy.onboarding.locationSeen },
+          { label: <Icon name="pin" />, text: copy.onboarding.locationWhen },
+          { label: <Icon name="clock" />, text: copy.onboarding.locationTime },
+          { label: <Icon name="user" />, text: copy.onboarding.locationSeen },
         ]}
         onAccept={() => undefined}
         showAction={false}
@@ -33,25 +35,25 @@ export function Onboarding({ accepted, onAccept, onContinue, showNotifications }
       <p className="placeholder privacy-notice">{copy.onboarding.privacyNotice}</p>
       <label className="check-row"><input type="checkbox" checked={readNotice} onChange={(event) => setReadNotice(event.target.checked)} /> <span>{copy.onboarding.readNotice}</span></label>
       <label className="check-row"><input type="checkbox" checked={agreeLocation} onChange={(event) => setAgreeLocation(event.target.checked)} /> <span>{copy.onboarding.agreeLocation}</span></label>
-      <button type="button" disabled={!ready} onClick={onAccept}>{copy.disclosure.accept}<span aria-hidden="true">→</span></button>
+      <PillButton tone="gold" size="full" disabled={!ready} onClick={onAccept}>{copy.disclosure.accept}</PillButton>
     </section>;
   }
 
   return <section className="screen onboarding-panel location-explanation" aria-labelledby="onboarding-heading">
-    <div className="location-icon" aria-hidden="true">⌖</div>
+    <div className="location-icon" aria-hidden="true"><Icon name="pin" size={28} /></div>
     <h1 id="onboarding-heading">{copy.onboarding.setup}</h1>
-    <p className="onboarding-intro">So your supervisor can confirm you reached the client. Nothing more.</p>
+    <p className="onboarding-intro">{copy.onboarding.setupIntro}</p>
     <Disclosure
       title=""
       items={[
-        { label: 'When', text: 'Only when you tap Arrive or Leave, add a note or photo, or send SOS.' },
-        { label: 'Who sees it', text: 'Your supervisor and office admins.' },
-        { label: 'Android app only', text: 'An optional prompt when you seem to have arrived. You choose.' },
+        { label: copy.onboarding.locationWhenLabel, text: copy.onboarding.locationWhenDetail },
+        { label: copy.onboarding.locationWhoLabel, text: copy.onboarding.locationWhoDetail },
+        { label: copy.onboarding.locationAndroidLabel, text: copy.onboarding.locationAndroidDetail },
       ]}
       onAccept={() => undefined}
       showAction={false}
     />
-    <button type="button" onClick={onContinue}>{copy.generic.continue}<span aria-hidden="true">→</span></button>
-    {showNotifications && <section className="panel native-prompt"><p className="eyebrow">Next, your phone’s own prompt</p><h2>Allow Well Nest Home Care Uganda to access this device’s location?</h2><div className="native-options"><span>While using the app</span><span>Only this time</span><span>Don’t allow</span></div></section>}
+    <PillButton tone="forest" size="full" onClick={onContinue}>{copy.generic.continue}</PillButton>
+    {showNotifications && <section className="panel native-prompt"><p className="eyebrow">{copy.onboarding.androidPromptEyebrow}</p><h2>{copy.onboarding.androidPromptTitle}</h2><div className="native-options"><span>{copy.onboarding.androidWhileUsing}</span><span>{copy.onboarding.androidOnlyThisTime}</span><span>{copy.onboarding.androidDontAllow}</span></div></section>}
   </section>;
 }

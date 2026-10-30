@@ -2,42 +2,71 @@ import { useState } from 'react';
 import type { LocalPhoto, OutboxOperation } from '../offline/db';
 import { conflictMessage, isRemovedVisitConflict } from '../offline/syncPolicy';
 import { copy, operationKindLabel } from '../copy';
+import { Card } from '../ui/Card';
+import { Chip } from '../ui/Chip';
+import { PillButton } from '../ui/PillButton';
+import { Banner } from '../ui/Banner';
 
 type Props = {
   operations: OutboxOperation[]; photos: LocalPhoto[]; userId: string; online: boolean; busy: boolean; wifiOnly: boolean;
   onSync: () => void; onRetry: (id: string) => void; onDiscard: (id: string) => void;
   onApplyAgain: (operation: OutboxOperation) => void; onRetryPhoto: (id: string) => void; onUploadPhotoNow: (id: string) => void; onDiscardPhoto: (id: string) => void;
 };
+type State = 'queued' | 'deferred' | 'attention';
+
 export function SyncScreen(props: Props) {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const ownOperations = props.operations.filter((item) => item.ownerUserId === props.userId);
   const ownPhotos = props.photos.filter((item) => item.ownerUserId === props.userId);
-  const queued = ownOperations.filter((item) => item.state === 'queued' && (!item.retryAfter || Date.parse(item.retryAfter) <= Date.now()));
-  const deferred = ownOperations.filter((item) => item.state === 'queued' && item.retryAfter && Date.parse(item.retryAfter) > Date.now());
+  const now = Date.now();
+  const queued = ownOperations.filter((item) => item.state === 'queued' && (!item.retryAfter || Date.parse(item.retryAfter) <= now));
+  const deferred = ownOperations.filter((item) => item.state === 'queued' && item.retryAfter && Date.parse(item.retryAfter) > now);
   const attention = ownOperations.filter((item) => item.state === 'needs_attention');
-  const queuedPhotos = ownPhotos.filter((item) => item.state === 'queued' && (!item.retryAfter || Date.parse(item.retryAfter) <= Date.now()));
+  const queuedPhotos = ownPhotos.filter((item) => item.state === 'queued' && (!item.retryAfter || Date.parse(item.retryAfter) <= now));
   const photoAttention = ownPhotos.filter((item) => item.state === 'needs_attention');
-  const queuedPhotosDeferred = ownPhotos.filter((item) => item.state === 'queued' && item.retryAfter && Date.parse(item.retryAfter) > Date.now());
+  const queuedPhotosDeferred = ownPhotos.filter((item) => item.state === 'queued' && item.retryAfter && Date.parse(item.retryAfter) > now);
+  const countQueued = queued.length + queuedPhotos.length;
+  const countDeferred = deferred.length + queuedPhotosDeferred.length;
+  const countAttention = attention.length + photoAttention.length;
 
-  function copyDetail(detail: string) {
-    void navigator.clipboard?.writeText(detail).catch(() => undefined);
-  }
-  function renderOperation(item: OutboxOperation, attentionItem = false) {
+  function copyDetail(detail: string) { void navigator.clipboard?.writeText(detail).catch(() => undefined); }
+  function operationRow(item: OutboxOperation, state: State) {
+    const isAttention = state === 'attention';
     const conflictText = conflictMessage(item.lastError);
-    const canApplyAgain = attentionItem && !isRemovedVisitConflict(item.lastError) && !/adhoc_disabled|visit_not_assigned|no longer assigned|cancelled or reassigned|invalid_payload|invalid payload/i.test(item.lastError ?? '');
-    return <article className="sync-row" key={item.id}>
-      <div><h3>{operationKindLabel(item.kind)}</h3><p>{attentionItem ? conflictText : item.retryAfter ? `${copy.sync.nextRetry} ${new Date(item.retryAfter).toLocaleTimeString()}` : copy.sync.savedWaiting}</p><p className="muted">{copy.sync.copyRef} {item.id}</p></div>
-      <div className="inline-actions">
-        {attentionItem ? <><button type="button" onClick={() => copyDetail(item.lastError ?? conflictText)}>{copy.generic.copyError}</button>{canApplyAgain && <button type="button" onClick={() => props.onApplyAgain(item)}>{copy.sync.applyAgain}</button>}<button type="button" className="button-danger" onClick={() => setConfirmId(item.id)}>{copy.generic.discard}</button></> : <button type="button" className="button-secondary" onClick={() => props.onRetry(item.id)}>{copy.generic.retry}</button>}
+    const canApplyAgain = isAttention && !isRemovedVisitConflict(item.lastError) && !/adhoc_disabled|visit_not_assigned|no longer assigned|cancelled or reassigned|invalid_payload|invalid payload/i.test(item.lastError ?? '');
+    const chipKind = state === 'attention' ? 'rv' : state === 'deferred' ? 'pd' : 'sc';
+    const chipText = state === 'attention' ? copy.sync.attention : state === 'deferred' ? copy.sync.deferredStatus : copy.sync.waitingStatus;
+    return <details className="sync-disclosure" key={item.id}>
+      <summary><span className="sync-summary-copy"><strong>{operationKindLabel(item.kind)}</strong><small>{state === 'attention' ? conflictText : item.retryAfter ? `${copy.sync.nextRetry} ${new Date(item.retryAfter).toLocaleTimeString()}` : copy.sync.savedWaiting}</small></span><Chip kind={chipKind}>{chipText}</Chip></summary>
+      <div className="sync-disclosure-detail"><p>{copy.sync.copyRef} {item.id}</p>{isAttention && item.lastError && <p>{item.lastError}</p>}
+        <div className="inline-actions">
+          {isAttention ? <><PillButton size="sm" tone="ghost" showArrow={false} onClick={() => copyDetail(item.lastError ?? conflictText)}>{copy.generic.copyError}</PillButton>{canApplyAgain && <PillButton size="sm" onClick={() => props.onApplyAgain(item)}>{copy.sync.applyAgain}</PillButton>}<PillButton size="sm" tone="danger" onClick={() => setConfirmId(item.id)}>{copy.generic.discard}</PillButton></> : <PillButton size="sm" tone="ghost" onClick={() => props.onRetry(item.id)}>{copy.generic.retry}</PillButton>}
+        </div>
       </div>
-    </article>;
+    </details>;
   }
-  return <section className="screen" aria-labelledby="sync-heading"><div className="screen-heading"><div><p className="eyebrow">{copy.sync.eyebrow}</p><h2 id="sync-heading">{copy.sync.heading}</h2></div><button type="button" onClick={props.onSync} disabled={!props.online || props.busy}>{props.busy ? copy.today.syncing : copy.sync.now}</button></div>
-    {!props.online && <p role="status">{copy.sync.offline}</p>}
-    <section className="panel"><h3>{copy.sync.queued} ({queued.length + queuedPhotos.length})</h3>{queued.length === 0 && queuedPhotos.length === 0 && <p>{copy.sync.noQueued}</p>}{queued.map((item) => renderOperation(item))}{queuedPhotos.map((photo) => <article className="sync-row" key={photo.id}><div><h3>{copy.sync.photo}</h3><p>{copy.sync.photoSavedFor} {photo.visitId}</p><p className="muted">{copy.sync.copyRef} {photo.id}</p></div><div className="inline-actions"><button type="button" onClick={() => props.onRetryPhoto(photo.id)}>{copy.generic.retry}</button>{props.wifiOnly && props.online && <button type="button" className="button-secondary" onClick={() => props.onUploadPhotoNow(photo.id)}>{copy.sync.useMobileData}</button>}</div></article>)}</section>
-    <section className="panel"><h3>{copy.sync.deferred} ({deferred.length + queuedPhotosDeferred.length})</h3>{deferred.length === 0 && queuedPhotosDeferred.length === 0 && <p>{copy.sync.noDeferred}</p>}{deferred.map((item) => renderOperation(item))}{queuedPhotosDeferred.map((photo) => <article className="sync-row" key={photo.id}><div><h3>{copy.sync.photo}</h3><p>{copy.sync.nextPhotoRetry} {new Date(photo.retryAfter!).toLocaleTimeString()}</p><p className="muted">{copy.sync.copyRef} {photo.id}</p></div><div className="inline-actions"><button type="button" onClick={() => props.onRetryPhoto(photo.id)}>{copy.generic.retry}</button>{props.wifiOnly && props.online && <button type="button" className="button-secondary" onClick={() => props.onUploadPhotoNow(photo.id)}>{copy.sync.useMobileData}</button>}</div></article>)}</section>
-    <section className="panel"><h3>{copy.sync.attention} ({attention.length + photoAttention.length})</h3>{attention.length === 0 && photoAttention.length === 0 && <p>{copy.sync.noAttention}</p>}{attention.map((item) => renderOperation(item, true))}{photoAttention.map((photo) => <article className="sync-row" key={photo.id}><div><h3>{copy.sync.photo}</h3><p>{photo.lastError ?? copy.sync.photoError}</p>{photo.uploadStage === 'uploaded' && <p>{copy.photos.discardAfterTransfer}</p>}<p className="muted">{copy.sync.copyRef} {photo.id}</p></div><div className="inline-actions"><button type="button" onClick={() => props.onRetryPhoto(photo.id)}>{copy.sync.retryUpload}</button><button type="button" className="button-danger" disabled={photo.uploadStage === 'uploaded' || photo.state === 'sending'} onClick={() => setConfirmId(photo.id)}>{copy.sync.discardPhoto}</button></div></article>)}</section>
-    {confirmId && <div className="sheet-backdrop"><section className="sheet" role="alertdialog" aria-modal="true" aria-labelledby="discard-title"><h2 id="discard-title">{copy.generic.discardConfirmTitle}</h2><p>{copy.generic.discardConfirmCopy}</p><div className="sheet-actions"><button type="button" className="button-danger" onClick={() => { const photo = ownPhotos.find((item) => item.id === confirmId); if (photo) props.onDiscardPhoto(confirmId); else props.onDiscard(confirmId); setConfirmId(null); }}>{copy.generic.confirmDiscard}</button><button type="button" className="button-secondary" onClick={() => setConfirmId(null)}>{copy.generic.keepItem}</button></div></section></div>}
+  function photoRow(photo: LocalPhoto, state: State) {
+    const isAttention = state === 'attention';
+    const isDeferred = state === 'deferred';
+    return <details className="sync-disclosure" key={photo.id}>
+      <summary><span className="sync-summary-copy"><strong>{copy.sync.photo}</strong><small>{isAttention ? photo.lastError ?? copy.sync.photoError : isDeferred ? `${copy.sync.nextPhotoRetry} ${new Date(photo.retryAfter!).toLocaleTimeString()}` : `${copy.sync.photoSavedFor} ${photo.visitId}`}</small></span><Chip kind={isAttention ? 'rv' : isDeferred ? 'pd' : 'sc'}>{isAttention ? copy.sync.attention : isDeferred ? copy.sync.deferredStatus : copy.sync.waitingStatus}</Chip></summary>
+      <div className="sync-disclosure-detail"><p>{copy.sync.copyRef} {photo.id}</p>{photo.uploadStage === 'uploaded' && <p>{copy.photos.discardAfterTransfer}</p>}
+        <div className="inline-actions">
+          <PillButton size="sm" tone="ghost" onClick={() => props.onRetryPhoto(photo.id)}>{isAttention ? copy.sync.retryUpload : copy.generic.retry}</PillButton>
+          {!isAttention && props.wifiOnly && props.online && <PillButton size="sm" tone="ghost" onClick={() => props.onUploadPhotoNow(photo.id)}>{copy.sync.useMobileData}</PillButton>}
+          {isAttention && <PillButton size="sm" tone="danger" disabled={photo.uploadStage === 'uploaded' || photo.state === 'sending'} onClick={() => setConfirmId(photo.id)}>{copy.sync.discardPhoto}</PillButton>}
+        </div>
+      </div>
+    </details>;
+  }
+  return <section className="screen mk-sync-screen" aria-labelledby="sync-heading">
+    <header className="screen-heading"><div><p className="eyebrow">{copy.sync.eyebrow}</p><h2 id="sync-heading">{copy.sync.heading}</h2></div><PillButton size="sm" onClick={props.onSync} disabled={!props.online || props.busy}>{props.busy ? copy.today.syncing : copy.sync.now}</PillButton></header>
+    {!props.online && <Banner tone="warn">{copy.sync.offline}</Banner>}
+    <Card className="mk-sync-overview"><p>{copy.sync.lastSynced}: {copy.sync.lastSyncStatus}</p><div className="mk-sync-counts"><div><strong>{countQueued}</strong><span>{copy.sync.queued}</span></div><div><strong>{countDeferred}</strong><span>{copy.sync.deferred}</span></div><div><strong>{countAttention}</strong><span>{copy.sync.attention}</span></div></div></Card>
+    <Card className="mk-sync-section"><h3>{copy.sync.queued} ({countQueued})</h3>{countQueued === 0 && <p>{copy.sync.noQueued}</p>}{queued.map((item) => operationRow(item, 'queued'))}{queuedPhotos.map((photo) => photoRow(photo, 'queued'))}</Card>
+    <Card className="mk-sync-section"><h3>{copy.sync.deferred} ({countDeferred})</h3>{countDeferred === 0 && <p>{copy.sync.noDeferred}</p>}{deferred.map((item) => operationRow(item, 'deferred'))}{queuedPhotosDeferred.map((photo) => photoRow(photo, 'deferred'))}</Card>
+    <Card className="mk-sync-section"><h3>{copy.sync.attention} ({countAttention})</h3>{countAttention === 0 && <p>{copy.sync.noAttention}</p>}{attention.map((item) => operationRow(item, 'attention'))}{photoAttention.map((photo) => photoRow(photo, 'attention'))}</Card>
+    {confirmId && <div className="sheet-backdrop"><section className="sheet" role="alertdialog" aria-modal="true" aria-labelledby="discard-title"><h2 id="discard-title">{copy.generic.discardConfirmTitle}</h2><p>{copy.generic.discardConfirmCopy}</p><div className="sheet-actions"><PillButton tone="danger" onClick={() => { const photo = ownPhotos.find((item) => item.id === confirmId); if (photo) props.onDiscardPhoto(confirmId); else props.onDiscard(confirmId); setConfirmId(null); }}>{copy.generic.confirmDiscard}</PillButton><PillButton tone="ghost" onClick={() => setConfirmId(null)}>{copy.generic.keepItem}</PillButton></div></section></div>}
     <p className="privacy-hint">{copy.generic.contactAdmin}</p>
   </section>;
 }

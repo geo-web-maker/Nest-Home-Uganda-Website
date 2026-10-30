@@ -183,6 +183,11 @@ async def me(principal: Principal = CanUseBasic):
     values = await care_values()
     sos_enabled, reason = resolve_sos_enabled(values)
     sos_enabled = bool(values.get("care.module_c_enabled")) and sos_enabled
+    try:
+        current_user = await User.get(principal.user_id)
+    except (ValueError, TypeError):
+        current_user = None
+    supervisor = None
     supervisor_phone = None
     if profile.supervisor_id:
         try:
@@ -201,8 +206,17 @@ async def me(principal: Principal = CanUseBasic):
     ]
     return {
         "user_id": profile.user_id,
+        "display_name": (
+            current_user.name if current_user is not None and current_user.is_active else None
+        ),
+        "email": (
+            current_user.email if current_user is not None and current_user.is_active else None
+        ),
         "staff_number": profile.staff_number,
         "team_id": profile.team_id,
+        "supervisor_name": (
+            supervisor.name if supervisor is not None and supervisor.is_active else None
+        ),
         "supervisor_phone": supervisor_phone,
         "settings": {
             "sos_enabled": sos_enabled,

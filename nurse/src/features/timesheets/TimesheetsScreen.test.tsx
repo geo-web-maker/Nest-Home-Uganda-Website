@@ -33,6 +33,9 @@ describe('nurse timesheets', () => {
     expect(apiRequest).toHaveBeenCalledWith('/field/timesheets');
     expect(screen.getByText('Please clarify the visit.')).toBeInTheDocument();
     expect(screen.getByText('Arrival signal was unavailable.')).toBeInTheDocument();
+    expect(document.querySelector('.mk-timesheets-layout')).toBeInTheDocument();
+    expect(document.querySelector('.mk-timesheet-total')).toHaveTextContent('5 hr 15 min');
+    expect(screen.getAllByText('Sent back').every((chip) => chip.className.includes('mk-chip--rv'))).toBe(true);
     expect(screen.getAllByText('5 hr 15 min')).toHaveLength(2);
     expect(screen.queryByRole('button', { name: /submit/i })).toBeNull();
     expect(screen.queryByText('timesheet-owner-001')).toBeNull();

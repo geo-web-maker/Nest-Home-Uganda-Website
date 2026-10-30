@@ -43,8 +43,23 @@ describe('nurse app shell', () => {
     expect(container.querySelector('.connection-banner')).not.toBeNull();
   });
 
+
+  it('renders no signed-in connection banner while online with an empty queue and no message', () => {
+    const { container } = render(<MemoryRouter><AppShell online queued={0} authenticated message="" sosEnabled={false} smsHref="sms:?body=help" onSendSos={vi.fn(async () => undefined)}><h2>Today</h2></AppShell></MemoryRouter>);
+    expect(container.querySelector('.connection-banner')).toBeNull();
+  });
+
   it('keeps the side rail space for signed-in nurses', () => {
     const { container } = renderShell('/', true);
     expect(container.querySelector('.nurse-app')).not.toHaveClass('nurse-app--guest');
+  });
+
+  it('keeps one accessible navigation contract across both rail and phone tabs and omits the old masthead', () => {
+    const { container } = renderShell('/', true);
+    const navs = container.querySelectorAll('nav[aria-label=\"Main navigation\"]');
+    expect(navs).toHaveLength(2);
+    const states = [...navs].map((nav) => [...nav.querySelectorAll('a')].map((link) => [link.textContent?.trim(), link.getAttribute('aria-current')]));
+    expect(states[0]).toEqual(states[1]);
+    expect(container.querySelector('.app-header')).toBeNull();
   });
 });

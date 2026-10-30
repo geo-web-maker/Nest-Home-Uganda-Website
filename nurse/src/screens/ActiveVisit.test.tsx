@@ -23,11 +23,25 @@ describe('active visit screen', () => {
     expect(screen.getByText('Photos (2 of 5)')).toBeTruthy();
   });
 
+
+  it('hides the photo surface when the visit or organisation disallows photos', () => {
+    const restricted = { ...visit, photo_rules: { allowed: false } };
+    render(<MemoryRouter><ActiveVisit visit={restricted} onNote={vi.fn()} onPhoto={vi.fn()} onLeave={vi.fn()} photosEnabled /></MemoryRouter>);
+    expect(screen.queryByText(/Photos \(/i)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Add' })).toBeNull();
+  });
+
+  it('shows the server deadline for an active safety timer in Kampala time', () => {
+    const safetyVisit = { ...visit, safety_timer_until: '2026-10-25T08:30:00.000Z' };
+    render(<MemoryRouter><ActiveVisit visit={safetyVisit} onNote={vi.fn()} onPhoto={vi.fn()} onLeave={vi.fn()} photosEnabled /></MemoryRouter>);
+    expect(screen.getByText(/Safety timer · 11:30/)).toBeInTheDocument();
+  });
+
   it('routes the visual quick-note and photo controls through existing callbacks', () => {
     const onNote = vi.fn(); const onPhoto = vi.fn(); const onLeave = vi.fn();
     render(<MemoryRouter><ActiveVisit visit={visit} onNote={onNote} onPhoto={onPhoto} onLeave={onLeave} photosEnabled /></MemoryRouter>);
-    fireEvent.click(screen.getByRole('button', { name: /write a short note/i }));
-    fireEvent.click(screen.getByRole('button', { name: /add$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /write a short operational note/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
     fireEvent.click(screen.getByRole('button', { name: /leave/i }));
     expect(onNote).toHaveBeenCalledWith(visit);
     expect(onPhoto).toHaveBeenCalledWith(visit);

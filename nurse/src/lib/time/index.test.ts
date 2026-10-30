@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kampalaDateKey } from './index';
+import { formatKampalaTime, kampalaDateKey } from './index';
 
 describe('Kampala calendar date', () => {
   it('uses the Kampala date rather than the device UTC date', () => {
@@ -10,4 +10,9 @@ describe('Kampala calendar date', () => {
     expect(kampalaDateKey('2026-10-25T01:00:00.000Z')).toBe('2026-10-25');
     expect(kampalaDateKey('2026-10-25T20:59:59.000Z')).toBe('2026-10-25');
   });
+});
+
+
+it('formats the time in Kampala without repeating the calendar date', () => {
+  expect(formatKampalaTime('2026-10-25T08:00:00.000Z')).toBe('11:00');
 });

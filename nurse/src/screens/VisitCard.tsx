@@ -1,26 +1,44 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { CachedVisit } from '../offline/db';
-import { elapsed, formatElapsed, formatKampala } from '../lib/time';
-import { copy, visitStatusLabel } from '../copy';
+import { formatKampalaTime } from '../lib/time';
+import { copy } from '../copy';
+import { Chip } from '../ui/Chip';
+import { Icon } from '../ui/Icon';
+import { Timer } from '../ui/Timer';
+import { statusKind, statusText } from '../ui/statusChip';
 
-type Props = { visit: CachedVisit; photosEnabled: boolean; onArrive: (visit: CachedVisit) => void; onLeave: (visit: CachedVisit) => void; onNote: (visit: CachedVisit) => void; onPhoto: (visit: CachedVisit) => void };
-export function VisitCard({ visit, photosEnabled, onArrive, onLeave, onNote, onPhoto }: Props) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => { if (visit.status !== 'in_progress') return; const timer = window.setInterval(() => setNow(Date.now()), 1_000); return () => window.clearInterval(timer); }, [visit.status]);
-  const activeStart = visit.check_in_at ?? visit.scheduled_start;
-  return <article className={`visit-card visit-card--${visit.status}`}>
-    <div className="visit-card-heading"><p className="visit-time">{formatKampala(visit.scheduled_start)} – {formatKampala(visit.scheduled_end)}</p><span className={`status-chip status-chip--${visit.status}`}>{visitStatusLabel(visit.status)}</span></div>
-    <h3>{visit.client_display_name}</h3>
-    <p>{visit.place_address_text || copy.address.missingOffline}</p>
-    {visit.instructions && <p>{visit.instructions}</p>}
-    {visit.status === 'in_progress' && <p className="active-marker">{formatElapsed(elapsed(activeStart, now) * 1000)}</p>}
-    <div className="visit-card-actions">
-      <Link to={visit.status === 'in_progress' ? `/active/${encodeURIComponent(visit.id)}` : `/visit/${encodeURIComponent(visit.id)}`}>{copy.generic.viewDetails}</Link>
-      {visit.status === 'scheduled' && <button type="button" onClick={() => onArrive(visit)}>{copy.visit.arrive}</button>}
-      {visit.status === 'in_progress' && <button type="button" onClick={() => onLeave(visit)}>{copy.visit.leave}</button>}
-      <button type="button" className="button-secondary" onClick={() => onNote(visit)}>{copy.visit.note}</button>
-      {photosEnabled && visit.photo_rules?.allowed && <button type="button" className="button-secondary" onClick={() => onPhoto(visit)}>{copy.visit.photo}</button>}
-    </div>
-  </article>;
+type Props = {
+  visit: CachedVisit;
+  photosEnabled: boolean;
+  selected?: boolean;
+  onArrive: (visit: CachedVisit) => void;
+  onLeave: (visit: CachedVisit) => void;
+  onNote: (visit: CachedVisit) => void;
+  onPhoto: (visit: CachedVisit) => void;
+};
+
+/** A schedule item is one navigable surface; actions live on its detail screen. */
+export function VisitCard({ visit, selected = false }: Props) {
+  const href = visit.status === 'in_progress'
+    ? `/active/${encodeURIComponent(visit.id)}`
+    : `/visit/${encodeURIComponent(visit.id)}`;
+  const start = visit.check_in_at ?? visit.scheduled_start;
+  const status = statusText(visit.status, visit.verification_label);
+  return (
+    <Link to={href} className="visit-card-link" aria-label={`${visit.client_display_name}, ${status}, ${formatKampalaTime(visit.scheduled_start)}`}>
+      <article className={`mk-card mk-card--link visit-card visit-card--${visit.status}${visit.status === 'in_progress' ? ' mk-card--hot' : ''}${selected ? ' is-selected' : ''}`}>
+        <div className="mk-card__in">
+          <div className="visit-card-heading">
+            <p className="visit-time">{formatKampalaTime(visit.scheduled_start)} – {formatKampalaTime(visit.scheduled_end)}</p>
+            <Chip kind={statusKind(visit.status, visit.verification_label)}>{status}</Chip>
+          </div>
+          <h3>{visit.client_display_name}</h3>
+          <p className="visit-address"><Icon name="pin" />{visit.place_address_text || copy.address.missingOffline}</p>
+          {/* Distance is intentionally omitted: cached visits do not contain a reliable route distance. */}
+          {visit.status === 'in_progress' && <div className="visit-card-timer"><Timer startedAt={start} size="sm" /><span>{copy.active.arrived}</span></div>}
+          <span className="visit-card-open" aria-hidden="true"><Icon name="arrow-up-right" /></span>
+        </div>
+      </article>
+    </Link>
+  );
 }
