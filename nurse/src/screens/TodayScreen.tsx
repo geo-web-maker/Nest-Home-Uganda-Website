@@ -15,7 +15,6 @@ import { Chip } from '../ui/Chip';
 import { PillButton } from '../ui/PillButton';
 import { MapPlaceholder } from '../ui/MapPlaceholder';
 import { Banner } from '../ui/Banner';
-import { IconButton } from '../ui/IconButton';
 import { Sheet, SheetActions } from '../ui/Sheet';
 
 type Props = {
@@ -45,13 +44,15 @@ export function TodayScreen(props: Props) {
         </div>
         <div className="mk-greeting__actions">
           <Avatar initials={initials(props.displayName, props.staffNumber)} label={props.displayName || undefined} />
-          <IconButton label={props.loading ? copy.today.syncing : copy.today.refresh} onClick={props.onSync} disabled={props.loading}>
-            <Icon name="sync" />
-          </IconButton>
         </div>
       </header>
 
-      <div className="mk-schedule-heading"><h2>{copy.today.scheduleHeading}</h2></div>
+      <div className="mk-schedule-heading">
+        <h2>{copy.today.scheduleHeading}</h2>
+        <PillButton type="button" tone="ghost" size="sm" showArrow={false} className={`mk-refresh${props.loading ? ' is-loading' : ''}`} onClick={props.onSync} disabled={props.loading}>
+          <Icon name="sync" size={16} />{props.loading ? copy.today.syncing : copy.today.refresh}
+        </PillButton>
+      </div>
       {props.pendingPhotoCount > 20 && <Banner tone="warn">{copy.today.photoQueueWarning}</Banner>}
 
       {ordered.length === 0 ? <Card className="empty-state mk-empty-state">
