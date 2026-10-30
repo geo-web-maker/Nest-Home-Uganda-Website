@@ -758,7 +758,11 @@ html[data-theme="dark"] .mk-photo-add, html[data-theme="dark"] .mk-quick-note { 
 
 .mk-login-panel { padding: 0; border: 1px solid var(--line); border-radius: 28px; background: var(--surf); }
 .mk-login-panel .mk-card__in { padding: 28px; background: transparent; }
-.login-screen { width: min(100%, 420px); margin: 0 auto; padding-top: 8vh; }
+.login-screen { width: min(100%, 420px); margin: 0 auto; padding: 0; }
+/* Signed-out: centre the card both ways in the space below any status banner. */
+.nurse-app--guest { display: flex; flex-direction: column; }
+.nurse-app--guest .app-shell { display: grid; flex: 1 1 auto; align-content: center; justify-items: center; padding-top: 64px; padding-bottom: 64px; }
+.nurse-app--guest .login-screen { width: min(100%, 420px); }
 .login-screen .mk-btn { width: 100%; }
 .mk-login-panel form { display: grid; gap: 6px; }
 .mk-login-panel form label { margin: 8px 0 0; font-size: 12px; }
