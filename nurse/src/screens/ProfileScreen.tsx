@@ -9,6 +9,7 @@ import { Avatar } from '../ui/Avatar';
 import { Row } from '../ui/Row';
 import { Icon } from '../ui/Icon';
 import { PillButton } from '../ui/PillButton';
+import { Chip } from '../ui/Chip';
 import { initials } from '../ui/greeting';
 
 type InboxItem = { id: string; title: string; body: string; created_at?: string };
@@ -71,7 +72,7 @@ export function ProfileScreen(props: Props) {
       </details>
     </Card>
 
-    <Card className="mk-profile-section"><div className="mk-profile-section__heading"><h3>{copy.profile.inbox}</h3><span className="status-chip">{props.inboxEnabled ? copy.profile.inboxEnabled : copy.profile.notConfigured}</span></div>
+    <Card className="mk-profile-section"><div className="mk-profile-section__heading"><h3>{copy.profile.inbox}</h3><Chip kind={props.inboxEnabled ? 'ok' : 'sc'}>{props.inboxEnabled ? copy.profile.inboxEnabled : copy.profile.notConfigured}</Chip></div>
       {!props.inboxEnabled ? <p>{copy.profile.inboxUnavailable}</p> : props.inboxMessage ? <p role="status">{props.inboxMessage}</p> : props.inbox.length === 0 ? <p>{copy.profile.noNotifications}</p> : props.inbox.map((item) => <article className="inbox-item" key={item.id}><h4>{item.title}</h4><p>{item.body}</p>{item.created_at && <small>{item.created_at}</small>}</article>)}
     </Card>
 

@@ -1,3 +1,4 @@
+import { PillButton } from '../ui/PillButton';
 import { useEffect, useState } from 'react';
 import { copy } from '../copy';
 import {
@@ -128,13 +129,13 @@ export function InstallHint() {
           ))}
         </ol>
         {kind === 'desktop-chromium' && installPrompt && (
-          <button className="mk-install-hint__install" type="button" onClick={() => void install()}>
+          <PillButton className="mk-install-hint__install" type="button" tone="gold" size="sm" showArrow={false} onClick={() => void install()}>
             {copy.shell.installApp}
-          </button>
+          </PillButton>
         )}
-        <button className="mk-install-hint__got-it" type="button" onClick={dismiss}>
+        <PillButton className="mk-install-hint__got-it" type="button" tone="forest" size="sm" showArrow={false} onClick={dismiss}>
           {copy.profile.installGotIt}
-        </button>
+        </PillButton>
       </div>
       <button
         className="mk-install-hint__dismiss"

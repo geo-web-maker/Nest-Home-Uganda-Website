@@ -6,6 +6,7 @@ import { Card } from '../ui/Card';
 import { Chip } from '../ui/Chip';
 import { PillButton } from '../ui/PillButton';
 import { Banner } from '../ui/Banner';
+import { Sheet, SheetActions } from '../ui/Sheet';
 
 type Props = {
   operations: OutboxOperation[]; photos: LocalPhoto[]; userId: string; online: boolean; busy: boolean; wifiOnly: boolean;
@@ -66,7 +67,7 @@ export function SyncScreen(props: Props) {
     <Card className="mk-sync-section"><h3>{copy.sync.queued} ({countQueued})</h3>{countQueued === 0 && <p>{copy.sync.noQueued}</p>}{queued.map((item) => operationRow(item, 'queued'))}{queuedPhotos.map((photo) => photoRow(photo, 'queued'))}</Card>
     <Card className="mk-sync-section"><h3>{copy.sync.deferred} ({countDeferred})</h3>{countDeferred === 0 && <p>{copy.sync.noDeferred}</p>}{deferred.map((item) => operationRow(item, 'deferred'))}{queuedPhotosDeferred.map((photo) => photoRow(photo, 'deferred'))}</Card>
     <Card className="mk-sync-section"><h3>{copy.sync.attention} ({countAttention})</h3>{countAttention === 0 && <p>{copy.sync.noAttention}</p>}{attention.map((item) => operationRow(item, 'attention'))}{photoAttention.map((photo) => photoRow(photo, 'attention'))}</Card>
-    {confirmId && <div className="sheet-backdrop"><section className="sheet" role="alertdialog" aria-modal="true" aria-labelledby="discard-title"><h2 id="discard-title">{copy.generic.discardConfirmTitle}</h2><p>{copy.generic.discardConfirmCopy}</p><div className="sheet-actions"><PillButton tone="danger" onClick={() => { const photo = ownPhotos.find((item) => item.id === confirmId); if (photo) props.onDiscardPhoto(confirmId); else props.onDiscard(confirmId); setConfirmId(null); }}>{copy.generic.confirmDiscard}</PillButton><PillButton tone="ghost" onClick={() => setConfirmId(null)}>{copy.generic.keepItem}</PillButton></div></section></div>}
+    {confirmId && <Sheet role="alertdialog" labelledBy="discard-title"><h2 id="discard-title">{copy.generic.discardConfirmTitle}</h2><p>{copy.generic.discardConfirmCopy}</p><SheetActions><PillButton tone="danger" onClick={() => { const photo = ownPhotos.find((item) => item.id === confirmId); if (photo) props.onDiscardPhoto(confirmId); else props.onDiscard(confirmId); setConfirmId(null); }}>{copy.generic.confirmDiscard}</PillButton><PillButton tone="ghost" onClick={() => setConfirmId(null)}>{copy.generic.keepItem}</PillButton></SheetActions></Sheet>}
     <p className="privacy-hint">{copy.generic.contactAdmin}</p>
   </section>;
 }

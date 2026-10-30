@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { CachedVisit } from '../offline/db';
 import { copy } from '../copy';
+import { PillButton } from '../ui/PillButton';
+import { Sheet, SheetActions } from '../ui/Sheet';
 
 type Props = { visit?: CachedVisit; onOpenVisit: (visit: CachedVisit) => void };
 
@@ -33,11 +35,14 @@ export function SafetyTimerPrompt({ visit, onOpenVisit }: Props) {
     setDismissed(true);
   }
 
-  return <div className="sheet-backdrop safety-timer-backdrop"><section className="sheet safety-timer-prompt" role="alertdialog" aria-modal="true" aria-labelledby="safety-timer-title">
+  return <Sheet role="alertdialog" labelledBy="safety-timer-title" className="safety-timer-prompt" backdropClassName="safety-timer-backdrop">
     <p className="eyebrow">{copy.safety.timerEyebrow}</p>
     <h2 id="safety-timer-title">{copy.safety.timerTitle}</h2>
     <p>{visit.safety_timer_sync_state === 'confirmed' ? copy.safety.timerStillArmed : copy.safety.timerPendingSync}</p>
     <p>{copy.safety.timerSafe}</p>
-    <div className="sheet-actions"><button type="button" onClick={() => { dismiss(); onOpenVisit(visit); }}>{copy.safety.timerReview}</button><button type="button" className="button-secondary" onClick={dismiss}>{copy.safety.timerDismiss}</button></div>
-  </section></div>;
+    <SheetActions>
+      <PillButton type="button" tone="forest" size="full" onClick={() => { dismiss(); onOpenVisit(visit); }}>{copy.safety.timerReview}</PillButton>
+      <PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={dismiss}>{copy.safety.timerDismiss}</PillButton>
+    </SheetActions>
+  </Sheet>;
 }

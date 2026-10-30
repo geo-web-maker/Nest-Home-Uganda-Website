@@ -135,7 +135,7 @@ export function TimesheetsScreen({ online }: { online: boolean }) {
           </Card>
 
           {selected && (
-            <Card className="panel timesheet-detail mk-timesheet-detail" aria-labelledby="timesheet-detail-heading">
+            <Card className="timesheet-detail mk-timesheet-detail" aria-labelledby="timesheet-detail-heading">
               <div className="screen-heading mk-timesheet-detail-heading">
                 <div>
                   <p className="eyebrow">{copy.timesheets.periodKinds[selected.period_kind as keyof typeof copy.timesheets.periodKinds] ?? copy.timesheets.unknownPeriod}</p>

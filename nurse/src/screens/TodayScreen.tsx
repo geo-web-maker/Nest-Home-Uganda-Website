@@ -15,6 +15,8 @@ import { Chip } from '../ui/Chip';
 import { PillButton } from '../ui/PillButton';
 import { MapPlaceholder } from '../ui/MapPlaceholder';
 import { Banner } from '../ui/Banner';
+import { IconButton } from '../ui/IconButton';
+import { Sheet, SheetActions } from '../ui/Sheet';
 
 type Props = {
   visits: CachedVisit[]; clients: CachedClient[]; adhocAllowed: boolean; adhocOpen: boolean; adhocClientId: string;
@@ -43,9 +45,9 @@ export function TodayScreen(props: Props) {
         </div>
         <div className="mk-greeting__actions">
           <Avatar initials={initials(props.displayName, props.staffNumber)} label={props.displayName || undefined} />
-          <button type="button" className="mk-icon-button" onClick={props.onSync} disabled={props.loading} aria-label={props.loading ? copy.today.syncing : copy.today.refresh}>
+          <IconButton label={props.loading ? copy.today.syncing : copy.today.refresh} onClick={props.onSync} disabled={props.loading}>
             <Icon name="sync" />
-          </button>
+          </IconButton>
         </div>
       </header>
 
@@ -81,7 +83,7 @@ export function TodayScreen(props: Props) {
       <Link to="/history" className="mk-side-link">{copy.today.historyLink}<Icon name="arrow-up-right" /></Link>
     </aside>
 
-    {props.adhocOpen && <div className="sheet-backdrop" role="presentation"><section className="sheet adhoc-sheet" role="dialog" aria-modal="true" aria-labelledby="adhoc-title"><div className="sheet-handle" aria-hidden="true" /><h2 id="adhoc-title">{copy.today.adhocQuestion}</h2><p>{copy.today.adhocExplanation}</p><form onSubmit={props.onStartAdhoc}><div className="adhoc-options">{props.clients.map((client) => <label key={client.id}><input type="radio" name="adhoc-client" value={client.id} checked={props.adhocClientId === client.id} onChange={(event) => props.onAdhocClient(event.target.value)} /><span>{client.display_name}</span></label>)}</div><Banner tone="info">{copy.today.adhocReviewNotice}</Banner><div className="sheet-actions"><PillButton type="submit" disabled={!props.adhocClientId}>{copy.today.startVisit}</PillButton><PillButton type="button" tone="ghost" onClick={props.onAdhocOpen}>{copy.generic.cancel}</PillButton></div></form></section></div>}
+    {props.adhocOpen && <Sheet labelledBy="adhoc-title" className="adhoc-sheet"><h2 id="adhoc-title">{copy.today.adhocQuestion}</h2><p>{copy.today.adhocExplanation}</p><form onSubmit={props.onStartAdhoc}><div className="adhoc-options">{props.clients.map((client) => <label key={client.id}><input type="radio" name="adhoc-client" value={client.id} checked={props.adhocClientId === client.id} onChange={(event) => props.onAdhocClient(event.target.value)} /><span>{client.display_name}</span></label>)}</div><Banner tone="info">{copy.today.adhocReviewNotice}</Banner><SheetActions><PillButton type="submit" disabled={!props.adhocClientId}>{copy.today.startVisit}</PillButton><PillButton type="button" tone="ghost" onClick={props.onAdhocOpen}>{copy.generic.cancel}</PillButton></SheetActions></form></Sheet>}
   </section>;
 }
 

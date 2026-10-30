@@ -23,12 +23,12 @@ export function VisitDetail({ visit, photosEnabled, embedded = false, onArrive, 
       <div><p className="eyebrow">{copy.visit.detail}</p><Heading id="visit-detail-heading">{visit.client_display_name}</Heading><p>{formatKampalaTime(visit.scheduled_start)} – {formatKampalaTime(visit.scheduled_end)}</p></div>
       <Chip kind={statusKind(visit.status, visit.verification_label)}>{statusText(visit.status, visit.verification_label)}</Chip>
     </header>
-    <Card className="panel detail-card mk-detail-card">
+    <Card className="detail-card mk-detail-card">
       <p className="eyebrow">{copy.visit.address}</p>
       <h3>{visit.place_address_text || copy.address.missingOffline}</h3>
       {mapUrl && <a className="mk-map-link" href={mapUrl} target="_blank" rel="noreferrer"><Icon name="map" />{copy.generic.openMaps}<Icon name="arrow-up-right" /></a>}
     </Card>
-    <Card className="panel detail-card mk-detail-card">
+    <Card className="detail-card mk-detail-card">
       <p className="eyebrow">{copy.visit.instructions}</p><p>{visit.instructions || copy.address.noInstructions}</p>
     </Card>
     <div className="detail-primary-action mk-detail-actions">

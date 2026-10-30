@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Disclosure } from '../features/disclosure/Disclosure';
 import { copy } from '../copy';
+import { Card } from '../ui/Card';
 import { Icon } from '../ui/Icon';
 import { PillButton } from '../ui/PillButton';
 
@@ -54,6 +55,6 @@ export function Onboarding({ accepted, onAccept, onContinue, showNotifications }
       showAction={false}
     />
     <PillButton tone="forest" size="full" onClick={onContinue}>{copy.generic.continue}</PillButton>
-    {showNotifications && <section className="panel native-prompt"><p className="eyebrow">{copy.onboarding.androidPromptEyebrow}</p><h2>{copy.onboarding.androidPromptTitle}</h2><div className="native-options"><span>{copy.onboarding.androidWhileUsing}</span><span>{copy.onboarding.androidOnlyThisTime}</span><span>{copy.onboarding.androidDontAllow}</span></div></section>}
+    {showNotifications && <Card className="native-prompt"><p className="eyebrow">{copy.onboarding.androidPromptEyebrow}</p><h2>{copy.onboarding.androidPromptTitle}</h2><div className="native-options"><span>{copy.onboarding.androidWhileUsing}</span><span>{copy.onboarding.androidOnlyThisTime}</span><span>{copy.onboarding.androidDontAllow}</span></div></Card>}
   </section>;
 }

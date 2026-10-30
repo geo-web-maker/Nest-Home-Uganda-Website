@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { copy } from '../copy';
 import { getTheme, setTheme, type Theme } from '../lib/theme';
+import { IconButton } from '../ui/IconButton';
 
 /** Compact icon button for the app shell: moon switches to dark, sun switches back to light. */
 export function ThemeToggle() {
@@ -12,7 +13,7 @@ export function ThemeToggle() {
     update(next);
   };
   return (
-    <button type="button" className="theme-toggle" aria-label={copy.theme.dark} aria-pressed={dark} onClick={toggle}>
+    <IconButton tone="accent" label={copy.theme.dark} aria-pressed={dark} onClick={toggle}>
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
         {dark ? (
           <>
@@ -23,6 +24,6 @@ export function ThemeToggle() {
           <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
         )}
       </svg>
-    </button>
+    </IconButton>
   );
 }

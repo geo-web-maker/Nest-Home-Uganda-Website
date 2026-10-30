@@ -1,6 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { CachedVisit, LocalPhoto } from '../offline/db';
 import { copy } from '../copy';
+import { Banner } from '../ui/Banner';
+import { Card } from '../ui/Card';
+import { PillButton } from '../ui/PillButton';
+import { Sheet, SheetActions } from '../ui/Sheet';
 import { kampalaDateKey } from '../lib/time';
 import { apiAssetUrl } from '../lib/api/client';
 
@@ -34,7 +38,7 @@ function PhotoThumbnail({ photo, onView, canEdit, onRetake, onDelete }: { photo:
       {url ? <img src={url} alt={copy.photos.thumbnailAlt} /> : <span className="thumbnail-placeholder">{copy.photos.thumbnailPlaceholder}</span>}
     </button>
     <figcaption><strong>{photo.photoType ?? 'other'}</strong><span>{label}</span></figcaption>
-    {canEdit && <div className="photo-local-actions"><button type="button" className="button-secondary" onClick={onRetake}>{copy.photos.retakeLocal}</button><button type="button" className="button-danger" onClick={onDelete}>{copy.photos.deleteLocal}</button></div>}
+    {canEdit && <div className="photo-local-actions"><PillButton type="button" size="sm" tone="ghost" showArrow={false} onClick={onRetake}>{copy.photos.retakeLocal}</PillButton><PillButton type="button" size="sm" tone="danger" showArrow={false} onClick={onDelete}>{copy.photos.deleteLocal}</PillButton></div>}
   </figure>;
 }
 
@@ -46,12 +50,10 @@ function PhotoViewer({ source, title, onClose }: { source: ViewerSource; title: 
     setUrl(nextUrl);
     return () => URL.revokeObjectURL(nextUrl);
   }, [source]);
-  return <div className="photo-viewer-backdrop">
-    <section className="photo-viewer panel" role="dialog" aria-modal="true" aria-labelledby="photo-viewer-title">
-      <div className="screen-heading"><h2 id="photo-viewer-title">{title}</h2><button type="button" className="button-secondary" onClick={onClose}>{copy.photos.closeViewer}</button></div>
-      {url ? <img src={url} alt={copy.photos.reviewPhoto} /> : <p role="status">{copy.photos.serverPhotosLoading}</p>}
-    </section>
-  </div>;
+  return <Sheet placement="center" labelledBy="photo-viewer-title" className="photo-viewer">
+    <div className="screen-heading"><h2 id="photo-viewer-title">{title}</h2><PillButton type="button" size="sm" tone="ghost" showArrow={false} onClick={onClose}>{copy.photos.closeViewer}</PillButton></div>
+    {url ? <img src={url} alt={copy.photos.reviewPhoto} /> : <p role="status">{copy.photos.serverPhotosLoading}</p>}
+  </Sheet>;
 }
 
 type Props = {
@@ -97,25 +99,22 @@ export function PhotoSheet({
     setGuidanceSeen(true);
   }
 
-  return <div className="sheet-backdrop">
-    <section className="sheet photo-sheet" role="dialog" aria-modal="true" aria-labelledby="photo-title">
-      <div className="sheet-handle" aria-hidden="true" />
+  return <>
+    <Sheet labelledBy="photo-title" className="photo-sheet">
       <p className="eyebrow">{copy.photos.photosOnVisit}</p>
       <h2 id="photo-title">{copy.visit.photo} · {visit.client_display_name}</h2>
 
-      {!visitPhotoAllowed ? <section className="notice photo-off-state" role="status">
-        <h3>{copy.photos.photosOffTitle}</h3><p>{copy.photos.photosOffBody}</p>
-      </section> : <>
-        {!guidanceSeen && <section className="photo-guidance panel" aria-labelledby="photo-guidance-title">
+      {!visitPhotoAllowed ? <Banner tone="info" className="photo-off-state"><strong>{copy.photos.photosOffTitle}</strong> {copy.photos.photosOffBody}</Banner> : <>
+        {!guidanceSeen && <Card className="photo-guidance" aria-labelledby="photo-guidance-title">
           <p className="eyebrow">{copy.photos.guidanceTitle}</p>
           <h3 id="photo-guidance-title">{copy.photos.guidanceTitle}</h3>
           <p>{guidanceText.trim() || copy.photos.guidanceDefault}</p>
           <p className="muted">{copy.photos.description}</p>
-          <button type="button" onClick={acknowledgeGuidance}>{copy.photos.guidanceContinue}</button>
-        </section>}
+          <PillButton type="button" tone="forest" size="full" onClick={acknowledgeGuidance}>{copy.photos.guidanceContinue}</PillButton>
+        </Card>}
 
         <p>{copy.photos.description}</p>
-        {pendingCount > 20 && <p role="status" className="notice">{copy.photos.overLimit}</p>}
+        {pendingCount > 20 && <Banner tone="warn">{copy.photos.overLimit}</Banner>}
 
         <section className="photo-collection" aria-labelledby="photo-collection-heading">
           <div className="screen-heading"><h3 id="photo-collection-heading">{copy.photos.photosOnVisit}</h3>{serverPhotosLoading && <span role="status">{copy.photos.serverPhotosLoading}</span>}</div>
@@ -150,11 +149,11 @@ export function PhotoSheet({
           </section>}
           <label className="check-row"><input type="checkbox" checked={wifiOnly} onChange={(event) => onWifiOnly(event.target.checked)} /> {copy.photos.wifiOnly}</label>
           <p className="hint">{copy.photos.wifiHint}</p>
-          <div className="sheet-actions"><button type="submit" disabled={!file || busy}>{busy ? copy.photos.saving : copy.photos.save}</button><button type="button" className="button-secondary" onClick={onCancel} disabled={busy}>{copy.generic.cancel}</button></div>
+          <SheetActions><PillButton type="submit" tone="forest" size="full" disabled={!file || busy}>{busy ? copy.photos.saving : copy.photos.save}</PillButton><PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={onCancel} disabled={busy}>{copy.generic.cancel}</PillButton></SheetActions>
         </form>
       </>}
-    </section>
+    </Sheet>
     {viewer && <PhotoViewer source={viewer.source} title={viewer.title} onClose={() => setViewer(null)} />}
-    {localPhotoAction && <div className="photo-viewer-backdrop"><section className="photo-local-confirm panel" role="alertdialog" aria-modal="true" aria-labelledby="local-photo-action-title"><h2 id="local-photo-action-title">{copy.photos.localActionTitle}</h2><p>{localPhotoAction.action === 'retake' ? copy.photos.retakeLocalCopy : copy.photos.deleteLocalCopy}</p><div className="sheet-actions"><button type="button" className="button-danger" onClick={() => { const action = localPhotoAction; setLocalPhotoAction(null); if (action.action === 'retake') onRetakeLocalPhoto?.(action.id); else onDiscardLocalPhoto?.(action.id); }}>{localPhotoAction.action === 'retake' ? copy.photos.confirmRetakeLocal : copy.photos.confirmDeleteLocal}</button><button type="button" className="button-secondary" onClick={() => setLocalPhotoAction(null)}>{copy.photos.keepLocalPhoto}</button></div></section></div>}
-  </div>;
+    {localPhotoAction && <Sheet placement="center" role="alertdialog" labelledBy="local-photo-action-title" className="photo-local-confirm"><h2 id="local-photo-action-title">{copy.photos.localActionTitle}</h2><p>{localPhotoAction.action === 'retake' ? copy.photos.retakeLocalCopy : copy.photos.deleteLocalCopy}</p><SheetActions><PillButton type="button" tone="danger" size="full" onClick={() => { const action = localPhotoAction; setLocalPhotoAction(null); if (action.action === 'retake') onRetakeLocalPhoto?.(action.id); else onDiscardLocalPhoto?.(action.id); }}>{localPhotoAction.action === 'retake' ? copy.photos.confirmRetakeLocal : copy.photos.confirmDeleteLocal}</PillButton><PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={() => setLocalPhotoAction(null)}>{copy.photos.keepLocalPhoto}</PillButton></SheetActions></Sheet>}
+  </>;
 }
