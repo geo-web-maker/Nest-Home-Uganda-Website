@@ -7,7 +7,8 @@ const root = process.argv[2] ?? 'dist';
 // (nurse.yml runs it from nurse/, ci.yml from the repository root).
 const allowlistPath = fileURLToPath(new URL('./external-allowlist.txt', import.meta.url));
 const allowlist = fs.existsSync(allowlistPath) ? fs.readFileSync(allowlistPath, 'utf8').split(/\r?\n/).map((x) => x.trim()).filter((x) => x && !x.startsWith('#')) : [];
-const external = /https?:\/\/([^/"'\s)>]+)/g;
+// ';' and ',' end a host too: CSP lines in dist/_headers read "connect-src 'self' https://host; frame-ancestors ...".
+const external = /https?:\/\/([^/"'\s)>;,]+)/g;
 const files = [];
 function walk(dir) { for (const entry of fs.readdirSync(dir, { withFileTypes: true })) { const file = path.join(dir, entry.name); if (entry.isDirectory()) walk(file); else files.push(file); } }
 if (!fs.existsSync(root)) { console.error(`Directory not found: ${root}`); process.exit(2); }

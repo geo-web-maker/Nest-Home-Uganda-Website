@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { apiRequest } from '../../lib/api/client';
 import { copy } from '../../copy';
+import { Card } from '../../ui/Card';
+import { Chip, type ChipKind } from '../../ui/Chip';
+import { Row } from '../../ui/Row';
+import { PillButton } from '../../ui/PillButton';
+import { Banner } from '../../ui/Banner';
 
 type TimesheetIssue = {
   number: number;
@@ -40,6 +45,13 @@ function durationLabel(totalMinutes: number): string {
 
 function statusLabel(status: string): string {
   return copy.timesheets.statuses[status as keyof typeof copy.timesheets.statuses] ?? copy.timesheets.unknownStatus;
+}
+
+function statusKind(status: string): ChipKind {
+  if (status === 'approved') return 'ok';
+  if (status === 'submitted') return 'pg';
+  if (status === 'sent_back') return 'rv';
+  return status === 'draft' ? 'pd' : 'sc';
 }
 
 /** Read-only nurse timesheets. The field endpoint returns rows owned by the authenticated nurse. */
@@ -84,74 +96,77 @@ export function TimesheetsScreen({ online }: { online: boolean }) {
   const selected = items.find((item) => item.id === selectedId) ?? items[0];
 
   return (
-    <section className="screen timesheets-screen" aria-labelledby="timesheets-heading">
-      <header className="screen-heading timesheets-heading">
+    <section className="screen timesheets-screen mk-timesheets" aria-labelledby="timesheets-heading">
+      <header className="screen-heading timesheets-heading mk-timesheets-heading">
         <div>
           <p className="eyebrow">{copy.timesheets.eyebrow}</p>
           <h2 id="timesheets-heading">{copy.timesheets.title}</h2>
           <p>{copy.timesheets.intro}</p>
         </div>
-        <button type="button" className="button-secondary timesheets-retry" disabled={loading || !online} onClick={() => setReloadKey((value) => value + 1)}>
+        <PillButton type="button" tone="ghost" size="sm" className="timesheets-retry" disabled={loading || !online} onClick={() => setReloadKey((value) => value + 1)}>
           {loading ? copy.timesheets.loading : copy.timesheets.refresh}
-        </button>
+        </PillButton>
       </header>
 
-      {!online && <p role="status" className="notice">{copy.timesheets.offline}</p>}
-      {online && loading && <p role="status" className="panel">{copy.timesheets.loading}</p>}
-      {online && !loading && error && <div className="empty-state" role="alert"><p>{error}</p><button type="button" className="button-secondary" onClick={() => setReloadKey((value) => value + 1)}>{copy.generic.retry}</button></div>}
-      {online && !loading && !error && items.length === 0 && <div className="empty-state"><h3>{copy.timesheets.emptyTitle}</h3><p>{copy.timesheets.empty}</p></div>}
+      {!online && <Banner tone="warn">{copy.timesheets.offline}</Banner>}
+      {online && loading && <Banner tone="info">{copy.timesheets.loading}</Banner>}
+      {online && !loading && error && <Card className="mk-timesheets-empty" role="alert"><Banner tone="bad">{error}</Banner><PillButton tone="ghost" size="sm" onClick={() => setReloadKey((value) => value + 1)}>{copy.generic.retry}</PillButton></Card>}
+      {online && !loading && !error && items.length === 0 && <Card className="mk-timesheets-empty"><h3>{copy.timesheets.emptyTitle}</h3><p>{copy.timesheets.empty}</p></Card>}
 
       {online && !loading && !error && items.length > 0 && (
-        <div className="timesheets-layout">
-          <section className="timesheet-period-list" aria-label={copy.timesheets.periodList}>
+        <div className="timesheets-layout mk-timesheets-layout">
+          <Card className="timesheet-period-list mk-timesheets-list">
             <h3>{copy.timesheets.periodList}</h3>
-            {items.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className="timesheet-period"
-                aria-pressed={item.id === selected?.id}
-                onClick={() => setSelectedId(item.id)}
-              >
-                <span className="timesheet-period-date">{dateLabel(item.period_start)} – {dateLabel(item.period_end)}</span>
-                <span className={`status-chip timesheet-status timesheet-status--${['draft', 'submitted', 'approved', 'sent_back'].includes(item.status) ? item.status : 'unknown'}`}>{statusLabel(item.status)}</span>
-                <span className="timesheet-period-total">{durationLabel(item.total_minutes)}</span>
-              </button>
-            ))}
-          </section>
+            <div className="mk-timesheet-periods">
+              {items.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="timesheet-period mk-timesheet-period"
+                  aria-pressed={item.id === selected?.id}
+                  onClick={() => setSelectedId(item.id)}
+                >
+                  <span className="timesheet-period-date">{dateLabel(item.period_start)} – {dateLabel(item.period_end)}</span>
+                  <Chip kind={statusKind(item.status)}>{statusLabel(item.status)}</Chip>
+                  <strong className="timesheet-period-total">{durationLabel(item.total_minutes)}</strong>
+                </button>
+              ))}
+            </div>
+          </Card>
 
           {selected && (
-            <article className="panel timesheet-detail" aria-labelledby="timesheet-detail-heading">
-              <div className="screen-heading">
+            <Card className="panel timesheet-detail mk-timesheet-detail" aria-labelledby="timesheet-detail-heading">
+              <div className="screen-heading mk-timesheet-detail-heading">
                 <div>
                   <p className="eyebrow">{copy.timesheets.periodKinds[selected.period_kind as keyof typeof copy.timesheets.periodKinds] ?? copy.timesheets.unknownPeriod}</p>
                   <h3 id="timesheet-detail-heading">{dateLabel(selected.period_start)} – {dateLabel(selected.period_end)}</h3>
                 </div>
-                <span className={`status-chip timesheet-status timesheet-status--${['draft', 'submitted', 'approved', 'sent_back'].includes(selected.status) ? selected.status : 'unknown'}`}>{statusLabel(selected.status)}</span>
+                <Chip kind={statusKind(selected.status)}>{statusLabel(selected.status)}</Chip>
               </div>
-              <dl className="timesheet-summary">
-                <div><dt>{copy.timesheets.verifiedHours}</dt><dd>{durationLabel(selected.total_minutes)}</dd></div>
-                <div><dt>{copy.timesheets.completedVisits}</dt><dd>{selected.completed_visits}</dd></div>
-                <div><dt>{copy.timesheets.issues}</dt><dd>{selected.issue_count}</dd></div>
-              </dl>
-              {selected.status === 'approved' && <p className="timesheet-lock-note">{copy.timesheets.approvedLocked}</p>}
-              {selected.status === 'sent_back' && selected.sent_back_reason && <section className="timesheet-reason"><h4>{copy.timesheets.sentBackReason}</h4><p>{selected.sent_back_reason}</p></section>}
+              <div className="mk-timesheet-total">
+                <span>{copy.timesheets.verifiedHours}</span>
+                <strong>{durationLabel(selected.total_minutes)}</strong>
+              </div>
+              <div className="timesheet-summary mk-timesheet-summary">
+                <Row label={copy.timesheets.completedVisits} value={selected.completed_visits} />
+                <Row label={copy.timesheets.issues} value={selected.issue_count} />
+              </div>
+              {selected.status === 'approved' && <Banner tone="ok">{copy.timesheets.approvedLocked}</Banner>}
+              {selected.status === 'sent_back' && selected.sent_back_reason && <section className="timesheet-reason mk-timesheet-reason"><h4>{copy.timesheets.sentBackReason}</h4><p>{selected.sent_back_reason}</p></section>}
               {selected.issues.length > 0 && (
-                <section className="timesheet-issues">
+                <section className="timesheet-issues mk-timesheet-issues">
                   <h4>{copy.timesheets.issueExplanations}</h4>
                   {selected.issues.map((issue) => (
-                    <div className="timesheet-issue" key={issue.number}>
+                    <div className="timesheet-issue mk-timesheet-issue" key={issue.number}>
                       <strong>{copy.timesheets.issueLabel} {issue.number}</strong>
-                      <span className={`status-chip ${issue.status === 'explained' ? 'timesheet-issue--explained' : 'timesheet-issue--needs-explanation'}`}>
-                        {issue.status === 'explained' ? copy.timesheets.explained : copy.timesheets.needsExplanation}
-                      </span>
+                      <Chip kind={issue.status === 'explained' ? 'ok' : 'rv'}>{issue.status === 'explained' ? copy.timesheets.explained : copy.timesheets.needsExplanation}</Chip>
                       {issue.explanation && <p>{issue.explanation}</p>}
                     </div>
                   ))}
                 </section>
               )}
               <p className="privacy-hint">{copy.timesheets.readOnly}</p>
-            </article>
+            </Card>
           )}
         </div>
       )}

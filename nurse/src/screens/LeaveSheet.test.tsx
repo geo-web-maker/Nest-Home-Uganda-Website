@@ -19,6 +19,7 @@ describe('departure sheet safety requirements', () => {
   it('blocks departure while the required photo is missing and offers capture when allowed', () => {
     const { onConfirm, onAddPhoto } = renderSheet(true);
     expect((screen.getByRole('button', { name: /confirm departure/i }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole('alert')).toHaveTextContent(/photo is required/i);
     fireEvent.click(screen.getByRole('button', { name: /add required photo/i }));
     expect(onAddPhoto).toHaveBeenCalledTimes(1);
     expect(onConfirm).not.toHaveBeenCalled();

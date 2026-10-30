@@ -22,7 +22,7 @@ describe('history screen', () => {
     render(<HistoryScreen history={[row]} loading={false} hasMore onLoadMore={onLoadMore} />);
     expect(screen.getByText('Client One')).toBeTruthy();
     expect(screen.getByText('Verified')).toBeTruthy();
-    expect(screen.getByText(/Visit reference: visit-old/)).toBeTruthy();
+    expect(screen.queryByText(/visit-old/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /load more visits/i }));
     expect(onLoadMore).toHaveBeenCalledTimes(1);
   });
@@ -30,10 +30,11 @@ describe('history screen', () => {
   it('labels a visit with unsent local work as pending sync and exposes read-only arrival/departure details', () => {
     render(<HistoryScreen history={[row]} loading={false} hasMore={false} onLoadMore={vi.fn()} pendingVisitIds={['visit-old']} />);
     expect(screen.getByText('Pending sync')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /view past visit/i }));
+    fireEvent.click(screen.getByRole('button', { name: /client one/i }));
     expect(screen.getByText(/Read-only details/i)).toBeTruthy();
     expect(screen.getByText(/Arrival recorded/i)).toBeTruthy();
     expect(screen.getByText(/Departure recorded/i)).toBeTruthy();
+    expect(screen.getByText(/visit-old/)).toBeTruthy();
     expect(screen.queryByText(/distance/i)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /hide past visit details/i }));
     expect(screen.queryByText(/Read-only details/i)).toBeNull();

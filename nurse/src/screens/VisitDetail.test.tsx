@@ -26,6 +26,24 @@ describe('visit detail actions', () => {
     expect(screen.queryByRole('button', { name: 'Leave' })).toBeNull();
   });
 
+  it('encodes the address in the external map link and keeps notes available', () => {
+    const onNote = vi.fn();
+    render(<MemoryRouter><VisitDetail visit={{ ...baseVisit, place_address_text: 'Plot 4, Kampala & Ntinda' }} photosEnabled onArrive={vi.fn()} onLeave={vi.fn()} onNote={onNote} onPhoto={vi.fn()} /></MemoryRouter>);
+    const map = screen.getByRole('link', { name: /open in maps/i });
+    expect(map).toHaveAttribute('href', 'https://www.google.com/maps/search/?api=1&query=Plot%204%2C%20Kampala%20%26%20Ntinda');
+    expect(map).toHaveAttribute('target', '_blank');
+    fireEvent.click(screen.getByRole('button', { name: /note/i }));
+    expect(onNote).toHaveBeenCalledWith({ ...baseVisit, place_address_text: 'Plot 4, Kampala & Ntinda' });
+  });
+
+  it('does not expose a map or photo action when those capabilities are unavailable', () => {
+    const restricted = { ...baseVisit, place_address_text: '', photo_rules: { allowed: false } };
+    render(<MemoryRouter><VisitDetail visit={restricted} photosEnabled={false} onArrive={vi.fn()} onLeave={vi.fn()} onNote={vi.fn()} onPhoto={vi.fn()} /></MemoryRouter>);
+    expect(screen.queryByRole('link', { name: /open in maps/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /photo/i })).toBeNull();
+    expect(screen.getByText(/address not available offline/i)).toBeInTheDocument();
+  });
+
   it('offers departure only for an active visit and does not offer arrive/leave for completed work', () => {
     const active = { ...baseVisit, status: 'in_progress' as const };
     const { unmount } = render(<MemoryRouter><VisitDetail visit={active} photosEnabled onArrive={vi.fn()} onLeave={vi.fn()} onNote={vi.fn()} onPhoto={vi.fn()} /></MemoryRouter>);

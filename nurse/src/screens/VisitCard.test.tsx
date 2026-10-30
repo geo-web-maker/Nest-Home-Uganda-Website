@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import type { CachedVisit } from '../offline/db';
@@ -9,29 +9,25 @@ const baseVisit: CachedVisit = {
   scheduled_start: '2026-10-25T08:00:00.000Z', scheduled_end: '2026-10-25T09:00:00.000Z',
   status: 'scheduled', instructions: 'Use front entrance', adhoc: false, updatedAt: '2026-10-25T08:00:00.000Z',
 };
-function renderCard(visit: CachedVisit) {
-  const onArrive = vi.fn(); const onLeave = vi.fn(); const onNote = vi.fn(); const onPhoto = vi.fn();
-  const result = render(<MemoryRouter><VisitCard visit={visit} photosEnabled onArrive={onArrive} onLeave={onLeave} onNote={onNote} onPhoto={onPhoto} /></MemoryRouter>);
-  return { ...result, onArrive, onLeave, onNote, onPhoto };
-}
 
-describe('visit card action matrix', () => {
-  it('offers arrival for a scheduled visit but not departure', () => {
-    const { onArrive, onLeave } = renderCard(baseVisit);
-    fireEvent.click(screen.getByRole('button', { name: 'Arrive' }));
-    expect(onArrive).toHaveBeenCalledWith(baseVisit);
-    expect(onLeave).not.toHaveBeenCalled();
+describe('visit card navigation contract', () => {
+  it('renders the whole scheduled card as a single visit-detail link without embedded action buttons', () => {
+    render(<MemoryRouter><VisitCard visit={baseVisit} photosEnabled onArrive={vi.fn()} onLeave={vi.fn()} onNote={vi.fn()} onPhoto={vi.fn()} /></MemoryRouter>);
+    const link = screen.getByRole('link', { name: /test client, scheduled/i });
+    expect(link).toHaveAttribute('href', '/visit/visit-123');
+    expect(link.querySelector('h3')).toHaveTextContent('Test client');
+    expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.getByText('Test address')).toBeInTheDocument();
   });
 
-  it('offers departure and a running elapsed marker for an in-progress visit', () => {
+  it('links active visits to the active workflow and shows the live elapsed time', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(baseVisit.scheduled_start));
     const activeVisit = { ...baseVisit, status: 'in_progress' as const, check_in_at: baseVisit.scheduled_start };
-    const { onArrive, onLeave } = renderCard(activeVisit);
-    expect(screen.getByText('00:00:00')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Leave' }));
-    expect(onLeave).toHaveBeenCalledWith(activeVisit);
-    expect(onArrive).not.toHaveBeenCalled();
+    render(<MemoryRouter><VisitCard visit={activeVisit} photosEnabled onArrive={vi.fn()} onLeave={vi.fn()} onNote={vi.fn()} onPhoto={vi.fn()} /></MemoryRouter>);
+    expect(screen.getByRole('link', { name: /test client, in progress/i })).toHaveAttribute('href', '/active/visit-123');
+    expect(document.querySelector('.mk-card--hot')).toBeInTheDocument();
+    expect(screen.getByText('00:00:00')).toBeInTheDocument();
     vi.useRealTimers();
   });
 });

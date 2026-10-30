@@ -1,4 +1,5 @@
 import { copy } from '../copy';
+import { PillButton } from '../ui/PillButton';
 
 type LogoutGuardProps = {
   open: boolean;
@@ -10,16 +11,18 @@ type LogoutGuardProps = {
 export function LogoutGuard({ open, pendingItems, onCancel, onConfirm }: LogoutGuardProps) {
   if (!open) return null;
 
-  return (
-    <section className="panel logout-guard" role="alertdialog" aria-modal="true" aria-labelledby="logout-guard-title" aria-describedby="logout-guard-description">
+  return <div className="sheet-backdrop logout-guard-backdrop">
+    <section className="sheet logout-guard" role="alertdialog" aria-modal="true" aria-labelledby="logout-guard-title" aria-describedby="logout-guard-description">
+      <div className="sheet-handle" aria-hidden="true" />
+      <p className="eyebrow">{copy.profile.signOutHeading}</p>
       <h2 id="logout-guard-title">{copy.logout.heading}</h2>
       <p id="logout-guard-description">
         {pendingItems} {copy.logout.savedItem}{pendingItems === 1 ? '' : 's'} still need to sync or be reviewed. {copy.logout.keepDataHint}
       </p>
-      <div className="logout-guard-actions">
-        <button type="button" onClick={onCancel}>{copy.logout.keepWorking}</button>
-        <button type="button" onClick={onConfirm}>{copy.logout.confirm}</button>
+      <div className="sheet-actions logout-guard-actions">
+        <PillButton type="button" tone="ghost" size="full" onClick={onCancel} showArrow={false}>{copy.logout.keepWorking}</PillButton>
+        <PillButton type="button" tone="forest" size="full" onClick={onConfirm}>{copy.logout.confirm}</PillButton>
       </div>
     </section>
-  );
+  </div>;
 }

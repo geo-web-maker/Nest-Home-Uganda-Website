@@ -179,7 +179,9 @@ async def patch_nurse(actor, user_id: str, payload: NursePatch, ip_hash: str | N
     return profile
 
 
-async def set_nurse_password(actor, user_id: str, payload: NursePasswordSet, ip_hash: str | None = None):
+async def set_nurse_password(
+    actor, user_id: str, payload: NursePasswordSet, ip_hash: str | None = None
+):
     """Set a nurse's password directly. Fixes accounts stuck on an invite that never arrived.
 
     Marks the invite accepted, clears any lockout, ends existing sessions and voids open links.

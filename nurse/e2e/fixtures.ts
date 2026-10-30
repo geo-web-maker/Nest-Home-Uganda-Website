@@ -6,19 +6,28 @@ import { expect, type Page } from '@playwright/test';
  * The fixture deliberately intercepts only /api/v1/* requests. It never talks to a
  * real backend, so E1 remains deterministic and can run in the nurse preview server.
  */
-export async function installMockApi(page: Page, options: { activeVisit?: boolean } = {}) {
+export async function installMockApi(page: Page, options: { activeVisit?: boolean; multipleVisits?: boolean } = {}) {
   const dateParts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Africa/Kampala', year: 'numeric', month: '2-digit', day: '2-digit',
   }).formatToParts(new Date());
   const datePart = (type: string) => dateParts.find((part) => part.type === type)?.value ?? '';
-  const visitStart = new Date(`${datePart('year')}-${datePart('month')}-${datePart('day')}T08:00:00+03:00`).toISOString();
-  const visit = {
-    id: 'visit-e2-001', client_display_name: 'Demo Client', place_address_text: 'Kampala',
-    scheduled_start: visitStart, scheduled_end: new Date(Date.parse(visitStart) + 60 * 60 * 1000).toISOString(),
-    status: options.activeVisit ? 'in_progress' : 'scheduled', instructions: 'Use the front entrance.',
-    adhoc: false, check_in_at: options.activeVisit ? visitStart : null, check_out_at: null,
-    safety_state: 'off', updated_at: new Date().toISOString(),
+  const makeVisit = (id: string, name: string, hour: number, status: string, address: string) => {
+    const scheduledStart = new Date(`${datePart('year')}-${datePart('month')}-${datePart('day')}T${String(hour).padStart(2, '0')}:00:00+03:00`).toISOString();
+    return {
+      id, client_display_name: name, place_address_text: address,
+      scheduled_start: scheduledStart, scheduled_end: new Date(Date.parse(scheduledStart) + 60 * 60 * 1000).toISOString(),
+      status, instructions: 'Use the front entrance.', adhoc: false,
+      check_in_at: status === 'in_progress' || status === 'completed' ? scheduledStart : null,
+      check_out_at: status === 'completed' ? new Date(Date.parse(scheduledStart) + 50 * 60 * 1000).toISOString() : null,
+      safety_state: 'off', updated_at: new Date().toISOString(),
+    };
   };
+  const visit = makeVisit('visit-e2-001', 'Demo Client', 8, options.activeVisit ? 'in_progress' : 'scheduled', 'Kampala');
+  const visits = options.multipleVisits ? [
+    makeVisit('visit-e2-done', 'Esther Namugga', 8, 'completed', 'Kampala Road'),
+    makeVisit('visit-e2-next', 'John Ddungu', 11, 'scheduled', 'Ntinda Road'),
+    makeVisit('visit-e2-later', 'Mary Kisakye', 14, 'scheduled', 'Bukoto Road'),
+  ] : [visit];
   let syncPushes = 0;
   let notes: string[] = [];
   let photoQueued = false;
@@ -65,21 +74,21 @@ export async function installMockApi(page: Page, options: { activeVisit?: boolea
     }
     if (path === '/field/me') {
       await route.fulfill({ status: loggedOut ? 401 : 200, contentType: 'application/json', body: JSON.stringify({
-        user_id: 'nurse-e2', display_name: 'Demo Nurse', role: 'nurse', team_id: 'team-e2',
+        user_id: 'nurse-e2', display_name: 'Amina Nakato', email: 'amina@example.test', supervisor_name: 'Ruth Namusoke', role: 'nurse', team_id: 'team-e2',
         consents_required: [], settings: { adhoc_allowed: false, photos_enabled: true, photo_max_mb: 5, sos_enabled: false, sos_disabled_reason: 'Not configured' },
       }) });
       return;
     }
     if (path === '/field/sync/pull') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [visit], cursor: null, has_more: false }) });
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: visits, cursor: null, has_more: false }) });
       return;
     }
     if (path === '/field/visits' || path.startsWith('/field/visits?')) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [{
-        id: visit.id, client_id: 'client-e2', client_name: 'Demo Client', place_name: 'Demo Home', address: 'Kampala',
-        scheduled_start: visit.scheduled_start, scheduled_end: visit.scheduled_end, status: visit.status,
-        check_in_at: visit.check_in_at, check_out_at: visit.check_out_at, instructions: visit.instructions,
-      }] }) });
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: visits.map((item) => ({
+        id: item.id, client_id: `client-${item.id}`, client_name: item.client_display_name, place_name: 'Demo Home', address: item.place_address_text,
+        scheduled_start: item.scheduled_start, scheduled_end: item.scheduled_end, status: item.status,
+        check_in_at: item.check_in_at, check_out_at: item.check_out_at, instructions: item.instructions,
+      })) }) });
       return;
     }
     if (path === '/field/sync/push' && method === 'POST') {
@@ -130,7 +139,7 @@ export async function installMockApi(page: Page, options: { activeVisit?: boolea
   });
 
   return {
-    expectVisit: async () => expect(page.getByText('Demo Client')).toBeVisible(),
+    expectVisit: async () => expect(page.getByText('Demo Client').first()).toBeVisible(),
     getSyncPushCount: () => syncPushes,
     getNotes: () => [...notes],
   };

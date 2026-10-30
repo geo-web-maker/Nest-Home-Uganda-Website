@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.deps import Principal, ReachContext, get_care_actor, require_scopes
-from app.core.errors import Conflict, NotFound, ValidationFailed
+from app.core.errors import ValidationFailed
 from app.modules.audit import service as audit
 from app.modules.auth import repository as auth_repo
 from app.modules.auth.models import PasswordReset, User
@@ -26,8 +26,8 @@ from app.modules.nurses.service import (
     invite_nurse,
     patch_nurse,
     profile_for_user,
-    set_nurse_password,
     register_user_device,
+    set_nurse_password,
 )
 
 router = APIRouter(prefix="/admin/care/nurses", tags=["care-nurses"])
@@ -141,7 +141,13 @@ async def supervisor_options(
         users = [u for u in users if str(u.id) == ctx.user_id]
     users.sort(key=lambda u: (u.name or "").lower())
     return [
-        {"id": str(u.id), "name": u.name, "email": u.email, "kind": u.kind, "is_superadmin": u.is_superadmin}
+        {
+            "id": str(u.id),
+            "name": u.name,
+            "email": u.email,
+            "kind": u.kind,
+            "is_superadmin": u.is_superadmin,
+        }
         for u in users
     ]
 

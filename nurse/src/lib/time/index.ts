@@ -1,6 +1,10 @@
 export function formatKampala(value: string | Date): string {
   return new Intl.DateTimeFormat('en-UG', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Africa/Kampala' }).format(new Date(value));
 }
+export function formatKampalaTime(value: string | Date): string {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Kampala', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(value));
+}
+
 export function elapsed(deviceTime: string, now = Date.now()): number {
   return Math.max(0, Math.floor((now - new Date(deviceTime).getTime()) / 1000));
 }

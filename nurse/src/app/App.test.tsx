@@ -10,9 +10,10 @@ describe('Nurse app offline workspace', () => {
     expect(screen.queryByRole('button', { name: 'Unscheduled visit' })).toBeNull();
   });
 
-  it('renders the app name and offline-first purpose', () => {
+  it('shows the sign-in screen to a signed-out nurse', () => {
+    sessionStorage.removeItem('nurse_access_token');
     render(<App />);
-    expect(screen.getByRole('heading', { name: 'Well Nest Home Care Uganda' })).toBeTruthy();
-    expect(screen.getByText(/visits stay available when the network is unavailable/i)).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeTruthy();
   });
 });

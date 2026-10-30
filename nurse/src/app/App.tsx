@@ -20,6 +20,7 @@ import { captureLocation, captureLocationWithStatus, type LocationSnapshot } fro
 import type { LiveFollowStartResult, SosSendResult } from '../features/sos/SosSheet';
 import { checkoutPhotoRequirementMissing } from '../features/photos/requirements';
 import { useSession } from './useSession';
+import { useToast } from './useToast';
 import { useFieldProfile, type FieldConsentRequirement, type FieldProfile } from './useFieldProfile';
 import { useHeartbeat } from '../features/heartbeat/useHeartbeat';
 import { copy, APP_VERSION } from '../copy';
@@ -62,7 +63,7 @@ function NurseWorkspace() {
   const [visits, setVisits] = useState<CachedVisit[]>([]);
   const [queued, setQueued] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useToast(6_000);
   const token = session.token;
   const setToken = session.setToken;
   const [currentUserId, setCurrentUserId] = useState('');
@@ -88,6 +89,7 @@ function NurseWorkspace() {
   const [sosSmsHref, setSosSmsHref] = useState(() => buildSosSmsHref(buildSosSmsBody()));
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
   const [history, setHistory] = useState<CachedHistoryVisit[]>([]);
   const [clients, setClients] = useState<CachedClient[]>([]);
   const [adhocAllowed, setAdhocAllowed] = useState(false);
@@ -317,14 +319,16 @@ function NurseWorkspace() {
     try {
       await session.signIn(identifier, password);
       setPassword('');
+      setLoginError('');
       // A prior explicit notification choice is the only reason to re-register push at sign-in.
       const profile = await loadProfile();
       await applyProfile(profile);
       if (visitRemindersEnabled) void registerPushIfOptedIn(profile.user_id);
       setMessage(copy.messages.signedIn);
       if ((profile.consents_required ?? []).length === 0) await sync();
-    } catch {
-      setMessage(copy.login.failed);
+    } catch (error: unknown) {
+      const status = typeof error === 'object' && error !== null && 'status' in error ? Number((error as { status?: unknown }).status) : -1;
+      setLoginError(status === 0 ? copy.login.offlineServer : status === 401 ? copy.login.invalidCredentials : copy.login.failed);
     } finally {
       setBusy(false);
     }
@@ -788,8 +792,8 @@ function NurseWorkspace() {
   const requiredPhotoMissing = Boolean(actionVisit && checkoutPhotoRequirementMissing(requiredPhotoMode, checkoutPhotoTypes));
   const canAddRequiredPhoto = Boolean(photosEnabled && actionVisit?.photo_rules?.allowed);
   const views = {
-    login: <LoginScreen identifier={identifier} password={password} busy={busy} online={online} onIdentifier={setIdentifier} onPassword={setPassword} onSubmit={signIn} />,
-    today: <TodayScreen visits={visits} clients={clients} adhocAllowed={adhocAllowed} adhocOpen={adhocOpen} adhocClientId={adhocClientId} photosEnabled={photosEnabled} pendingPhotoCount={pendingPhotoCount} loading={busy} onAdhocOpen={() => setAdhocOpen((open) => !open)} onAdhocClient={setAdhocClientId} onStartAdhoc={startAdhocVisit} onSync={() => void sync()} onArrive={(visit) => requestVisitAction(visit, 'check_in')} onLeave={(visit) => requestVisitAction(visit, 'check_out')} onNote={openNote} onPhoto={openPhoto} />,
+    login: <LoginScreen identifier={identifier} password={password} busy={busy} online={online} errorMessage={loginError} onIdentifier={(value) => { setIdentifier(value); setLoginError(''); }} onPassword={(value) => { setPassword(value); setLoginError(''); }} onSubmit={signIn} />,
+    today: <TodayScreen visits={visits} clients={clients} adhocAllowed={adhocAllowed} adhocOpen={adhocOpen} adhocClientId={adhocClientId} photosEnabled={photosEnabled} pendingPhotoCount={pendingPhotoCount} loading={busy} displayName={fieldProfile?.display_name} staffNumber={fieldProfile?.staff_number} onAdhocOpen={() => setAdhocOpen((open) => !open)} onAdhocClient={setAdhocClientId} onStartAdhoc={startAdhocVisit} onSync={() => void sync()} onArrive={(visit) => requestVisitAction(visit, 'check_in')} onLeave={(visit) => requestVisitAction(visit, 'check_out')} onNote={openNote} onPhoto={openPhoto} />,
     onboarding: <Onboarding accepted={locationDisclosureAccepted} onAccept={acceptLocationDisclosure} onContinue={continueOnboarding} onEnableNotifications={() => void enableReminders()} showNotifications={Capacitor.isNativePlatform()} notificationsEnabled={visitRemindersEnabled} />,
     history: <HistoryScreen history={history} loading={historyLoading} hasMore={historyHasMore} onLoadMore={() => void loadMoreHistory()} pendingVisitIds={pendingHistoryVisitIds} />,
     timesheets: <TimesheetsScreen online={online} />,
@@ -800,7 +804,7 @@ function NurseWorkspace() {
   };
   const updateBlocked = Boolean(versionInfo && isForcedUpdate(APP_VERSION, versionInfo.min_supported));
 
-  return <AppShell online={online} queued={queued} authenticated={Boolean(token)} message={message} sosEnabled={sosEnabled} smsHref={sosSmsHref} emergencyNumbers={fieldProfile?.settings?.emergency_numbers ?? []} supervisorPhone={fieldProfile?.supervisor_phone} liveFollowEnabled={Boolean(fieldProfile?.settings?.live_follow_enabled)} liveFollowMinutes={fieldProfile?.settings?.live_follow_minutes ?? 30} liveFollowIntervalSeconds={fieldProfile?.settings?.live_follow_interval_seconds ?? 30} sosHoldSeconds={fieldProfile?.settings?.sos_hold_seconds ?? 2} sosCancelWindowSeconds={fieldProfile?.settings?.sos_cancel_window_s ?? 5} onSendSos={sendSos} onStartSosFollow={startSosFollow} onPingSosFollow={pingSosFollow} onSafeNow={reportSafeNow}>
+  return <AppShell online={online} queued={queued} authenticated={Boolean(token)} message={message} syncing={busy} sosEnabled={sosEnabled} smsHref={sosSmsHref} emergencyNumbers={fieldProfile?.settings?.emergency_numbers ?? []} supervisorPhone={fieldProfile?.supervisor_phone} liveFollowEnabled={Boolean(fieldProfile?.settings?.live_follow_enabled)} liveFollowMinutes={fieldProfile?.settings?.live_follow_minutes ?? 30} liveFollowIntervalSeconds={fieldProfile?.settings?.live_follow_interval_seconds ?? 30} sosHoldSeconds={fieldProfile?.settings?.sos_hold_seconds ?? 2} sosCancelWindowSeconds={fieldProfile?.settings?.sos_cancel_window_s ?? 5} onSendSos={sendSos} onStartSosFollow={startSosFollow} onPingSosFollow={pingSosFollow} onSafeNow={reportSafeNow}>
     {token && updateBlocked && versionInfo ? <section className="panel update-gate"><UpdateNotice currentVersion={APP_VERSION} latestVersion={versionInfo.latest} minimumVersion={versionInfo.min_supported} downloadPath={versionInfo.download_path} /><button type="button" className="button-secondary" onClick={() => void checkForUpdate()}>{copy.update.checkAgain}</button></section> : token && consentsRequired.length > 0 ? <section className="panel consent-gate"><h2>{copy.consent.heading}</h2><p>{copy.consent.explanation}</p>{consentsRequired.map((requirement) => <article className="visit-card" key={`${requirement.type}:${requirement.version}`}><h3>{requirement.type.replaceAll('_', ' ')}</h3><p>{requirement.text}</p><p>{copy.consent.version} {requirement.version}</p><button type="button" onClick={() => void acceptConsent(requirement)}>{copy.consent.accept}</button></article>)}</section> : <NurseRoutes views={views} authenticated={Boolean(token)} />}
     {token && actionVisit && actionKind === 'check_in' && <ArriveSheet visit={actionVisit} location={actionLocation} locationState={actionLocationState} busy={actionBusy} safetyTimerEnabled={safetyTimerEnabled} canEnableSafetyTimer={sosEnabled} onSafetyTimerChange={setSafetyTimerEnabled} onConfirm={() => void confirmVisitAction()} onCancel={() => { setActionVisit(null); setActionKind(null); setSafetyTimerEnabled(false); }} />}
     {token && actionVisit && actionKind === 'check_out' && <LeaveSheet visit={actionVisit} finalNote={actionFinalNote} busy={actionBusy} onFinalNote={setActionFinalNote} onConfirm={() => void confirmVisitAction()} onCancel={() => { setActionVisit(null); setActionKind(null); }} onAddPhoto={() => { const visit = actionVisit; setActionVisit(null); setActionKind(null); if (visit) openPhoto(visit); }} canAddRequiredPhoto={canAddRequiredPhoto} requiredPhotoMissing={requiredPhotoMissing} />}
