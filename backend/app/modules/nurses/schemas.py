@@ -101,3 +101,9 @@ class NurseDetailsResponse(BaseModel):
     profile: NurseDetailsProfile
     devices: list[NurseDetailsDevice]
     consents: list[NurseDetailsConsent]
+
+
+class NursePasswordSet(BaseModel):
+    """Superadmin-only: give an invited nurse a working password at once."""
+
+    password: str = Field(min_length=12, max_length=200)

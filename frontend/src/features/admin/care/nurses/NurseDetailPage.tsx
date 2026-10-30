@@ -76,7 +76,7 @@ export function NurseDetailPage() {
     <section className="admin-page nurse-detail" aria-labelledby="nurse-detail-title">
       <header className="page-header">
         <div><p className="eyebrow">Nurse profile</p><h1 id="nurse-detail-title">{details.person.name ?? nurse.staff_number}</h1><p>{nurse.staff_number} · {details.person.email ?? 'No email recorded'}</p></div>
-        <div className="nurse-header-actions"><Button variant="outline" onClick={() => navigate('/admin/care/nurses')}>Back to nurses</Button>{canWriteNurse && <Button type="button" disabled={busy} onClick={() => void runAction(() => apiClient.post(`/admin/care/nurses/${encodeURIComponent(userId)}/invite`, {}), 'Invitation resent.')}>Resend invite</Button>}</div>
+        <div className="nurse-header-actions"><Button variant="outline" onClick={() => navigate('/admin/care/nurses')}>Back to nurses</Button>{canWriteNurse && <Button type="button" disabled={busy} onClick={() => void runAction(() => apiClient.post(`/admin/care/nurses/${encodeURIComponent(userId)}/invite`, {}), 'Invitation resent.')}>Resend invite</Button>}{canWriteNurse && <Button type="button" variant="outline" disabled={busy} onClick={() => { const pw = window.prompt('Set a password for this nurse (at least 12 characters). Share it with them privately.'); if (!pw) return; if (pw.length < 12) { setError('Password must be at least 12 characters.'); return; } void runAction(() => apiClient.post(`/admin/care/nurses/${encodeURIComponent(userId)}/password`, { password: pw }), 'Password set. The nurse can sign in now.'); }}>Set password</Button>}</div>
       </header>
       {error && <Notice tone="error">{error}</Notice>}
       {notice && <Notice>{notice}</Notice>}

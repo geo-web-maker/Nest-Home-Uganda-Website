@@ -9,6 +9,15 @@ export function apiAssetUrl(path: string): string {
 }
 export type ApiError = { status: number; detail: string };
 
+/** A static host answers POST with 405. Fail with a clear message when the API origin was never set at build time. */
+function assertApiConfigured(): void {
+  if (apiBase || Capacitor.isNativePlatform()) return;
+  const host = typeof location !== 'undefined' ? location.hostname : '';
+  if (host && host !== 'localhost' && host !== '127.0.0.1') {
+    throw { status: 0, detail: 'This app was built without an API address (VITE_API_URL). Rebuild it with VITE_API_URL set to the backend.' } satisfies ApiError;
+  }
+}
+
 export async function restoreNativeSession(): Promise<string | null> {
   if (!Capacitor.isNativePlatform()) return null;
   const refreshToken = await readRefreshToken();
@@ -36,7 +45,8 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   if (token) headers.set('Authorization', `Bearer ${token}`);
   if (Capacitor.isNativePlatform() && path.startsWith('/auth/native/')) headers.set('X-Client','native');
-  let response = await fetch(`${apiBase}/api/v1${path}`, { ...init, headers });
+  assertApiConfigured();
+  let response = await fetch(`${apiBase}/api/v1${path}`, { ...init, headers, credentials: apiBase ? 'include' : 'same-origin' });
   if (response.status === 401 && Capacitor.isNativePlatform() && !path.startsWith('/auth/native/')) {
     const refreshToken=await readRefreshToken();
     if (refreshToken) {

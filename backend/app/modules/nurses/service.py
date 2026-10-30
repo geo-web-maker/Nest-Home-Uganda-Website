@@ -15,6 +15,7 @@ from app.modules.nurses.schemas import (
     DeviceRegistration,
     NurseDirectCreate,
     NurseInvite,
+    NursePasswordSet,
     NursePatch,
 )
 from app.modules.users import service as user_service
@@ -176,3 +177,37 @@ async def patch_nurse(actor, user_id: str, payload: NursePatch, ip_hash: str | N
         ip_hash=ip_hash,
     )
     return profile
+
+
+async def set_nurse_password(actor, user_id: str, payload: NursePasswordSet, ip_hash: str | None = None):
+    """Set a nurse's password directly. Fixes accounts stuck on an invite that never arrived.
+
+    Marks the invite accepted, clears any lockout, ends existing sessions and voids open links.
+    The password is hashed here and never logged or audited.
+    """
+    from app.modules.auth import service as auth_service
+
+    user = await auth_repo.user_by_id(user_id)
+    profile = await NurseProfile.find_one(NurseProfile.user_id == user_id)
+    if not user or not profile or user.kind != "nurse":
+        raise NotFound("Nurse profile not found.")
+    now = datetime.now(UTC)
+    user.password_hash = hash_password(payload.password)
+    user.is_active = True
+    user.invite_accepted_at = user.invite_accepted_at or now
+    user.failed_logins = 0
+    user.last_failed_at = None
+    user.locked_until = None
+    await user.save()
+    await auth_repo_invalidate(user, now)
+    await auth_service.sign_out_user(user)
+    await audit.record(
+        actor, "nurse.password_set", "nurse_profile", user_id, user.name, ip_hash=ip_hash
+    )
+    return {"user_id": user_id, "status": "password_set"}
+
+
+async def auth_repo_invalidate(user, now) -> None:
+    from app.modules.users import repository as users_repo
+
+    await users_repo.invalidate_open_links(user.id, now)

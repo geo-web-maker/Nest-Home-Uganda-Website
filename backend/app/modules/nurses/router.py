@@ -16,6 +16,7 @@ from app.modules.nurses.schemas import (
     NurseDetailsResponse,
     NurseDirectCreate,
     NurseInvite,
+    NursePasswordSet,
     NursePatch,
     NurseProfileResponse,
     SupervisorPatch,
@@ -25,6 +26,7 @@ from app.modules.nurses.service import (
     invite_nurse,
     patch_nurse,
     profile_for_user,
+    set_nurse_password,
     register_user_device,
 )
 
@@ -85,11 +87,7 @@ async def create_nurse(
             )
         if not (ctx.is_superadmin or ctx.reach == "all") and payload.supervisor_id != ctx.user_id:
             raise HTTPException(status_code=404, detail="Supervisor not found")
-    try:
-        profile = await invite_nurse(principal, payload)
-    except (Conflict, ValidationFailed) as exc:
-        raise HTTPException(getattr(exc, "status_code", 422), detail=str(exc)) from exc
-    return profile
+    return await invite_nurse(principal, payload)
 
 
 @router.post("/direct", response_model=NurseProfileResponse, status_code=201)
@@ -107,10 +105,19 @@ async def create_nurse_with_password(
                 "No active user was found with that supervisor ID. Use the supervisor's user ID.",
                 {"supervisor_id": "not_found_or_inactive"},
             )
-    try:
-        return await create_nurse_direct(principal, payload)
-    except (Conflict, ValidationFailed) as exc:
-        raise HTTPException(getattr(exc, "status_code", 422), detail=str(exc)) from exc
+    return await create_nurse_direct(principal, payload)
+
+
+@router.post("/{user_id}/password")
+async def set_password_for_nurse(
+    user_id: str,
+    payload: NursePasswordSet,
+    principal: Principal = Depends(require_scopes("nurses:write")),
+):
+    """Superadmin only: set a nurse's password so they can sign in without the emailed invite."""
+    if not principal.is_superadmin:
+        raise HTTPException(status_code=403, detail="Super administrator access required")
+    return await set_nurse_password(principal, user_id, payload)
 
 
 @router.get("/supervisor-options")
@@ -227,12 +234,7 @@ async def update_nurse(
 ):
     if not _nurse_is_in_reach(user_id, ctx):
         raise HTTPException(status_code=404, detail="Nurse profile not found")
-    try:
-        return await patch_nurse(principal, user_id, payload)
-    except NotFound as exc:
-        raise HTTPException(404, detail=str(exc)) from exc
-    except (Conflict, ValidationFailed) as exc:
-        raise HTTPException(422, detail=str(exc)) from exc
+    return await patch_nurse(principal, user_id, payload)
 
 
 @router.patch("/{user_id}/supervisor", response_model=NurseProfileResponse)
