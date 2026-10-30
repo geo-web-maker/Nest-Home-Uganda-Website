@@ -3830,6 +3830,22 @@
         "title": "NurseInvite",
         "type": "object"
       },
+      "NursePasswordSet": {
+        "description": "Superadmin-only: give an invited nurse a working password at once.",
+        "properties": {
+          "password": {
+            "maxLength": 200,
+            "minLength": 12,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "title": "NursePasswordSet",
+        "type": "object"
+      },
       "NursePatch": {
         "properties": {
           "active": {
@@ -9334,6 +9350,62 @@
           }
         ],
         "summary": "Resend Nurse Invite",
+        "tags": [
+          "care-nurses"
+        ]
+      }
+    },
+    "/api/v1/admin/care/nurses/{user_id}/password": {
+      "post": {
+        "description": "Superadmin only: set a nurse's password so they can sign in without the emailed invite.",
+        "operationId": "set_password_for_nurse_api_v1_admin_care_nurses__user_id__password_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NursePasswordSet"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Password For Nurse",
         "tags": [
           "care-nurses"
         ]

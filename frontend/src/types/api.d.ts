@@ -613,6 +613,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/care/nurses/{user_id}/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set Password For Nurse
+         * @description Superadmin only: set a nurse's password so they can sign in without the emailed invite.
+         */
+        post: operations["set_password_for_nurse_api_v1_admin_care_nurses__user_id__password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/care/nurses/{user_id}/revoke-device": {
         parameters: {
             query?: never;
@@ -4170,6 +4190,14 @@ export interface components {
             /** Team Id */
             team_id?: string | null;
         };
+        /**
+         * NursePasswordSet
+         * @description Superadmin-only: give an invited nurse a working password at once.
+         */
+        NursePasswordSet: {
+            /** Password */
+            password: string;
+        };
         /** NursePatch */
         NursePatch: {
             /** Active */
@@ -6845,6 +6873,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_password_for_nurse_api_v1_admin_care_nurses__user_id__password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NursePasswordSet"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
