@@ -4,6 +4,7 @@ import type { CachedVisit } from '../offline/db';
 import { Chip, type ChipKind } from '../ui/Chip';
 import { Icon } from '../ui/Icon';
 import { PillButton } from '../ui/PillButton';
+import { Sheet, SheetActions } from '../ui/Sheet';
 
 type LocationState = 'acquiring' | 'good' | 'low_accuracy' | 'denied' | 'unavailable';
 type Props = { visit: CachedVisit; location: LocationSnapshot | null; locationState: LocationState; busy: boolean; safetyTimerEnabled: boolean; canEnableSafetyTimer: boolean; onSafetyTimerChange: (enabled: boolean) => void; onConfirm: () => void; onCancel: () => void };
@@ -28,9 +29,7 @@ export function ArriveSheet({ visit, location, locationState, busy, safetyTimerE
           ? copy.arrival.denied
           : copy.arrival.unavailable;
 
-  return <div className="sheet-backdrop">
-    <section className="sheet arrival-sheet" role="dialog" aria-modal="true" aria-labelledby="arrive-title">
-      <div className="sheet-handle" aria-hidden="true" />
+  return <Sheet labelledBy="arrive-title" className="arrival-sheet">
       <p className="eyebrow">{copy.arrival.eyebrow}</p>
       <h2 id="arrive-title">{copy.arrival.title} {visit.client_display_name}?</h2>
       <div className="mk-arrival-location">
@@ -47,10 +46,9 @@ export function ArriveSheet({ visit, location, locationState, busy, safetyTimerE
         <span className="mk-safety-toggle-track" aria-hidden="true" />
         <span>{copy.arrival.safetyTimer}</span>
       </label>}
-      <div className="sheet-actions">
+      <SheetActions>
         <PillButton tone="gold" size="full" onClick={onConfirm} disabled={busy}>{busy ? copy.arrival.saving : copy.arrival.confirm}</PillButton>
         <PillButton tone="ghost" size="full" onClick={onCancel} disabled={busy} showArrow={false}>{copy.generic.cancel}</PillButton>
-      </div>
-    </section>
-  </div>;
+      </SheetActions>
+  </Sheet>;
 }

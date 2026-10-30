@@ -2,6 +2,9 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { copy } from '../../copy';
 import { captureLocation } from '../../platform/location';
 import type { LocationSnapshot } from '../../platform/location';
+import { Banner } from '../../ui/Banner';
+import { PillButton } from '../../ui/PillButton';
+import { Sheet, SheetActions } from '../../ui/Sheet';
 
 export type SosSendResult = { caseId?: string | null; serverConfirmed: boolean };
 export type LiveFollowStartResult = { until: string; intervalSeconds: number };
@@ -233,32 +236,29 @@ export function SosControl({
         title={enabled ? holdLabel : copy.shell.sosDisabled}
       >{copy.safety.buttonLabel}</button>
       {open && (
-        <div className="sheet-backdrop" role="presentation">
-          <section className="sheet sos-sheet" role="alertdialog" aria-modal="true" aria-labelledby="sos-title" aria-describedby="sos-description">
-            <div className="sheet-handle" aria-hidden="true" />
+          <Sheet role="alertdialog" labelledBy="sos-title" describedBy="sos-description" className="sos-sheet">
             <h2 id="sos-title">{sent ? copy.safety.recorded : copy.safety.dialog}</h2>
             <p id="sos-description">{copy.safety.emergency}</p>
             {!sent && <p aria-live="polite">{sending ? copy.safety.sending : `${copy.safety.countdown} ${remaining} ${copy.safety.countdownSeconds}`}</p>}
             {error && <p role="alert">{error}</p>}
             {sent && <p role="status">{sendResult?.serverConfirmed ? copy.safety.sentOnline : copy.safety.sentQueued}</p>}
-            {sent && callOptions.length === 0 && <p className="notice">{copy.safety.noContactConfigured}</p>}
+            {sent && callOptions.length === 0 && <Banner tone="warn">{copy.safety.noContactConfigured}</Banner>}
             {sent && callOptions.length > 0 && <div className="sos-call-options" aria-label={copy.safety.callEmergency}>
               {callOptions.map(({ number, label, href }) => <a className="sos-call-link" href={href} key={`${number}:${href}`}>{label} · {number}</a>)}
             </div>}
             {sent && liveFollowEnabled && confirmedServerCase && !safeConfirmed && !follow && onStartFollow && <section className="live-follow-panel">
               <h3>{copy.safety.liveFollowTitle}</h3>
               <p>{copy.safety.liveFollowStart} {liveFollowMinutes} {copy.safety.liveFollowMinutes}. {copy.safety.liveFollowDisclosure}</p>
-              <button type="button" onClick={() => void startFollow()} disabled={startingFollow}>{startingFollow ? copy.safety.liveFollowStarting : copy.safety.liveFollowStartButton}</button>
+              <PillButton type="button" tone="forest" size="full" onClick={() => void startFollow()} disabled={startingFollow}>{startingFollow ? copy.safety.liveFollowStarting : copy.safety.liveFollowStartButton}</PillButton>
             </section>}
             {follow && <section className="live-follow-panel" aria-live="polite"><h3>{copy.safety.liveFollowTitle}</h3><p>{copy.safety.liveFollowActive}</p><p>{copy.safety.liveFollowDeadlineLabel}: {new Date(follow.untilMs).toLocaleString()}</p></section>}
             {followMessage && <p role="status">{followMessage}</p>}
-            {sent && confirmedServerCase && onSafeNow && !safeConfirmed && <button type="button" className="button-secondary sos-safe-button" onClick={() => void reportSafeNow()} disabled={safeSubmitting}>{safeSubmitting ? copy.safety.safeSubmitting : copy.safety.safeNow}</button>}
+            {sent && confirmedServerCase && onSafeNow && !safeConfirmed && <PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={() => void reportSafeNow()} disabled={safeSubmitting}>{safeSubmitting ? copy.safety.safeSubmitting : copy.safety.safeNow}</PillButton>}
             {safeConfirmed && <p role="status">{copy.safety.liveFollowStopped}</p>}
-            {!sent && <div className="sheet-actions"><button type="button" onClick={close}>{copy.safety.cancel}</button></div>}
-            {sent && !sendResult?.serverConfirmed && <div className="sheet-actions"><button type="button" onClick={close}>{copy.safety.closeDetails}</button><a href={smsHref}>{copy.safety.sms}</a></div>}
-            {sent && sendResult?.serverConfirmed && safeConfirmed && <div className="sheet-actions"><button type="button" onClick={close}>{copy.safety.closeDetails}</button></div>}
-          </section>
-        </div>
+            {!sent && <SheetActions><PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={close}>{copy.safety.cancel}</PillButton></SheetActions>}
+            {sent && !sendResult?.serverConfirmed && <SheetActions><PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={close}>{copy.safety.closeDetails}</PillButton><a href={smsHref}>{copy.safety.sms}</a></SheetActions>}
+            {sent && sendResult?.serverConfirmed && safeConfirmed && <SheetActions><PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={close}>{copy.safety.closeDetails}</PillButton></SheetActions>}
+          </Sheet>
       )}
     </>
   );

@@ -60,7 +60,7 @@ export function HistoryScreen({ history, loading, hasMore, onLoadMore, pendingVi
               <div><dt>{copy.history.past}</dt><dd>{label}</dd></div>
               <div><dt>{copy.history.reference}</dt><dd>{item.id}</dd></div>
             </dl>
-            <button type="button" className="mk-history-close" onClick={() => setExpandedVisitId(null)}>{copy.history.hideDetails}</button>
+            <PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={() => setExpandedVisitId(null)}>{copy.history.hideDetails}</PillButton>
           </section>}
         </Card>;
       })}</div>

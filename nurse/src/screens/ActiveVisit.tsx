@@ -25,14 +25,14 @@ export function ActiveVisit({ visit, onNote, onPhoto, onLeave, photosEnabled, em
     {visit.place_address_text && <p className="mk-active-address"><Icon name="pin" />{visit.place_address_text}</p>}
     {visit.instructions && <Card className="mk-active-instructions"><p className="eyebrow">{copy.visit.instructions}</p><p>{visit.instructions}</p></Card>}
     <div className="mk-timer-panel"><Timer startedAt={start} size="lg" /><p>{copy.active.timerExplanation}</p></div>
-    {photosEnabled && visit.photo_rules?.allowed && <Card className="panel active-section mk-active-section">
+    {photosEnabled && visit.photo_rules?.allowed && <Card className="active-section mk-active-section">
       <div className="mk-section-title"><p className="eyebrow">{copy.active.photosTitle} ({photoCount} of 5)</p></div>
       <div className="photo-strip mk-photo-strip">
         {Array.from({ length: Math.min(photoCount, 2) }, (_, index) => <span key={index} className="photo-thumb" aria-label={`${copy.photos.registeredPhoto} ${index + 1}`}><Icon name="check" /></span>)}
         {photoCount < 5 && <button type="button" className="photo-add mk-photo-add" onClick={() => onPhoto(visit)}><Icon name="plus" /><span>{copy.active.addPhoto}</span></button>}
       </div>
     </Card>}
-    <Card className="panel active-section mk-active-section">
+    <Card className="active-section mk-active-section">
       <p className="eyebrow">{copy.active.quickNoteTitle}</p>
       <button type="button" className="quick-note-input mk-quick-note" onClick={() => onNote(visit)}>{copy.active.quickNotePlaceholder}</button>
       <PillButton tone="ghost" showArrow={false} onClick={() => onNote(visit)}>{copy.active.addNote}</PillButton>
