@@ -10,7 +10,7 @@ describe('nurse sign-in screen', () => {
     expect(screen.getByRole('button', { name: /sign in/i })).toBeDisabled();
     expect(screen.getByText('Welcome back')).toBeInTheDocument();
     expect(screen.getByText('Forgot password?')).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /choose colour theme/i })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /choose colour theme/i })).toBeNull();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 

@@ -1,6 +1,5 @@
 import type { FormEvent } from 'react';
 import { copy } from '../copy';
-import { ThemeSwitch } from '../components/ThemeSwitch';
 import { Banner } from '../ui/Banner';
 import { Card } from '../ui/Card';
 import { PillButton } from '../ui/PillButton';
@@ -29,6 +28,5 @@ export function LoginScreen({ identifier, password, busy, online, errorMessage, 
       </form>
       <p className="forgot-password"><span>{copy.login.forgotPassword}</span><small>{copy.login.forgotPasswordHelp}</small></p>
     </Card>
-    <ThemeSwitch />
   </section>;
 }
