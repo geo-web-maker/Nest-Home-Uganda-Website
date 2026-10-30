@@ -537,3 +537,8 @@ small, .muted, .hint { color: var(--mut); }
   .nurse-app--guest { padding-left: 0; }
   .nurse-app--guest .connection-banner { width: min(100% - 3rem, 420px); }
 }
+
+.shell-tools { display: flex; justify-content: flex-end; width: calc(100% - 2rem); max-width: 760px; margin: calc(0.5rem + env(safe-area-inset-top)) auto 0; }
+.theme-toggle { display: inline-grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 2px solid var(--gold); border-radius: 50%; background: var(--surf); color: var(--gold); cursor: pointer; }
+.theme-toggle:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+@media (min-width: 820px) { .shell-tools { width: min(100% - 3rem, 1120px); max-width: none; } }

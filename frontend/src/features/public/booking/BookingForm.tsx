@@ -4,6 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import type { FieldErrors } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
+import { Checkbox } from '../../../components/ui/Checkbox';
 import { Chip } from '../../../components/ui/Chip';
 import { Field } from '../../../components/ui/Field';
 import { plainWhatsappUrl } from '../../../lib/whatsapp';
@@ -126,7 +127,6 @@ export function BookingForm({
         <Button
           variant="whatsapp"
           fullWidth
-          arrow
           href={result.whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
@@ -148,7 +148,6 @@ export function BookingForm({
       <Button
         variant="whatsapp"
         fullWidth
-        arrow
         href={plainWhatsappUrl(whatsappDigits)}
         target="_blank"
         rel="noopener noreferrer"
@@ -271,12 +270,16 @@ export function BookingForm({
         {copy.noteHint} {copy.noteCount(noteLength, NOTE_MAX)}
       </p>
 
-      <div className={styles.consent}>
-        <input id="booking-consent" type="checkbox" aria-required="true" {...register('consent')} />
-        <label htmlFor="booking-consent">
-          {copy.consent} <Link to="/privacy">{copy.privacyLink}</Link>
-        </label>
-      </div>
+      <Checkbox
+        className={styles.consent}
+        aria-required="true"
+        label={
+          <>
+            {copy.consent} <Link to="/privacy">{copy.privacyLink}</Link>
+          </>
+        }
+        {...register('consent')}
+      />
       {errors.consent ? (
         <p className={styles.error} role="alert">
           {errors.consent.message}
@@ -295,12 +298,11 @@ export function BookingForm({
         <div className={styles.failure} role="alert">
           <p>{phase === 'rate_limited' ? copy.rateLimited : copy.sendFailed}</p>
           <div className={styles.fallbacks}>
-            <Button href={callHref} arrow onClick={() => onContactClick?.('call')}>
+            <Button href={callHref} onClick={() => onContactClick?.('call')}>
               {copy.callNow}
             </Button>
             <Button
               variant="whatsapp"
-              arrow
               href={plainWhatsappUrl(whatsappDigits)}
               target="_blank"
               rel="noopener noreferrer"
@@ -312,7 +314,7 @@ export function BookingForm({
         </div>
       ) : null}
 
-      <Button type="submit" fullWidth arrow disabled={busy} aria-busy={busy}>
+      <Button type="submit" fullWidth disabled={busy} aria-busy={busy}>
         {busy ? copy.sending : copy.send}
       </Button>
     </form>

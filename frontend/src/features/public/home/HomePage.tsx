@@ -62,8 +62,8 @@ export function HomePage() {
             </h1>
             <p className={styles.lead}>{t('home.lead')}</p>
             <div className={styles.actions}>
-              <Button href="/contact" arrow>{t('home.primaryAction')}</Button>
-              <Button href="/services" variant="forest" arrow>
+              <Button href="/contact">{t('home.primaryAction')}</Button>
+              <Button href="/services" variant="outline">
                 {t('home.secondaryAction')}
               </Button>
             </div>
@@ -103,7 +103,7 @@ export function HomePage() {
             <p aria-busy="true">{t('services.loading')}</p>
           )}
           <div className={styles.center}>
-            <Button href="/services" variant="outline" arrow>
+            <Button href="/services" variant="outline">
               {t('home.allServices')}
             </Button>
           </div>
@@ -168,7 +168,7 @@ export function HomePage() {
               ))}
             </ul>
             <div className={styles.center}>
-              <Button href="/team" variant="outline" arrow>
+              <Button href="/team" variant="outline">
                 {t('home.meetTeam')}
               </Button>
             </div>

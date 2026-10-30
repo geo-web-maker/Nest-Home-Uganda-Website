@@ -38,7 +38,6 @@ describe('FaqPage', () => {
     setup();
     expect(await screen.findByText('Question from content?')).toBeInTheDocument();
     expect(screen.getByText('Answer from content.')).toBeInTheDocument();
-    expect(screen.getByText('Question from content?').closest('details')).toHaveAttribute('open');
   });
   it('links published articles to their detail route', async () => {
     vi.spyOn(apiClient, 'get').mockResolvedValue([

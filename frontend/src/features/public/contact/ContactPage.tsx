@@ -51,13 +51,12 @@ export function ContactPage() {
         <div className={`container ${styles.columns}`}>
           <Reveal className={styles.left}>
             <div className={styles.actions}>
-              <Button href={`tel:${dial}`} arrow onClick={() => trackClick('call', pathname, baseUrl)}>
+              <Button href={`tel:${dial}`} onClick={() => trackClick('call', pathname, baseUrl)}>
                 {t('contact.callBig', { phone })}
               </Button>
               <Button
                 href={plainWhatsappUrl(whatsapp)}
                 variant="whatsapp"
-                arrow
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => trackClick('whatsapp', pathname, baseUrl)}
@@ -67,7 +66,7 @@ export function ContactPage() {
             </div>
             <div className={styles.cards}>
               <InfoCard label={t('contact.officeLabel')} value={office} />
-              <InfoCard label={t('contact.hoursLabel')} value={hours || t('contact.hoursMissing')} />
+              {hours ? <InfoCard label={t('contact.hoursLabel')} value={hours} /> : null}
             </div>
             <MapPlaceholder
               label={t('contact.mapLabel')}

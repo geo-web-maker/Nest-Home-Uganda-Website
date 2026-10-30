@@ -3710,6 +3710,73 @@
         "title": "NurseDetailsResponse",
         "type": "object"
       },
+      "NurseDirectCreate": {
+        "description": "Superadmin-only: create a nurse with a chosen password so the account works at once.",
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 200,
+            "minLength": 12,
+            "title": "Password",
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 24,
+            "minLength": 9,
+            "title": "Phone",
+            "type": "string"
+          },
+          "staff_number": {
+            "maxLength": 40,
+            "minLength": 2,
+            "title": "Staff Number",
+            "type": "string"
+          },
+          "supervisor_id": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "minLength": 8,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supervisor Id"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Id"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "phone",
+          "staff_number",
+          "password"
+        ],
+        "title": "NurseDirectCreate",
+        "type": "object"
+      },
       "NurseInvite": {
         "properties": {
           "email": {
@@ -8900,6 +8967,53 @@
           }
         ],
         "summary": "Create Nurse",
+        "tags": [
+          "care-nurses"
+        ]
+      }
+    },
+    "/api/v1/admin/care/nurses/direct": {
+      "post": {
+        "description": "Superadmin only: create a nurse with a chosen password (testing and hand-over).",
+        "operationId": "create_nurse_with_password_api_v1_admin_care_nurses_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NurseDirectCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NurseProfileResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Nurse With Password",
         "tags": [
           "care-nurses"
         ]

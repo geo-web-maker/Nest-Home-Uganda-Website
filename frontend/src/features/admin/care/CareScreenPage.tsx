@@ -6,6 +6,7 @@ import { ApiError, apiClient } from '../../../lib/api/client';
 import type { DataColumn } from '../../../components/admin/DataTable';
 import { CareTable } from './components/CareTable';
 import { CareSheet } from './components/CareSheet';
+import { CreateNurseSheet } from './nurses/CreateNurseSheet';
 import { InviteNurseSheet } from './nurses/InviteNurseSheet';
 import { FilterBar } from '../../../components/admin/FilterBar';
 import { PageHeader } from '../../../components/admin/PageHeader';
@@ -139,6 +140,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
   const [settings, setSettings] = useState<Row[]>([]);
   const [readiness, setReadiness] = useState<Row | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [auditFilters, setAuditFilters] = useState({
     actor: '',
     entity: '',
@@ -676,6 +678,9 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
           {hasScopes(user, ['nurses:write']) && (
             <Button type="button" onClick={() => setInviteOpen(true)}>Invite nurse</Button>
           )}
+          {user?.is_superadmin && (
+            <Button type="button" variant="outline" onClick={() => setCreateOpen(true)}>Create nurse with password</Button>
+          )}
         </div>
       );
     if (screen === 'sos')
@@ -902,6 +907,16 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
           onCreated={() => {
             setInviteOpen(false);
             setNotice('Nurse invitation created.');
+            void load();
+          }}
+        />
+      )}
+      {screen === 'nurses' && createOpen && (
+        <CreateNurseSheet
+          onClose={() => setCreateOpen(false)}
+          onCreated={() => {
+            setCreateOpen(false);
+            setNotice('Nurse account created. They can sign in with the password you set.');
             void load();
           }}
         />

@@ -1,43 +1,50 @@
 .card {
   min-width: 0;
-  padding: 10px 10px 16px;
-  border: 1px solid color-mix(in srgb, var(--leaf) 18%, var(--line));
-  border-bottom: 4px solid color-mix(in srgb, var(--leaf) 22%, var(--line));
-  border-radius: 22px;
-  background: var(--surf);
   text-align: center;
-  box-shadow: var(--shadow-1);
 }
 .photoFrame {
   display: grid;
   place-items: center;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 3/4;
   overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 15px;
-  margin-bottom: 14px;
-  background: var(--straw);
+  border: 2px solid var(--gold);
+  border-radius: var(--arch);
+  margin-bottom: 10px;
+  background: var(--surf);
 }
-.photo { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; transition: transform var(--dur-slow) var(--ease-out); }
-@media (hover: hover) and (pointer: fine) { .card:hover .photo { transform: scale(1.03); } }
+.photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .card:hover .photo {
+    transform: scale(1.03);
+  }
+}
 .placeholder {
   display: grid;
   place-items: center;
   width: 100%;
   height: 100%;
-  padding: 10px;
-  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--straw) 88%, var(--surf)) 0 8px, var(--surf) 8px 16px);
+  background:
+    repeating-linear-gradient(135deg, var(--straw) 0 8px, transparent 8px 16px), var(--surf);
   color: var(--mut);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
 }
-.name { margin: 0 0 8px; color: var(--ink); font: 700 1rem var(--sans); }
+.name {
+  margin: 0 0 4px;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 1rem;
+  font-weight: 700;
+}
 .role {
-  display: inline-block;
   margin: 0;
-  padding: 6px 10px;
-  border: 1px dashed color-mix(in srgb, var(--gold) 70%, var(--line));
-  border-radius: var(--r-sm, 12px);
   color: var(--mut);
-  font-size: 0.8rem;
-  line-height: 1.4;
+  font-size: 0.88rem;
+  line-height: 1.45;
 }

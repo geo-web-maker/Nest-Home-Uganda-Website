@@ -7,10 +7,10 @@ import { useSiteSettings } from '../../lib/queries/site';
 import { cx } from '../../lib/cx';
 import { Logo } from '../brand/Logo';
 import { Button } from '../ui/Button';
-import { ThemeSwitch } from '../ui/ThemeSwitch';
+import { ThemeToggle } from './ThemeToggle';
 import styles from './Header.module.css';
 
-type MenuId = 'services';
+type MenuId = 'services' | 'about';
 
 interface MenuItem {
   to: string;
@@ -118,6 +118,12 @@ export function Header() {
       label: service.name,
     })),
   ];
+  const aboutItems: MenuItem[] = [
+    { to: '/about', label: t('common:nav.about') },
+    { to: '/team', label: t('site:header.team') },
+    { to: '/areas', label: t('site:header.areas') },
+    { to: '/careers', label: t('common:nav.careers') },
+  ];
   const phone = site.business.phone;
   const tel = `tel:${normaliseUgPhone(phone) ?? phone.replace(/\s/g, '')}`;
 
@@ -160,15 +166,6 @@ export function Header() {
             />
             <li>
               <Link
-                to="/about"
-                className={styles.link}
-                aria-current={pathname === '/about' ? 'page' : undefined}
-              >
-                {t('common:nav.about')}
-              </Link>
-            </li>
-            <li>
-              <Link
                 to="/how-it-works"
                 className={styles.link}
                 aria-current={pathname === '/how-it-works' ? 'page' : undefined}
@@ -176,24 +173,14 @@ export function Header() {
                 {t('common:nav.howItWorks')}
               </Link>
             </li>
-            <li>
-              <Link
-                to="/team"
-                className={styles.link}
-                aria-current={pathname === '/team' ? 'page' : undefined}
-              >
-                {t('common:nav.team')}
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/areas"
-                className={styles.link}
-                aria-current={pathname === '/areas' ? 'page' : undefined}
-              >
-                {t('common:nav.areas')}
-              </Link>
-            </li>
+            <NavMenu
+              id="about"
+              label={t('common:nav.about')}
+              items={aboutItems}
+              pathname={pathname}
+              open={isOpen('about')}
+              onOpenChange={setMenuOpen('about')}
+            />
             <li>
               <Link
                 to="/faq"
@@ -212,20 +199,12 @@ export function Header() {
                 {t('common:nav.contact')}
               </Link>
             </li>
-            <li className={styles.themeItem}>
-              <ThemeSwitch
-                inverse
-                compact
-                label={t('common:theme.label')}
-                lightLabel={t('common:theme.light')}
-                darkLabel={t('common:theme.dark')}
-              />
-            </li>
           </ul>
         </nav>
 
         <div className={styles.actions}>
-          <Button href={tel} size="header" arrow>
+          <ThemeToggle label={t('common:theme.dark')} />
+          <Button href={tel} size="header">
             {t('common:actions.call')}
           </Button>
           <button

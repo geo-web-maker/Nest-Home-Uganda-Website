@@ -1,34 +1,132 @@
 .card {
   position: relative;
   display: flex;
-  flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
-  min-height: 100%;
-  padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--leaf) 20%, var(--line));
-  border-bottom: 4px solid color-mix(in srgb, var(--leaf) 22%, var(--line));
-  border-radius: 22px;
+  gap: 14px;
+  padding: 20px;
   background: var(--surf);
+  border: 1px solid var(--line);
+  border-radius: 24px;
   color: var(--ink);
   text-align: left;
   text-decoration: none;
-  box-shadow: var(--shadow-1);
-  transition: border-color var(--dur-base) var(--ease-standard), transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+  transition:
+    border-color var(--dur-base) var(--ease-standard),
+    transform var(--dur-base) var(--ease-out);
 }
-.card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: var(--shadow-2); opacity: 0; pointer-events: none; transition: opacity var(--dur-base) var(--ease-out); }
-.thumb { flex: none; width: 48px; height: 58px; overflow: hidden; border: 1px solid var(--gold); border-radius: var(--arch); background: var(--leaf); }
-.photo { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform var(--dur-slow) var(--ease-out); }
-.tile { display: grid; place-items: center; width: 100%; height: 100%; background: var(--leaf); color: var(--on-leaf); }
-.tile svg { width: 28px; height: 28px; }
-.number { color: var(--on-leaf); font: 700 1rem var(--serif); }
-.body { display: block; min-width: 0; }
-.name { color: var(--ink); font-size: 1.02rem; line-height: 1.25; }
-.summary { display: block; margin-top: 6px; color: var(--mut); font-size: 0.88rem; line-height: 1.5; }
+
+/* Shadow lives on a pseudo-element so only opacity animates. */
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--shadow-2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+
 @media (hover: hover) and (pointer: fine) {
-  .card:hover { border-color: var(--gold); transform: translateY(-3px); }
-  .card:hover::after { opacity: 1; }
-  .card:hover .photo { transform: scale(1.03); }
+  .card:hover {
+    border-color: var(--gold);
+    transform: translateY(-3px);
+  }
+
+  .card:hover::after {
+    opacity: 1;
+  }
+
+  .card:hover .photo {
+    transform: scale(1.03);
+  }
 }
-.card:active { transform: scale(0.99); }
-@media (min-width: 700px) { .card { padding: 18px; } .thumb { width: 50px; height: 60px; } }
+
+.card:active {
+  transform: scale(0.99);
+}
+
+/* Phone: row layout, 68 x 84 arch thumb on the left. */
+.thumb {
+  flex: none;
+  width: 68px;
+  height: 84px;
+  overflow: hidden;
+  border: 2px solid var(--gold);
+  border-radius: var(--arch);
+  background: var(--leaf);
+}
+
+.photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+.tile {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background: var(--leaf);
+}
+
+.tile svg {
+  width: 34px;
+  height: 34px;
+}
+
+.number {
+  color: var(--onf);
+  font: 700 1.05rem var(--serif);
+}
+
+.body {
+  display: block;
+  min-width: 0;
+}
+
+.name {
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.summary {
+  display: block;
+  margin-top: 4px;
+  color: var(--mut);
+  font-size: 0.95rem;
+}
+
+/* Tablet and up: column layout, full-width thumb. */
+@media (min-width: 700px) {
+  .card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .thumb {
+    width: 100%;
+    height: 190px;
+    border-radius: 18px;
+  }
+
+  .tile svg {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+/* Desktop: four columns, so the thumb is shorter. */
+@media (min-width: 1040px) {
+  .thumb {
+    height: 150px;
+  }
+
+  .tile svg {
+    width: 48px;
+    height: 48px;
+  }
+}

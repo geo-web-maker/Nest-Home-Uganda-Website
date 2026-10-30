@@ -23,7 +23,7 @@ describe('PrivacyPage', () => {
   });
   it('uses the exact client-supplied placeholder for draft legal text', () => {
     setup();
-    expect(screen.getAllByText('client to supply')).toHaveLength(3);
+    expect(screen.getAllByText('client to supply')).toHaveLength(6);
   });
   it('displays the legal review notice', () => {
     setup();
@@ -33,6 +33,6 @@ describe('PrivacyPage', () => {
     vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('offline'));
     setup();
     expect(await screen.findByRole('alert')).toBeInTheDocument();
-    expect(screen.getAllByText('client to supply')).toHaveLength(3);
+    expect(screen.getAllByText('client to supply')).toHaveLength(6);
   });
 });

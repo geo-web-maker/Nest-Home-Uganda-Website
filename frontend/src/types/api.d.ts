@@ -500,6 +500,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/care/nurses/direct": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Nurse With Password
+         * @description Superadmin only: create a nurse with a chosen password (testing and hand-over).
+         */
+        post: operations["create_nurse_with_password_api_v1_admin_care_nurses_direct_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/care/nurses/supervisor-options": {
         parameters: {
             query?: never;
@@ -4109,6 +4129,29 @@ export interface components {
             person: components["schemas"]["NurseDetailsPerson"];
             profile: components["schemas"]["NurseDetailsProfile"];
         };
+        /**
+         * NurseDirectCreate
+         * @description Superadmin-only: create a nurse with a chosen password so the account works at once.
+         */
+        NurseDirectCreate: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Name */
+            name: string;
+            /** Password */
+            password: string;
+            /** Phone */
+            phone: string;
+            /** Staff Number */
+            staff_number: string;
+            /** Supervisor Id */
+            supervisor_id?: string | null;
+            /** Team Id */
+            team_id?: string | null;
+        };
         /** NurseInvite */
         NurseInvite: {
             /**
@@ -6553,6 +6596,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["NurseInvite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NurseProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_nurse_with_password_api_v1_admin_care_nurses_direct_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NurseDirectCreate"];
             };
         };
         responses: {

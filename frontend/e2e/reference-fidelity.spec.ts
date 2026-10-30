@@ -2,11 +2,8 @@ import { expect, test } from '@playwright/test';
 import { json, mockApi } from './helpers';
 import { mockAdminApi, signInReferenceAdmin } from './admin-fixtures';
 
-const DIRECT_HEADER_LINKS = ['Home', 'About', 'How it works', 'Team', 'Areas', 'FAQ', 'Contact'];
-const COMPANY_FOOTER_LINKS = [
-  'Our team', 'Areas we serve', 'FAQ and care tips', 'About us',
-  'Privacy and terms', 'Staff login',
-];
+const PUBLIC_HEADER_LINKS = ['Home', 'How it works', 'FAQ', 'Contact'];
+const ABOUT_MENU_LINKS = ['About', 'Team', 'Areas', 'Careers'];
 
 test.describe('public website vs reference mockup', () => {
   test('desktop primary navigation follows the canonical page order', async ({ page }) => {
@@ -15,31 +12,37 @@ test.describe('public website vs reference mockup', () => {
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: 'Main' });
     const primaryLabels = await nav.locator(':scope > ul > li').evaluateAll((items) =>
-      items.map((item) => item.querySelector(':scope > a, :scope > button')?.textContent?.trim() ?? '').filter(Boolean),
+      items.map((item) => item.querySelector('a, button')?.textContent?.trim() ?? ''),
     );
-    expect(primaryLabels).toEqual(['Home', 'Services', 'About', 'How it works', 'Team', 'Areas', 'FAQ', 'Contact']);
-    for (const label of DIRECT_HEADER_LINKS) {
+    expect(primaryLabels).toEqual(['Home', 'Services', 'How it works', 'About', 'FAQ', 'Contact']);
+    for (const label of PUBLIC_HEADER_LINKS) {
       await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
     }
     const servicesMenu = nav.getByRole('button', { name: 'Services' });
     await expect(servicesMenu).toBeVisible();
     await servicesMenu.click();
     await expect(nav.getByRole('link', { name: 'Services', exact: true })).toBeVisible();
-    await expect(nav.getByRole('link', { name: 'Elder care', exact: true })).toBeVisible();
-    await expect(nav.getByRole('group', { name: 'Theme' })).toBeVisible();
-    await expect(nav.getByRole('link', { name: 'Careers', exact: true })).toHaveCount(0);
-
+    const aboutMenu = nav.getByRole('button', { name: 'About', exact: true });
+    await expect(aboutMenu).toBeVisible();
+    await aboutMenu.click();
+    await expect(aboutMenu).toHaveAttribute('aria-expanded', 'true');
+    await expect(servicesMenu).toHaveAttribute('aria-expanded', 'false');
+    for (const label of ABOUT_MENU_LINKS) {
+      await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
+    }
     const footer = page.locator('footer');
     const explore = footer.getByRole('navigation', { name: 'Explore' });
     const company = footer.getByRole('navigation', { name: 'Company' });
     await expect(explore).toBeVisible();
-    expect((await explore.getByRole('link').allTextContents()).map((label) => label.trim())).toEqual([
+    expect(await explore.getByRole('link').allTextContents()).toEqual([
       'Services', 'How it works', 'Contact',
     ]);
-    expect((await company.getByRole('link').allTextContents()).map((label) => label.trim())).toEqual(COMPANY_FOOTER_LINKS);
+    expect(await company.getByRole('link').allTextContents()).toEqual([
+      'Our team', 'Areas we serve', 'FAQ and care tips', 'About us', 'Careers', 'Privacy and terms', 'Staff login',
+    ]);
   });
 
-  test('phone/tablet menu stays collapsible and primary destinations remain reachable', async ({ page }) => {
+  test('phone/tablet menu stays collapsible and all primary destinations remain reachable', async ({ page }) => {
     await mockApi(page);
     for (const width of [320, 390, 820]) {
       await page.setViewportSize({ width, height: 850 });
@@ -48,12 +51,12 @@ test.describe('public website vs reference mockup', () => {
       await expect(menuButton).toBeVisible();
       await menuButton.click();
       const nav = page.getByRole('navigation', { name: 'Main' });
-      for (const label of ['Home', 'About', 'How it works', 'Team', 'Areas', 'FAQ', 'Contact']) {
+      await expect(nav.getByRole('link', { name: 'Home', exact: true })).toBeVisible();
+      await expect(nav.getByRole('link', { name: 'FAQ', exact: true })).toBeVisible();
+      await nav.getByRole('button', { name: 'About', exact: true }).click();
+      for (const label of ABOUT_MENU_LINKS) {
         await expect(nav.getByRole('link', { name: label, exact: true })).toBeVisible();
       }
-      await nav.getByRole('button', { name: 'Services', exact: true }).click();
-      await expect(nav.getByRole('link', { name: 'Services', exact: true })).toBeVisible();
-      await expect(nav.getByRole('group', { name: 'Theme' })).toBeVisible();
       const dimensions = await page.evaluate(() => ({
         viewport: document.documentElement.clientWidth,
         content: document.documentElement.scrollWidth,
@@ -62,7 +65,7 @@ test.describe('public website vs reference mockup', () => {
     }
   });
 
-  test('the light palette ignores dark OS preference until the user explicitly chooses Dark', async ({ page }) => {
+  test('the homepage preserves the reference section structure and palette under dark OS preference', async ({ page }) => {
     await mockApi(page);
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -77,17 +80,6 @@ test.describe('public website vs reference mockup', () => {
     }));
     expect(tokens.background).toBe('#F3F8F1');
     expect(tokens.scheme).toBe('light');
-
-    await page.getByRole('group', { name: 'Theme' }).getByRole('button', { name: 'Dark' }).click();
-    const darkTokens = await page.evaluate(() => ({
-      background: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),
-      scheme: getComputedStyle(document.documentElement).colorScheme,
-      meta: document.querySelector('meta[name="theme-color"]')?.getAttribute('content'),
-    }));
-    expect(darkTokens.background).toBe('#0C1A12');
-    expect(darkTokens.scheme).toBe('dark');
-    expect(darkTokens.meta).toBe('#091410');
-    await expect.poll(() => page.evaluate(() => window.localStorage.getItem('nest-theme'))).toBe('dark');
   });
 
   for (const width of [320, 390, 820, 1280]) {
@@ -169,8 +161,6 @@ test.describe('public website vs reference mockup', () => {
     });
   }
 });
-
-
 
 test.describe('admin route coverage and responsive shell', () => {
   test('every implemented admin navigation entry opens its corresponding screen', async ({ page }) => {

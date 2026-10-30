@@ -216,7 +216,7 @@ export function DataRetentionPage() {
   return <section className={styles.page}><PageHeader title="Data and retention" subtitle="Current retention settings, go-live evidence, and data-subject request entry point." />
     {(settings.isPending || readiness.isPending) ? <p role="status">Loading retention and readiness evidence…</p> : null}
     {(settings.isError || readiness.isError) ? <div role="alert"><p>Some retention evidence could not be loaded. No retention job or deletion success is inferred from settings alone.</p><Button variant="outline" onClick={() => { void settings.refetch(); void readiness.refetch(); }}>Retry</Button></div> : null}
-    {settings.data ? <DataTable
+    {settings.data ? <div className={styles.card}><DataTable
     columns={[
       { key: 'data-class', header: 'Data class', cell: (row) => row.id.replace('retention.', '').replaceAll('_', ' ') },
       { key: 'configured-months', header: 'Configured months', cell: (row) => String(row.value) },

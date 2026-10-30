@@ -1,6 +1,6 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createQueryClient } from '../../lib/queries/queryClient';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { Header } from './Header';
@@ -48,39 +48,57 @@ describe('Header', () => {
     expect(screen.getByRole('link', { name: 'Call' })).toHaveAttribute('href', 'tel:+256787499988');
   });
 
-  it('uses the reference navigation order with About, Team and Areas as direct links', () => {
+  it('groups About, Team, Areas and Careers under an About menu', () => {
     const { nav } = setup();
-    const topLevel = Array.from(nav.querySelectorAll(':scope > ul > li')).map((li) => {
-      const link = li.querySelector(':scope > a, :scope > button');
-      return link?.textContent?.trim();
-    }).filter(Boolean);
-    expect(topLevel).toEqual(['Home', 'Services', 'About', 'How it works', 'Team', 'Areas', 'FAQ', 'Contact']);
+    const trigger = within(nav).getByRole('button', { name: 'About' });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveAttribute('aria-controls', 'about-menu');
     for (const [name, href] of [
       ['About', '/about'],
       ['Team', '/team'],
       ['Areas', '/areas'],
+      ['Careers', '/careers'],
     ] as const) {
       expect(within(nav).getByRole('link', { name })).toHaveAttribute('href', href);
     }
-    expect(within(nav).getByRole('group', { name: 'Theme' })).toBeInTheDocument();
-    expect(within(nav).queryByRole('link', { name: 'Careers' })).not.toBeInTheDocument();
-    expect(nav.querySelector('#site-nav > ul > li > a[href="/careers"]')).toBeNull();
+    // Grouped pages are no longer top-level links.
+    expect(document.querySelector('#site-nav > ul > li > a[href="/team"]')).toBeNull();
+    expect(document.querySelector('#site-nav > ul > li > a[href="/careers"]')).toBeNull();
   });
 
-  it('expands the Services menu and closes it with Escape', async () => {
+  it('expands the About menu on click and keeps only one menu open at a time', async () => {
     setup();
+    const about = screen.getByRole('button', { name: 'About' });
     const services = screen.getByRole('button', { name: 'Services' });
     await userEvent.click(services);
     expect(services).toHaveAttribute('aria-expanded', 'true');
-    await userEvent.keyboard('{Escape}');
+    await userEvent.click(about);
+    expect(about).toHaveAttribute('aria-expanded', 'true');
     expect(services).toHaveAttribute('aria-expanded', 'false');
-    expect(services).toHaveFocus();
+    await userEvent.click(about);
+    expect(about).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('marks direct top-level pages as current', () => {
-    const { nav } = setup('/about');
-    expect(within(nav).getByRole('link', { name: 'About' })).toHaveAttribute('aria-current', 'page');
-    expect(within(nav).getByRole('link', { name: 'Contact' })).not.toHaveAttribute('aria-current');
+  it('opens the About menu with the keyboard and closes it on Escape', async () => {
+    setup();
+    const trigger = screen.getByRole('button', { name: 'About' });
+    act(() => trigger.focus());
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.keyboard('{Escape}');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(trigger).toHaveFocus();
+  });
+
+  it('marks a grouped page as current on its link', () => {
+    const { nav } = setup('/careers');
+    expect(within(nav).getByRole('link', { name: 'Careers' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(within(nav).getByRole('button', { name: 'About' })).toHaveAttribute(
+      'data-group-current',
+      'true',
+    );
   });
 
   it('lists the services in the dropdown with a link to each', () => {
@@ -90,6 +108,15 @@ describe('Header', () => {
       '/services/elderly-care',
     );
     expect(within(nav).getByRole('link', { name: 'Postnatal care' })).toBeInTheDocument();
+  });
+
+  it('marks the current navigation destination', () => {
+    const { nav } = setup('/about');
+    expect(within(nav).getByRole('link', { name: 'About' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(within(nav).getByRole('link', { name: 'Contact' })).not.toHaveAttribute('aria-current');
   });
 
   it('toggles the phone menu and closes it on Escape and on route change', async () => {

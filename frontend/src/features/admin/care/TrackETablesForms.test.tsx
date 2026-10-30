@@ -29,7 +29,7 @@ describe('Track E admin care table/form baseline', () => {
       'Visit reports',
       'Care settings',
     ]) {
-      expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: label })).toBeInTheDocument();
     }
   });
 });

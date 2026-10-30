@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useEffect, useRef } from 'react';
 import { copy } from '../copy';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { SosControl, type LiveFollowStartResult, type SosSendResult } from '../features/sos/SosSheet';
 import type { LocationSnapshot } from '../platform/location';
 
@@ -42,6 +43,7 @@ export function AppShell({ children, online, queued, authenticated, message, sos
         <h1>{copy.appName}</h1>
         <p>{copy.offlinePurpose}</p>
       </header>
+      <div className="shell-tools"><ThemeToggle /></div>
       {(authenticated || !online) && <div className={`connection-banner ${online ? 'is-online' : 'is-offline'}`} role="status" aria-live="polite">
         <strong role="heading" aria-level={2}>{bannerLabel}</strong>
         <span>{bannerText}</span>

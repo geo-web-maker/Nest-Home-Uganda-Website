@@ -1,4 +1,6 @@
 .shell {
+  /* Public pages keep the original leaf green; the shared token was darkened for admin contrast. */
+  --leaf: #1f8a5b;
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
@@ -63,5 +65,22 @@
 @media (min-width: 1040px) {
   .shell {
     padding-bottom: 0;
+  }
+}
+
+:global(:root[data-theme='dark']) .shell {
+  --leaf: #58bc88;
+}
+
+/* Default-size buttons on public pages keep the original pill (shared Button grew to 52px for admin). */
+.shell [data-variant][data-size='default'] {
+  gap: 0;
+  min-height: 46px;
+}
+
+@media (max-width: 480px) {
+  .shell [data-variant][data-size='default'] {
+    max-width: none;
+    font-size: 0.98rem;
   }
 }

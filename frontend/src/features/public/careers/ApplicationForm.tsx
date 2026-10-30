@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Field, requiredProps } from '../../../components/ui/Field';
 import { Button } from '../../../components/ui/Button';
+import { Checkbox } from '../../../components/ui/Checkbox';
 import type { JobPublic } from './types';
 import styles from './ApplicationForm.module.css';
 
@@ -232,17 +233,17 @@ export function ApplicationForm({ jobs, selectedJobId = null }: ApplicationFormP
           />
         </label>
       </div>
-      <label className={styles.consent}>
-        <input
-          type="checkbox"
-          checked={values.consent}
-          onChange={(event) => update('consent', event.target.checked)}
-          required
-        />
-        <span>
-          {t('careers.form.consent')} <a href="/privacy">{t('careers.form.privacy')}</a>
-        </span>
-      </label>
+      <Checkbox
+        className={styles.consent}
+        checked={values.consent}
+        onChange={(event) => update('consent', event.target.checked)}
+        required
+        label={
+          <>
+            {t('careers.form.consent')} <a href="/privacy">{t('careers.form.privacy')}</a>
+          </>
+        }
+      />
       {fieldError && (
         <p className={styles.error} role="alert">
           {fieldError}

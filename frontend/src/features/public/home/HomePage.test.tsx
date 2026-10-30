@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HomePage } from './HomePage';
@@ -25,13 +25,7 @@ describe('HomePage', () => {
     );
     for (const link of screen.getAllByRole('link', { name: 'Book a home visit' }))
       expect(link).toHaveAttribute('href', '/contact');
-    const servicesLink = screen.getByRole('link', { name: 'Our services' });
-    expect(servicesLink).toHaveAttribute('href', '/services');
-    const hero = screen.getByRole('heading', { level: 1 }).closest('section');
-    expect(hero).not.toBeNull();
-    const primary = within(hero as HTMLElement).getByRole('link', { name: 'Book a home visit' });
-    expect(primary.querySelector('[aria-hidden="true"]')).toHaveTextContent('→');
-    expect(servicesLink).toHaveAttribute('data-variant', 'forest');
+    expect(screen.getByRole('link', { name: 'Our services' })).toHaveAttribute('href', '/services');
   });
   it('renders the promise and process sections', () => {
     setup();

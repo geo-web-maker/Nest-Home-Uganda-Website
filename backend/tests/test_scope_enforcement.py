@@ -21,6 +21,9 @@ SIGNED_PHOTO_STREAM = "/api/v1/admin/care/visits/{visit_id}/photos/{photo_id}/st
 SIGNED_FIELD_PHOTO_STREAM = "/api/v1/field/visits/{visit_id}/photos/{photo_id}/stream"
 SIGNED_PHOTO_STREAMS = {SIGNED_PHOTO_STREAM, SIGNED_FIELD_PHOTO_STREAM}
 SUPERADMIN_ONLY_PATHS = {"/api/v1/admin/app-releases"}
+# A GET that lists assignment candidates (users who could supervise a nurse). It is gated by
+# nurses:write on purpose, so read-only staff cannot enumerate accounts.
+WRITE_GATED_READS = {"/api/v1/admin/care/nurses/supervisor-options"}
 
 
 def admin_cases() -> list[tuple[str, str]]:
@@ -78,7 +81,7 @@ def test_every_admin_route_declares_scopes(method: str, path: str) -> None:
 @pytest.mark.parametrize(("method", "path"), admin_cases())
 def test_read_and_write_split(method: str, path: str) -> None:
     required = route_required_scopes(route_for(method, path)) or ()
-    if method == "GET":
+    if method == "GET" and path not in WRITE_GATED_READS:
         assert not any(s.endswith(":write") for s in required)
     if method in WRITE_METHODS:
         # Action-specific scopes are write capabilities too. They are intentionally

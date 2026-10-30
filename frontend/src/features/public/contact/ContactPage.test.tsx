@@ -45,12 +45,11 @@ describe('ContactPage', () => {
     );
   });
 
-  it('shows the hours placeholder until opening hours are supplied', () => {
+  it('shows the office card and hides the hours card until hours exist', () => {
     setup();
     expect(screen.getByText('Office')).toBeInTheDocument();
     expect(screen.getByText('Kampala, Uganda')).toBeInTheDocument();
-    expect(screen.getByText('Hours')).toBeInTheDocument();
-    expect(screen.getByText('Add opening hours')).toBeInTheDocument();
+    expect(screen.queryByText('Hours')).not.toBeInTheDocument();
   });
 
   it('renders the booking form and the map slot, with no call-to-action band', () => {

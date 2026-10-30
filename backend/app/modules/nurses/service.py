@@ -11,7 +11,12 @@ from app.modules.auth.models import User
 from app.modules.auth.scopes import SCOPE_PRESETS
 from app.modules.nurses.models import Device, NurseProfile
 from app.modules.nurses.repository import get_profile_for_user, register_device
-from app.modules.nurses.schemas import DeviceRegistration, NurseInvite, NursePatch
+from app.modules.nurses.schemas import (
+    DeviceRegistration,
+    NurseDirectCreate,
+    NurseInvite,
+    NursePatch,
+)
 from app.modules.users import service as user_service
 
 
@@ -67,6 +72,61 @@ async def invite_nurse(actor, payload: NurseInvite, ip_hash: str | None = None):
     await audit.record(
         actor,
         "nurse.invite",
+        "nurse_profile",
+        str(user.id),
+        payload.name,
+        after={
+            "staff_number": profile.staff_number,
+            "supervisor_id": profile.supervisor_id,
+            "scopes": sorted(user.scopes),
+        },
+        ip_hash=ip_hash,
+    )
+    return profile
+
+
+async def create_nurse_direct(actor, payload: NurseDirectCreate, ip_hash: str | None = None):
+    """Create an active nurse with the given password. No invite link or SMS is sent.
+
+    The password is hashed here and never logged or written to the audit record.
+    """
+    phone = normalise_e164(payload.phone)
+    if not phone:
+        raise ValidationFailed("Enter a valid Uganda phone number.", {"phone": "invalid"})
+    email = str(payload.email).lower()
+    if await User.find_one(User.email == email):
+        raise Conflict("A user with this email already exists.")
+    if await User.find_one(User.phone_e164 == phone):
+        raise Conflict("A user with this phone number already exists.")
+    user = User(
+        name=payload.name,
+        email=email,
+        password_hash=hash_password(payload.password),
+        scopes=sorted(SCOPE_PRESETS["nurse"]),
+        kind="nurse",
+        reach="own",
+        phone_e164=phone,
+        invite_accepted_at=datetime.now(UTC),
+    )
+    try:
+        await user.insert()
+    except DuplicateKeyError as exc:
+        raise Conflict("Email or phone is already in use.") from exc
+    profile = NurseProfile(
+        user_id=str(user.id),
+        staff_number=payload.staff_number,
+        supervisor_id=payload.supervisor_id,
+        team_id=payload.team_id,
+        phone_e164=phone,
+    )
+    try:
+        await profile.insert()
+    except DuplicateKeyError as exc:
+        await user.delete()  # keep user and profile together
+        raise Conflict("A nurse profile already exists for this account.") from exc
+    await audit.record(
+        actor,
+        "nurse.create_direct",
         "nurse_profile",
         str(user.id),
         payload.name,

@@ -18,6 +18,18 @@ class NurseInvite(BaseModel):
     team_id: str | None = None
 
 
+class NurseDirectCreate(BaseModel):
+    """Superadmin-only: create a nurse with a chosen password so the account works at once."""
+
+    name: str = Field(min_length=2, max_length=80)
+    email: EmailStr
+    phone: str = Field(min_length=9, max_length=24)
+    staff_number: str = Field(min_length=2, max_length=40)
+    password: str = Field(min_length=12, max_length=200)
+    supervisor_id: str | None = Field(default=None, min_length=8, max_length=160)
+    team_id: str | None = None
+
+
 class NursePatch(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=80)
     phone: str | None = Field(default=None, min_length=9, max_length=24)

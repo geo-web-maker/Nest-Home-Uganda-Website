@@ -1,4 +1,5 @@
 from app.core.deps import ReachContext, get_care_actor
+from app.registry import iter_api_routes
 from tests.conftest import app, auth, make_token
 
 
@@ -105,8 +106,50 @@ async def test_supervisor_options_requires_write_scope(client):
 
 
 def test_supervisor_options_route_is_not_shadowed_by_the_user_id_route():
-    paths = [getattr(route, "path", "") for route in app.routes]
+    paths = [path for path, _ in iter_api_routes()]  # routes are nested under the API router
     fixed = "/api/v1/admin/care/nurses/supervisor-options"
     dynamic = "/api/v1/admin/care/nurses/{user_id}"
     assert fixed in paths
     assert paths.index(fixed) < paths.index(dynamic)
+
+
+_DIRECT_BODY = {
+    "name": "Test Nurse",
+    "email": "test.nurse@example.com",
+    "phone": "0772000111",
+    "staff_number": "TN-001",
+    "password": "a-long-test-password",
+}
+
+
+async def test_direct_nurse_create_requires_authentication(client):
+    response = await client.post("/api/v1/admin/care/nurses/direct", json=_DIRECT_BODY)
+    assert response.status_code == 401
+
+
+async def test_direct_nurse_create_needs_write_scope(client):
+    response = await client.post(
+        "/api/v1/admin/care/nurses/direct",
+        json=_DIRECT_BODY,
+        headers=auth(make_token(["nurses:read"])),
+    )
+    assert response.status_code == 403
+
+
+async def test_direct_nurse_create_is_superadmin_only(client):
+    response = await client.post(
+        "/api/v1/admin/care/nurses/direct",
+        json=_DIRECT_BODY,
+        headers=auth(make_token(["nurses:write"])),
+    )
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "forbidden"
+
+
+async def test_direct_nurse_create_rejects_a_short_password(client):
+    response = await client.post(
+        "/api/v1/admin/care/nurses/direct",
+        json={**_DIRECT_BODY, "password": "short"},
+        headers=auth(make_token(["nurses:write"], superadmin=True)),
+    )
+    assert response.status_code == 422

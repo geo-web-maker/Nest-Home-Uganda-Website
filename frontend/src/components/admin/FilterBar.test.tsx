@@ -102,13 +102,13 @@ describe('FilterBar', () => {
   });
 
   it('exposes a class for a field that should be wider than its siblings', () => {
-    // css: false in vitest turns a CSS-module class into its own name.
-    expect(filterBarGrow).toBe('grow');
+    // The exact class name depends on how vitest treats CSS modules, so compare against the export.
+    expect(filterBarGrow).toMatch(/grow/);
     renderBar(
       <FilterBar label="Filters">
         <Field label="Search" className={filterBarGrow} />
       </FilterBar>,
     );
-    expect(screen.getByLabelText('Search').parentElement).toHaveClass('grow');
+    expect(screen.getByLabelText('Search').parentElement).toHaveClass(filterBarGrow ?? '');
   });
 });

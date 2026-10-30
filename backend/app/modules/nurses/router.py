@@ -14,12 +14,14 @@ from app.modules.nurses.schemas import (
     DeviceRegistration,
     DeviceRevocation,
     NurseDetailsResponse,
+    NurseDirectCreate,
     NurseInvite,
     NursePatch,
     NurseProfileResponse,
     SupervisorPatch,
 )
 from app.modules.nurses.service import (
+    create_nurse_direct,
     invite_nurse,
     patch_nurse,
     profile_for_user,
@@ -88,6 +90,27 @@ async def create_nurse(
     except (Conflict, ValidationFailed) as exc:
         raise HTTPException(getattr(exc, "status_code", 422), detail=str(exc)) from exc
     return profile
+
+
+@router.post("/direct", response_model=NurseProfileResponse, status_code=201)
+async def create_nurse_with_password(
+    payload: NurseDirectCreate,
+    principal: Principal = Depends(require_scopes("nurses:write")),
+):
+    """Superadmin only: create a nurse with a chosen password (testing and hand-over)."""
+    if not principal.is_superadmin:
+        raise HTTPException(status_code=403, detail="Super administrator access required")
+    if payload.supervisor_id:
+        supervisor = await auth_repo.user_by_id(payload.supervisor_id)
+        if supervisor is None or not supervisor.is_active:
+            raise ValidationFailed(
+                "No active user was found with that supervisor ID. Use the supervisor's user ID.",
+                {"supervisor_id": "not_found_or_inactive"},
+            )
+    try:
+        return await create_nurse_direct(principal, payload)
+    except (Conflict, ValidationFailed) as exc:
+        raise HTTPException(getattr(exc, "status_code", 422), detail=str(exc)) from exc
 
 
 @router.get("/supervisor-options")
