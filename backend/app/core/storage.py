@@ -25,6 +25,7 @@ def clamp_expiry(expires_seconds: int) -> int:
 class Bucket(StrEnum):
     PUBLIC = "public"
     PRIVATE = "private"
+    MAIL = "mail"
 
 
 class StorageService(Protocol):
@@ -32,12 +33,19 @@ class StorageService(Protocol):
     async def get(self, bucket: Bucket, key: str) -> bytes: ...
     async def delete(self, bucket: Bucket, key: str) -> None: ...
     async def signed_url(self, bucket: Bucket, key: str, expires_seconds: int) -> str: ...
+    async def presigned_put(
+        self, bucket: Bucket, key: str, content_type: str, expires_seconds: int = 300
+    ) -> str: ...
 
 
 class S3Storage:
     def __init__(self) -> None:
         s = get_settings()
-        self._buckets = {Bucket.PUBLIC: s.s3_bucket_public, Bucket.PRIVATE: s.s3_bucket_private}
+        self._buckets = {
+            Bucket.PUBLIC: s.s3_bucket_public,
+            Bucket.PRIVATE: s.s3_bucket_private,
+            Bucket.MAIL: s.s3_bucket_mail,
+        }
         self._client = boto3.client(
             "s3",
             endpoint_url=s.s3_endpoint or None,
@@ -66,10 +74,29 @@ class S3Storage:
         )
 
     async def signed_url(self, bucket: Bucket, key: str, expires_seconds: int) -> str:
+        if not self._buckets[bucket]:
+            raise ValueError(f"Storage bucket {bucket.value!r} is not configured")
         return await to_thread.run_sync(
             lambda: self._client.generate_presigned_url(
                 "get_object",
                 Params={"Bucket": self._buckets[bucket], "Key": key},
+                ExpiresIn=clamp_expiry(expires_seconds),
+            )
+        )
+
+    async def presigned_put(
+        self, bucket: Bucket, key: str, content_type: str, expires_seconds: int = 300
+    ) -> str:
+        if not self._buckets[bucket]:
+            raise ValueError(f"Storage bucket {bucket.value!r} is not configured")
+        return await to_thread.run_sync(
+            lambda: self._client.generate_presigned_url(
+                "put_object",
+                Params={
+                    "Bucket": self._buckets[bucket],
+                    "Key": key,
+                    "ContentType": content_type,
+                },
                 ExpiresIn=clamp_expiry(expires_seconds),
             )
         )
@@ -92,6 +119,14 @@ class MemoryStorage:
 
     async def signed_url(self, bucket: Bucket, key: str, expires_seconds: int) -> str:
         return f"memory://{bucket.value}/{key}?expires={clamp_expiry(expires_seconds)}"
+
+    async def presigned_put(
+        self, bucket: Bucket, key: str, content_type: str, expires_seconds: int = 300
+    ) -> str:
+        return (
+            f"memory://{bucket.value}/{key}?method=PUT"
+            f"&content_type={content_type}&expires={clamp_expiry(expires_seconds)}"
+        )
 
 
 @lru_cache

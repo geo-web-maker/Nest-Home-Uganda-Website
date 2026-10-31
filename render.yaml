@@ -1,6 +1,6 @@
 # Render blueprint for the backend API. Secrets are `sync: false`: set them in the Render dashboard
-# (names and meanings are in docs/ENV_VARS.md and docs/ENV_CARE_VARS.md). The frontend is on Vercel and
-# MongoDB is on Atlas, so neither appears here.
+# (names and meanings are in docs/ENV_VARS.md and docs/ENV_CARE_VARS.md). The frontend is on Vercel,
+# primary MongoDB is on Atlas, and the mail database is a separate Neon project.
 services:
   - type: web
     name: nest-home-care-api
@@ -43,6 +43,12 @@ services:
       - key: S3_BUCKET_PUBLIC
         sync: false
       - key: S3_BUCKET_PRIVATE
+        sync: false
+      - key: S3_BUCKET_MAIL
+        sync: false
+      - key: NEST_PG_URL
+        sync: false
+      - key: NEST_MAIL_SECRET_KEY
         sync: false
       - key: S3_KEY
         sync: false

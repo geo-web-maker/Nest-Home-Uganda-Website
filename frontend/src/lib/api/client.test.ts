@@ -27,6 +27,16 @@ describe('createApiClient', () => {
     expect(fetchImpl.mock.calls[0]?.[1]).toMatchObject({ method: 'PUT', body: '{"value":500}', credentials: 'include' });
   });
 
+  it('sends a DELETE with no body and accepts an empty 204 reply', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(json(204, null));
+    const client = createApiClient({ baseUrl: BASE, fetchImpl, getAccessToken: () => 'tok' });
+    await expect(client.delete('/mail/drafts/d1')).resolves.toBeUndefined();
+    const [url, init] = fetchImpl.mock.calls[0] ?? [];
+    expect(url).toBe('https://api.test/api/v1/mail/drafts/d1');
+    expect(init).toMatchObject({ method: 'DELETE', credentials: 'include' });
+    expect(init?.body).toBeUndefined();
+  });
+
   it('builds the query string and skips empty params', async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(json(200, []));
     await createApiClient({ baseUrl: BASE, fetchImpl }).get('/x', {

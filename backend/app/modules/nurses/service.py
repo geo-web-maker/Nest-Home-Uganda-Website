@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 
 from pymongo.errors import DuplicateKeyError
@@ -19,6 +20,8 @@ from app.modules.nurses.schemas import (
     NursePatch,
 )
 from app.modules.users import service as user_service
+
+log = logging.getLogger(__name__)
 
 
 async def profile_for_user(user_id: str):
@@ -48,7 +51,7 @@ async def invite_nurse(actor, payload: NurseInvite, ip_hash: str | None = None):
         name=payload.name,
         email=str(payload.email).lower(),
         password_hash=hash_password(new_opaque_token()),
-        scopes=sorted(SCOPE_PRESETS["nurse"]),
+        scopes=sorted(set(SCOPE_PRESETS["nurse"]) | {"mail:use"}),
         kind="nurse",
         reach="own",
         phone_e164=phone,
@@ -65,6 +68,11 @@ async def invite_nurse(actor, payload: NurseInvite, ip_hash: str | None = None):
         phone_e164=phone,
     )
     await profile.insert()
+    try:
+        from app.modules.mail.core_service import ensure_default_mailbox_if_configured
+        await ensure_default_mailbox_if_configured(user)
+    except Exception:
+        log.warning("nurse mailbox creation deferred for user %s", str(user.id))
     now = datetime.now(UTC)
     raw = await user_service._issue_link(
         user, now, user_service.INVITE_DAYS * 1440, purpose="invite"
@@ -103,7 +111,7 @@ async def create_nurse_direct(actor, payload: NurseDirectCreate, ip_hash: str | 
         name=payload.name,
         email=email,
         password_hash=hash_password(payload.password),
-        scopes=sorted(SCOPE_PRESETS["nurse"]),
+        scopes=sorted(set(SCOPE_PRESETS["nurse"]) | {"mail:use"}),
         kind="nurse",
         reach="own",
         phone_e164=phone,
@@ -125,6 +133,11 @@ async def create_nurse_direct(actor, payload: NurseDirectCreate, ip_hash: str | 
     except DuplicateKeyError as exc:
         await user.delete()  # keep user and profile together
         raise Conflict("A nurse profile already exists for this account.") from exc
+    try:
+        from app.modules.mail.core_service import ensure_default_mailbox_if_configured
+        await ensure_default_mailbox_if_configured(user)
+    except Exception:
+        log.warning("nurse mailbox creation deferred for user %s", str(user.id))
     await audit.record(
         actor,
         "nurse.create_direct",
@@ -164,6 +177,18 @@ async def patch_nurse(actor, user_id: str, payload: NursePatch, ip_hash: str | N
         profile.active = changes["active"]
     await user.save()
     await profile.save()
+    if changes.get("name") is not None:
+        try:
+            from app.modules.mail.core_service import add_name_alias
+            await add_name_alias(user)
+        except Exception:
+            log.warning("nurse mailbox alias update deferred for user %s", user_id)
+    if "active" in changes and changes["active"] is not None:
+        try:
+            from app.modules.mail.core_service import close_personal_mailbox
+            await close_personal_mailbox(user_id, closed=not user.is_active)
+        except Exception:
+            log.warning("nurse mailbox lifecycle update deferred for user %s", user_id)
     if changes.get("active") is False:
         await user_service.auth_service.sign_out_user(user)
     await audit.record(

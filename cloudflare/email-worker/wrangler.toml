@@ -1,0 +1,11 @@
+name = "nest-home-care-mail-inbound"
+main = "src/index.ts"
+compatibility_date = "2026-10-31"
+
+[[r2_buckets]]
+binding = "MAIL_RAW"
+bucket_name = "YOUR_R2_MAIL_BUCKET"
+
+[vars]
+MAIL_INBOUND_URL = "https://YOUR_BACKEND_HOST/api/v1/mail/inbound"
+# Set MAIL_INBOUND_SECRET with: wrangler secret put MAIL_INBOUND_SECRET

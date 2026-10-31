@@ -19,9 +19,9 @@ describe('hasScopes', () => {
 
 describe('mockup-aligned admin navigation', () => {
   it('declares implemented screens in the reference information architecture', () => {
-    expect(ADMIN_NAV).toHaveLength(37);
-    expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 10, careOperations: 7, monitoring: 8, safety: 4, setup: 8 });
-    expect(paths(visibleNav(user([], true)))).toHaveLength(37);
+    expect(ADMIN_NAV).toHaveLength(39);
+    expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 11, careOperations: 7, monitoring: 8, safety: 4, setup: 9 });
+    expect(paths(visibleNav(user([], true)))).toHaveLength(39);
     expect(visibleNav(user([], true)).some((item) => item.path.includes('/care/patients'))).toBe(false);
   });
 
@@ -63,7 +63,7 @@ describe('mockup-aligned admin navigation', () => {
       '/admin/care/alerts',
       '/admin/care/sos',
     ]);
-    expect(bottomNav(all).more).toHaveLength(33);
+    expect(bottomNav(all).more).toHaveLength(35);
     expect(paths(bottomNav(user(['content:read'])).primary)).toEqual(['/admin/content']);
     expect(bottomNav(user(['content:read'])).more).toEqual([]);
   });
@@ -107,5 +107,28 @@ describe('navItemFor', () => {
 
   it('resolves every nav item to itself, so no two items can ever be current together', () => {
     for (const item of ADMIN_NAV) expect(navItemFor(item.path)?.path).toBe(item.path);
+  });
+});
+
+describe('mail navigation', () => {
+  it('never becomes the landing page: a superadmin and a mail-only user keep their own first screen', () => {
+    expect(firstReachablePath(user([], true))).toBe('/admin');
+    expect(firstReachablePath(user(['mail:use', 'enquiries:read']))).toBe('/admin/enquiries');
+  });
+
+  it('lists mail after the other website screens and mail settings last in setup', () => {
+    const website = ADMIN_NAV.filter((item) => item.group === 'website').map((item) => item.path);
+    expect(website.at(-1)).toBe('/admin/mail');
+    const setup = ADMIN_NAV.filter((item) => item.group === 'setup').map((item) => item.path);
+    expect(setup.at(-1)).toBe('/admin/mail/settings');
+    expect(ADMIN_NAV[0]?.path).toBe('/admin');
+  });
+
+  it('gates mail on mail:use and its settings on mail:settings:manage', () => {
+    expect(scopesFor('/admin/mail')).toEqual(['mail:use']);
+    expect(scopesFor('/admin/mail/settings')).toEqual(['mail:settings:manage']);
+    expect(paths(visibleNav(user(['mail:use'])))).toEqual(['/admin/mail']);
+    expect(navItemFor('/admin/mail/settings')?.path).toBe('/admin/mail/settings');
+    expect(navItemFor('/admin/mail')?.path).toBe('/admin/mail');
   });
 });

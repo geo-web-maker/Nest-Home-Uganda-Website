@@ -14,12 +14,13 @@ This is an owner checklist, not a claim that a Northflank project exists. The pr
 
 1. Add backend service variables and secrets from `.env.example` in the provider secret store. Never paste secrets into Git.
 2. Set `APP_ENV=production`, `MONGODB_URI`, `MONGODB_DB`, `CARE_MONGODB_URI`, `CARE_MONGODB_DB`, `SECRET_KEY`, `IP_HASH_SALT`, `CORS_ORIGINS`, and `FRONTEND_URL`.
-3. Confirm both MongoDB users have least-privilege access and TLS is enabled. The care account must not have access to unrelated production databases.
-4. Run `python -m app.migrate` from a controlled release job or owner-controlled host that can reach both databases. Main-site migrations run against the main database; care migrations run against the care database.
-5. Confirm `/api/v1/health` reports both databases healthy. The endpoint returns status metadata only.
-6. Configure owner-run encrypted backups for both databases to Backblaze B2 following `docs/BACKUP_AND_RECOVERY_B2.md`. GitHub Actions does not run database dumps.
-7. Configure Cloudinary, SMS, and push credentials only after the owner creates those accounts and provides real values. Keep `PUSH_SENDER=fake` until FCM setup is complete.
-8. Do not enable care modules until the readiness checklist is clear and the restore drill has been completed.
+3. When provisioning the separate mail data plane, also set `NEST_PG_URL`, `NEST_MAIL_SECRET_KEY`, and `S3_BUCKET_MAIL`. Optional bootstrap fallbacks are `NEST_MAIL_DOMAIN`, `NEST_MAIL_PROVIDER`, and `NEST_MAIL_API_KEY`. Keep the mail feature flag off until its later phases are complete.
+4. Confirm both MongoDB users have least-privilege access and TLS is enabled. The care account must not have access to unrelated production databases.
+5. Run `python -m app.migrate` from a controlled release job or owner-controlled host that can reach both databases. Main-site migrations run against the main database; care migrations run against the care database.
+6. Confirm `/api/v1/health` reports both databases healthy. The endpoint returns status metadata only.
+7. Configure owner-run encrypted backups for both databases to Backblaze B2 following `docs/BACKUP_AND_RECOVERY_B2.md`. GitHub Actions does not run database dumps.
+8. Configure Cloudinary, SMS, and push credentials only after the owner creates those accounts and provides real values. Keep `PUSH_SENDER=fake` until FCM setup is complete.
+9. Do not enable care modules until the readiness checklist is clear and the restore drill has been completed.
 
 ## Private database connectivity decision
 

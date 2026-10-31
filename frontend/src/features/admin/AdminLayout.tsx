@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { cx } from '../../lib/cx';
 import { useAuth } from './auth/useAuth';
+import { hasScopes } from './auth/hasScopes';
+import { useMailUnread } from './mail/useMailUnread';
 import { AdminIcon } from './icons';
 import { ButtonSizeProvider } from '../../components/ui/Button';
 import { ThemeSwitch } from '../../components/ui/ThemeSwitch';
@@ -42,6 +44,13 @@ export function AdminLayout() {
     return () => document.removeEventListener('keydown', onKey);
   }, [moreOpen]);
 
+  const mailUnread = useMailUnread(hasScopes(user, ['mail:use']));
+  const badgeFor = (item: AdminNavItem) =>
+    item.path === '/admin/mail' && mailUnread > 0 ? (
+      <span className={styles.badge} role="img" aria-label={t('mail.unreadCount', { count: mailUnread })}>
+        {mailUnread > 99 ? '99+' : mailUnread}
+      </span>
+    ) : null;
   const items = visibleNav(user);
   const { primary, more } = bottomNav(user);
   const title = navItemFor(pathname);
@@ -84,6 +93,7 @@ export function AdminLayout() {
                   >
                     <AdminIcon name={item.icon} />
                     <span className={styles.itemLabel}>{label(item)}</span>
+                    {badgeFor(item)}
                   </Link>
                 ))}
               </div>
@@ -152,6 +162,7 @@ export function AdminLayout() {
                           >
                             <AdminIcon name={item.icon} />
                             <span>{label(item)}</span>
+                            {badgeFor(item)}
                           </Link>
                         </li>
                       ))}
@@ -179,6 +190,7 @@ export function AdminLayout() {
           >
             <AdminIcon name={item.icon} />
             <span>{item.path === '/admin' ? t('nav.today') : label(item)}</span>
+            {badgeFor(item)}
           </Link>
         ))}
         <button

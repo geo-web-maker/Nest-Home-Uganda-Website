@@ -70,8 +70,17 @@ class Settings(BaseSettings):
     s3_region: str = ""
     s3_bucket_public: str = ""
     s3_bucket_private: str = ""
+    s3_bucket_mail: str = ""
     s3_key: str = ""
     s3_secret: str = ""
+
+    # Dedicated Postgres database and bootstrap-only mail settings. Mail values otherwise
+    # live in the Postgres mail_settings table.
+    nest_pg_url: str = ""
+    nest_mail_secret_key: str = ""
+    nest_mail_domain: str = ""
+    nest_mail_provider: str = "console"
+    nest_mail_api_key: str = ""
 
     alert_emails: str = ""
     alert_phones: str = ""

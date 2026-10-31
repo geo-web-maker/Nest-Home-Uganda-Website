@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiRequest } from '../lib/api/client';
 import { clearSyncCursor, nurseDb } from '../offline/db';
+import { purgeOtherOwnersMail } from '../features/mail/mailStore';
 
 export type FieldConsentRequirement = { type: string; version: string; text: string };
 export type FieldProfile = {
@@ -43,6 +44,8 @@ export function useFieldProfile() {
         await nurseDb.clients.clear();
         await nurseDb.consents.clear();
       });
+      // Unsent mail belongs to whoever wrote it: another nurse's drafts and cached messages are removed on a switch.
+      await purgeOtherOwnersMail(next.user_id);
       if (cachedOwner) {
         await clearSyncCursor(cachedOwner);
         // Do not leave another nurse's identity available on a shared device after an account switch.

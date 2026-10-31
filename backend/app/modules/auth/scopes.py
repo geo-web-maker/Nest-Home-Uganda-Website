@@ -57,12 +57,22 @@ SCOPES: tuple[Scope, ...] = (
     Scope("timesheets:write", "Timesheets", "Review timesheets"),
     Scope("care-reports:read", "Care reports", "View care reports"),
     Scope("care-reports:export", "Care reports", "Export care reports"),
+    Scope("mail:use", "Mail", "Use your personal and assigned shared mailboxes"),
+    Scope("mail:shared:manage", "Mail", "Manage shared mailboxes and their members"),
+    Scope("mail:archive:read", "Mail", "Read closed mailboxes in the audited archive"),
+    Scope("mail:settings:manage", "Mail", "Manage mail settings, backfill and usage"),
+    Scope("mail:audit:read", "Mail", "View the mail audit log"),
 )
 
 ALL_SCOPE_IDS: frozenset[str] = frozenset(s.id for s in SCOPES)
 
 # Only a superadmin may grant these (12.5).
-SUPERADMIN_ONLY_SCOPES: frozenset[str] = frozenset({"system:manage", "carecfg:write"})
+SUPERADMIN_ONLY_SCOPES: frozenset[str] = frozenset(
+    {
+        "system:manage",
+        "carecfg:write",
+    }
+)
 
 if len(ALL_SCOPE_IDS) != len(SCOPES):
     raise RuntimeError("duplicate scope id in the registry")
@@ -82,9 +92,10 @@ def read_scope_for(write_scope: str) -> str | None:
 
 # Presets are bundles of scopes only; access is never inferred from a role name.
 SCOPE_PRESETS: dict[str, frozenset[str]] = {
-    "nurse": frozenset({"field:use", "sos:send"}),
+    "nurse": frozenset({"field:use", "sos:send", "mail:use"}),
     "supervisor": frozenset(
         {
+            "mail:use",
             "dashboard:view",
             "nurses:read",
             "clients:read",
@@ -104,6 +115,7 @@ SCOPE_PRESETS: dict[str, frozenset[str]] = {
     ),
     "admin": frozenset(
         {
+            "mail:use",
             "dashboard:view",
             "nurses:read",
             "nurses:write",
@@ -125,6 +137,7 @@ SCOPE_PRESETS: dict[str, frozenset[str]] = {
     ),
     "executive": frozenset(
         {
+            "mail:use",
             "dashboard:view",
             "nurses:read",
             "clients:read",

@@ -10,6 +10,8 @@ import { OnCallRosterPage, SOSConsolePage, SOSHistoryPage, SOSProcedurePage } fr
 import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityPage } from './activity';
+import { MailPage } from './mail/MailPage';
+import { MailSettingsPage } from './mail/MailSettingsPage';
 import { ApplicationsPage } from './applications';
 import { ContentPage } from './content';
 import { DashboardPage } from './dashboard';
@@ -27,6 +29,8 @@ import { AppReleasesPage, BackupsHealthPage, PermissionsPage, CareSettingCatalog
  */
 export const adminScreens: Partial<Record<string, ComponentType>> = {
   '/admin': DashboardPage,
+  '/admin/mail': MailPage,
+  '/admin/mail/settings': MailSettingsPage,
   '/admin/activity': ActivityPage,
   '/admin/enquiries': EnquiriesPage,
   '/admin/careers': JobsPage,

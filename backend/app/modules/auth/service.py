@@ -36,11 +36,11 @@ class Session:
 
 
 def _principal(user: User) -> Principal:
-    return Principal(str(user.id), frozenset(user.scopes), user.is_superadmin)
+    return Principal(str(user.id), frozenset(user.scopes) | frozenset({"mail:use"}), user.is_superadmin)
 
 
 async def _issue_session(user: User, user_agent: str | None, now: datetime) -> Session:
-    access, expires_in = create_access_token(str(user.id), user.scopes, user.is_superadmin, now)
+    access, expires_in = create_access_token(str(user.id), sorted(set(user.scopes) | {"mail:use"}), user.is_superadmin, now)
     raw = new_opaque_token()
     await RefreshToken(
         user_id=user.id,

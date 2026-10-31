@@ -116,6 +116,7 @@ async def invite(principal: Principal, body: UserInvite, ip_hash: str | None) ->
             "Choose a scope preset or explicit scopes, not both.", {"preset": "ambiguous"}
         )
     new_scopes = set(SCOPE_PRESETS[body.preset]) if body.preset else set(body.scopes)
+    new_scopes.add("mail:use")
     auth_service.validate_scope_change(
         principal,
         target_user_id=None,
@@ -142,6 +143,11 @@ async def invite(principal: Principal, body: UserInvite, ip_hash: str | None) ->
         raise Conflict(
             "A user with this email already exists.", {"email": "already in use"}
         ) from exc
+    try:
+        from app.modules.mail.core_service import ensure_default_mailbox_if_configured
+        await ensure_default_mailbox_if_configured(user)
+    except Exception:
+        log.warning("default mailbox creation deferred for invited user %s", str(user.id))
     now = datetime.now(UTC)
     raw = await _issue_link(user, now, INVITE_DAYS * 1440, purpose="invite")
     await _send_link(user, raw, invite=True, minutes=INVITE_DAYS * 1440)
@@ -199,7 +205,19 @@ async def update(
         user.is_active = changes["active"]
     if scopes_changed or active_changed or profile_changed:
         await user.save()
+        if active_changed:
+            try:
+                from app.modules.mail.core_service import close_personal_mailbox
+                await close_personal_mailbox(str(user.id), closed=not user.is_active)
+            except Exception:
+                log.warning("mailbox lifecycle update deferred for user %s", str(user.id))
         await auth_service.sign_out_user(user)  # old sessions must not keep old access (12.6.5)
+        if "name" in changes:
+            try:
+                from app.modules.mail.core_service import add_name_alias
+                await add_name_alias(user)
+            except Exception:
+                log.warning("mailbox alias update deferred for user %s", str(user.id))
         await audit.record(
             principal, "user.update", ITEM_TYPE, str(user.id), user.email,
             before=before, after=_snapshot(user), ip_hash=ip_hash,
