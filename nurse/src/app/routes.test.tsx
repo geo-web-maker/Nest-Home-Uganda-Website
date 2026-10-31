@@ -11,6 +11,7 @@ const views: NurseRouteViews = {
   timesheets: <h2>Timesheets view</h2>,
   profile: <h2>Profile view</h2>,
   sync: <h2>Sync view</h2>,
+  mail: <h2>Mail view</h2>,
   visit: (id) => <h2>Visit {id}</h2>,
   activeVisit: (id) => <h2>Active {id}</h2>,
 };
