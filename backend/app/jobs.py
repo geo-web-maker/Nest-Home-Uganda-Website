@@ -46,6 +46,18 @@ async def run_retention(now: datetime | None = None) -> int:
     return count
 
 
+async def run_photo_orphans(now: datetime | None = None) -> int:
+    """Destroy abandoned pending photo uploads older than 24 hours and mark them expired."""
+    now = now or datetime.now(UTC)
+    try:
+        from app.modules.care_retention.retention import purge_abandoned_photo_uploads
+
+        return await purge_abandoned_photo_uploads(now, get_settings())
+    except Exception:
+        log.exception("photo orphan cleanup job failed")
+        return 0
+
+
 async def run_care_alerts(now: datetime | None = None) -> int:
     """Create idempotent late-visit and safety-timer alerts (no client details in messages)."""
     now = now or datetime.now(UTC)
