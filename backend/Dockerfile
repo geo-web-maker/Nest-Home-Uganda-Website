@@ -12,9 +12,10 @@ WORKDIR /app
 COPY requirements.lock ./
 RUN pip install -r requirements.lock
 
-# app.migrate finds migrations/ next to app/, so both are copied and the app runs from /app.
+# Mongo and mail migrations are copied beside the app so both runners work in the image.
 COPY app ./app
 COPY migrations ./migrations
+COPY mail_migrations ./mail_migrations
 
 RUN useradd --system --no-create-home appuser
 USER appuser

@@ -1,3 +1,4 @@
+# ruff: noqa: E501,E701,E702
 """Scheduled jobs (APScheduler, in process; spec 3). Started from the app lifespan.
 
 One backend instance is assumed (the planned Render setup). Reminders are still safe if a
@@ -227,19 +228,122 @@ def build_scheduler() -> AsyncIOScheduler:
         max_instances=1,
         coalesce=True,
     )
+    # Mail workers are persisted in Neon and claim with SKIP LOCKED, so overlapping
+    # instances cannot process the same outbox row concurrently.
+    scheduler.add_job(run_mail_outbox, "interval", seconds=15, id="mail_outbox_drain", max_instances=1, coalesce=True)
+    scheduler.add_job(run_mail_housekeeping, "cron", hour=0, minute=5, id="mail_housekeeping", max_instances=1, coalesce=True)
+    scheduler.add_job(run_mail_retention, "cron", hour=0, minute=25, id="mail_retention_purge", max_instances=1, coalesce=True)
+    scheduler.add_job(run_mail_quota_check, "interval", hours=1, id="mail_quota_check", max_instances=1, coalesce=True)
     return scheduler
 
 
-async def run_photo_orphans(now: datetime | None = None) -> int:
-    """Retry cleanup of photo uploads abandoned before registration completed."""
-    from app.core.config import get_settings
-    from app.modules.care_retention.retention import purge_abandoned_photo_uploads
-
+async def run_mail_outbox() -> int:
     try:
-        count = await purge_abandoned_photo_uploads(now or datetime.now(UTC), get_settings())
-        if count:
-            log.info("abandoned care photo uploads cleaned: %d", count)
-        return count
+        from app.modules.mail.outbox import drain
+        return await drain()
     except Exception:
-        log.exception("photo orphan cleanup job failed")
+        log.warning("mail outbox job unavailable; details omitted")
+        return 0
+
+
+async def run_mail_housekeeping() -> int:
+    """Purge expired Trash/Spam copies and delete orphaned R2 objects safely."""
+    try:
+        from app.modules.mail import db as mail_db
+        from app.modules.mail.settings_service import get_value
+        from app.core.storage import Bucket, get_storage
+        pool=mail_db.get_pool(); removed=0
+        async with pool.acquire() as conn:
+            candidates=[]
+            for folder,key in (("trash","mail.trash_purge_days"),("spam","mail.spam_purge_days")):
+                days=int(await get_value(key))
+                candidates += await conn.fetch("SELECT id,message_id FROM mailbox_message WHERE folder=$1 AND trashed_at < now()-($2::text||' days')::interval",folder,days)
+        for item in candidates:
+            async with pool.acquire() as conn:
+                async with conn.transaction():
+                    await conn.execute("DELETE FROM mailbox_message WHERE id=$1",item['id'])
+                    still_used=await conn.fetchval("SELECT EXISTS(SELECT 1 FROM mailbox_message WHERE message_id=$1) OR EXISTS(SELECT 1 FROM outbox WHERE message_id=$1)",item['message_id'])
+                    if not still_used:
+                        objects=await conn.fetch("SELECT object_key FROM attachment WHERE message_id=$1",item['message_id'])
+                        for obj in objects:
+                            try: await get_storage().delete(Bucket.MAIL,obj['object_key'])
+                            except Exception: log.warning("mail attachment purge failed; details omitted")
+                        await conn.execute("DELETE FROM attachment WHERE message_id=$1",item['message_id'])
+                        await conn.execute("DELETE FROM message_recipient WHERE message_id=$1",item['message_id'])
+                        await conn.execute("DELETE FROM message WHERE id=$1",item['message_id'])
+                    removed+=1
+        async with pool.acquire() as conn:
+            await conn.execute("DELETE FROM send_counter WHERE window_start < current_date-62")
+        return removed
+    except Exception:
+        log.warning("mail housekeeping job unavailable; details omitted")
+        return 0
+
+
+async def run_mail_retention() -> int:
+    """Purge eligible closed mailboxes only when both retention and the safety switch allow it."""
+    try:
+        from app.modules.mail import db as mail_db
+        from app.modules.mail.settings_service import get_value
+        from app.core.storage import Bucket, get_storage
+        if not bool(await get_value("mail.purge_enabled")): return 0
+        years=int(await get_value("mail.retention_years"))
+        if years<=0: return 0
+        pool=mail_db.get_pool()
+        async with pool.acquire() as conn:
+            boxes=await conn.fetch("SELECT id FROM mailbox WHERE state='closed' AND legal_hold=false AND closed_at < now()-($1::text||' years')::interval",years)
+        purged=0
+        for box in boxes:
+            async with pool.acquire() as conn:
+                async with conn.transaction():
+                    mids=await conn.fetch("SELECT DISTINCT message_id FROM mailbox_message WHERE mailbox_id=$1",box['id'])
+                    await conn.execute("UPDATE message_recipient SET mailbox_id=NULL WHERE mailbox_id=$1",box['id'])
+                    await conn.execute("DELETE FROM mailbox_message WHERE mailbox_id=$1",box['id'])
+                    await conn.execute("DELETE FROM mailbox_alias WHERE mailbox_id=$1",box['id'])
+                    await conn.execute("DELETE FROM mailbox_member WHERE mailbox_id=$1",box['id'])
+                    await conn.execute("UPDATE outbox SET from_mailbox_id=NULL,state=CASE WHEN state IN ('queued','deferred','sending') THEN 'cancelled' ELSE state END WHERE from_mailbox_id=$1",box['id'])
+                    unattached=await conn.fetch("SELECT object_key FROM attachment WHERE uploader_mailbox_id=$1 AND message_id IS NULL",box['id'])
+                    for obj in unattached:
+                        try: await get_storage().delete(Bucket.MAIL,obj['object_key'])
+                        except Exception: log.warning("mail unattached object deletion failed; details omitted")
+                    await conn.execute("DELETE FROM attachment WHERE uploader_mailbox_id=$1 AND message_id IS NULL",box['id'])
+                    await conn.execute("UPDATE attachment SET uploader_mailbox_id=NULL WHERE uploader_mailbox_id=$1",box['id'])
+                    await conn.execute("DELETE FROM mailbox WHERE id=$1",box['id'])
+                    for item in mids:
+                        mid=item['message_id']
+                        used=await conn.fetchval("SELECT EXISTS(SELECT 1 FROM mailbox_message WHERE message_id=$1)",mid)
+                        if not used:
+                            await conn.execute("DELETE FROM outbox WHERE message_id=$1",mid)
+                            objects=await conn.fetch("SELECT object_key FROM attachment WHERE message_id=$1",mid)
+                            for obj in objects:
+                                try: await get_storage().delete(Bucket.MAIL,obj['object_key'])
+                                except Exception: log.warning("mail retention object deletion failed; details omitted")
+                            await conn.execute("DELETE FROM attachment WHERE message_id=$1",mid)
+                            await conn.execute("DELETE FROM message_recipient WHERE message_id=$1",mid)
+                            await conn.execute("DELETE FROM message WHERE id=$1",mid)
+                    await conn.execute("INSERT INTO mail_audit(action,detail) VALUES('mail.purge',jsonb_build_object('mailbox_id',$1::text,'messages',$2))",box['id'],len(mids))
+                    purged+=1
+        return purged
+    except Exception:
+        log.warning("mail retention purge failed; details omitted")
+        return 0
+
+
+async def run_mail_quota_check() -> int:
+    """Record threshold crossings without exposing mailbox contents or message subjects."""
+    try:
+        from app.modules.mail import db as mail_db
+        from app.modules.mail.settings_service import get_value
+        pool=mail_db.get_pool(); quota=int(await get_value("mail.mailbox_quota_mb"))*1024*1024
+        async with pool.acquire() as conn:
+            rows=await conn.fetch("""SELECT b.id,
+              coalesce((SELECT sum(m.size_bytes) FROM message m WHERE m.id IN (SELECT DISTINCT message_id FROM mailbox_message WHERE mailbox_id=b.id)),0)
+              + coalesce((SELECT sum(a.size_bytes) FROM attachment a WHERE a.message_id IN (SELECT DISTINCT message_id FROM mailbox_message WHERE mailbox_id=b.id) OR a.uploader_mailbox_id=b.id),0) used
+              FROM mailbox b WHERE b.state='open'""")
+            for row in rows:
+                if row['used'] >= quota*0.9:
+                    await conn.execute("INSERT INTO mail_audit(action,mailbox_id,detail) VALUES('mail.quota.warning',$1,jsonb_build_object('used_bytes',$2))",row['id'],row['used'])
+        return sum(1 for row in rows if row['used']>=quota*0.9)
+    except Exception:
+        log.warning("mail quota check unavailable; details omitted")
         return 0

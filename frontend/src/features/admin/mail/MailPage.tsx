@@ -1,0 +1,367 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ButtonGroup } from '../../../components/admin/ButtonGroup';
+import { FilterTabs } from '../../../components/admin/FilterTabs';
+import { Notice } from '../../../components/admin/Notice';
+import { PageHeader } from '../../../components/admin/PageHeader';
+import { SearchBar } from '../../../components/admin/SearchBar';
+import { Badge } from '../../../components/ui/Badge';
+import { Button } from '../../../components/ui/Button';
+import { Field } from '../../../components/ui/Field';
+import { apiClient } from '../../../lib/api/client';
+import { MailCompose } from './MailCompose';
+import { MAIL_CHANGED_EVENT } from './useMailUnread';
+import { buildSeed, formatBytes, type SeedKind } from './recipients';
+import { FOLDERS, type ComposeSeed, type Folder, type MailDetail, type MailItem, type Mailbox } from './types';
+import styles from './MailPage.module.css';
+
+const EMPTY_SEED: ComposeSeed = { to: [], cc: [], bcc: [], subject: '', body: '' };
+
+function isTyping(target: EventTarget | null): boolean {
+  const element = target as HTMLElement | null;
+  return Boolean(element && (element.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(element.tagName)));
+}
+
+export function MailPage() {
+  const { t } = useTranslation('admin');
+  const client = useQueryClient();
+  const [mailboxChoice, setMailboxChoice] = useState('');
+  const [folder, setFolder] = useState<Folder>('inbox');
+  const [query, setQuery] = useState('');
+  const [selectedId, setSelectedId] = useState('');
+  const [seed, setSeed] = useState<ComposeSeed | null>(null);
+  const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+  const markedRead = useRef(new Set<string>());
+
+  const boxes = useQuery({
+    queryKey: ['mail', 'mailboxes'],
+    queryFn: () => apiClient.get<{ items: Mailbox[] }>('/mail/mailboxes'),
+  });
+  const mailboxes = boxes.data?.items ?? [];
+  useEffect(() => {
+    if (boxes.data) window.dispatchEvent(new Event(MAIL_CHANGED_EVENT));
+  }, [boxes.data]);
+  const mailboxId = mailboxChoice || mailboxes[0]?.id || '';
+  const mailbox = mailboxes.find((box) => box.id === mailboxId);
+
+  const list = useQuery({
+    queryKey: ['mail', 'messages', mailboxId, folder, query],
+    enabled: Boolean(mailboxId),
+    queryFn: () =>
+      apiClient.get<{ items: MailItem[] }>(`/mail/mailboxes/${mailboxId}/messages`, {
+        params: { folder, q: query || undefined },
+      }),
+  });
+  const items = useMemo(() => list.data?.items ?? [], [list.data]);
+  const selected = items.find((item) => item.mailbox_message_id === selectedId);
+
+  const detail = useQuery({
+    queryKey: ['mail', 'message', selectedId],
+    enabled: Boolean(selectedId),
+    queryFn: () => apiClient.get<MailDetail>(`/mail/messages/${selectedId}`),
+  });
+
+  // Opening a message marks it read on the server; refresh the list and unread counts once per message.
+  useEffect(() => {
+    if (!detail.data || !selected || selected.is_read || markedRead.current.has(selectedId)) return;
+    markedRead.current.add(selectedId);
+    void client.invalidateQueries({ queryKey: ['mail', 'messages'] });
+    void client.invalidateQueries({ queryKey: ['mail', 'mailboxes'] });
+  }, [detail.data, selected, selectedId, client]);
+
+  const refreshAll = () => client.invalidateQueries({ queryKey: ['mail'] });
+
+  const change = useMutation({
+    mutationFn: (input: { id: string; changes: Record<string, unknown>; leaves?: boolean }) =>
+      apiClient.patch(`/mail/messages/${input.id}`, input.changes),
+    onSuccess: async (_data, input) => {
+      if (input.leaves) setSelectedId('');
+      await refreshAll();
+    },
+    onError: () => setNotice({ tone: 'error', text: t('mail.actionError') }),
+  });
+  const spam = useMutation({
+    mutationFn: (id: string) => apiClient.post(`/mail/messages/${id}/report-spam`),
+    onSuccess: async () => {
+      setSelectedId('');
+      await refreshAll();
+    },
+    onError: () => setNotice({ tone: 'error', text: t('mail.actionError') }),
+  });
+
+  const pick = (id: string) => {
+    setNotice(null);
+    setSelectedId(id);
+  };
+  const chooseFolder = (value: string) => {
+    setFolder(value as Folder);
+    setSelectedId('');
+  };
+
+  const shown = detail.data && selected ? { ...selected, ...detail.data } : null;
+
+  const compose = (next: ComposeSeed) => {
+    if (mailboxId) setSeed(next);
+  };
+  const seedFor = (kind: SeedKind) => {
+    if (!shown || !mailbox) return;
+    compose(
+      buildSeed(kind, shown, {
+        me: mailbox.address,
+        date: new Date(selected?.received_at ?? Date.now()).toLocaleString(),
+        wroteOn: (who, date) => t('mail.wroteOn', { who, date }),
+        forwardedHeader: t('mail.forwardedHeader'),
+      }),
+    );
+  };
+  const editDraft = () => {
+    if (!shown) return;
+    const pickAddresses = (kind: 'to' | 'cc' | 'bcc') =>
+      shown.recipients.filter((recipient) => recipient.kind === kind).map((recipient) => recipient.address);
+    compose({
+      draftId: selectedId,
+      to: pickAddresses('to'),
+      cc: pickAddresses('cc'),
+      bcc: pickAddresses('bcc'),
+      subject: shown.subject,
+      body: shown.body_text,
+      attachments: shown.attachments.map((file) => ({ id: file.id, filename: file.filename, size: file.size_bytes })),
+    });
+  };
+
+  const download = async (attachmentId: string) => {
+    try {
+      const link = await apiClient.get<{ download_url: string }>(`/mail/attachments/${attachmentId}/download`);
+      window.open(link.download_url, '_blank', 'noopener,noreferrer');
+    } catch {
+      setNotice({ tone: 'error', text: t('mail.downloadFailed') });
+    }
+  };
+
+  // Keyboard shortcuts. Ignored while typing, while a dialog is open, and with any modifier key held.
+  const shortcuts = useRef<(event: KeyboardEvent) => void>(() => undefined);
+  shortcuts.current = (event) => {
+    if (seed || event.metaKey || event.ctrlKey || event.altKey || isTyping(event.target)) return;
+    const index = items.findIndex((item) => item.mailbox_message_id === selectedId);
+    if (event.key === 'c') {
+      event.preventDefault();
+      compose(EMPTY_SEED);
+    } else if (event.key === 'j' || event.key === 'k') {
+      const next = items[event.key === 'j' ? index + 1 : index - 1];
+      if (next) pick(next.mailbox_message_id);
+    } else if (selected && event.key === 'r') {
+      seedFor('reply');
+    } else if (selected && event.key === 's') {
+      change.mutate({ id: selectedId, changes: { is_starred: !selected.is_starred } });
+    } else if (selected && event.key === '#') {
+      change.mutate({ id: selectedId, changes: { folder: 'trash' }, leaves: true });
+    }
+  };
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => shortcuts.current(event);
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
+  const tabs = FOLDERS.map((value) => ({
+    value,
+    label:
+      value === 'inbox' && mailbox && mailbox.unread_count > 0
+        ? `${t('mail.folders.inbox')} (${mailbox.unread_count})`
+        : t(`mail.folders.${value}`),
+  }));
+
+  const onDone = (outcome: 'sent' | 'saved' | 'deleted') => {
+    setSeed(null);
+    setNotice({ tone: 'success', text: t(outcome === 'sent' ? 'mail.sent' : outcome === 'saved' ? 'mail.draftSaved' : 'mail.draftDiscarded') });
+    void refreshAll();
+  };
+
+  const loadFailed = boxes.isError || list.isError;
+  const noMailbox = boxes.isSuccess && mailboxes.length === 0;
+  const inTrash = folder === 'trash' || folder === 'spam';
+
+  return (
+    <section aria-label={t('mail.title')}>
+      <PageHeader
+        title={t('mail.title')}
+        subtitle={t('mail.subtitle')}
+        actions={
+          <ButtonGroup>
+            <Button onClick={() => compose(EMPTY_SEED)} disabled={!mailboxId}>
+              {t('mail.compose')}
+            </Button>
+            <Button variant="outline" onClick={() => void refreshAll()}>
+              {t('mail.refresh')}
+            </Button>
+          </ButtonGroup>
+        }
+      />
+      {loadFailed ? <Notice tone="error">{t('mail.error')}</Notice> : null}
+      {noMailbox ? <Notice tone="info">{t('mail.noMailbox')}</Notice> : null}
+      {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
+
+      <div className={styles.toolbar}>
+        {mailboxes.length > 1 ? (
+          <Field
+            kind="select"
+            label={t('mail.mailbox')}
+            value={mailboxId}
+            onChange={(event) => {
+              setMailboxChoice(event.target.value);
+              setSelectedId('');
+            }}
+          >
+            {mailboxes.map((box) => (
+              <option key={box.id} value={box.id}>
+                {box.display_name} · {box.address}
+              </option>
+            ))}
+          </Field>
+        ) : null}
+        <FilterTabs tabs={tabs} value={folder} onChange={chooseFolder} label={t('mail.folderLabel')} controls="mail-list" />
+        <SearchBar
+          label={t('mail.searchLabel')}
+          searchLabel={t('mail.searchField')}
+          buttonLabel={t('mail.searchButton')}
+          placeholder={t('mail.searchPlaceholder')}
+          value={query}
+          onSearch={(text) => {
+            setQuery(text);
+            setSelectedId('');
+          }}
+        />
+      </div>
+
+      <div className={styles.layout} data-has-selection={selectedId ? 'true' : 'false'}>
+        <div className={`${styles.panel} ${styles.listPanel}`}>
+          <div id="mail-list" className={styles.list} role="list" aria-label={t('mail.messages')} aria-busy={list.isFetching}>
+            {list.isLoading ? <p role="status">{t('mail.loading')}</p> : null}
+            {list.isSuccess && items.length === 0 ? <p>{query ? t('mail.emptySearch') : t('mail.empty')}</p> : null}
+            {items.map((item) => (
+              <div role="listitem" key={item.mailbox_message_id}>
+                <Button
+                  variant="outline"
+                  size="compact"
+                  aria-pressed={item.mailbox_message_id === selectedId}
+                  className={`${styles.row} ${item.is_read ? '' : styles.unread}`}
+                  onClick={() => pick(item.mailbox_message_id)}
+                >
+                  <span className={styles.rowTop}>
+                    <span className={styles.sender}>{item.from_name || item.from_address}</span>
+                    {!item.is_read ? <Badge tone="new">{t('mail.unread')}</Badge> : null}
+                  </span>
+                  <span className={styles.subject}>{item.subject || t('mail.noSubject')}</span>
+                  <span className={styles.meta}>
+                    {item.is_starred ? '★ ' : ''}
+                    {new Date(item.received_at).toLocaleString()}
+                  </span>
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <article className={`${styles.panel} ${styles.readerPanel}`} aria-label={t('mail.reader')}>
+          {!selectedId ? <p>{t('mail.select')}</p> : null}
+          {selectedId && detail.isLoading ? <p role="status">{t('mail.loading')}</p> : null}
+          {selectedId && detail.isError ? <Notice tone="error">{t('mail.error')}</Notice> : null}
+          {shown ? (
+            <div className={styles.reader}>
+              <ButtonGroup size="compact">
+                <Button variant="outline" className={styles.mobileBack} onClick={() => setSelectedId('')}>
+                  {t('mail.backToList')}
+                </Button>
+                {folder === 'drafts' ? (
+                  <Button onClick={editDraft}>{t('mail.compose')}</Button>
+                ) : (
+                  <>
+                    <Button onClick={() => seedFor('reply')}>{t('mail.reply')}</Button>
+                    <Button variant="outline" onClick={() => seedFor('replyAll')}>
+                      {t('mail.replyAll')}
+                    </Button>
+                    <Button variant="outline" onClick={() => seedFor('forward')}>
+                      {t('mail.forward')}
+                    </Button>
+                  </>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => change.mutate({ id: selectedId, changes: { is_starred: !shown.is_starred } })}
+                >
+                  {shown.is_starred ? t('mail.unstar') : t('mail.star')}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => change.mutate({ id: selectedId, changes: { is_read: false }, leaves: true })}
+                >
+                  {t('mail.markUnread')}
+                </Button>
+                {inTrash ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => change.mutate({ id: selectedId, changes: { folder: 'inbox' }, leaves: true })}
+                  >
+                    {t('mail.restore')}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => change.mutate({ id: selectedId, changes: { folder: 'trash' }, leaves: true })}
+                  >
+                    {t('mail.trash')}
+                  </Button>
+                )}
+                {shown.origin === 'inbound' && folder !== 'spam' ? (
+                  <Button variant="outline" onClick={() => spam.mutate(selectedId)}>
+                    {t('mail.reportSpam')}
+                  </Button>
+                ) : null}
+              </ButtonGroup>
+              <h2>{shown.subject || t('mail.noSubject')}</h2>
+              {shown.origin === 'inbound' ? <Notice tone="info" role={null}>{t('mail.externalBanner')}</Notice> : null}
+              <p className={styles.meta}>
+                {t('mail.from')}: {shown.from_name ? `${shown.from_name} <${shown.from_address}>` : shown.from_address}
+                <br />
+                {(['to', 'cc', 'bcc'] as const).map((kind) => {
+                  const addresses = shown.recipients.filter((recipient) => recipient.kind === kind);
+                  return addresses.length ? (
+                    <span key={kind}>
+                      {t(`mail.${kind}`)}: {addresses.map((recipient) => recipient.address).join(', ')}
+                      <br />
+                    </span>
+                  ) : null;
+                })}
+                {t('mail.date')}: {new Date(selected?.received_at ?? '').toLocaleString()}
+              </p>
+              <pre className={styles.body}>{shown.body_text}</pre>
+              {shown.attachments.length > 0 ? (
+                <div>
+                  <h3>{t('mail.attachments')}</h3>
+                  <ul className={styles.attachments}>
+                    {shown.attachments.map((attachment) => (
+                      <li key={attachment.id}>
+                        <span>
+                          {attachment.filename} · {formatBytes(attachment.size_bytes)}
+                        </span>
+                        <Button variant="outline" size="compact" onClick={() => void download(attachment.id)}>
+                          {t('mail.download')}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </article>
+      </div>
+      <p className={styles.hint}>{t('mail.shortcuts')}</p>
+
+      {seed && mailboxId ? (
+        <MailCompose mailboxId={mailboxId} seed={seed} onClose={() => setSeed(null)} onDone={onDone} />
+      ) : null}
+    </section>
+  );
+}

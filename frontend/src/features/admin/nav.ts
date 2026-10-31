@@ -31,6 +31,7 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { path: '/admin/permissions', labelKey: 'permissions', scopes: ['users:read'], icon: 'shield', group: 'website' },
   { path: '/admin/reports', labelKey: 'reports', scopes: ['reports:read'], icon: 'reports', group: 'website' },
   { path: '/admin/activity', labelKey: 'activity', scopes: ['activity:read'], icon: 'activity', group: 'website' },
+  { path: '/admin/mail', labelKey: 'mail', scopes: ['mail:use'], icon: 'mail', group: 'website' },
   // Care operations
   { path: '/admin/care/clients', labelKey: 'clients', scopes: ['clients:read'], icon: 'home', group: 'careOperations' },
   { path: '/admin/care/places', labelKey: 'places', scopes: ['places:read'], icon: 'pin', group: 'careOperations' },
@@ -62,6 +63,7 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { path: '/admin/care/data-requests', labelKey: 'dataRequests', scopes: ['system:manage'], icon: 'shield', group: 'setup' },
   { path: '/admin/app-releases', labelKey: 'appReleases', scopes: ['system:manage'], icon: 'download', group: 'setup' },
   { path: '/admin/backups', labelKey: 'backupsHealth', scopes: ['system:manage'], icon: 'shield', group: 'setup' },
+  { path: '/admin/mail/settings', labelKey: 'mailSettings', scopes: ['mail:settings:manage'], icon: 'settings', group: 'setup' },
 ];
 
 /**

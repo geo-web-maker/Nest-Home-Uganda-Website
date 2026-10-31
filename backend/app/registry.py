@@ -48,6 +48,7 @@ from app.modules.field_ops.models import SyncPushReceipt
 from app.modules.flags.models import VisitFlag
 from app.modules.jobs import router as jobs_router
 from app.modules.jobs.models import Job
+from app.modules.mail import router as mail_router
 from app.modules.media import router as media_router
 from app.modules.media.models import Media
 from app.modules.notifications.models import SmsLog
@@ -169,6 +170,7 @@ ROUTERS: list[APIRouter] = [
     field_ops_router.router,
     care_admin_router.router,
     care_ops_router.router,
+    mail_router.router,
 ]
 
 

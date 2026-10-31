@@ -11,6 +11,7 @@ import { enableVisitReminders, scheduleVisitReminders } from '../platform/notify
 import { compressPhotoBundle, PHOTO_MAX_BYTES } from '../features/photos/compress';
 import { readRefreshToken } from '../platform/secureTokenStorage';
 import { kampalaDateKey } from '../lib/time';
+import { clearMailCache } from '../features/mail/mailStore';
 import { applySyncPullPage, cacheClients, cacheVisits, cacheHistory, clearSyncCursor, enqueueOperation, enqueuePhoto, getSyncCursor, listCachedClients, listCachedHistory, listCachedVisits, listQueuedPhotos, nurseDb, recoverInterruptedOperations, recoverInterruptedPhotos, removeLocalPhoto, updateCachedVisit, updateLocalPhoto, type CachedClient, type CachedHistoryVisit, type CachedVisit, type LocalPhoto, type OutboxOperation } from '../offline/db';
 import { runSync } from '../offline/syncEngine';
 import { pullSyncPages } from '../offline/pullSyncPages';
@@ -26,6 +27,7 @@ import { useHeartbeat } from '../features/heartbeat/useHeartbeat';
 import { copy, APP_VERSION } from '../copy';
 import { AppShell } from './AppShell';
 import { NurseRoutes } from './routes';
+import { MailScreen } from '../features/mail/MailScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { Onboarding } from '../screens/Onboarding';
 import { TodayScreen } from '../screens/TodayScreen';
@@ -378,7 +380,7 @@ function NurseWorkspace() {
     await session.signOutLocal();
     clearProfile();
     await clearSyncCursor(currentUserId);
-    await nurseDb.visits.clear(); await nurseDb.history.clear(); await nurseDb.clients.clear(); await nurseDb.consents.clear();
+    await nurseDb.visits.clear(); await nurseDb.history.clear(); await nurseDb.clients.clear(); await nurseDb.consents.clear(); await clearMailCache();
     localStorage.removeItem('nest.nurse.cache-user-id');
     setCurrentUserId(''); setConsentsRequired([]); setAdhocAllowed(false); setPhotosEnabled(false); setSosEnabled(false); setAdhocOpen(false); setPhotoVisitId(''); setNoteVisitId(''); setActionVisit(null); setActionKind(null); setSafetyTimerEnabled(false); setLogoutGuardOpen(false); setLogoutPendingCount(0); setAllOperations([]); setLocalPhotos([]); setQueued(0); setPendingPhotoCount(0);
     setMessage(remoteRevoked ? copy.messages.signOutRemote : copy.messages.signOutLocal);
@@ -800,6 +802,7 @@ function NurseWorkspace() {
     history: <HistoryScreen history={history} loading={historyLoading} hasMore={historyHasMore} onLoadMore={() => void loadMoreHistory()} pendingVisitIds={pendingHistoryVisitIds} />,
     timesheets: <TimesheetsScreen online={online} />,
     profile: <ProfileScreen profile={fieldProfile} appVersion={APP_VERSION} versionInfo={versionInfo} remindersEnabled={visitRemindersEnabled} inboxEnabled={inboxEnabled} inbox={inbox} inboxMessage={inboxMessage} visits={visits} busy={busy} onSync={() => void sync()} onEnableReminders={() => void enableReminders()} onDisableReminders={() => void disableReminders()} onCheckUpdate={() => void checkForUpdate()} onLogout={() => void requestSignOut()} />,
+    mail: <MailScreen />,
     sync: <SyncScreen operations={allOperations} photos={localPhotos} userId={currentUserId} online={online} busy={busy} wifiOnly={wifiOnlyUpload} onSync={() => void sync()} onRetry={(id) => void retrySavedOperation(id)} onDiscard={(id) => void discardSavedOperation(id)} onApplyAgain={(operation) => void applySavedOperationAgain(operation)} onRetryPhoto={(id) => void retrySavedPhoto(id)} onUploadPhotoNow={(id) => { void uploadPhotoNow(id); }} onDiscardPhoto={(id) => void discardSavedPhoto(id)} />,
     visit: (visitId: string) => { const visit = selectedVisit(visitId); return visit ? <VisitDetail visit={visit} photosEnabled={photosEnabled} onArrive={(item) => requestVisitAction(item, 'check_in')} onLeave={(item) => requestVisitAction(item, 'check_out')} onNote={openNote} onPhoto={openPhoto} /> : <Card><h2>{copy.generic.visitUnavailable}</h2><p>{copy.generic.visitUnavailableCopy}</p><PillButton type="button" tone="forest" onClick={() => void sync()}>{copy.generic.syncSchedule}</PillButton></Card>; },
     activeVisit: (visitId: string) => { const visit = selectedVisit(visitId); return visit && visit.status === 'in_progress' ? <ActiveVisit visit={visit} onNote={openNote} onPhoto={openPhoto} onLeave={(item) => requestVisitAction(item, 'check_out')} photosEnabled={photosEnabled} /> : <Card><h2>{copy.generic.activeVisitUnavailable}</h2><p>{copy.generic.activeVisitUnavailableCopy}</p><PillButton type="button" tone="forest" onClick={() => void sync()}>{copy.generic.syncSchedule}</PillButton></Card>; },

@@ -4,8 +4,10 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { AdminLayout } from './AdminLayout';
 import { useAuth } from './auth/useAuth';
+import { useMailUnread } from './mail/useMailUnread';
 
 vi.mock('./auth/useAuth', () => ({ useAuth: vi.fn() }));
+vi.mock('./mail/useMailUnread', () => ({ useMailUnread: vi.fn(() => 0) }));
 
 const logout = vi.fn();
 
@@ -268,5 +270,38 @@ describe('AdminLayout sign out', () => {
       within(sidebar().parentElement as HTMLElement).getByRole('button', { name: 'Sign out' }),
     );
     expect(logout).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('AdminLayout mail badge', () => {
+  it('shows the unread total on the Mail link and asks the hook only when the person can use mail', () => {
+    vi.mocked(useMailUnread).mockReturnValue(3);
+    setup('/admin', ['mail:use']);
+    const sidebar = screen.getByRole('navigation', { name: 'Admin' });
+    expect(within(sidebar).getByLabelText('3 unread')).toHaveTextContent('3');
+    expect(vi.mocked(useMailUnread)).toHaveBeenLastCalledWith(true);
+  });
+
+  it('caps the badge at 99+ and shows nothing at zero', () => {
+    vi.mocked(useMailUnread).mockReturnValue(250);
+    const { unmount } = setup('/admin', ['mail:use']);
+    expect(screen.getAllByText('99+').length).toBeGreaterThan(0);
+    unmount();
+    vi.mocked(useMailUnread).mockReturnValue(0);
+    setup('/admin', ['mail:use']);
+    expect(screen.queryByLabelText(/unread/)).toBeNull();
+  });
+
+  it('does not ask for mail counts when the person has no mail scope', () => {
+    vi.mocked(useMailUnread).mockReturnValue(0);
+    setup('/admin', ['enquiries:read']);
+    expect(vi.mocked(useMailUnread)).toHaveBeenLastCalledWith(false);
+  });
+
+  it('puts the same badge on the phone bottom bar when Mail is one of its shortcuts', () => {
+    vi.mocked(useMailUnread).mockReturnValue(4);
+    setup('/admin/mail', ['mail:use']);
+    const bottom = screen.getByRole('navigation', { name: /shortcuts/i });
+    expect(within(bottom).queryByLabelText('4 unread')).not.toBeNull();
   });
 });

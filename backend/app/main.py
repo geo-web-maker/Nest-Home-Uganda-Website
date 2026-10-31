@@ -10,6 +10,7 @@ from app.core import db, site_rebuild
 from app.core.config import get_settings
 from app.core.errors import install_error_handlers
 from app.jobs import build_scheduler
+from app.modules.mail import db as mail_db
 from app.registry import API_PREFIX, CARE_DOCUMENT_MODELS, DOCUMENT_MODELS, ROUTERS
 
 
@@ -18,23 +19,34 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     scheduler = None
-    if settings.mongodb_uri:
-        await db.connect(
-            settings.mongodb_uri,
-            settings.mongodb_db,
-            DOCUMENT_MODELS,
-            care_uri=settings.care_mongodb_uri or settings.mongodb_uri,
-            care_db_name=settings.care_mongodb_db,
-            care_models=CARE_DOCUMENT_MODELS,
-        )
-        if settings.scheduler_enabled:
-            scheduler = build_scheduler()
-            scheduler.start()
     try:
+        if settings.nest_pg_url:
+            try:
+                await mail_db.connect(settings.nest_pg_url)
+            except Exception:
+                # Mail is an optional, separately stored feature. Keep the main Mongo-backed
+                # application available and let /health retry the mail connection.
+                logging.getLogger("app.mail.db").warning(
+                    "mail database is unavailable at startup; "
+                    "mail endpoints will remain unavailable"
+                )
+        if settings.mongodb_uri:
+            await db.connect(
+                settings.mongodb_uri,
+                settings.mongodb_db,
+                DOCUMENT_MODELS,
+                care_uri=settings.care_mongodb_uri or settings.mongodb_uri,
+                care_db_name=settings.care_mongodb_db,
+                care_models=CARE_DOCUMENT_MODELS,
+            )
+            if settings.scheduler_enabled:
+                scheduler = build_scheduler()
+                scheduler.start()
         yield
     finally:
         if scheduler is not None:
             scheduler.shutdown(wait=False)
+        await mail_db.close()
         await db.disconnect()
 
 
@@ -89,6 +101,8 @@ def create_app() -> FastAPI:
 
     @api.get("/health", tags=["health"])
     async def health() -> JSONResponse:
+        # Mail probes run in the background and never make the main health response wait.
+        await mail_db.health_hook(settings.nest_pg_url)
         if not settings.mongodb_uri:
             return JSONResponse({"status": "ok", "env": settings.app_env, "database": "off"})
         if await db.ping() and await db.ping_care():

@@ -162,4 +162,6 @@ def get_sms_provider(settings: Settings | None = None) -> SmsProvider:
 
 
 def get_email_provider() -> EmailProvider:
-    return ConsoleEmailProvider()
+    from app.modules.mail.providers import SystemMailOutboxAdapter
+
+    return SystemMailOutboxAdapter()

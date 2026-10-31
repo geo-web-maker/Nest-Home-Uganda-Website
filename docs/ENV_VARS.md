@@ -16,6 +16,16 @@ Values are owner-supplied at deployment time. Never commit secrets or production
 | `SITE_REBUILD_DEBOUNCE_SECONDS` | Quiet time after the last public edit before the hook is called (default 300). Several edits in that window cause one build. |
 | `BUSINESS_EMAIL` | Default public contact email (seeds `business.email`). Set to an address on the new domain; editable later in admin Settings. |
 | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET_PUBLIC`, `S3_BUCKET_PRIVATE`, `S3_KEY`, `S3_SECRET` | Existing S3-compatible object storage. |
+| `S3_BUCKET_MAIL` | Dedicated private R2 bucket for mail attachments and raw inbound messages. |
+| `NEST_PG_URL` | Required Neon Postgres pooled URL for the mail data plane; keep `sslmode=require`. |
+| `NEST_MAIL_SECRET_KEY` | Required encryption key for secrets stored in `mail_settings`; environment-only and never commit it. |
+| `NEST_MAIL_DOMAIN` | Optional bootstrap fallback for the mail root domain; saved settings take precedence. |
+| `NEST_MAIL_PROVIDER` | Optional bootstrap fallback for `console`, `resend` or `brevo` (default `console`). |
+| `NEST_MAIL_API_KEY` | Optional bootstrap provider API key; secret and write-only when shown in settings. |
+| `NEST_MAIL_PROVIDER_WEBHOOK_SECRET` | Optional bootstrap Resend Svix/Brevo webhook signing secret; stored encrypted if saved in settings. |
+| `NEST_MAIL_INBOUND_WEBHOOK_SECRET` | Optional bootstrap HMAC secret shared with the Cloudflare Email Worker; stored encrypted if saved in settings. |
+| `BACKUP_PASSPHRASE`, `B2_ENDPOINT`, `B2_KEY`, `B2_SECRET`, `BACKUP_BUCKET` | Owner-run encrypted mail database backups to Backblaze B2; never add to CI. |
+| `MAIL_BACKUP_ATTACHMENTS_BUCKET` | Second B2 bucket for the owner-run mail attachment mirror. |
 
 ## Nurse/care configuration
 
@@ -62,3 +72,9 @@ These values are organisation-managed care settings rather than environment secr
 - `retention.requests_months`: the existing public-enquiry retention job remains a separate path; align it with the organisation's approved policy before relying on the care retention settings for it.
 
 No retention period is a legal recommendation. Obtain the organisation's approved policy before enabling automated deletion.
+
+## Mail module configuration
+
+The mail system uses a separate Neon Postgres database and the existing S3-compatible storage adapter with a dedicated private mail bucket. The mail feature flag defaults to `false`; configuring `NEST_PG_URL` alone does not expose mail to end users. All editable mail values are stored in `mail_settings` and resolve in this order: saved database value, matching `NEST_MAIL_*` environment variable, then the built-in default. `NEST_PG_URL` and `NEST_MAIL_SECRET_KEY` are environment-only. Secrets saved through the settings API are encrypted and are returned only as `set` / `not set`.
+
+Do not add `NEST_PG_URL`, `NEST_MAIL_SECRET_KEY`, provider API keys, or real bucket credentials to GitHub Actions. Database access and backup/restore scripts are owner-run.

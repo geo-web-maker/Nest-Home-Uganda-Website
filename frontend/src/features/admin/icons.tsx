@@ -9,6 +9,7 @@ const PATHS: Record<string, ReactNode> = {
       <rect x="3" y="16" width="7" height="5" rx="1.5" />
     </>
   ),
+  mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m4 7 8 6 8-6" /></>,
   enquiries: <path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.5A8 8 0 1 1 21 12z" />,
   careers: (
     <>
