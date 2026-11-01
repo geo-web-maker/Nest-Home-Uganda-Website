@@ -60,7 +60,7 @@ let queue: Promise<unknown> = Promise.resolve();
 /** One draft write at a time: in this tab by a queue, across tabs by a Web Lock where the browser has one. */
 function exclusive<T>(work: () => Promise<T>): Promise<T> {
   const run = queue.then(
-    (): Promise<T> => (typeof navigator !== 'undefined' && navigator.locks ? navigator.locks.request<T>('nest-mail-drafts', work) : work()),
+    (): Promise<T> => (typeof navigator !== 'undefined' && navigator.locks ? navigator.locks.request<Promise<T>>('nest-mail-drafts', work).then((result) => result) : work()),
   );
   queue = run.catch(() => undefined);
   return run;
