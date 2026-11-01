@@ -1,0 +1,68 @@
+/* Nurse status, banner, map and shadow colours. Same role as design/tokens.css: this is the only
+   place the nurse app writes literal colours; styles.css refers to these variables. Dark values
+   replace the light ones under html[data-theme="dark"], so components need no dark overrides. */
+:root {
+  --mk-shadow-toast: 0 12px 35px rgb(18 53 36 / 14%);
+  --mk-shadow-tabs: 0 9px 30px rgb(18 53 36 / 13%);
+  --mk-shadow-card-hover: 0 8px 22px rgb(18 53 36 / 7%);
+  --mk-tabs-line: rgb(18 53 36 / 9%);
+  --mk-btn-icon-bg: rgb(255 255 255 / 43%);
+  --mk-on-danger: #fff;
+  /* --gold is too light for text on the light background (2.4:1); this is 4.7:1. */
+  --mk-gold-text: #8a6a1f;
+  /* Text versions of --forest and --moss. Those two are dark backgrounds or dark greens in the dark
+     theme, so text that uses them there is unreadable; the dark theme swaps in readable colours. */
+  --mk-forest-text: var(--forest);
+  --mk-moss-text: var(--moss);
+
+  --mk-chip-ok-bg: #dcefe2; --mk-chip-ok-fg: #175b36;
+  --mk-chip-rv-bg: #f8e8d4; --mk-chip-rv-fg: #704411;
+  --mk-chip-pd-bg: #eee9d9; --mk-chip-pd-fg: #62501f;
+  --mk-chip-pg-bg: #dcebe5; --mk-chip-pg-fg: #164c38;
+  --mk-chip-sc-bg: #e8eee7; --mk-chip-sc-fg: #42594a;
+  --mk-chip-new-bg: #e5ebfb; --mk-chip-new-fg: #344e8a;
+  --mk-chip-bad-bg: #f8dedb; --mk-chip-bad-fg: #8b2019;
+
+  --mk-banner-info-line: #c8d9d0; --mk-banner-info-bg: #e7f1eb; --mk-banner-info-fg: #244c38;
+  --mk-banner-warn-line: #e5d3ac; --mk-banner-warn-bg: #f8f0dd; --mk-banner-warn-fg: #624b1d;
+  --mk-banner-bad-line: #e8c1bd; --mk-banner-bad-bg: #fae9e7; --mk-banner-bad-fg: #7b211c;
+
+  --mk-map-line: var(--line);
+  --mk-map-bg: #e8e9d8;
+  --mk-map-stripe: rgb(80 111 83 / 14%);
+  --mk-map-ink: #244b34;
+
+  --mk-egg-line: color-mix(in srgb, var(--gold) 55%, var(--line));
+  --mk-egg-bg: var(--straw);
+  --mk-egg-ink: #43351a;
+}
+
+:root[data-theme="dark"] {
+  --mk-chip-ok-bg: #173f2b; --mk-chip-ok-fg: #c3eed0;
+  --mk-chip-rv-bg: #543a1d; --mk-chip-rv-fg: #f6d7a9;
+  --mk-chip-pd-bg: #494126; --mk-chip-pd-fg: #efe0a5;
+  --mk-chip-pg-bg: #1d4436; --mk-chip-pg-fg: #c0ead8;
+  --mk-chip-sc-bg: #344438; --mk-chip-sc-fg: #d1e0d4;
+  --mk-chip-new-bg: #293c66; --mk-chip-new-fg: #d0dcff;
+  --mk-chip-bad-bg: #572b28; --mk-chip-bad-fg: #ffd2cd;
+
+  --mk-banner-info-line: #365c48; --mk-banner-info-bg: #1b3528; --mk-banner-info-fg: #d3e9da;
+  --mk-banner-warn-line: #67532e; --mk-banner-warn-bg: #3b321e; --mk-banner-warn-fg: #f1dfb0;
+  --mk-banner-bad-line: #6e3934; --mk-banner-bad-bg: #422321; --mk-banner-bad-fg: #ffd7d2;
+
+  --mk-gold-text: var(--gold);
+  --mk-forest-text: var(--ink);
+  --mk-moss-text: var(--leaf);
+
+  --mk-map-line: #53634f;
+  --mk-map-bg: #354337;
+  --mk-map-stripe: rgb(200 220 185 / 13%);
+  --mk-map-ink: #deebd5;
+
+  --mk-egg-line: #7b6a3c;
+  --mk-egg-bg: #594b2c;
+  --mk-egg-ink: #f7edce;
+
+  --mk-dark-card-line: rgb(235 242 234 / 9%);
+  --mk-dark-timesheet-total: #1e4837;
+}
