@@ -551,7 +551,8 @@ export interface paths {
         get: operations["get_nurse_profile_api_v1_admin_care_nurses__user_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete Nurse Account */
+        delete: operations["delete_nurse_account_api_v1_admin_care_nurses__user_id__delete"];
         options?: never;
         head?: never;
         /** Update Nurse */
@@ -1767,7 +1768,8 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /** Admin Delete */
+        delete: operations["admin_delete_api_v1_admin_users__user_id__delete"];
         options?: never;
         head?: never;
         /** Admin Update */
@@ -3032,7 +3034,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List Shared
+         * @description Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.
+         */
+        get: operations["list_shared_api_v1_mail_shared_get"];
         put?: never;
         /** Create Shared */
         post: operations["create_shared_api_v1_mail_shared_post"];
@@ -3139,6 +3145,26 @@ export interface paths {
         put?: never;
         /** Totp Enroll */
         post: operations["totp_enroll_api_v1_mail_totp_enroll_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mail/totp/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Totp Reset
+         * @description Remove this user's authenticator after proving it with a current code or a one-time recovery code.
+         */
+        post: operations["totp_reset_api_v1_mail_totp_reset_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5021,12 +5047,16 @@ export interface components {
             app_version?: string | null;
             /** Last Seen At */
             last_seen_at?: string | null;
+            /** Name */
+            name?: string | null;
             /** Phone E164 */
             phone_e164?: string | null;
             /** Staff Number */
             staff_number: string;
             /** Supervisor Id */
             supervisor_id: string | null;
+            /** Supervisor Name */
+            supervisor_name?: string | null;
             /** Team Id */
             team_id: string | null;
             /** User Id */
@@ -7562,6 +7592,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["NurseProfileResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_nurse_account_api_v1_admin_care_nurses__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -10685,6 +10744,35 @@ export interface operations {
             };
         };
     };
+    admin_delete_api_v1_admin_users__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     admin_update_api_v1_admin_users__user_id__patch: {
         parameters: {
             query?: never;
@@ -13245,6 +13333,37 @@ export interface operations {
             };
         };
     };
+    list_shared_api_v1_mail_shared_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_shared_api_v1_mail_shared_post: {
         parameters: {
             query?: never;
@@ -13498,6 +13617,39 @@ export interface operations {
             };
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    totp_reset_api_v1_mail_totp_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TotpCodeBody"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
