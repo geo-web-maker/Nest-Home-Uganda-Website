@@ -353,6 +353,17 @@ async def totp_enroll(principal: Principal=Depends(require_scopes("mail:use")),m
     uri=f"otpauth://totp/{label}?secret={secret}&issuer=Nest%20Home%20Care&algorithm=SHA1&digits=6&period=30"
     return {"secret":secret,"otpauth_uri":uri,"instructions":"Add this account to an authenticator app, then confirm with its current six-digit code. The secret is shown once."}
 
+@router.post("/totp/reset")
+async def totp_reset(body: TotpCodeBody,response: Response,principal: Principal=Depends(require_scopes("mail:use"))):
+    """Remove this user's authenticator after proving it with a current code or a one-time recovery code."""
+    from app.modules.mail.totp import verify_code_or_recovery
+    if not await verify_code_or_recovery(principal.user_id,body.code): raise Forbidden("Authenticator code is invalid.")
+    pool=mail_db.get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("DELETE FROM totp_secret WHERE user_id=$1",principal.user_id)
+    response.delete_cookie("mail_totp",path="/")
+    return {"reset":True}
+
 @router.post("/totp/confirm")
 async def totp_confirm(body: TotpCodeBody,principal: Principal=Depends(require_scopes("mail:use"))):
     from app.modules.mail.totp import confirm

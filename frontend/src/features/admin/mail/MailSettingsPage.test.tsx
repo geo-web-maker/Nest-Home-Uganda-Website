@@ -224,4 +224,13 @@ describe('MailSettingsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Send test' }));
     expect(await screen.findByText('Test message accepted by resend. Check the inbox of me@mail.test, including spam.')).toBeInTheDocument();
   });
+
+  it('resets the authenticator with a code or recovery code', async () => {
+    api();
+    const user = userEvent.setup();
+    setup();
+    await user.type(await screen.findByLabelText('Six-digit authenticator code'), 'a4fcbf4e86');
+    await user.click(screen.getByRole('button', { name: 'Reset authenticator' }));
+    await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/mail/totp/reset', { code: 'a4fcbf4e86' }));
+  });
 });

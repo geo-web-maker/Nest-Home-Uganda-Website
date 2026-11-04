@@ -110,6 +110,17 @@ export function MailSettingsPage() {
     },
     onError: () => fail(t('mailSettings.totpError')),
   });
+  const resetTotp = useMutation({
+    mutationFn: () => apiClient.post('/mail/totp/reset', { code: totpCode }),
+    onSuccess: async () => {
+      setTotpSecret('');
+      setTotpCode('');
+      setRecoveryCodes([]);
+      ok(t('mailSettings.totpResetDone'));
+      await reload();
+    },
+    onError: () => fail(t('mailSettings.totpResetError')),
+  });
   const confirmTotp = useMutation({
     mutationFn: async () => {
       const result = await apiClient.post<{ recovery_codes: string[] }>('/mail/totp/confirm', { code: totpCode });
@@ -221,6 +232,9 @@ export function MailSettingsPage() {
             ) : null}
             <Button variant="outline" disabled={totpCode.trim().length < 6} onClick={() => verify.mutate()}>
               {t('mailSettings.verifyTotp')}
+            </Button>
+            <Button variant="outline" disabled={totpCode.trim().length < 6 || resetTotp.isPending} onClick={() => resetTotp.mutate()}>
+              {t('mailSettings.resetTotp')}
             </Button>
           </ButtonGroup>
           {recoveryCodes.length > 0 ? (

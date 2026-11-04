@@ -92,3 +92,10 @@ async def test_list_shared_groups_members_and_hides_no_reply_filter_in_sql(monke
         }
     ]
     assert "local_part<>'no-reply'" in inspect.getsource(router.list_shared)
+
+
+def test_totp_reset_route_requires_a_proven_code_and_clears_the_cookie():
+    source = inspect.getsource(router.totp_reset)
+    assert "verify_code_or_recovery" in source
+    assert "DELETE FROM totp_secret WHERE user_id=$1" in source
+    assert 'delete_cookie("mail_totp"' in source
