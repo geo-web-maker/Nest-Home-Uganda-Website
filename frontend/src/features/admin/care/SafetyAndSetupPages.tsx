@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { dialogs } from '../../../lib/dialogs';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { DataTable } from '../../../components/admin/DataTable';
@@ -132,7 +133,7 @@ export function SOSHistoryPage() {
   useEffect(() => { void load(); }, [load]);
   async function testMessage() {
     if (!canCareWrite || busy) return;
-    if (!window.confirm('Run the SOS test-message path to the configured test destination? With a live provider this can send a real SMS. It never creates a live SOS case.')) return;
+    if (!await dialogs.confirm('Run the SOS test-message path to the configured test destination? With a live provider this can send a real SMS. It never creates a live SOS case.')) return;
     setBusy(true); setError(''); setNotice('');
     try { await apiClient.post('/admin/care/sos/test-sms', {}); setNotice('Test-message request completed. Review the notification log; this is not a delivery receipt.'); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Test message failed.'); }

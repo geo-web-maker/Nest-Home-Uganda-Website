@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { dialogs } from '../../../lib/dialogs';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ButtonGroup } from '../../../components/admin/ButtonGroup';
@@ -98,7 +99,7 @@ export function UsersPage() {
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
-    onError: (e) => window.alert(e instanceof Error ? e.message : 'Delete failed'),
+    onError: (e) => void dialogs.alert(e instanceof Error ? e.message : 'Delete failed'),
   });
   const signOut = useMutation({
     mutationFn: (id: string) =>
@@ -169,8 +170,8 @@ export function UsersPage() {
           <Button
             variant="outline"
             disabled={!canWrite || remove.isPending || item.id === current?.id}
-            onClick={() => {
-              if (window.confirm(t('users.confirmDelete', { name: item.name || item.email })))
+            onClick={async () => {
+              if (await dialogs.confirm(t('users.confirmDelete', { name: item.name || item.email })))
                 remove.mutate(item.id);
             }}
           >

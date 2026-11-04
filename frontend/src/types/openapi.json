@@ -9448,44 +9448,6 @@
       }
     },
     "/api/v1/admin/care/nurses/{user_id}": {
-      "delete": {
-        "operationId": "delete_nurse_account_api_v1_admin_care_nurses__user_id__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "user_id",
-            "required": true,
-            "schema": {
-              "title": "User Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Delete Nurse Account",
-        "tags": [
-          "care-nurses"
-        ]
-      },
       "get": {
         "operationId": "get_nurse_profile_api_v1_admin_care_nurses__user_id__get",
         "parameters": [
@@ -14822,44 +14784,6 @@
       }
     },
     "/api/v1/admin/users/{user_id}": {
-      "delete": {
-        "operationId": "admin_delete_api_v1_admin_users__user_id__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "user_id",
-            "required": true,
-            "schema": {
-              "title": "User Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Admin Delete",
-        "tags": [
-          "admin-users"
-        ]
-      },
       "patch": {
         "operationId": "admin_update_api_v1_admin_users__user_id__patch",
         "parameters": [
@@ -18962,57 +18886,6 @@
       }
     },
     "/api/v1/mail/shared": {
-      "get": {
-        "description": "Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.",
-        "operationId": "list_shared_api_v1_mail_shared_get",
-        "parameters": [
-          {
-            "in": "cookie",
-            "name": "mail_totp",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Mail Totp"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "List Shared",
-        "tags": [
-          "mail"
-        ]
-      },
       "post": {
         "operationId": "create_shared_api_v1_mail_shared_post",
         "parameters": [
@@ -19499,51 +19372,6 @@
           }
         ],
         "summary": "Totp Enroll",
-        "tags": [
-          "mail"
-        ]
-      }
-    },
-    "/api/v1/mail/totp/reset": {
-      "post": {
-        "description": "Remove this user's authenticator after proving it with a current code or a one-time recovery code.",
-        "operationId": "totp_reset_api_v1_mail_totp_reset_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TotpCodeBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Totp Reset",
         "tags": [
           "mail"
         ]

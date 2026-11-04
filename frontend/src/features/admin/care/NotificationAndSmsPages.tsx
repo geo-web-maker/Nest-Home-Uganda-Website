@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { dialogs } from '../../../lib/dialogs';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { DataTable } from '../../../components/admin/DataTable';
 import { Button } from '../../../components/ui/Button';
@@ -115,7 +116,7 @@ export function SmsSettingsPage() {
     const message = willSend
       ? `Send a real test SMS to the configured test destination (${testNumber}) using MamboSMS? This does not create an SOS case.`
       : `Run the configured test-message path using the console provider? No handset SMS will be sent. This does not create an SOS case.`;
-    if (!window.confirm(message)) return;
+    if (!await dialogs.confirm(message)) return;
     setTesting(true); setError(''); setNotice('');
     try { await apiClient.post('/admin/care/sos/test-sms', {}); setNotice(willSend ? 'Test request accepted by the provider path. Check the notification log; handset delivery is not confirmed.' : 'Console dry-run completed; no real SMS was sent.'); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Test SMS could not be completed.'); }
@@ -124,7 +125,7 @@ export function SmsSettingsPage() {
 
   async function checkBalance() {
     if (!canCareWrite || checkingBalance || snapshot?.provider !== 'mambosms') return;
-    if (!window.confirm('Query the MamboSMS account balance now? This contacts the configured provider and does not send an SMS.')) return;
+    if (!await dialogs.confirm('Query the MamboSMS account balance now? This contacts the configured provider and does not send an SMS.')) return;
     setCheckingBalance(true); setError(''); setNotice('');
     try { const result: any = await apiClient.post('/admin/care/sms/balance', {}); setBalance(Number(result.balance)); setNotice('Balance returned by the configured provider. Currency/units are shown exactly as returned by that API contract.'); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Provider balance could not be retrieved.'); }

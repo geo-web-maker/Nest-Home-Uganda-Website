@@ -1,5 +1,5 @@
 const KNOWN: Record<string, string> = {
-  user_id: 'Nurse ID', staff_number: 'Staff no.', supervisor_id: 'Supervisor', team_id: 'Team',
+  name: 'Name', supervisor_name: 'Supervisor', user_id: 'Nurse ID', staff_number: 'Staff no.', supervisor_id: 'Supervisor', team_id: 'Team',
   phone_e164: 'Phone', active: 'Status', is_active: 'Status', created_at: 'Created',
   updated_at: 'Updated', scheduled_start: 'Starts', scheduled_end: 'Ends',
 };

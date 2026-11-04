@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from 'react';
+import { pickDevice, pickNurse, pickSupervisor } from './pickers';
+import { dialogs } from '../../../lib/dialogs';
 import { cellText, headerFor } from '../../../lib/tableText';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -232,6 +234,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
     const keys = visibleRows
       .slice(0, 8)
       .flatMap((r) => Object.keys(r))
+      .filter((k) => screen !== 'nurses' || (k !== 'user_id' && k !== 'supervisor_id'))
       .filter((v, i, a) => a.indexOf(v) === i)
       .slice(0, 5);
     const base = (keys.length ? keys : ['id', 'status', 'name', 'created_at']).map((key) => ({
@@ -269,8 +272,8 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => {
-                        const device = window.prompt('Device ID to revoke');
+                      onClick={async () => {
+                        const device = await pickDevice(String(r.user_id ?? ''));
                         if (device)
                           void act(
                             `/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}/revoke-device`,
@@ -296,11 +299,12 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => {
-                        const supervisor = window.prompt('Supervisor ID (blank clears)');
+                      onClick={async () => {
+                        const supervisor = await pickSupervisor();
+                        if (supervisor === null) return;
                         void act(
                           `/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}/supervisor`,
-                          { supervisor_id: supervisor?.trim() || null },
+                          { supervisor_id: supervisor || null },
                           'patch',
                         );
                       }}
@@ -311,7 +315,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                       type="button"
                       variant="outline"
                       onClick={async () => {
-                        if (!window.confirm('Delete this nurse permanently? This cannot be undone.')) return;
+                        if (!await dialogs.confirm('Delete this nurse permanently? This cannot be undone.')) return;
                         try {
                           setNotice('');
                           await apiClient.delete(`/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}`);
@@ -343,8 +347,8 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => {
-                      const nurse = window.prompt('Replacement nurse ID');
+                    onClick={async () => {
+                      const nurse = await pickNurse('Choose the replacement nurse', String(r.nurse_id ?? ''));
                       if (nurse)
                         void act(
                           `/admin/care/visits/${encodeURIComponent(String(r.id ?? ''))}`,
@@ -362,8 +366,8 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  const note = window.prompt('Resolution note (required)');
+                onClick={async () => {
+                  const note = await dialogs.prompt('Resolution note (required)');
                   if (note && note.trim().length >= 3)
                     void act(
                       `/admin/care/flags/${encodeURIComponent(String(r.id ?? ''))}/resolve`,
@@ -397,8 +401,8 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                   <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    const note = window.prompt('Reason for hiding this photo (required)');
+                  onClick={async () => {
+                    const note = await dialogs.prompt('Reason for hiding this photo (required)');
                     if (note && note.trim().length >= 3)
                       void act(
                         `/admin/care/photos/${encodeURIComponent(String(r.id ?? ''))}/hide`,
@@ -427,8 +431,8 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    const note = window.prompt('Resolution note (required)');
+                  onClick={async () => {
+                    const note = await dialogs.prompt('Resolution note (required)');
                     if (note && note.trim().length >= 3)
                       void act(
                         `/admin/care/alerts/${encodeURIComponent(String(r.id ?? ''))}/resolve`,
@@ -456,8 +460,8 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    const note = window.prompt('Reason for sending back (required)');
+                  onClick={async () => {
+                    const note = await dialogs.prompt('Reason for sending back (required)');
                     if (note && note.trim().length >= 3)
                       void act(
                         `/admin/care/timesheets/${encodeURIComponent(String(r.id ?? ''))}/send-back`,
@@ -470,9 +474,9 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    const minutes = window.prompt('Adjustment minutes');
-                    const reason = window.prompt('Adjustment reason (required)');
+                  onClick={async () => {
+                    const minutes = await dialogs.prompt('Adjustment minutes');
+                    const reason = await dialogs.prompt('Adjustment reason (required)');
                     if (minutes && reason && reason.trim().length >= 3)
                       void act(
                         `/admin/care/timesheets/${encodeURIComponent(String(r.id ?? ''))}/adjust`,
@@ -647,7 +651,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
             <option value="">Select nurse</option>
             {nurseOptions.map((x) => (
               <option key={x.user_id ?? x.id} value={x.user_id ?? x.id}>
-                {x.staff_number ?? x.user_id ?? x.id}
+                {x.name ?? x.staff_number ?? x.user_id ?? x.id}
               </option>
             ))}
           </Field>

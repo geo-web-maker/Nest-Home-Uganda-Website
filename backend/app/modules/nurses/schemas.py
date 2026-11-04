@@ -46,6 +46,8 @@ class AdhocOverride(BaseModel):
 
 class NurseProfileResponse(BaseModel):
     user_id: str
+    name: str | None = None
+    supervisor_name: str | None = None
     staff_number: str
     supervisor_id: str | None
     team_id: str | None
