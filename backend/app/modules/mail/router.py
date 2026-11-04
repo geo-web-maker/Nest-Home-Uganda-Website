@@ -112,7 +112,11 @@ async def update_draft(draft_id: str, body: MailDraftBody, principal: Principal 
 
 @router.post("/drafts/{draft_id}/send")
 async def send_draft(draft_id: str, body: SendDraftBody, principal: Principal = Depends(require_scopes("mail:use"))):
-    return await core_service.send_draft(principal.user_id, draft_id, body.mailbox_id)
+    result = await core_service.send_draft(principal.user_id, draft_id, body.mailbox_id)
+    if result.get("external_queued"):
+        from app.modules.mail.outbox import kick
+        kick()
+    return result
 
 
 @router.post("/backfill/preview")
@@ -203,6 +207,20 @@ async def create_shared(body: SharedMailboxBody, principal: Principal = Depends(
             row=await conn.fetchrow("INSERT INTO mailbox(local_part,kind,display_name) VALUES($1,'shared',$2) RETURNING *",local_part,body.display_name)
             await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id) VALUES($1,'mail.shared.create',$2)",principal.user_id,row['id'])
     return {"id":str(row['id']),"address":f"{row['local_part']}@{domain}","display_name":row['display_name']}
+
+@router.get("/shared")
+async def list_shared(principal: Principal = Depends(require_scopes("mail:shared:manage")), mail_totp: str | None = Cookie(default=None)):
+    """Open shared mailboxes with their assigned members, for the shared-mailbox admin screen."""
+    await _require_sensitive_totp(principal,mail_totp,"mail:shared:manage")
+    from app.modules.mail.settings_service import get_value
+    domain=str(await get_value('mail.domain') or '')
+    pool=mail_db.get_pool()
+    async with pool.acquire() as conn:
+        boxes=await conn.fetch("SELECT id,local_part,display_name FROM mailbox WHERE kind='shared' AND state='open' AND local_part<>'no-reply' ORDER BY local_part")
+        members=await conn.fetch("SELECT mailbox_id,user_id,role FROM mailbox_member WHERE mailbox_id=ANY($1::uuid[]) ORDER BY added_at",[b['id'] for b in boxes]) if boxes else []
+    by_box: dict[str,list[dict]]={}
+    for m in members: by_box.setdefault(str(m['mailbox_id']),[]).append({"user_id":str(m['user_id']),"role":m['role']})
+    return {"items":[{"id":str(b['id']),"local_part":b['local_part'],"address":f"{b['local_part']}@{domain}","display_name":b['display_name'],"members":by_box.get(str(b['id']),[])} for b in boxes]}
 
 @router.put("/shared/{mailbox_id}/members/{user_id}")
 async def set_member(mailbox_id: str,user_id: str,body: MemberBody,principal: Principal=Depends(require_scopes("mail:shared:manage")), mail_totp: str | None = Cookie(default=None)):

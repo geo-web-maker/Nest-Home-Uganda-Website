@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityPage } from './activity';
 import { MailPage } from './mail/MailPage';
 import { MailSettingsPage } from './mail/MailSettingsPage';
+import { SharedMailboxesPage } from './mail/SharedMailboxesPage';
 import { ApplicationsPage } from './applications';
 import { ContentPage } from './content';
 import { DashboardPage } from './dashboard';
@@ -30,6 +31,7 @@ import { AppReleasesPage, BackupsHealthPage, PermissionsPage, CareSettingCatalog
 export const adminScreens: Partial<Record<string, ComponentType>> = {
   '/admin': DashboardPage,
   '/admin/mail': MailPage,
+  '/admin/mail/shared': SharedMailboxesPage,
   '/admin/mail/settings': MailSettingsPage,
   '/admin/activity': ActivityPage,
   '/admin/enquiries': EnquiriesPage,
