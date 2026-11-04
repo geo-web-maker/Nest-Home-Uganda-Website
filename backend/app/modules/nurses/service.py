@@ -238,3 +238,25 @@ async def auth_repo_invalidate(user, now) -> None:
     from app.modules.users import repository as users_repo
 
     await users_repo.invalidate_open_links(user.id, now)
+
+
+async def delete_nurse(actor, user_id: str, ip_hash: str | None = None) -> None:
+    """Permanently remove a nurse. Nurses with visit history must be deactivated instead."""
+    from app.modules.auth.models import PasswordReset, RefreshToken
+    from app.modules.visits.models import Visit
+
+    profile = await NurseProfile.find_one(NurseProfile.user_id == user_id)
+    user = await auth_repo.user_by_id(user_id)
+    if not profile or not user or user.kind != "nurse":
+        raise NotFound("Nurse profile not found.")
+    if await Visit.find_one(Visit.nurse_id == user_id):
+        raise Conflict("This nurse has visit history and cannot be deleted. Deactivate them instead.")
+    await Device.find(Device.user_id == user_id).delete()
+    await RefreshToken.find(RefreshToken.user_id == user.id).delete()
+    await PasswordReset.find(PasswordReset.user_id == user.id).delete()
+    await profile.delete()
+    await user.delete()
+    await audit.record(
+        actor, "nurse.delete", "nurse_profile", user_id, user.name,
+        before={"name": user.name, "staff_number": profile.staff_number}, ip_hash=ip_hash,
+    )

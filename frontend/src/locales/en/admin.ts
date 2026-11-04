@@ -758,6 +758,8 @@ export const adminEn = {
     activate: 'Activate',
     deactivate: 'Deactivate',
     forceSignOut: 'Sign out user',
+    delete: 'Delete',
+    confirmDelete: 'Delete {{name}} permanently? This cannot be undone.',
     resetPassword: 'Reset password',
     selfEditNotice: 'You cannot change your own access from this screen.',
     superadmin: 'Superadmin access',

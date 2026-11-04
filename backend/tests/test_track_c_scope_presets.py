@@ -3,7 +3,7 @@ from app.modules.auth.scopes import ALL_SCOPE_IDS, SCOPE_PRESETS
 
 def test_scope_preset_table_contains_expected_bundles():
     assert set(SCOPE_PRESETS) == {"nurse", "supervisor", "admin", "executive", "super_admin"}
-    assert SCOPE_PRESETS["nurse"] == frozenset({"field:use", "sos:send"})
+    assert SCOPE_PRESETS["nurse"] == frozenset({"field:use", "sos:send", "mail:use"})
     assert SCOPE_PRESETS["super_admin"] == ALL_SCOPE_IDS
 
 

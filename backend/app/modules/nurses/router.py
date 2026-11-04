@@ -22,6 +22,7 @@ from app.modules.nurses.schemas import (
     SupervisorPatch,
 )
 from app.modules.nurses.service import (
+    delete_nurse,
     create_nurse_direct,
     invite_nurse,
     patch_nurse,
@@ -241,6 +242,17 @@ async def update_nurse(
     if not _nurse_is_in_reach(user_id, ctx):
         raise HTTPException(status_code=404, detail="Nurse profile not found")
     return await patch_nurse(principal, user_id, payload)
+
+
+@router.delete("/{user_id}", status_code=204)
+async def delete_nurse_account(
+    user_id: str,
+    principal: Principal = Depends(require_scopes("nurses:write")),
+    ctx: ReachContext = Depends(get_care_actor),
+):
+    if not _nurse_is_in_reach(user_id, ctx):
+        raise HTTPException(status_code=404, detail="Nurse profile not found")
+    await delete_nurse(principal, user_id)
 
 
 @router.patch("/{user_id}/supervisor", response_model=NurseProfileResponse)

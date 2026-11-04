@@ -19,9 +19,9 @@ describe('hasScopes', () => {
 
 describe('mockup-aligned admin navigation', () => {
   it('declares implemented screens in the reference information architecture', () => {
-    expect(ADMIN_NAV).toHaveLength(39);
-    expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 11, careOperations: 7, monitoring: 8, safety: 4, setup: 9 });
-    expect(paths(visibleNav(user([], true)))).toHaveLength(39);
+    expect(ADMIN_NAV).toHaveLength(40);
+    expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 11, careOperations: 7, monitoring: 8, safety: 4, setup: 10 });
+    expect(paths(visibleNav(user([], true)))).toHaveLength(40);
     expect(visibleNav(user([], true)).some((item) => item.path.includes('/care/patients'))).toBe(false);
   });
 
@@ -63,7 +63,7 @@ describe('mockup-aligned admin navigation', () => {
       '/admin/care/alerts',
       '/admin/care/sos',
     ]);
-    expect(bottomNav(all).more).toHaveLength(35);
+    expect(bottomNav(all).more).toHaveLength(36);
     expect(paths(bottomNav(user(['content:read'])).primary)).toEqual(['/admin/content']);
     expect(bottomNav(user(['content:read'])).more).toEqual([]);
   });

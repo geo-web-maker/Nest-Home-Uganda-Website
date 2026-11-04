@@ -219,7 +219,8 @@ describe('MailSettingsPage', () => {
     const user = userEvent.setup();
     setup();
     const regions = await screen.findAllByRole('region');
-    expect(regions[0]).toHaveAccessibleName('Setup check');
+    // regions[0] is the page itself (Mail settings); the setup check is the first panel inside it.
+    expect(regions[1]).toHaveAccessibleName('Setup check');
     await user.type(screen.getByLabelText('Test recipient'), 'me@mail.test');
     await user.click(screen.getByRole('button', { name: 'Send test' }));
     expect(await screen.findByText('Test message accepted by resend. Check the inbox of me@mail.test, including spam.')).toBeInTheDocument();

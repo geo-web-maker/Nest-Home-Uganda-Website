@@ -93,6 +93,13 @@ export function UsersPage() {
       await client.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
   });
+  const remove = useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/admin/users/${encodeURIComponent(id)}`),
+    onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+    onError: (e) => window.alert(e instanceof Error ? e.message : 'Delete failed'),
+  });
   const signOut = useMutation({
     mutationFn: (id: string) =>
       apiClient.post(`/admin/users/${encodeURIComponent(id)}/sign-out`, {}),
@@ -158,6 +165,16 @@ export function UsersPage() {
             onClick={() => signOut.mutate(item.id)}
           >
             {t('users.forceSignOut')}
+          </Button>
+          <Button
+            variant="outline"
+            disabled={!canWrite || remove.isPending || item.id === current?.id}
+            onClick={() => {
+              if (window.confirm(t('users.confirmDelete', { name: item.name || item.email })))
+                remove.mutate(item.id);
+            }}
+          >
+            {t('users.delete')}
           </Button>
         </ButtonGroup>
       ),

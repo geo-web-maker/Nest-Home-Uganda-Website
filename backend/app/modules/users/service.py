@@ -280,3 +280,26 @@ async def set_password(
         None, "user.set_password", ITEM_TYPE, str(user.id), user.email, ip_hash=ip_hash
     )
     return Done(status="password_set")
+
+
+async def delete(principal: Principal, user_id: str, ip_hash: str | None) -> None:
+    from app.modules.auth.models import RefreshToken
+
+    user = await _get(user_id)
+    _guard_superadmin_target(principal, user)
+    if str(user.id) == principal.user_id:
+        raise Conflict("You cannot delete your own account.")
+    if user.kind == "nurse":
+        raise ValidationFailed("Delete nurses from the Nurses screen.", {"user": "nurse"})
+    auth_service.ensure_not_last_superadmin(
+        await auth_repo.count_active_superadmins(),
+        was_superadmin=user.is_superadmin and user.is_active,
+        stays_active_superadmin=False,
+    )
+    await RefreshToken.find(RefreshToken.user_id == user.id).delete()
+    await PasswordReset.find(PasswordReset.user_id == user.id).delete()
+    await user.delete()
+    await audit.record(
+        principal, "user.delete", ITEM_TYPE, str(user.id), user.email,
+        before=_snapshot(user), ip_hash=ip_hash,
+    )
