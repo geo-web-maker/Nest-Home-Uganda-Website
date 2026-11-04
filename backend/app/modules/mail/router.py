@@ -370,7 +370,9 @@ async def totp_verify(body: TotpCodeBody,response: Response,principal: Principal
     expires=int(time.time())+12*3600
     payload=f"{principal.user_id}:{expires}"
     sig=hmac.new(key,payload.encode(),hashlib.sha256).hexdigest()
-    response.set_cookie("mail_totp",f"{payload}:{sig}",max_age=12*3600,httponly=True,secure=True,samesite="strict")
+    from app.core.config import get_settings
+    cfg=get_settings()  # same cookie policy as login, so a cross-site frontend still sends it
+    response.set_cookie("mail_totp",f"{payload}:{sig}",max_age=12*3600,httponly=True,secure=cfg.cookie_secure,samesite=cfg.cookie_samesite,path="/")
     return {"verified":True,"expires_in":43200}
 
 @router.get("/archive/mailboxes/{mailbox_id}/messages")
