@@ -67,3 +67,8 @@ async def admin_reset_password(user_id: str, principal: CanWrite, request: Reque
 @admin_router.post("/{user_id}/sign-out", response_model=Done)
 async def admin_sign_out(user_id: str, principal: CanWrite, request: Request) -> Done:
     return await service.sign_out(principal, user_id, hash_ip(client_ip(request)))
+
+
+@admin_router.delete("/{user_id}", status_code=204)
+async def admin_delete(user_id: str, principal: CanWrite, request: Request) -> None:
+    await service.delete(principal, user_id, hash_ip(client_ip(request)))

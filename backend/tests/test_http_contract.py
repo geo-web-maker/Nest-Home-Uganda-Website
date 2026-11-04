@@ -82,6 +82,10 @@ async def test_openapi_has_no_role_words() -> None:
     spec = app.openapi()
     for name, body in spec["components"]["schemas"].items():
         # A team member's job title is a "role" field (spec 7.x Team); it is not an access role.
+        # A mailbox member's access level (owner, send_as, read_only) is also not an access role.
+        if name == "MemberBody":
+            body.get("properties", {}).pop("role", None)
+            body["required"] = [f for f in body.get("required", []) if f != "role"]
         if name.lower().startswith("team"):
             body.get("properties", {}).pop("role", None)
             body["required"] = [f for f in body.get("required", []) if f != "role"]

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { cellText, headerFor } from '../../../lib/tableText';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../../../components/ui/Button';
 import { FilterTabs } from '../../../components/admin/FilterTabs';
@@ -524,7 +525,7 @@ export function CareWorkspace() {
                   .slice(0, 7)
                   .map((key) => (
                     <th key={key} scope="col">
-                      {key.replaceAll('_', ' ')}
+                      {headerFor(key)}
                     </th>
                   ))}
                 {['visits', 'flags', 'photos', 'alerts', 'timesheets', 'sos'].includes(tab) && (
@@ -544,7 +545,7 @@ export function CareWorkspace() {
                     )
                     .slice(0, 7)
                     .map(([key, value]) => (
-                      <td key={key}>{printable(value)}</td>
+                      <td key={key}>{typeof value === 'object' && value !== null ? printable(value) : cellText(key, value)}</td>
                     ))}
                   {['visits', 'flags', 'photos', 'alerts', 'timesheets', 'sos'].includes(tab) && (
                     <td><ButtonGroup size="compact">

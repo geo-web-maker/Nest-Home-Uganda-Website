@@ -154,6 +154,8 @@ async def backfill_run(principal: Principal = Depends(require_scopes("mail:setti
                 skipped.append({"user_id": str(user.id), "reason": type(exc).__name__})
     pool = mail_db.get_pool()
     async with pool.acquire() as conn:
+        if not await conn.fetchval("SELECT 1 FROM mailbox WHERE local_part='no-reply'"):
+            await conn.execute("INSERT INTO mailbox(local_part,kind,display_name) VALUES('no-reply','shared','Nest Home Care')")
         await conn.execute("INSERT INTO mail_audit(actor_user_id,action,detail) VALUES($1,'mail.backfill',$2::jsonb)", principal.user_id, __import__('json').dumps({"created": created, "skipped": len(skipped)}))
     return {"created": created, "skipped": skipped}
 

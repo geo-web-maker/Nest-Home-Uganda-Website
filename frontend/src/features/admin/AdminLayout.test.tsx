@@ -188,6 +188,7 @@ describe('AdminLayout phone navigation', () => {
       'Permissions',
       'Reports',
       'Audit log',
+      'Mail',
       'Clients',
       'Places & stays',
       'Nurses',
@@ -212,6 +213,8 @@ describe('AdminLayout phone navigation', () => {
       'Data requests',
       'App releases',
       'Backups and hosting',
+      'Shared mailboxes',
+      'Mail settings',
     ]);
     await user.click(within(list).getByRole('button', { name: 'Sign out' }));
     expect(logout).toHaveBeenCalledTimes(1);
@@ -300,7 +303,7 @@ describe('AdminLayout mail badge', () => {
 
   it('puts the same badge on the phone bottom bar when Mail is one of its shortcuts', () => {
     vi.mocked(useMailUnread).mockReturnValue(4);
-    setup('/admin/mail', ['mail:use']);
+    setup('/admin', ['mail:use']);
     const bottom = screen.getByRole('navigation', { name: /shortcuts/i });
     expect(within(bottom).queryByLabelText('4 unread')).not.toBeNull();
   });

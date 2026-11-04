@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from 'react';
+import { cellText, headerFor } from '../../../lib/tableText';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ApiError, apiClient } from '../../../lib/api/client';
@@ -109,9 +110,6 @@ const titles: Record<ScreenKey, string> = {
   data: 'Data requests',
   audit: 'Audit history',
 };
-const actionText = (v: any) =>
-  v == null || v === '' ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v);
-
 export function CareScreenPage({ screen }: { screen: ScreenKey }) {
   const { t } = useTranslation('admin');
   const { user } = useAuth();
@@ -238,8 +236,8 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
       .slice(0, 5);
     const base = (keys.length ? keys : ['id', 'status', 'name', 'created_at']).map((key) => ({
       key,
-      header: key.replaceAll('_', ' '),
-      cell: (r: Row) => actionText(r[key]),
+      header: headerFor(key),
+      cell: (r: Row) => cellText(key, r[key]),
     }));
     if (['nurses', 'clients', 'visits', 'flags', 'photos', 'alerts', 'timesheets', 'sos'].includes(screen))
       base.push({
@@ -308,6 +306,23 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                       }}
                     >
                       Supervisor
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={async () => {
+                        if (!window.confirm('Delete this nurse permanently? This cannot be undone.')) return;
+                        try {
+                          setNotice('');
+                          await apiClient.delete(`/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}`);
+                          setNotice('Nurse deleted.');
+                          await load();
+                        } catch (e) {
+                          setError(e instanceof Error ? e.message : 'Delete failed');
+                        }
+                      }}
+                    >
+                      Delete
                     </Button>
                   </>
                 )}

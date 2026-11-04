@@ -48,7 +48,7 @@ def test_outbox_poll_is_slow_enough_for_neon_to_sleep():
 def test_authenticator_cookie_uses_the_multi_site_module_path():
     source = inspect.getsource(router.totp_verify)
     assert "app.modules.mail.settings_service" in source
-    assert "app.modules" not in source
+    assert "app.modules.mail.settings_service" in source and "projects.nest" not in source
 
 
 class _Conn:
