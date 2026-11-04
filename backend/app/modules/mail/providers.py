@@ -72,6 +72,8 @@ class SystemMailOutboxAdapter(MailProvider):
                     for address in to:
                         await conn.execute("INSERT INTO message_recipient(message_id,kind,address) VALUES($1,'to',$2) ON CONFLICT DO NOTHING",mid,address.lower())
                     await conn.execute("INSERT INTO outbox(message_id,from_mailbox_id,to_addresses,priority,idempotency_key) VALUES($1,$2,$3,1,$4)",mid,box['id'],to,idempotency_key or f"system:{mid}")
+            from app.modules.mail.outbox import kick
+            kick()
             return MailSendResult(True,"queued")
         except Exception:
             # Account creation/reset must not be blocked by an optional mail service outage.

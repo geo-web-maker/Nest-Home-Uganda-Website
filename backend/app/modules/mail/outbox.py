@@ -9,6 +9,35 @@ from app.modules.mail.settings_service import get_value
 
 log=logging.getLogger("app.mail.outbox")
 BACKOFF=(60,300,1800,7200,21600)
+KICK_DELAY_SECONDS=2.0
+_kick_handle=None
+
+def kick(delay: float = KICK_DELAY_SECONDS) -> bool:
+    """Run one drain shortly after something was queued, so the periodic job can poll rarely and Neon can sleep.
+
+    The delay lets the queuing transaction commit first. Repeated calls while one is pending are merged.
+    """
+    global _kick_handle
+    try:
+        loop=asyncio.get_running_loop()
+    except RuntimeError:
+        return False
+    if _kick_handle is not None and not _kick_handle.cancelled() and _kick_handle.when()>loop.time():
+        return False
+    def _run():
+        global _kick_handle
+        _kick_handle=None
+        task=loop.create_task(_safe_drain())
+        task.add_done_callback(lambda t: t.cancelled() or t.exception())
+    _kick_handle=loop.call_later(delay,_run)
+    return True
+
+async def _safe_drain() -> int:
+    try: return await drain()
+    except Exception:
+        log.warning("mail outbox kick failed; details omitted")
+        return 0
+
 
 async def drain(limit: int = 20) -> int:
     if not bool(await get_value("mail.enabled")) or bool(await get_value("mail.suspend_all_sending")): return 0

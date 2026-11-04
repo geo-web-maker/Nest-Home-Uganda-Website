@@ -127,6 +127,7 @@ describe('mail navigation', () => {
   it('gates mail on mail:use and its settings on mail:settings:manage', () => {
     expect(scopesFor('/admin/mail')).toEqual(['mail:use']);
     expect(scopesFor('/admin/mail/settings')).toEqual(['mail:settings:manage']);
+    expect(scopesFor('/admin/mail/shared')).toEqual(['mail:shared:manage']);
     expect(paths(visibleNav(user(['mail:use'])))).toEqual(['/admin/mail']);
     expect(navItemFor('/admin/mail/settings')?.path).toBe('/admin/mail/settings');
     expect(navItemFor('/admin/mail')?.path).toBe('/admin/mail');

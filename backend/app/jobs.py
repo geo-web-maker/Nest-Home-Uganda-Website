@@ -242,7 +242,8 @@ def build_scheduler() -> AsyncIOScheduler:
     )
     # Mail workers are persisted in Neon and claim with SKIP LOCKED, so overlapping
     # instances cannot process the same outbox row concurrently.
-    scheduler.add_job(run_mail_outbox, "interval", seconds=15, id="mail_outbox_drain", max_instances=1, coalesce=True)
+    # Sends are triggered by outbox.kick(); this slow poll only picks up retries so Neon can suspend.
+    scheduler.add_job(run_mail_outbox, "interval", minutes=5, id="mail_outbox_drain", max_instances=1, coalesce=True)
     scheduler.add_job(run_mail_housekeeping, "cron", hour=0, minute=5, id="mail_housekeeping", max_instances=1, coalesce=True)
     scheduler.add_job(run_mail_retention, "cron", hour=0, minute=25, id="mail_retention_purge", max_instances=1, coalesce=True)
     scheduler.add_job(run_mail_quota_check, "interval", hours=1, id="mail_quota_check", max_instances=1, coalesce=True)
