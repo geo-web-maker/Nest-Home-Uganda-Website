@@ -3032,11 +3032,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * List Shared
-         * @description Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.
-         */
-        get: operations["list_shared_api_v1_mail_shared_get"];
+        get?: never;
         put?: never;
         /** Create Shared */
         post: operations["create_shared_api_v1_mail_shared_post"];
@@ -13223,37 +13219,6 @@ export interface operations {
             path: {
                 key: string;
             };
-            cookie?: {
-                mail_totp?: string | null;
-            };
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_shared_api_v1_mail_shared_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
             cookie?: {
                 mail_totp?: string | null;
             };

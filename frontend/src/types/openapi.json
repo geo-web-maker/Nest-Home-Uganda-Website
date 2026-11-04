@@ -18886,57 +18886,6 @@
       }
     },
     "/api/v1/mail/shared": {
-      "get": {
-        "description": "Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.",
-        "operationId": "list_shared_api_v1_mail_shared_get",
-        "parameters": [
-          {
-            "in": "cookie",
-            "name": "mail_totp",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Mail Totp"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "List Shared",
-        "tags": [
-          "mail"
-        ]
-      },
       "post": {
         "operationId": "create_shared_api_v1_mail_shared_post",
         "parameters": [
