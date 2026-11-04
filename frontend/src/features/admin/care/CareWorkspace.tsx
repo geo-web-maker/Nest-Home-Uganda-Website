@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { pickNurse } from './pickers';
+import { dialogs } from '../../../lib/dialogs';
 import { cellText, headerFor } from '../../../lib/tableText';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../../../components/ui/Button';
@@ -281,7 +283,7 @@ export function CareWorkspace() {
   }
 
   async function resolveReviewFlag(flagId: string) {
-    const reason = window.prompt('Resolution note (at least 3 characters)');
+    const reason = await dialogs.prompt('Resolution note (at least 3 characters)');
     if (!reason || reason.trim().length < 3) return;
     setBusy(true);
     setError('');
@@ -357,7 +359,7 @@ export function CareWorkspace() {
       return;
     }
     if (
-      !window.confirm(
+      !await dialogs.confirm(
         'Anonymise this client and delete associated photo assets? This action cannot be undone.',
       )
     )
@@ -561,8 +563,8 @@ export function CareWorkspace() {
                         <>
                           <Button variant="outline"
                             type="button"
-                            onClick={() => {
-                              const nurseId = window.prompt('New nurse user ID');
+                            onClick={async () => {
+                              const nurseId = await pickNurse('Choose the new nurse', String(item.nurse_id ?? ''));
                               if (nurseId?.trim()) {
                                 setBusy(true);
                                 void apiClient
@@ -589,8 +591,8 @@ export function CareWorkspace() {
                           </Button>
                           <Button variant="outline"
                             type="button"
-                            onClick={() => {
-                              const reason = window.prompt('Reason for cancelling this visit');
+                            onClick={async () => {
+                              const reason = await dialogs.prompt('Reason for cancelling this visit');
                               if (reason?.trim())
                                 void runRowAction(
                                   `/admin/care/visits/${encodeURIComponent(String(item.id ?? ''))}/cancel`,
@@ -615,9 +617,9 @@ export function CareWorkspace() {
                         item.status !== 'expired' && (
                           <Button variant="outline"
                             type="button"
-                            onClick={() => {
+                            onClick={async () => {
                               const id = String(item.id ?? '');
-                              const reason = window.prompt('Reason for hiding this photo');
+                              const reason = await dialogs.prompt('Reason for hiding this photo');
                               if (reason?.trim())
                                 void runRowAction(
                                   `/admin/care/photos/${encodeURIComponent(id)}/hide`,
@@ -642,8 +644,8 @@ export function CareWorkspace() {
                           </Button>
                           <Button variant="outline"
                             type="button"
-                            onClick={() => {
-                              const note = window.prompt('Resolution note');
+                            onClick={async () => {
+                              const note = await dialogs.prompt('Resolution note');
                               if (note?.trim())
                                 void runRowAction(
                                   `/admin/care/alerts/${encodeURIComponent(String(item.id ?? ''))}/resolve`,
@@ -669,8 +671,8 @@ export function CareWorkspace() {
                           </Button>
                           <Button variant="outline"
                             type="button"
-                            onClick={() => {
-                              const note = window.prompt('Reason for sending back');
+                            onClick={async () => {
+                              const note = await dialogs.prompt('Reason for sending back');
                               if (note?.trim())
                                 void runRowAction(
                                   `/admin/care/timesheets/${encodeURIComponent(String(item.id ?? ''))}/send-back`,

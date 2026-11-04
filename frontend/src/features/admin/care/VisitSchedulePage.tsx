@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { dialogs } from '../../../lib/dialogs';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { FilterTabs } from '../../../components/admin/FilterTabs';
@@ -192,7 +193,7 @@ export function VisitSchedulePage() {
     try {
       await apiClient.post('/admin/care/visits', body);
     } catch (reason) {
-      if (reason instanceof ApiError && reason.status === 409 && reason.fields.code === 'nurse_busy' && window.confirm('This nurse has an overlapping scheduled visit. Confirm the overlap and record it in the audit log?')) {
+      if (reason instanceof ApiError && reason.status === 409 && reason.fields.code === 'nurse_busy' && await dialogs.confirm('This nurse has an overlapping scheduled visit. Confirm the overlap and record it in the audit log?')) {
         try { await apiClient.post('/admin/care/visits', { ...body, confirm_overlap: true }); }
         catch (retryReason) { setError(retryReason instanceof Error ? retryReason.message : 'Visit could not be created.'); setSaving(false); return; }
       } else {
@@ -230,7 +231,7 @@ export function VisitSchedulePage() {
         setNotice('Visit reassigned and recorded in the audit log.');
       } else {
         if (cancelReason.trim().length < 3) throw new Error('Enter a cancellation reason of at least 3 characters.');
-        if (!window.confirm('Cancel this visit? The nurse’s offline queue will receive the cancellation tombstone.')) { setSaving(false); return; }
+        if (!await dialogs.confirm('Cancel this visit? The nurse’s offline queue will receive the cancellation tombstone.')) { setSaving(false); return; }
         await apiClient.post(`/admin/care/visits/${encodeURIComponent(actionVisit.id)}/cancel`, { reason: cancelReason.trim() });
         setNotice('Visit cancelled and recorded in the audit log.');
       }

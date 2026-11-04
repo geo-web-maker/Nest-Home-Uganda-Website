@@ -290,7 +290,12 @@ async def delete(principal: Principal, user_id: str, ip_hash: str | None) -> Non
     if str(user.id) == principal.user_id:
         raise Conflict("You cannot delete your own account.")
     if user.kind == "nurse":
-        raise ValidationFailed("Delete nurses from the Nurses screen.", {"user": "nurse"})
+        from app.modules.nurses.models import NurseProfile
+        from app.modules.nurses.service import delete_nurse
+
+        if await NurseProfile.find_one(NurseProfile.user_id == user_id):
+            await delete_nurse(principal, user_id, ip_hash)
+            return
     auth_service.ensure_not_last_superadmin(
         await auth_repo.count_active_superadmins(),
         was_superadmin=user.is_superadmin and user.is_active,

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { DialogHost } from '../../components/admin/DialogHost';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { cx } from '../../lib/cx';
@@ -130,6 +131,7 @@ export function AdminLayout() {
         <main id="admin-main" ref={mainRef} tabIndex={-1} className={styles.main}>
           <ButtonSizeProvider value="control">
             <Outlet />
+            <DialogHost />
           </ButtonSizeProvider>
         </main>
       </div>

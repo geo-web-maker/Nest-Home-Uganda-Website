@@ -55,9 +55,23 @@ async def list_nurses(
         profiles = [
             p for p in profiles if p.user_id in ctx.team_nurse_ids or p.user_id == ctx.user_id
         ]
+    from beanie import PydanticObjectId
+
+    ids = []
+    for p in profiles:
+        for value in (p.user_id, p.supervisor_id):
+            try:
+                if value:
+                    ids.append(PydanticObjectId(value))
+            except Exception:  # noqa: BLE001 - a malformed id just has no name
+                pass
+    people = await User.find({"_id": {"$in": ids}}).to_list() if ids else []
+    names = {str(u.id): u.name for u in people}
     return [
         NurseProfileResponse(
             user_id=p.user_id,
+            name=names.get(p.user_id),
+            supervisor_name=names.get(p.supervisor_id) if p.supervisor_id else None,
             staff_number=p.staff_number,
             supervisor_id=p.supervisor_id,
             team_id=p.team_id,
