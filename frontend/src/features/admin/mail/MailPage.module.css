@@ -117,8 +117,12 @@
 .settingRow {
   display: grid;
   gap: 0.5rem;
-  padding-top: 0.75rem;
+  padding: 0.75rem 0 1rem;
   border-top: 1px solid var(--line);
+}
+.settingRow:first-of-type {
+  padding-top: 0;
+  border-top: 0;
 }
 .settingHelp {
   margin: 0;
