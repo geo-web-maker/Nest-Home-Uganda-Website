@@ -19,12 +19,14 @@ export default {
     const key = `mail/inbound/${now.getUTCFullYear()}/${String(now.getUTCMonth()+1).padStart(2,'0')}/${id}.eml`;
     const raw = new Response(message.raw);
     const bytes = await raw.arrayBuffer();
+    console.log(`inbound ${id} from=${message.from} to=${message.to} bytes=${bytes.byteLength}`);
     if (bytes.byteLength > 25 * 1024 * 1024) throw new Error('Message too large');
     await env.MAIL_RAW.put(key, bytes, { httpMetadata: { contentType: 'message/rfc822' } });
     const payload = JSON.stringify({ id, object_key: key, envelope_from: message.from, envelope_to: [message.to], size_bytes: bytes.byteLength, received_at: now.toISOString() });
     const timestamp = String(Math.floor(Date.now()/1000));
     const sig = await signature(env.MAIL_INBOUND_SECRET, timestamp, payload);
     const response = await fetch(env.MAIL_INBOUND_URL, { method: 'POST', headers: { 'content-type': 'application/json', 'x-nest-timestamp': timestamp, 'x-nest-signature': sig }, body: payload });
+    console.log(`backend ${id} -> HTTP ${response.status} ${(await response.clone().text()).slice(0, 200)}`);
     if (!response.ok) throw new Error(`Mail backend rejected inbound message (${response.status})`);
   },
 };

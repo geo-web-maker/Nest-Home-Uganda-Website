@@ -23,6 +23,33 @@ import { useMailUi } from './MailUiKit';
 type ToolbarProfile = 'full' | 'lite';
 type FormatAction = { id: string; label: string; group: string; profile: ToolbarProfile[]; run: (editor: Editor) => void; active?: (editor: Editor) => boolean; disabled?: (editor: Editor) => boolean };
 
+const ICON_PATHS: Record<string, string> = {
+  bullet: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01',
+  number: 'M10 6h10M10 12h10M10 18h10M4 5l1.5-1v6M3.5 14.5c0-1 1-1.5 1.8-1.5s1.4.6 1.2 1.4c-.2.7-1.3 1.4-3 3h3.2',
+  quote: 'M5 8h5v5c0 2-1 3-3 4M14 8h5v5c0 2-1 3-3 4',
+  link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
+  table: 'M4 5h16v14H4zM4 11h16M4 15h16M10 5v14',
+  rule: 'M3 12h18',
+  clear: 'M5 5h14M12 5v8M5 19L19 9',
+  row: 'M4 6h16v5H4zM12 14v6M9 17h6',
+  column: 'M5 4h5v16H5zM14 12h6M17 9v6',
+  'delete-table': 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13',
+  'align-left': 'M4 6h16M4 10h10M4 14h16M4 18h10',
+  'align-center': 'M4 6h16M7 10h10M4 14h16M7 18h10',
+  'align-right': 'M4 6h16M10 10h10M4 14h16M10 18h10',
+  indent: 'M4 6h16M11 10h9M11 14h9M4 18h16M4 9l3 3-3 3',
+  outdent: 'M4 6h16M11 10h9M11 14h9M4 18h16M7 9l-3 3 3 3',
+  undo: 'M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3',
+  redo: 'M15 14l5-5-5-5M20 9H10a6 6 0 0 0 0 12h3',
+};
+const TEXT_GLYPHS: Record<string, string> = { bold: 'B', italic: 'I', underline: 'U', strike: 'S' };
+
+function ToolIcon({ id }: { id: string }) {
+  const glyph = TEXT_GLYPHS[id];
+  if (glyph) return <span aria-hidden="true" className={`mr-glyph mr-glyph-${id}`}>{glyph}</span>;
+  return <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={ICON_PATHS[id] ?? ''} /></svg>;
+}
+
 const SAFE_FONT_SIZES = new Set([10, 12, 14, 16, 18, 20, 24, 28, 32]);
 
 const FontSize = Extension.create({
@@ -250,7 +277,8 @@ export function MailRichEditor({
     { id: 'undo', label: labels.undo, group: 'history', profile: ['full', 'lite'], run: (e) => e.chain().focus().undo().run() },
     { id: 'redo', label: labels.redo, group: 'history', profile: ['full', 'lite'], run: (e) => e.chain().focus().redo().run() },
   ] : [];
-  const actions = allActions.filter((action) => action.profile.includes(profile));
+  const inTable = Boolean(editor && activeTableDimensions(editor));
+  const actions = allActions.filter((action) => action.profile.includes(profile) && (action.group !== 'table' || inTable));
 
   const onToolbarKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (!actions.length || !(event.target as HTMLElement).closest('button.mr-editor-tool')) return;
@@ -267,7 +295,7 @@ export function MailRichEditor({
 
   return <div className="mr-editor" data-profile={profile}>
     <div className="mr-editor-toolbar" role="toolbar" aria-label={labels.messageFormatting} aria-orientation="horizontal" onKeyDown={onToolbarKeyDown}>
-      {actions.map((action, index) => <span key={action.id} ref={(element) => { if (element) toolbarRefs.current[index] = element.querySelector('button'); }}>
+      {actions.map((action, index) => <span key={action.id} title={action.label} data-group-start={index > 0 && actions[index - 1]?.group !== action.group ? 'true' : undefined} ref={(element) => { if (element) toolbarRefs.current[index] = element.querySelector('button'); }}>
         <ToolbarButton
           label={action.label}
           pressed={action.active ? action.active(editor!) : undefined}
@@ -275,8 +303,9 @@ export function MailRichEditor({
           tabIndex={index === focusIndex ? 0 : -1}
           onFocus={() => setFocusIndex(index)}
           onClick={() => { action.run(editor!); setFocusIndex(index); }}
-        >{action.id === 'bold' ? 'B' : action.id === 'italic' ? 'I' : action.id === 'underline' ? 'U' : action.id === 'strike' ? 'S' : action.label}</ToolbarButton>
+        ><ToolIcon id={action.id} /></ToolbarButton>
       </span>)}
+      <span className="mr-editor-sep" aria-hidden="true" />
       {profile === 'full' ? <div className="mr-editor-size">
         <Select label={labels.paragraphStyle} value={editor?.isActive('heading', { level: 1 }) ? '1' : editor?.isActive('heading', { level: 2 }) ? '2' : editor?.isActive('heading', { level: 3 }) ? '3' : editor?.isActive('heading', { level: 4 }) ? '4' : 'p'} options={[{ value: 'p', label: labels.paragraph }, ...[1, 2, 3, 4].map((level) => ({ value: String(level), label: [labels.heading1, labels.heading2, labels.heading3, labels.heading4][level - 1] ?? '' }))]} onChange={(value) => {
           if (value === 'p') editor?.chain().focus().setParagraph().run();
