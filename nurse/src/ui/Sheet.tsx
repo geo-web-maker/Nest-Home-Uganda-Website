@@ -13,13 +13,14 @@ type Props = {
   handle?: boolean;
   className?: string;
   backdropClassName?: string;
+  tabIndex?: number;
 };
 
 /** The single modal-sheet construction: backdrop, optional handle and the dialog surface. */
-export function Sheet({ children, labelledBy, describedBy, role = 'dialog', placement = 'bottom', handle, className = '', backdropClassName = '' }: Props) {
+export function Sheet({ children, labelledBy, describedBy, role = 'dialog', placement = 'bottom', handle, className = '', backdropClassName = '', tabIndex }: Props) {
   const showHandle = handle ?? placement === 'bottom';
   return <div className={`sheet-backdrop${placement === 'center' ? ' sheet-backdrop--center' : ''}${backdropClassName ? ` ${backdropClassName}` : ''}`} role="presentation">
-    <section className={`sheet${placement === 'center' ? ' sheet--center' : ''}${className ? ` ${className}` : ''}`} role={role} aria-modal="true" aria-labelledby={labelledBy} aria-describedby={describedBy}>
+    <section className={`sheet${placement === 'center' ? ' sheet--center' : ''}${className ? ` ${className}` : ''}`} tabIndex={tabIndex} role={role} aria-modal="true" aria-labelledby={labelledBy} aria-describedby={describedBy}>
       {showHandle && <div className="sheet-handle" aria-hidden="true" />}
       {children}
     </section>

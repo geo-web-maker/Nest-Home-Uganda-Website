@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Shared mail-rich mirrors are current
+        working-directory: .
+        run: node scripts/sync-mail-rich.mjs --check
       - name: No .env or dependency folders tracked
         run: |
           if git ls-files | grep -E '(^|/)\.env$|node_modules|\.venv'; then echo "tracked file that must not be tracked"; exit 1; fi

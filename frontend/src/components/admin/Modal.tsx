@@ -12,11 +12,12 @@ interface ModalProps {
   onClose: () => void;
   closeLabel?: string;
   className?: string;
+  role?: 'dialog' | 'alertdialog';
   children: ReactNode;
 }
 
 /** The one admin dialog: backdrop, heading, Close button, Escape to close, focus moves inside. */
-export function Modal({ id, title, subtitle, onClose, closeLabel = 'Close', className, children }: ModalProps) {
+export function Modal({ id, title, subtitle, onClose, closeLabel = 'Close', className, role = 'dialog', children }: ModalProps) {
   const dialog = useRef<HTMLElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -25,7 +26,9 @@ export function Modal({ id, title, subtitle, onClose, closeLabel = 'Close', clas
     const previous = document.activeElement as HTMLElement | null;
     dialog.current?.focus();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCloseRef.current();
+      if (event.key !== 'Escape') return;
+      const dialogs = Array.from(document.querySelectorAll<HTMLElement>('[aria-modal="true"]'));
+      if (dialogs[dialogs.length - 1] === dialog.current) onCloseRef.current();
     };
     document.addEventListener('keydown', onKey);
     return () => {
@@ -40,7 +43,7 @@ export function Modal({ id, title, subtitle, onClose, closeLabel = 'Close', clas
         ref={dialog}
         tabIndex={-1}
         className={cx(styles.modal, className)}
-        role="dialog"
+        role={role}
         aria-modal="true"
         aria-labelledby={id}
       >

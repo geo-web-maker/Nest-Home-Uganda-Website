@@ -6,7 +6,7 @@ import { copy } from '../../copy';
 /** Keeps the mail screens on the nurse app's shared pieces, so they cannot drift again. */
 const dir = __dirname;
 const src = join(dir, '..', '..');
-const files = readdirSync(dir).filter((name) => name.endsWith('.tsx') && !name.endsWith('.test.tsx'));
+const files = readdirSync(dir).filter((name) => name.endsWith('.tsx') && !name.endsWith('.test.tsx') && name !== 'mailUiKit.tsx'); // the adapter implements the primitives
 const read = (path: string) => readFileSync(path, 'utf8');
 
 describe('nurse mail construction', () => {

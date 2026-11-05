@@ -2922,6 +2922,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mail/maintenance/reprocess/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reprocess Preview */
+        post: operations["reprocess_preview_api_v1_mail_maintenance_reprocess_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mail/maintenance/reprocess/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reprocess Run */
+        post: operations["reprocess_run_api_v1_mail_maintenance_reprocess_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/mail/messages/{mailbox_message_id}": {
         parameters: {
             query?: never;
@@ -2952,6 +2986,23 @@ export interface paths {
         put?: never;
         /** Attach Label */
         post: operations["attach_label_api_v1_mail_messages__mailbox_message_id__labels__label_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mail/messages/{mailbox_message_id}/original": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Original Download */
+        get: operations["original_download_api_v1_mail_messages__mailbox_message_id__original_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3214,7 +3265,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Mail Provider Webhook */
+        /**
+         * Mail Provider Webhook
+         * @description Authenticate callbacks and persist recipient-level delivery events.
+         */
         post: operations["mail_provider_webhook_api_v1_mail_webhooks__provider__post"];
         delete?: never;
         options?: never;
@@ -3911,6 +3965,16 @@ export interface components {
             title?: {
                 [key: string]: string;
             } | null;
+        };
+        /** AttachDraftBody */
+        AttachDraftBody: {
+            /** Content Id */
+            content_id?: string | null;
+            /**
+             * Disposition
+             * @default attachment
+             */
+            disposition: string;
         };
         /** AttachmentPresignBody */
         AttachmentPresignBody: {
@@ -4765,10 +4829,22 @@ export interface components {
             body_text: string;
             /** Cc */
             cc?: string[];
+            /**
+             * Format
+             * @default plain
+             * @enum {string}
+             */
+            format: "plain" | "html";
             /** In Reply To */
             in_reply_to?: string | null;
             /** Mailbox Id */
             mailbox_id: string;
+            quote?: components["schemas"]["QuoteRequest"] | null;
+            /**
+             * Remove Quote
+             * @default false
+             */
+            remove_quote: boolean;
             /**
              * Subject
              * @default
@@ -5405,6 +5481,60 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** QuoteLabels */
+        QuoteLabels: {
+            /**
+             * Cc
+             * @default Cc
+             */
+            cc: string;
+            /**
+             * Date
+             * @default Date
+             */
+            date: string;
+            /**
+             * Forwarded
+             * @default ---------- Forwarded message ----------
+             */
+            forwarded: string;
+            /**
+             * From
+             * @default From
+             */
+            from: string;
+            /**
+             * Subject
+             * @default Subject
+             */
+            subject: string;
+            /**
+             * To
+             * @default To
+             */
+            to: string;
+            /**
+             * Wrote On
+             * @default On {date}, {who} wrote:
+             */
+            wrote_on: string;
+        };
+        /** QuoteRequest */
+        QuoteRequest: {
+            /**
+             * Include Attachments
+             * @default true
+             */
+            include_attachments: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "reply" | "reply_all" | "forward" | "forward_attachment";
+            labels?: components["schemas"]["QuoteLabels"] | null;
+            /** Source Id */
+            source_id: string;
+        };
         /** ReasonIn */
         ReasonIn: {
             /** Reason */
@@ -5422,6 +5552,14 @@ export interface components {
             most_requested_services: components["schemas"]["MostRequestedService"][];
             /** Reached Assessment Percent */
             reached_assessment_percent: number;
+        };
+        /** ReprocessBody */
+        ReprocessBody: {
+            /**
+             * Limit
+             * @default 50
+             */
+            limit: number;
         };
         /** SOSBody */
         SOSBody: {
@@ -12627,7 +12765,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AttachDraftBody"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -13039,6 +13181,72 @@ export interface operations {
             };
         };
     };
+    reprocess_preview_api_v1_mail_maintenance_reprocess_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reprocess_run_api_v1_mail_maintenance_reprocess_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReprocessBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_message_api_v1_mail_messages__mailbox_message_id__get: {
         parameters: {
             query?: never;
@@ -13143,6 +13351,37 @@ export interface operations {
             path: {
                 mailbox_message_id: string;
                 label_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    original_download_api_v1_mail_messages__mailbox_message_id__original_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mailbox_message_id: string;
             };
             cookie?: never;
         };

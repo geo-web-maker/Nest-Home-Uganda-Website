@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiRequest } from '../../lib/api/client';
 import { nurseDb } from '../../offline/db';
@@ -44,10 +45,16 @@ async function openCompose() {
   fireEvent.click(button('Compose'));
   return screen.findByRole('dialog', { name: 'Compose' });
 }
-const fill = (dialog: HTMLElement, to: string, subject = 'Hello', body = 'Body') => {
+const fill = async (dialog: HTMLElement, to: string, subject = 'Hello', body = 'Body') => {
   fireEvent.change(within(dialog).getByLabelText('To'), { target: { value: to } });
   fireEvent.change(within(dialog).getByLabelText('Subject'), { target: { value: subject } });
-  fireEvent.change(within(dialog).getByLabelText('Message'), { target: { value: body } });
+  // The message is a rich-text editor (contenteditable), so it is typed into, not assigned.
+  await userEvent.type(await within(dialog).findByRole('textbox', { name: 'Message' }), body);
+};
+/** Sending now goes through a review step: press Send, then Confirm send. */
+const sendNow = async (dialog: HTMLElement) => {
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Send' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Confirm send' }));
 };
 
 describe('nurse MailScreen', () => {
@@ -98,7 +105,7 @@ describe('nurse MailScreen', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Compose' });
     expect(within(dialog).getByLabelText('To')).toHaveValue('ruth@mail.test');
     expect(within(dialog).getByLabelText('Subject')).toHaveValue('Re: Rota change');
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Send' }));
+    await sendNow(dialog);
     await waitFor(() => expect(posted('/mail/drafts/srv-1/send')).toHaveLength(1));
     expect(JSON.parse(posted('/mail/drafts')[0]?.[1]?.body ?? '{}')).toMatchObject({ mailbox_id: 'b1', to: ['ruth@mail.test'], subject: 'Re: Rota change', in_reply_to: 'g1' });
     await waitFor(async () => expect(await listDrafts('u1')).toHaveLength(0));
@@ -107,8 +114,8 @@ describe('nurse MailScreen', () => {
 
   it('rejects a bad address inside the sheet and saves nothing', async () => {
     const dialog = await openCompose();
-    fill(dialog, 'not-an-address');
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Send' }));
+    await fill(dialog, 'not-an-address');
+    await sendNow(dialog);
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Check these addresses: not-an-address');
     expect(await listDrafts('u1')).toHaveLength(0);
     expect(posted('/mail/drafts')).toHaveLength(0);
@@ -117,7 +124,7 @@ describe('nurse MailScreen', () => {
   it('keeps Send off until there is a recipient, subject and message', async () => {
     const dialog = await openCompose();
     expect(within(dialog).getByRole('button', { name: 'Send' })).toBeDisabled();
-    fill(dialog, 'sam@mail.test');
+    await fill(dialog, 'sam@mail.test');
     expect(within(dialog).getByRole('button', { name: 'Send' })).toBeEnabled();
   });
 
@@ -129,12 +136,12 @@ describe('nurse MailScreen', () => {
 
   it('saves a draft on the device, and a second draft does not overwrite the first', async () => {
     let dialog = await openCompose();
-    fill(dialog, 'sam@mail.test', 'First');
+    await fill(dialog, 'sam@mail.test', 'First');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save draft on this device' }));
     await screen.findByText('Draft saved on this device.');
     fireEvent.click(button('Compose'));
     dialog = await screen.findByRole('dialog', { name: 'Compose' });
-    fill(dialog, 'sam@mail.test', 'Second');
+    await fill(dialog, 'sam@mail.test', 'Second');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save draft on this device' }));
     await waitFor(async () => expect((await listDrafts('u1')).map((d) => d.subject).sort()).toEqual(['First', 'Second']));
     expect(posted('/mail/drafts')).toHaveLength(0);
@@ -144,8 +151,8 @@ describe('nurse MailScreen', () => {
     const dialog = await openCompose();
     setOnline(false);
     act(() => { window.dispatchEvent(new Event('offline')); });
-    fill(dialog, 'sam@mail.test');
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Send' }));
+    await fill(dialog, 'sam@mail.test');
+    await sendNow(dialog);
     expect(await screen.findByText('Saved. It will send when you are back online.')).toBeInTheDocument();
     expect(await screen.findByText('Waiting to send')).toBeInTheDocument();
     expect(posted('/mail/drafts')).toHaveLength(0);
@@ -159,8 +166,8 @@ describe('nurse MailScreen', () => {
   it('keeps a message queued after a network failure and reuses the server draft on retry', async () => {
     sendFails = { status: 0, detail: 'network' };
     const dialog = await openCompose();
-    fill(dialog, 'sam@mail.test');
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Send' }));
+    await fill(dialog, 'sam@mail.test');
+    await sendNow(dialog);
     await waitFor(async () => expect((await listDrafts('u1'))[0]).toMatchObject({ state: 'queued', serverDraftId: 'srv-1' }));
     sendFails = null;
     act(() => { window.dispatchEvent(new Event('online')); });
@@ -172,8 +179,8 @@ describe('nurse MailScreen', () => {
   it('marks a refused message as failed instead of retrying forever, and offers Send now and Discard', async () => {
     sendFails = { status: 422, detail: 'refused' };
     const dialog = await openCompose();
-    fill(dialog, 'sam@mail.test');
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Send' }));
+    await fill(dialog, 'sam@mail.test');
+    await sendNow(dialog);
     expect(await screen.findByText('Could not send')).toBeInTheDocument();
     expect(button('Send now')).toBeInTheDocument();
     expect(button('Discard')).toBeInTheDocument();
@@ -218,7 +225,7 @@ describe('nurse MailScreen', () => {
     const upload = vi.fn(async () => ({ ok: true }));
     vi.stubGlobal('fetch', upload);
     const dialog = await openCompose();
-    fill(dialog, 'sam@mail.test', 'Rota', 'First version');
+    await fill(dialog, 'sam@mail.test', 'Rota', 'First version');
     const file = new File(['pdf'], 'rota.pdf', { type: 'application/pdf' });
     fireEvent.change(within(dialog).getByLabelText('Attach files'), { target: { files: [file] } });
     expect(await within(dialog).findByText('rota.pdf')).toBeInTheDocument();
@@ -227,18 +234,18 @@ describe('nurse MailScreen', () => {
     expect(upload).toHaveBeenCalledWith('https://up.test/att-1', expect.objectContaining({ method: 'PUT' }));
     expect(posted('/mail/attachments/att-1/confirm')).toHaveLength(1);
     expect(posted('/mail/drafts/srv-1/attachments/att-1')).toHaveLength(1);
-    fireEvent.change(within(dialog).getByLabelText('Message'), { target: { value: 'Final version' } });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Send' }));
+    await userEvent.type(await within(dialog).findByRole('textbox', { name: 'Message' }), ' Final version');
+    await sendNow(dialog);
     await waitFor(() => expect(posted('/mail/drafts/srv-1/send')).toHaveLength(1));
     const put = calls().find(([p, i]) => p === '/mail/drafts/srv-1' && i?.method === 'PUT');
-    expect(JSON.parse(put?.[1]?.body ?? '{}')).toMatchObject({ body_text: 'Final version' });
+    expect(JSON.parse(put?.[1]?.body ?? '{}')).toMatchObject({ body_text: 'First version Final version' });
     expect(posted('/mail/drafts')).toHaveLength(1);
   });
 
   it('names the file that failed to upload and still lets the message go', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false })));
     const dialog = await openCompose();
-    fill(dialog, 'sam@mail.test');
+    await fill(dialog, 'sam@mail.test');
     fireEvent.change(within(dialog).getByLabelText('Attach files'), { target: { files: [new File(['x'], 'big.pdf')] } });
     expect(await within(dialog).findByText('big.pdf could not be attached.')).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Send' })).toBeEnabled();
@@ -289,7 +296,7 @@ describe('nurse MailScreen', () => {
   it('removes an attached file from the server draft and from the sheet', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true })));
     const dialog = await openCompose();
-    fill(dialog, 'sam@mail.test');
+    await fill(dialog, 'sam@mail.test');
     fireEvent.change(within(dialog).getByLabelText('Attach files'), { target: { files: [new File(['x'], 'rota.pdf')] } });
     await within(dialog).findByText('rota.pdf');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Remove rota.pdf' }));
@@ -306,13 +313,13 @@ describe('nurse MailScreen', () => {
 
   it('shows a clear message instead of losing the text when drafts cannot be stored safely', async () => {
     const dialog = await openCompose();
-    fill(dialog, 'sam@mail.test', 'Hello', 'Body');
+    await fill(dialog, 'sam@mail.test', 'Hello', 'Body');
     const real = globalThis.crypto;
     Object.defineProperty(globalThis, 'crypto', { value: {}, configurable: true });
     try {
       fireEvent.click(within(dialog).getByRole('button', { name: 'Save draft on this device' }));
       expect(await within(dialog).findByRole('alert')).toHaveTextContent('cannot keep drafts safely');
-      expect(within(dialog).getByLabelText('Message')).toHaveValue('Body');
+      expect(await within(dialog).findByRole('textbox', { name: 'Message' })).toHaveTextContent('Body');
     } finally {
       Object.defineProperty(globalThis, 'crypto', { value: real, configurable: true });
     }

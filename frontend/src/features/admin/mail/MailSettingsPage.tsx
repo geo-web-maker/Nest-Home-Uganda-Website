@@ -29,6 +29,8 @@ export function MailSettingsPage() {
   const [message, setMessage] = useState<Message | null>(null);
   const [preview, setPreview] = useState<{ count: number; sample: string[] } | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [reprocessPreview, setReprocessPreview] = useState<number | null>(null);
+  const [reprocessConfirming, setReprocessConfirming] = useState(false);
   const [totpSecret, setTotpSecret] = useState('');
   const [totpCode, setTotpCode] = useState('');
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
@@ -96,6 +98,25 @@ export function MailSettingsPage() {
       fail(t('mailSettings.backfillError'));
     },
   });
+  const reprocessCheck = useMutation({
+    mutationFn: () => apiClient.post<{ count: number }>('/mail/maintenance/reprocess/preview', {}),
+    onSuccess: (result) => setReprocessPreview(result.count),
+    onError: () => fail(t('mailSettings.reprocessError')),
+  });
+  const reprocessRun = useMutation({
+    mutationFn: () => apiClient.post<{ processed: number; skipped: number }>('/mail/maintenance/reprocess/run', { limit: 50 }),
+    onSuccess: async (result) => {
+      setReprocessConfirming(false);
+      setReprocessPreview(null);
+      ok(t('mailSettings.reprocessDone', { processed: result.processed, skipped: result.skipped }));
+      await reload();
+    },
+    onError: () => {
+      setReprocessConfirming(false);
+      fail(t('mailSettings.reprocessError'));
+    },
+  });
+
   const enroll = useMutation({
     mutationFn: () => apiClient.post<{ secret: string }>('/mail/totp/enroll', {}),
     onSuccess: (result) => setTotpSecret(result.secret),
@@ -293,6 +314,26 @@ export function MailSettingsPage() {
           ) : null}
         </section>
 
+        <section className={styles.panel} aria-label={t('mailSettings.reprocess')}>
+          <SectionHeader title={t('mailSettings.reprocess')} />
+          <p className={styles.settingHelp}>{t('mailSettings.reprocessHelp')}</p>
+          <ButtonGroup spaced>
+            <Button variant="outline" onClick={() => reprocessCheck.mutate()} disabled={reprocessCheck.isPending}>
+              {t('mailSettings.reprocessPreview')}
+            </Button>
+          </ButtonGroup>
+          {reprocessPreview !== null ? (
+            <>
+              <p>{t('mailSettings.reprocessCount', { count: reprocessPreview })}</p>
+              <ButtonGroup spaced>
+                <Button disabled={reprocessPreview === 0} onClick={() => setReprocessConfirming(true)}>
+                  {t('mailSettings.reprocessRun')}
+                </Button>
+              </ButtonGroup>
+            </>
+          ) : null}
+        </section>
+
         <section className={styles.panel} aria-label={t('mailSettings.usage')}>
           <SectionHeader
             title={t('mailSettings.usage')}
@@ -337,6 +378,15 @@ export function MailSettingsPage() {
         </section>
       </div>
 
+      {reprocessConfirming ? (
+        <Modal id="mail-reprocess-title" title={t('mailSettings.reprocessConfirmTitle')} subtitle={t('mailSettings.reprocessConfirm')} onClose={() => setReprocessConfirming(false)} closeLabel={t('mail.cancel')}>
+          <ButtonGroup spaced>
+            <Button disabled={reprocessRun.isPending} onClick={() => reprocessRun.mutate()}>
+              {t('mailSettings.reprocessConfirmYes')}
+            </Button>
+          </ButtonGroup>
+        </Modal>
+      ) : null}
       {confirming ? (
         <Modal id="mail-backfill-title" title={t('mailSettings.confirmTitle')} subtitle={t('mailSettings.confirmBackfill')} onClose={() => setConfirming(false)} closeLabel={t('mail.cancel')}>
           <ButtonGroup spaced>

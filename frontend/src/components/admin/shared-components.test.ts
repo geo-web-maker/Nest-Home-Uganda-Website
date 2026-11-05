@@ -12,7 +12,7 @@ function walk(dir: string, pattern: RegExp): string[] {
   });
 }
 
-const tsx = walk(admin, /\.tsx$/);
+const tsx = walk(admin, /\.tsx$/).filter((file) => !file.endsWith('mailUiKit.tsx')); // the adapter implements the primitives
 const css = walk(admin, /\.css$/);
 const rel = (file: string) => relative(admin, file).replaceAll('\\', '/');
 const read = (file: string) => readFileSync(file, 'utf8');

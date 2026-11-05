@@ -1,12 +1,16 @@
 # ruff: noqa: E501,E701,E702
+import re
+
 from fastapi import APIRouter, Cookie, Depends, Header, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
+from typing import Literal
 
 from app.core.deps import Principal, require_scopes
 from app.core.errors import Forbidden
 from app.modules.mail import service, core_service
 from app.modules.mail import db as mail_db
 from app.modules.mail.schemas import MailSettingsPatch
+from app.modules.mail.settings_service import get_value, _fernet
 
 router = APIRouter(prefix="/mail", tags=["mail"])
 
@@ -14,7 +18,6 @@ def _valid_totp_cookie(principal: Principal, token: str | None) -> bool:
     if not token: return False
     try:
         import hashlib,hmac,time
-        from app.modules.mail.settings_service import _fernet
         user_id,expires,sig=token.split(':',2)
         payload=f"{user_id}:{expires}"
         expected=hmac.new(_fernet()._signing_key,payload.encode(),hashlib.sha256).hexdigest()
@@ -62,8 +65,25 @@ async def reset_mail_setting(
 # Internal-mail routes are kept in this router so registry and route-coverage tests see them.
 
 
+class QuoteLabels(BaseModel):
+    wrote_on: str = Field(default="On {date}, {who} wrote:", max_length=200)
+    forwarded: str = Field(default="---------- Forwarded message ----------", max_length=200)
+    from_: str = Field(default="From", alias="from", max_length=40)
+    date: str = Field(default="Date", max_length=40)
+    subject: str = Field(default="Subject", max_length=40)
+    to: str = Field(default="To", max_length=40)
+    cc: str = Field(default="Cc", max_length=40)
+
+
+class QuoteRequest(BaseModel):
+    kind: Literal["reply", "reply_all", "forward", "forward_attachment"]
+    source_id: str
+    include_attachments: bool = True
+    labels: QuoteLabels | None = None
+
+
 class MailDraftBody(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     mailbox_id: str
     to: list[str] = Field(default_factory=list, max_length=100)
     cc: list[str] = Field(default_factory=list, max_length=100)
@@ -71,7 +91,10 @@ class MailDraftBody(BaseModel):
     subject: str = Field(default="", max_length=998)
     body_text: str = Field(default="", max_length=2_000_000)
     body_html: str | None = Field(default=None, max_length=2_000_000)
+    format: Literal["plain", "html"] = "plain"
     in_reply_to: str | None = Field(default=None, max_length=998)
+    quote: QuoteRequest | None = None
+    remove_quote: bool = False
 
 
 class SendDraftBody(BaseModel):
@@ -80,7 +103,10 @@ class SendDraftBody(BaseModel):
 
 @router.get("/mailboxes")
 async def mailboxes(principal: Principal = Depends(require_scopes("mail:use"))):
-    return {"items": await core_service.list_mailboxes(principal.user_id)}
+    return {
+        "items": await core_service.list_mailboxes(principal.user_id),
+        "limits": {"scan_enabled": bool(await get_value("mail.scan_enabled")), "rich_text_enabled": bool(await get_value("mail.rich_text_enabled")), "external_send_enabled": bool(await get_value("mail.external_enabled")), "domain": str(await get_value("mail.domain") or "").lower()},
+    }
 
 
 @router.get("/mailboxes/{mailbox_id}/messages")
@@ -158,6 +184,33 @@ async def backfill_run(principal: Principal = Depends(require_scopes("mail:setti
             await conn.execute("INSERT INTO mailbox(local_part,kind,display_name) VALUES('no-reply','shared','Nest Home Care')")
         await conn.execute("INSERT INTO mail_audit(actor_user_id,action,detail) VALUES($1,'mail.backfill',$2::jsonb)", principal.user_id, __import__('json').dumps({"created": created, "skipped": len(skipped)}))
     return {"created": created, "skipped": skipped}
+
+
+class ReprocessBody(BaseModel):
+    limit: int = Field(default=50, ge=1, le=200)
+
+
+@router.post("/maintenance/reprocess/preview")
+async def reprocess_preview(
+    principal: Principal = Depends(require_scopes("mail:settings:manage")),
+    mail_totp: str | None = Cookie(default=None),
+):
+    await _require_sensitive_totp(principal, mail_totp, "mail:settings:manage")
+    from app.modules.mail.maintenance import reprocess_preview as preview
+
+    return await preview()
+
+
+@router.post("/maintenance/reprocess/run")
+async def reprocess_run(
+    body: ReprocessBody,
+    principal: Principal = Depends(require_scopes("mail:settings:manage")),
+    mail_totp: str | None = Cookie(default=None),
+):
+    await _require_sensitive_totp(principal, mail_totp, "mail:settings:manage")
+    from app.modules.mail.maintenance import reprocess_run as run
+
+    return await run(body.limit, principal.user_id)
 
 class SharedMailboxBody(BaseModel):
     local_part: str = Field(min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9.-]+$")
@@ -273,7 +326,11 @@ async def inbound_mail(request: Request, x_nest_timestamp: str = Header(default=
     from app.modules.mail.inbound import ingest
     payload=await request.json()
     try:
-        return await ingest(payload,x_nest_timestamp,x_nest_signature)
+        result = await ingest(payload,x_nest_timestamp,x_nest_signature)
+        if result.get("delivered"):
+            from app.modules.mail.scan_queue import kick as kick_scan
+            kick_scan()
+        return result
     except PermissionError as exc:
         from fastapi import HTTPException
         raise HTTPException(status_code=401,detail="Invalid inbound authentication") from exc
@@ -295,13 +352,19 @@ async def attachment_presign(body: AttachmentPresignBody,principal: Principal=De
     max_mb=int(await get_value('mail.max_attachment_mb'))
     if body.size_bytes>max_mb*1024*1024: raise Forbidden("Attachment exceeds the configured per-file limit.")
     if "\r" in body.filename or "\n" in body.filename: raise Forbidden("Invalid attachment filename.")
-    safe_filename=body.filename.replace('\\','/').rsplit('/',1)[-1]
-    if not safe_filename or safe_filename in {'.','..'}: raise Forbidden("Invalid attachment filename.")
+    from app.modules.mail.mime_parse import safe_filename as clean_attachment_filename
+    safe_filename = clean_attachment_filename(body.filename, body.content_type)
     blocked={x.strip().lower() for x in str(await get_value('mail.blocked_extensions')).split(',')}
     ext=safe_filename.rsplit('.',1)[-1].lower() if '.' in safe_filename else ''
     quota=int(await get_value('mail.mailbox_quota_mb'))*1024*1024
     async with pool.acquire() as conn:
-        used=await conn.fetchval("SELECT coalesce((SELECT sum(size_bytes) FROM message WHERE id IN (SELECT DISTINCT message_id FROM mailbox_message WHERE mailbox_id=$1)),0)+coalesce((SELECT sum(size_bytes) FROM attachment WHERE uploader_mailbox_id=$1 OR message_id IN (SELECT DISTINCT message_id FROM mailbox_message WHERE mailbox_id=$1)),0)",body.mailbox_id)
+        used=await conn.fetchval(
+            "SELECT coalesce((SELECT sum(size_bytes) FROM message WHERE id IN "
+            "(SELECT DISTINCT message_id FROM mailbox_message WHERE mailbox_id=$1)),0) + "
+            "coalesce((SELECT sum(size_bytes) FROM attachment WHERE uploader_mailbox_id=$1 "
+            "AND message_id IS NULL),0)",
+            body.mailbox_id,
+        )
     if int(used or 0)+body.size_bytes>quota: raise Forbidden("Mailbox storage quota would be exceeded.")
     if ext in blocked: raise Forbidden("This attachment type is blocked.")
     import uuid
@@ -322,9 +385,79 @@ async def attachment_confirm(attachment_id: str,principal: Principal=Depends(req
     data=await get_storage().get(Bucket.MAIL,row['object_key'])
     if len(data)!=row['size_bytes']: raise Forbidden("Uploaded attachment size does not match the reservation.")
     digest=hashlib.sha256(data).hexdigest()
+    from app.modules.mail.mime_parse import sniff_content_type
+    detected = sniff_content_type(data)
+    declared = str(row["content_type"] or "application/octet-stream").lower().split(";", 1)[0]
+    verified_types = {"application/pdf", "image/png", "image/jpeg", "image/gif", "image/webp"}
+    if declared in verified_types and detected != declared:
+        raise Forbidden("Uploaded file content does not match its declared type.")
+    scan_state = "unscanned"
+    scan_detail = None
+    if bool(await get_value("mail.scan_enabled")):
+        from app.modules.mail.scanner import scan_object
+        result = await scan_object(str(row["object_key"]), digest)
+        if result.state == "infected":
+            await get_storage().delete(Bucket.MAIL, row["object_key"])
+            async with pool.acquire() as conn:
+                await conn.execute("DELETE FROM attachment WHERE id=$1", attachment_id)
+                await conn.execute(
+                    "INSERT INTO mail_audit(actor_user_id,action,mailbox_id,detail) "
+                    "VALUES($1,'mail.attachment.infected',$2,jsonb_build_object('attachment_id',$3))",
+                    principal.user_id, row["uploader_mailbox_id"], attachment_id,
+                )
+            raise Forbidden("This file contains a virus and was not attached.")
+        if result.state == "clean":
+            scan_state = "clean"
+        else:
+            scan_state = "scan_error"
+            scan_detail = str(result.detail or "Scanner unavailable")[:160]
+            if str(await get_value("mail.scan_fail_mode") or "allow") == "block":
+                async with pool.acquire() as conn:
+                    await conn.execute(
+                        "UPDATE attachment SET sha256=$2,scan_state='scan_error',scan_detail=$3 WHERE id=$1",
+                        attachment_id, digest, scan_detail,
+                    )
+                from fastapi import HTTPException
+                raise HTTPException(status_code=503, detail="Attachment scanning is temporarily unavailable. Please retry.")
     async with pool.acquire() as conn:
-        await conn.execute("UPDATE attachment SET sha256=$2,scan_state='unscanned' WHERE id=$1",attachment_id,digest)
-    return {"confirmed":True,"sha256":digest}
+        await conn.execute(
+            "UPDATE attachment SET sha256=$2,scan_state=$3,scan_detail=$4,scanned_at=CASE WHEN $3='clean' THEN now() ELSE NULL END WHERE id=$1",
+            attachment_id, digest, scan_state, scan_detail,
+        )
+    return {"confirmed":True,"sha256":digest,"scan_state":scan_state}
+
+@router.get("/messages/{mailbox_message_id}/original")
+async def original_download(
+    mailbox_message_id: str,
+    principal: Principal = Depends(require_scopes("mail:use")),
+):
+    from app.core.storage import Bucket, get_storage
+
+    pool = mail_db.get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("""SELECT m.raw_object_key,m.sent_eml_key,m.subject,m.id AS message_id,
+                mm.mailbox_id
+            FROM mailbox_message mm JOIN message m ON m.id=mm.message_id
+            JOIN mailbox_member member ON member.mailbox_id=mm.mailbox_id
+            WHERE mm.id=$1 AND member.user_id=$2""", mailbox_message_id, principal.user_id)
+        if not row:
+            raise Forbidden("Original message is not available.")
+        object_key = row["sent_eml_key"] or row["raw_object_key"]
+        if not object_key:
+            from app.core.errors import NotFound
+            raise NotFound("The original message file is not available.")
+        await conn.execute(
+            "INSERT INTO mail_audit(actor_user_id,action,mailbox_id,message_id,detail) "
+            "VALUES($1,'mail.original.download',$2,$3,jsonb_build_object('mailbox_message_id',$4))",
+            principal.user_id, row["mailbox_id"], row["message_id"], mailbox_message_id,
+        )
+    subject = re.sub(r"[\r\n\\/]+", "_", str(row["subject"] or "original"))[:180]
+    url = await get_storage().signed_url(
+        Bucket.MAIL, object_key, 300,
+        download_filename=f"{subject}.eml", content_type="message/rfc822",
+    )
+    return {"download_url": url, "filename": f"{subject}.eml", "expires_seconds": 300}
+
 
 @router.get("/attachments/{attachment_id}/download")
 async def attachment_download(attachment_id: str,principal: Principal=Depends(require_scopes("mail:use"))):
@@ -335,11 +468,20 @@ async def attachment_download(attachment_id: str,principal: Principal=Depends(re
           EXISTS(SELECT 1 FROM mailbox_member m WHERE m.mailbox_id=a.uploader_mailbox_id AND m.user_id=$2) OR
           EXISTS(SELECT 1 FROM mailbox_message mm JOIN mailbox_member m ON m.mailbox_id=mm.mailbox_id WHERE mm.message_id=a.message_id AND m.user_id=$2))""",attachment_id,principal.user_id)
         if not row: raise Forbidden("Attachment not available.")
-        blocked={x.strip().lower() for x in str(await __import__('app.modules.mail.settings_service',fromlist=['get_value']).get_value('mail.blocked_extensions')).split(',')}
+        blocked={x.strip().lower() for x in str(await get_value('mail.blocked_extensions')).split(',')}
         ext=str(row['filename']).rsplit('.',1)[-1].lower() if '.' in str(row['filename']) else ''
-        if row['scan_state'] in ('blocked','infected') or ext in blocked: raise Forbidden("This attachment is not available for download.")
+        if row['scan_state'] in ('blocked','infected','pending') or row.get('blocked_reason') or not row['object_key'] or ext in blocked:
+            raise Forbidden("This attachment is not available for download.")
+        if bool(await get_value("mail.scan_enabled")) and bool(await get_value("mail.scan_block_unscanned_download")) and row['scan_state'] != 'clean':
+            raise Forbidden("This attachment is not available until security scanning is complete.")
         await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id,message_id,detail) VALUES($1,'mail.attachment.download',$2,$3,jsonb_build_object('attachment_id',$4))",principal.user_id,row['uploader_mailbox_id'],row['message_id'],attachment_id)
-    url=await get_storage().signed_url(Bucket.MAIL,row['object_key'],300)
+    content_type = str(row['content_type'] or 'application/octet-stream').lower()
+    if content_type in {'text/html', 'image/svg+xml', 'application/xhtml+xml'}:
+        content_type = 'application/octet-stream'
+    url=await get_storage().signed_url(
+        Bucket.MAIL, row['object_key'], 300,
+        download_filename=str(row['filename'] or 'attachment'), content_type=content_type
+    )
     return {"download_url":url,"filename":row['filename'],"expires_seconds":300}
 
 class TotpCodeBody(BaseModel):
@@ -379,7 +521,7 @@ async def totp_verify(body: TotpCodeBody,response: Response,principal: Principal
     import hashlib,hmac,time
     if not await verified(principal.user_id): raise Forbidden("Set up authenticator verification first.")
     if not await verify_code_or_recovery(principal.user_id,body.code): raise Forbidden("Authenticator code is invalid.")
-    key=__import__('app.modules.mail.settings_service',fromlist=['_fernet'])._fernet()._signing_key
+    key=_fernet()._signing_key
     expires=int(time.time())+12*3600
     payload=f"{principal.user_id}:{expires}"
     sig=hmac.new(key,payload.encode(),hashlib.sha256).hexdigest()
@@ -515,61 +657,207 @@ async def mail_diagnostics_inbound(principal: Principal=Depends(require_scopes("
     return {"check":(await diagnostics.inbound_selftest(box,domain,secret,mail_db.get_pool(),get_storage(),Bucket.MAIL,ingest)).as_dict()}
 
 @router.post("/webhooks/{provider}")
-async def mail_provider_webhook(provider: str,request: Request):
-    import hashlib,hmac,base64,time
-    from app.modules.mail.settings_service import get_value
-    raw=await request.body(); secret=str(await get_value('mail.provider_webhook_secret') or '')
-    if provider=='brevo':
-        supplied=request.headers.get('x-brevo-signature','')
-        expected=hmac.new(secret.encode(),raw,hashlib.sha256).hexdigest()
-        valid=bool(supplied) and hmac.compare_digest(supplied,expected)
-    elif provider=='resend':
-        sid=request.headers.get('svix-id',''); ts=request.headers.get('svix-timestamp',''); sig=request.headers.get('svix-signature','')
+async def mail_provider_webhook(provider: str, request: Request):
+    """Authenticate callbacks and persist recipient-level delivery events."""
+    import base64
+    import hashlib
+    import hmac
+    import time
+    import json
+
+    provider = provider.lower()
+    secret = str(await get_value("mail.provider_webhook_secret") or "")
+    raw = await request.body()
+    if provider == "brevo":
+        # Brevo webhook security uses HTTP Basic authentication configured in
+        # the webhook URL. Use username `nest` and the configured password.
+        supplied = request.headers.get("authorization", "")
+        expected = "Basic " + base64.b64encode(f"nest:{secret}".encode()).decode() if secret else ""
+        valid = bool(expected) and hmac.compare_digest(supplied, expected)
+    elif provider == "resend":
+        sid = request.headers.get("svix-id", "")
+        ts = request.headers.get("svix-timestamp", "")
+        sig = request.headers.get("svix-signature", "")
         try:
-            if abs(int(time.time())-int(ts))>300: raise ValueError
-            key=base64.b64decode(secret.removeprefix('whsec_'))
-            expected=base64.b64encode(hmac.new(key,f"{sid}.{ts}.".encode()+raw,hashlib.sha256).digest()).decode()
-            valid=any(hmac.compare_digest(part.removeprefix('v1,'),expected) for part in sig.split())
-        except Exception: valid=False
-    else: raise Forbidden("Unknown mail provider webhook.")
-    if not valid: raise Forbidden("Invalid provider webhook signature.")
-    payload=await request.json(); event=str(payload.get('type') or payload.get('event') or '').lower()
-    data=payload.get('data') if isinstance(payload.get('data'),dict) else payload
-    address=str(data.get('email') or data.get('recipient') or '').lower()
-    if address and ('bounce' in event or 'complaint' in event):
-        reason='complaint' if 'complaint' in event else 'hard_bounce'
-        pool=mail_db.get_pool()
-        async with pool.acquire() as conn:
-            await conn.execute("INSERT INTO suppression(address,reason) VALUES($1,$2) ON CONFLICT(address) DO UPDATE SET reason=EXCLUDED.reason",address,reason)
-            await conn.execute("INSERT INTO mail_audit(action,detail) VALUES('mail.provider.webhook',$1::jsonb)",__import__('json').dumps({"provider":provider,"event":event}))
-    return {"accepted":True}
+            if abs(int(time.time()) - int(ts)) > 300:
+                raise ValueError
+            key = base64.b64decode(secret.removeprefix("whsec_"), validate=True)
+            expected_sig = base64.b64encode(hmac.new(key, f"{sid}.{ts}.".encode() + raw, hashlib.sha256).digest()).decode()
+            valid = any(hmac.compare_digest(part.removeprefix("v1,"), expected_sig) for part in sig.split())
+        except Exception:
+            valid = False
+    else:
+        raise Forbidden("Unknown mail provider webhook.")
+    if not valid:
+        raise Forbidden("Invalid provider webhook authentication.")
+
+    try:
+        payload = json.loads(raw)
+    except (ValueError, TypeError) as exc:
+        raise Forbidden("Invalid provider webhook payload.") from exc
+    if not isinstance(payload, dict):
+        raise Forbidden("Invalid provider webhook payload.")
+    from app.modules.mail.delivery import normalise_delivery_payload
+    events = normalise_delivery_payload(provider, payload, raw)
+    if not events:
+        return {"accepted": True, "recorded": 0}
+
+    pool = mail_db.get_pool()
+    recorded = 0
+    async with pool.acquire() as conn:
+        for event_item in events:
+            outbox_id = None
+            custom_id = str(event_item["custom_id"] or "").removeprefix("nest-outbox:")
+            provider_id = str(event_item["provider_message_id"] or "")
+            if custom_id:
+                outbox_id = await conn.fetchval(
+                    "SELECT id FROM outbox WHERE id::text=$1 OR idempotency_key=$1 LIMIT 1",
+                    custom_id,
+                )
+            if not outbox_id and provider_id:
+                outbox_id = await conn.fetchval(
+                    "SELECT id FROM outbox WHERE provider=$1 AND "
+                    "(provider_message_id=$2 OR trim(both '<>' from provider_message_id)=trim(both '<>' from $2)) "
+                    "ORDER BY sent_at DESC NULLS LAST LIMIT 1",
+                    provider, provider_id,
+                )
+            if not outbox_id:
+                continue
+            inserted = await conn.fetchval(
+                "INSERT INTO delivery_event(outbox_id,address,event,detail,at,event_key) "
+                "VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING RETURNING id",
+                outbox_id, event_item["address"], event_item["event"], event_item["detail"],
+                event_item["at"], event_item["event_key"],
+            )
+            if inserted:
+                recorded += 1
+            event = event_item["event"]
+            if event in {"failed", "error"}:
+                # Provider transport failures are visible in Sent delivery status,
+                # but do not suppress the recipient address.
+                await conn.execute(
+                    "UPDATE outbox SET state='failed',last_error='provider_delivery_failed' "
+                    "WHERE id=$1 AND state='sent'",
+                    outbox_id,
+                )
+            if event in {"hard_bounce", "blocked", "invalid_email", "complaint"}:
+                reason = "complaint" if event == "complaint" else "hard_bounce"
+                await conn.execute(
+                    "INSERT INTO suppression(address,reason) VALUES($1,$2) "
+                    "ON CONFLICT(address) DO UPDATE SET reason=EXCLUDED.reason",
+                    event_item["address"], reason,
+                )
+                await conn.execute(
+                    "UPDATE outbox SET state='failed',last_error='recipient_delivery_failed' "
+                    "WHERE id=$1 AND state='sent'",
+                    outbox_id,
+                )
+        await conn.execute(
+            "INSERT INTO mail_audit(action,detail) VALUES('mail.provider.webhook',$1::jsonb)",
+            json.dumps({"provider": provider, "recorded": recorded}),
+        )
+    return {"accepted": True, "recorded": recorded}
 
 @router.delete("/drafts/{draft_id}/attachments/{attachment_id}")
 async def remove_draft_attachment(draft_id: str, attachment_id: str, principal: Principal = Depends(require_scopes("mail:use"))):
     return await core_service.remove_draft_attachment(principal.user_id, draft_id, attachment_id)
 
+class AttachDraftBody(BaseModel):
+    disposition: str = Field(default="attachment", pattern="^(attachment|inline)$")
+    content_id: str | None = Field(default=None, max_length=200)
+
+
 @router.post("/drafts/{draft_id}/attachments/{attachment_id}")
-async def attach_to_draft(draft_id: str,attachment_id: str,principal: Principal=Depends(require_scopes("mail:use"))):
+async def attach_to_draft(
+    draft_id: str,
+    attachment_id: str,
+    body: AttachDraftBody | None = None,
+    principal: Principal = Depends(require_scopes("mail:use")),
+):
+    import re
+    import uuid
+    options = body or AttachDraftBody()
+    if options.disposition == "inline":
+        content_id = (options.content_id or str(uuid.uuid4())).strip().strip("<>")
+        if not re.fullmatch(r"[A-Za-z0-9._+-]{1,180}", content_id):
+            raise Forbidden("Invalid inline image identifier.")
+    else:
+        content_id = None
     pool=mail_db.get_pool()
     async with pool.acquire() as conn:
         async with conn.transaction():
-            row=await conn.fetchrow("SELECT d.mailbox_id,d.message_id,a.uploader_mailbox_id,a.size_bytes,a.scan_state,m.size_bytes+coalesce((SELECT sum(ax.size_bytes) FROM attachment ax WHERE ax.message_id=m.id),0) message_size FROM mailbox_message d JOIN mailbox_member mb ON mb.mailbox_id=d.mailbox_id JOIN message m ON m.id=d.message_id JOIN attachment a ON a.id=$2 WHERE d.id=$1 AND d.folder='drafts' AND mb.user_id=$3 AND a.uploader_mailbox_id=d.mailbox_id",draft_id,attachment_id,principal.user_id)
+            row=await conn.fetchrow(
+                "SELECT d.mailbox_id,d.message_id,a.uploader_mailbox_id,a.size_bytes,a.scan_state,"
+                "a.object_key,m.size_bytes AS message_size FROM mailbox_message d "
+                "JOIN mailbox_member mb ON mb.mailbox_id=d.mailbox_id "
+                "JOIN message m ON m.id=d.message_id JOIN attachment a ON a.id=$2 "
+                "WHERE d.id=$1 AND d.folder='drafts' AND mb.user_id=$3 "
+                "AND a.uploader_mailbox_id=d.mailbox_id AND a.message_id IS NULL",
+                draft_id,attachment_id,principal.user_id,
+            )
             if not row or row['scan_state']=='pending': raise Forbidden("Draft or confirmed attachment not available.")
+            if options.disposition == "inline" and not str(row["object_key"] or "").lower():
+                raise Forbidden("Inline image is not available.")
+            if options.disposition == "inline":
+                mime_type = str(await conn.fetchval("SELECT content_type FROM attachment WHERE id=$1", attachment_id) or "")
+                if mime_type not in {"image/png", "image/jpeg", "image/gif", "image/webp"}:
+                    raise Forbidden("Only PNG, JPEG, GIF and WebP images can be embedded inline.")
             from app.modules.mail.settings_service import get_value
             if int(row['message_size'])+int(row['size_bytes'])>int(await get_value('mail.max_message_mb'))*1024*1024: raise Forbidden("Message size limit would be exceeded.")
-            await conn.execute("UPDATE attachment SET message_id=$2 WHERE id=$1",attachment_id,row['message_id'])
+            quota_bytes = int(await get_value('mail.mailbox_quota_mb'))*1024*1024
+            used = await conn.fetchval(
+                "SELECT coalesce(sum(m.size_bytes),0) + coalesce((SELECT sum(a.size_bytes) "
+                "FROM attachment a WHERE a.uploader_mailbox_id=$1 AND a.message_id IS NULL),0) "
+                "FROM mailbox_message mm JOIN message m ON m.id=mm.message_id "
+                "WHERE mm.mailbox_id=$1",
+                row["mailbox_id"],
+            )
+            if int(used or 0) > quota_bytes:
+                raise Forbidden("Mailbox storage quota would be exceeded.")
+            await conn.execute(
+                "UPDATE attachment SET message_id=$2,disposition=$3,content_id=$4 WHERE id=$1",
+                attachment_id, row['message_id'], options.disposition, content_id,
+            )
+            await conn.execute(
+                "UPDATE message SET size_bytes=size_bytes+$2 WHERE id=$1",
+                row["message_id"], row["size_bytes"],
+            )
     return {"attached":True}
 
 @router.delete("/drafts/{draft_id}")
 async def delete_draft(draft_id: str,principal: Principal=Depends(require_scopes("mail:use"))):
+    from app.core.storage import Bucket, get_storage
+
     pool=mail_db.get_pool()
+    object_keys = []
     async with pool.acquire() as conn:
-        row=await conn.fetchrow("SELECT d.message_id,d.mailbox_id FROM mailbox_message d JOIN mailbox_member m ON m.mailbox_id=d.mailbox_id WHERE d.id=$1 AND d.folder='drafts' AND m.user_id=$2",draft_id,principal.user_id)
-        if not row: raise Forbidden("Draft not available.")
-        await conn.execute("DELETE FROM mailbox_message WHERE id=$1",draft_id)
-        if not await conn.fetchval("SELECT EXISTS(SELECT 1 FROM mailbox_message WHERE message_id=$1)",row['message_id']):
-            await conn.execute("DELETE FROM message WHERE id=$1",row['message_id'])
+        async with conn.transaction():
+            row=await conn.fetchrow(
+                "SELECT d.message_id,d.mailbox_id FROM mailbox_message d "
+                "JOIN mailbox_member m ON m.mailbox_id=d.mailbox_id "
+                "WHERE d.id=$1 AND d.folder='drafts' AND m.user_id=$2",
+                draft_id,principal.user_id,
+            )
+            if not row: raise Forbidden("Draft not available.")
+            object_keys = [
+                item["object_key"] for item in await conn.fetch(
+                    "SELECT object_key FROM attachment WHERE message_id=$1 AND object_key IS NOT NULL",
+                    row["message_id"],
+                )
+            ]
+            await conn.execute("DELETE FROM mailbox_message WHERE id=$1",draft_id)
+            if not await conn.fetchval(
+                "SELECT EXISTS(SELECT 1 FROM mailbox_message WHERE message_id=$1)",row['message_id']
+            ):
+                await conn.execute("DELETE FROM message WHERE id=$1",row['message_id'])
+    for object_key in object_keys:
+        try:
+            await get_storage().delete(Bucket.MAIL, object_key)
+        except Exception:
+            # The object is unreachable from the database and can be cleaned by retention.
+            pass
     return {"deleted":True}
+
 
 class ContactBody(BaseModel):
     address: str = Field(min_length=3,max_length=254)

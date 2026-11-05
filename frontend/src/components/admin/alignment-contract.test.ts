@@ -27,7 +27,7 @@ function walk(dir: string, pattern: RegExp): string[] {
   });
 }
 const admin = join(src, 'features', 'admin');
-const adminTsx = walk(admin, /\.tsx$/);
+const adminTsx = walk(admin, /\.tsx$/).filter((file) => !file.endsWith('mailUiKit.tsx')); // the adapter implements the primitives
 const adminCss = walk(admin, /\.css$/);
 const rel = (file: string) => relative(admin, file).replaceAll('\\', '/');
 const offenders = (files: string[], pattern: RegExp) => files.filter((f) => pattern.test(readFileSync(f, 'utf8'))).map(rel);

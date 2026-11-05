@@ -47,7 +47,7 @@ class _Conn:
 
     async def fetchrow(self, *args):
         # The real query selects mm.* and m.*; both have an "id" column and the message id wins.
-        return {"id": "MESSAGE-ID", "mailbox_id": "BOX", "message_id": "MESSAGE-ID", "from_address": "a@example.test", "folder": _Conn.folder, "is_read": False, "is_starred": False}
+        return {"id": "MESSAGE-ID", "mailbox_id": "BOX", "message_id": "MESSAGE-ID", "from_address": "a@example.test", "folder": _Conn.folder, "is_read": False, "is_starred": False, "state": "sent", "last_error": None, "provider": "", "provider_message_id": None}
 
     async def fetch(self, *args):
         _Conn.queries.append(str(args[0]))
@@ -60,6 +60,9 @@ class _Conn:
 class _Pool:
     def acquire(self):
         return _Conn()
+
+    async def fetchrow(self, *args):
+        return None  # mail settings fall back to their defaults
 
 
 async def test_read_message_returns_the_mailbox_message_id_the_screens_patch_with(monkeypatch):
@@ -90,14 +93,14 @@ async def test_only_the_senders_own_copies_return_the_full_bcc_list(monkeypatch,
 
 
 _DRAFT = {"mailbox_id": "BOX", "message_id": "MSG"}
-_ATTACHMENT = {"id": "ATT", "object_key": "mail/attachments/abc"}
+_ATTACHMENT = {"id": "ATT", "object_key": "mail/attachments/abc", "size_bytes": 10}
 
 
 class _DetachConn(_Conn):
     """Answers the three lookups remove_draft_attachment makes, and records what was deleted."""
 
     draft = {"mailbox_id": "BOX", "message_id": "MSG"}
-    attachment = {"id": "ATT", "object_key": "mail/attachments/abc"}
+    attachment = {"id": "ATT", "object_key": "mail/attachments/abc", "size_bytes": 10}
     deleted: list[tuple] = []
     box_role = "owner"
 

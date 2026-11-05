@@ -10,7 +10,10 @@ export type MailItem = {
   from_address: string;
   from_name?: string | null;
   subject: string;
-  body_text: string;
+  body_text?: string;
+  body_format?: 'plain' | 'html';
+  snippet?: string;
+  has_attachments?: boolean;
   origin: string;
   received_at: string;
   is_read: boolean;
@@ -25,6 +28,12 @@ export type MailAttachment = {
   content_type: string;
   size_bytes: number;
   scan_state: string;
+  sha256?: string | null;
+  disposition?: 'attachment' | 'inline';
+  content_id?: string | null;
+  blocked_reason?: string | null;
+  scan_detail?: string | null;
+  scanned_at?: string | null;
 };
 
 /** What GET /mail/messages/{id} adds on top of the list row. */
@@ -35,12 +44,20 @@ export type MailDetail = {
   from_name?: string | null;
   subject: string;
   body_text: string;
+  body_html?: string | null;
+  quoted_html?: string | null;
+  body_format?: 'plain' | 'html';
+  snippet?: string;
+  has_remote_images?: boolean;
+  can_download_original?: boolean;
+  render_notes?: Record<string, unknown>;
   origin: string;
   is_read: boolean;
   is_starred: boolean;
   folder: string;
   recipients: MailRecipient[];
   attachments: MailAttachment[];
+  delivery?: { state: string; reason?: string | null; provider?: string; recipients: { address: string; event: string; at?: string | null }[] } | null;
 };
 
 export type ComposeSeed = {
@@ -53,5 +70,9 @@ export type ComposeSeed = {
   body: string;
   inReplyTo?: string;
   /** Files already on the draft being edited. */
-  attachments?: { id: string; filename: string; size: number }[];
+  bodyHtml?: string;
+  bodyFormat?: 'plain' | 'html';
+  quotedHtml?: string | null;
+  attachments?: { id: string; filename: string; size: number; content_type?: string; scan_state?: string; blocked_reason?: string | null; disposition?: 'attachment' | 'inline'; content_id?: string | null }[];
+  quote?: { kind: 'reply' | 'reply_all' | 'forward' | 'forward_attachment'; source_id: string; include_attachments?: boolean };
 };

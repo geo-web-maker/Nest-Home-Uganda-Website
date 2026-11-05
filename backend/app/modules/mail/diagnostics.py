@@ -59,6 +59,9 @@ def check_settings(values: dict[str, Any]) -> list[Check]:
     has_key = bool(str(values.get("mail.provider_api_key") or "").strip())
     if provider == "console":
         out.append(Check("provider", WARN, "The console provider records messages but sends nothing outside Nest. Choose a real provider to send externally."))
+    elif provider == "brevo" and str(values.get("mail.brevo_transport") or "smtp") == "smtp":
+        smtp_ok = bool(str(values.get("mail.smtp_username") or "").strip() and str(values.get("mail.smtp_password") or "").strip())
+        out.append(Check("provider", PASS if smtp_ok else FAIL, "Brevo SMTP credentials are saved." if smtp_ok else "Brevo SMTP username or SMTP key is missing."))
     elif has_key:
         out.append(Check("provider", PASS, f"{provider} is selected and an API key is saved."))
     else:
@@ -182,8 +185,33 @@ async def check_dns(domain: str, provider: str, lookup: DnsLookup = doh_lookup) 
     return out
 
 
+async def check_scanner(values: dict[str, Any]) -> Check:
+    if not bool(values.get("mail.scan_enabled")):
+        return Check("scanner", SKIP, "Attachment scanning is disabled until a scanner host is configured.")
+    from app.modules.mail.scanner import scanner_health
+    ok, detail = await scanner_health()
+    return Check("scanner", PASS if ok else FAIL, detail)
+
+
+async def check_smtp_port(values: dict[str, Any]) -> Check:
+    if str(values.get("mail.provider") or "").lower() != "brevo" or str(values.get("mail.brevo_transport") or "smtp") != "smtp":
+        return Check("smtpPort", SKIP, "Brevo SMTP transport is not selected.")
+    host = str(values.get("mail.smtp_host") or "smtp-relay.brevo.com")
+    port = int(values.get("mail.smtp_port") or 587)
+    import asyncio
+    try:
+        reader, writer = await asyncio.wait_for(asyncio.open_connection(host, port), timeout=4)
+        writer.close()
+        await writer.wait_closed()
+        return Check("smtpPort", PASS, f"SMTP port {port} is reachable on {host}.")
+    except Exception:
+        return Check("smtpPort", WARN, f"SMTP port {port} is not reachable from this host. Try port 2525 or the Brevo API transport.")
+
+
 async def run_passive_checks(values: dict[str, Any], pool: Any, storage: Any, bucket: Any, lookup: DnsLookup = doh_lookup) -> list[Check]:
     checks = check_settings(values)
+    checks.append(await check_smtp_port(values))
+    checks.append(await check_scanner(values))
     async with pool.acquire() as conn:
         checks.extend(await check_database(conn))
         if any(check.id == "database" and check.status == PASS for check in checks):

@@ -71,8 +71,17 @@ DEFINITIONS: tuple[SettingDefinition, ...] = (
         "Write-only provider credential. Stored encrypted.", "secret", None, secret=True
     ),
     _s(
-        "mail.provider_webhook_secret", "sending", "Provider webhook signing secret",
-        "Write-only Resend Svix or Brevo webhook secret. Stored encrypted.", "secret", None, secret=True
+        "mail.brevo_transport", "sending", "Brevo transport",
+        "SMTP preserves message headers, inline images and original filenames; API is the fallback.",
+        "choice", "smtp", choices=("smtp", "api")
+    ),
+    _s("mail.smtp_host", "sending", "SMTP host", "Brevo SMTP relay host.", "string", "smtp-relay.brevo.com"),
+    _s("mail.smtp_port", "sending", "SMTP port", "Use 2525 if the host blocks 587; 465 uses implicit TLS.", "integer", 587, minimum=1, maximum=65535),
+    _s("mail.smtp_username", "sending", "SMTP username", "Brevo SMTP login (not the API key).", "string", ""),
+    _s("mail.smtp_password", "sending", "SMTP password", "Write-only Brevo SMTP key (not the API key).", "secret", None, secret=True),
+    _s(
+        "mail.provider_webhook_secret", "sending", "Provider webhook authentication",
+        "Write-only Resend Svix secret or Brevo basic-auth password (configure the webhook URL with username and password). Stored encrypted.", "secret", None, secret=True
     ),
     _s(
         "mail.from_name", "sending", "System sender name",
@@ -84,7 +93,7 @@ DEFINITIONS: tuple[SettingDefinition, ...] = (
     ),
     _s(
         "mail.external_enabled", "sending", "External sending enabled",
-        "Global switch for mail to outside addresses.", "boolean", True
+        "Keep off until provider, attachment, Bcc and delivery-event acceptance checks pass.", "boolean", False
     ),
     _s(
         "mail.provider_daily_limit", "sending", "Provider daily recipient limit",
@@ -187,6 +196,56 @@ DEFINITIONS: tuple[SettingDefinition, ...] = (
     _s(
         "mail.block_remote_images", "inbound", "Block remote images",
         "Block remote images until a user allows them for a message.", "boolean", True
+    ),
+    _s(
+        "mail.confirm_external_links", "inbound", "Confirm external mail links",
+        "Ask before opening links from external mail.", "boolean", True
+    ),
+    # 5.6 Rich content controls
+    _s(
+        "mail.rich_text_enabled", "general", "Enable rich-text mail",
+        "Off keeps the compose editor in plain-text mode.", "boolean", True
+    ),
+    _s(
+        "mail.max_html_kb", "storage", "Maximum HTML body (KB)",
+        "Largest HTML body retained before safe truncation with a visible note.",
+        "integer", 1024, minimum=1, maximum=2000
+    ),
+    _s(
+        "mail.inline_image_max_kb", "storage", "Maximum inline image (KB)",
+        "Largest inline image returned directly in a message view.",
+        "integer", 1024, minimum=1, maximum=4096
+    ),
+    _s(
+        "mail.inline_images_total_mb", "storage", "Inline images per message (MB)",
+        "Maximum combined inline image bytes returned for one message view.",
+        "integer", 5, minimum=1, maximum=50
+    ),
+    _s("mail.scan_enabled", "security", "Enable attachment scanning", "Off until the private ClamAV service is deployed and verified.", "boolean", False),
+    _s("mail.scan_mode", "security", "Scanner mode", "Use the authenticated HTTPS sidecar in production.", "choice", "http", choices=("http", "clamd")),
+    _s("mail.scan_url", "security", "Scanner HTTPS URL", "Private HTTPS URL for the ClamAV sidecar.", "string", ""),
+    _s("mail.clamd_host", "security", "Local clamd host", "Development only; never expose this port publicly.", "string", "127.0.0.1"),
+    _s("mail.clamd_port", "security", "Local clamd port", "Development-only ClamAV TCP port.", "integer", 3310, minimum=1, maximum=65535),
+    _s("mail.scan_token", "security", "Scanner bearer token", "Write-only token shared with the scanner sidecar.", "secret", None, secret=True),
+    _s("mail.scan_timeout_seconds", "security", "Scanner timeout (seconds)", "Maximum time for an attachment scan.", "integer", 60, minimum=1, maximum=300),
+    _s("mail.scan_fail_mode", "security", "Scanner failure mode", "Allow keeps the file unscanned; block prevents use until a clean result. Block is the safe default for contract workflows.", "choice", "block", choices=("allow", "block")),
+    _s("mail.scan_block_unscanned_download", "security", "Block unscanned downloads", "Require a clean verdict before attachment downloads.", "boolean", True),
+    _s(
+        "mail.store_sent_eml", "storage", "Store sent EML copies",
+        "Keep the RFC 5322 message bytes generated at send time.", "boolean", True
+    ),
+    _s(
+        "mail.provider_max_message_mb", "sending", "Provider message limit (MB)",
+        "Conservative external message limit including encoded attachment overhead; verify against provider documentation.",
+        "integer", 20, minimum=1, maximum=25
+    ),
+    _s(
+        "mail.confirm_external_send", "sending", "Confirm external sends",
+        "Show a recipient summary before sending to external addresses.", "boolean", True
+    ),
+    _s(
+        "mail.allow_forward_as_attachment", "general", "Allow forward as attachment",
+        "Offer forwarding the original message as a byte-preserved .eml attachment.", "boolean", True
     ),
     # 5.6 Backfill
     _s(

@@ -5,14 +5,19 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { manifest } from './src/pwa/manifest';
 
 /** Writes dist/_headers so connect-src also allows the API origin chosen at build time. */
-function headersPlugin(apiUrl: string): Plugin {
+function headersPlugin(apiUrl: string, mailStorageUrl: string): Plugin {
   return {
     name: 'nurse-headers',
     apply: 'build',
     closeBundle() {
       let origin = '';
       try { origin = apiUrl ? new URL(apiUrl).origin : ''; } catch { /* ignore a bad value */ }
-      const connect = ["'self'", origin, 'https://api.cloudinary.com'].filter(Boolean).join(' ');
+      let storageOrigin = '';
+      try {
+        const storage = mailStorageUrl ? new URL(mailStorageUrl) : null;
+        if (storage?.protocol === 'https:') storageOrigin = storage.origin;
+      } catch { /* A missing or invalid value leaves uploads blocked by CSP. */ }
+      const connect = ["'self'", origin, storageOrigin, 'https://api.cloudinary.com'].filter(Boolean).join(' ');
       const csp = `default-src 'self'; img-src 'self' data: blob:; connect-src ${connect}; frame-ancestors 'none'`;
       writeFileSync('dist/_headers', `/*\n  X-Robots-Tag: noindex, nofollow\n  Content-Security-Policy: ${csp}\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n`);
     },
@@ -23,7 +28,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
   plugins: [
-    headersPlugin(env.VITE_API_URL ?? ''),
+    headersPlugin(env.VITE_API_URL ?? '', env.VITE_MAIL_STORAGE_URL ?? ''),
     react(),
     VitePWA({
       registerType: 'prompt',

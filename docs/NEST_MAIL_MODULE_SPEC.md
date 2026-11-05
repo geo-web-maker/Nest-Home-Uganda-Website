@@ -92,7 +92,7 @@ Verified against the uploaded repo. Follow its conventions exactly.
 | `mail.provider_api_key` | unset | Secret |
 | `mail.from_name` | `Nest Home Care` | Display name for system mail |
 | `mail.reply_to` | empty | Optional |
-| `mail.external_enabled` | `true` | Global switch for external sending |
+| `mail.external_enabled` | `false` | Global switch for external sending; enable only after provider/attachment/Bcc acceptance checks |
 | `mail.provider_daily_limit` | `100` | ASSUMED conservative. Match the provider plan |
 | `mail.provider_monthly_limit` | `3000` | ASSUMED. Match the provider plan |
 | `mail.mailbox_daily_external_limit` | `500` | ASSUMED, Gmail-style, per mailbox per day |
@@ -472,7 +472,7 @@ Invites, password resets and enquiry alerts currently call `get_email_provider()
 7. Return 200 quickly. The Worker retries on non-2xx, so make delivery idempotent on `message_id_header` plus the R2 key.
 
 ### 12.3 Safety
-External sender banner, remote images blocked until the user allows them for that message, a confirmation dialog before opening any link in an external message, a "Report spam" button (moves to Spam and adds a per-mailbox block entry), and attachments are download-only (never rendered inline).
+External sender banner, remote images blocked by default, a confirmation dialog before opening any link in external mail, a "Report spam" button (moves to Spam and adds a per-mailbox block entry), and attachments are download-only. CID-referenced inline images are displayed only after the server resolves them to bounded data URIs; remote images are not proxied. Large inline images remain downloadable attachments with a visible note.
 
 ---
 
@@ -693,3 +693,10 @@ Threads, labels, signatures, auto-reply, forwarding rules, address book, unread 
 - Real values for the ASSUMED defaults (limits, quota, retention).
 - Whether inbound should also support a Brevo or Resend inbound route later (not needed now).
 - Owner to confirm the Cloudflare Email Routing and Workers limits at deployment time, since they change.
+
+
+### P1/P2 rich-content implementation note
+
+Migration `0005_rich_content.sql` adds `body_format`, `quoted_html`, `render_notes`, `snippet`, sanitizer versioning, attachment CID/disposition/blocked metadata, and distinct outbox Cc/Bcc arrays. The backend parses MIME recursively (including opaque `message/rfc822` attachments), sanitises inbound and client-supplied HTML using the allow-list policy at `shared/mail-rich/policy/mail-html-policy.json`, and stores a mirrored backend policy JSON checked by a unit test. Attachment downloads use the original safe filename in the signed response; blocked placeholders cannot be downloaded. Replies/forwards are represented by server-built opaque quoted HTML; forward attachments are copied to independent storage objects. `GET /mail/messages/{id}/original` provides a short-lived link to the original inbound or stored sent `.eml` when available.
+
+The shared TypeScript sanitiser/viewer and common core helpers are authored under `shared/mail-rich/`; run `node scripts/sync-mail-rich.mjs` to regenerate the committed admin/nurse mirrors. The current implementation now includes the lazy TipTap composer (formatting, bounded tables, safe paste, quoted-message separation), app-specific UI-kit adapters, shared uploader/attachment list/viewer in both admin and nurse, offline nurse drafts, external-send review dialogs, scanner queue integration, SMTP/API provider adapters and delivery-event timelines. These additions are documented in `IMPLEMENTATION_HANDOVER.md` at the project delivery root and `docs/MAIL_RICH_P1_P2_HANDOVER.md`. Tests are authored but not executed in this handover. Browser, bundle, database migration, storage/CORS and provider acceptance remain owner-side checks.

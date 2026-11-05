@@ -244,6 +244,7 @@ def build_scheduler() -> AsyncIOScheduler:
     # instances cannot process the same outbox row concurrently.
     # Sends are triggered by outbox.kick(); this slow poll only picks up retries so Neon can suspend.
     scheduler.add_job(run_mail_outbox, "interval", minutes=5, id="mail_outbox_drain", max_instances=1, coalesce=True)
+    scheduler.add_job(run_mail_scan_queue, "interval", minutes=10, id="mail_scan_queue", max_instances=1, coalesce=True)
     scheduler.add_job(run_mail_housekeeping, "cron", hour=0, minute=5, id="mail_housekeeping", max_instances=1, coalesce=True)
     scheduler.add_job(run_mail_retention, "cron", hour=0, minute=25, id="mail_retention_purge", max_instances=1, coalesce=True)
     scheduler.add_job(run_mail_quota_check, "interval", hours=1, id="mail_quota_check", max_instances=1, coalesce=True)
@@ -256,6 +257,15 @@ async def run_mail_outbox() -> int:
         return await drain()
     except Exception:
         log.warning("mail outbox job unavailable; details omitted")
+        return 0
+
+
+async def run_mail_scan_queue() -> int:
+    try:
+        from app.modules.mail.scan_queue import drain
+        return await drain(limit=10)
+    except Exception:
+        log.warning("mail attachment scan job unavailable; details omitted")
         return 0
 
 

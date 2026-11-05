@@ -1,0 +1,50 @@
+.mr-message { color: var(--mr-fg, #1a1a1a); }
+.mr-paper { color: #1a1a1a; background: #fff; color-scheme: light; overflow-wrap: anywhere; padding: var(--mr-gap, 12px); border: 1px solid var(--mr-line, #ddd); border-radius: var(--mr-radius, 8px); }
+.mr-paper img { max-width: 100%; height: auto; }
+.mr-paper table { max-width: 100%; border-collapse: collapse; }
+.mr-quoted { margin-top: var(--mr-gap, 12px); border-left: 3px solid var(--mr-line, #ddd); padding-left: var(--mr-gap, 12px); }
+.mr-plain-body { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
+.mr-message-toggle { display: flex; gap: var(--mr-gap, 12px); margin-block: var(--mr-gap, 12px); }
+.mr-section-title { font-size: 1rem; }
+.mr-attachment-list { list-style: none; margin: 0; padding: 0; }
+.mr-attachment { display: flex; align-items: center; gap: var(--mr-gap, 12px); padding: 8px 0; border-bottom: 1px solid var(--mr-line, #ddd); }
+.mr-file-type { min-width: 3rem; font-size: .7rem; font-weight: 700; }
+.mr-attachment-copy { display: grid; flex: 1; min-width: 0; }
+.mr-attachment-copy strong { overflow-wrap: anywhere; }
+.mr-attachment-copy small { color: var(--mr-muted, #666); }
+.mr-original-download { margin-top: var(--mr-gap, 12px); }
+
+.mr-editor { display: grid; gap: .75rem; min-width: 0; }
+.mr-editor-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; padding: .5rem; border: 1px solid var(--mail-border, #d8dde4); border-radius: .65rem; background: var(--mail-toolbar-bg, #f7f8fa); }
+.mr-editor-tool { min-width: 2.25rem; min-height: 2.25rem; padding: .35rem .55rem; border: 1px solid transparent; border-radius: .4rem; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.mr-editor-tool:hover, .mr-editor-tool[aria-pressed="true"] { border-color: var(--mail-border, #c8d0d8); background: var(--mail-active-bg, #e9eef5); }
+.mr-editor-tool:focus-visible, .mr-editor-toolbar select:focus-visible, .mr-editor-toolbar input:focus-visible, .mr-editor-quote button:focus-visible { outline: 2px solid var(--mail-focus, #2563eb); outline-offset: 2px; }
+.mr-editor-size, .mr-editor-colour { display: inline-flex; align-items: center; gap: .3rem; font-size: .78rem; }
+.mr-editor-size select, .mr-kit-field select { min-height: 2.1rem; }
+.mr-editor-colour input, .mr-kit-field input[type="color"] { width: 2rem; height: 2rem; padding: 0; }
+.mr-editor-content { min-height: 14rem; padding: .9rem; border: 1px solid var(--mail-border, #c8d0d8); border-radius: .6rem; outline: none; overflow-wrap: anywhere; }
+.mr-editor-content:focus { border-color: var(--mail-focus, #2563eb); box-shadow: 0 0 0 2px color-mix(in srgb, var(--mail-focus, #2563eb) 18%, transparent); }
+.mr-editor-content p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; color: #737b86; pointer-events: none; height: 0; }
+.mr-editor-content table, .mr-paper table, .mr-quoted table { border-collapse: collapse; width: 100%; max-width: 100%; }
+.mr-editor-content td, .mr-editor-content th, .mr-paper td, .mr-paper th, .mr-quoted td, .mr-quoted th { border: 1px solid #aeb7c2; padding: .35rem .5rem; vertical-align: top; }
+.mr-editor-quote { border-inline-start: 3px solid var(--mail-border, #9aa5b1); padding-inline-start: .75rem; }
+.mr-editor-quote-heading { display: flex; justify-content: space-between; gap: .75rem; align-items: center; margin-bottom: .5rem; }
+.mr-editor-quote-heading button, .mr-editor-confirm button { min-height: 2.5rem; padding: .4rem .7rem; }
+.mr-editor-confirm-backdrop { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 1rem; background: rgb(0 0 0 / 55%); }
+.mr-editor-confirm { max-width: 28rem; width: 100%; padding: 1.25rem; border-radius: .8rem; background: Canvas; color: CanvasText; box-shadow: 0 12px 40px rgb(0 0 0 / 25%); }
+.mr-editor-confirm > div, .mr-editor-dialog-actions { display: flex; justify-content: flex-end; gap: .5rem; margin-top: 1rem; }
+.mr-editor-quote .mr-quoted { max-height: 18rem; overflow: auto; }
+
+
+.mr-composer-mode { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .5rem; }
+.mr-upload-actions { display: flex; justify-content: flex-start; }
+.mr-autosave-status { margin: 0; color: var(--mail-muted, #687383); font-size: .82rem; }
+.mr-send-confirm { position: relative; z-index: 1; max-width: 34rem; margin: 1rem auto 0; padding: 1rem; border: 1px solid var(--mail-border, #c8d0d8); border-radius: .8rem; background: Canvas; color: CanvasText; box-shadow: 0 8px 28px rgb(0 0 0 / 18%); }
+.mr-send-confirm dl { display: grid; grid-template-columns: minmax(4rem, 5.5rem) minmax(0, 1fr); gap: .45rem .7rem; overflow-wrap: anywhere; }
+.mr-send-confirm dt { font-weight: 700; }
+.mr-send-confirm dd { margin: 0; }
+.mr-confirm-overlay { position: fixed; inset: 0; z-index: 10010; display: grid; align-items: center; padding: 1rem; overflow-y: auto; background: rgb(0 0 0 / 42%); }
+.mr-send-confirm :focus-visible { outline: 2px solid var(--mail-focus, #2563eb); outline-offset: 2px; }
+.mr-delivery { margin-top: 1rem; padding: .75rem; border: 1px solid var(--mr-line, #ddd); border-radius: .65rem; }
+.mr-delivery ul { margin-block: .5rem 0; padding-inline-start: 1.25rem; overflow-wrap: anywhere; }
+.mr-message { min-width: 0; overflow-wrap: anywhere; }

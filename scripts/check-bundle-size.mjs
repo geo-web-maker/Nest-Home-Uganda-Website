@@ -3,8 +3,10 @@ import path from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 const root = process.argv[2] ?? 'dist';
-const initialLimit = Number(process.env.MAX_GZIP_BYTES ?? 200 * 1024);
-const chunkLimit = Number(process.env.MAX_ROUTE_CHUNK_GZIP_BYTES ?? 80 * 1024);
+// Raised by the owner (2026-11-05) from 200 KB total / 80 KB per route chunk to fit the lazy-loaded TipTap mail
+// editor (measured: 320 KB total, 151 KB editor chunk, gzipped). Do not raise further without the owner's say-so.
+const initialLimit = Number(process.env.MAX_GZIP_BYTES ?? 360 * 1024);
+const chunkLimit = Number(process.env.MAX_ROUTE_CHUNK_GZIP_BYTES ?? 160 * 1024);
 const isNurse = /(?:^|[\\/])nurse(?:[\\/])dist$/.test(path.resolve(root)) || path.resolve(root).endsWith(`${path.sep}nurse${path.sep}dist`);
 
 if (!fs.existsSync(root)) {

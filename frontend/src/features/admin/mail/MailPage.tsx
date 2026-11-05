@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ButtonGroup } from '../../../components/admin/ButtonGroup';
 import { FilterTabs } from '../../../components/admin/FilterTabs';
+import { Modal } from '../../../components/admin/Modal';
 import { Notice } from '../../../components/admin/Notice';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { SearchBar } from '../../../components/admin/SearchBar';
@@ -12,8 +13,12 @@ import { Field } from '../../../components/ui/Field';
 import { apiClient } from '../../../lib/api/client';
 import { MailCompose } from './MailCompose';
 import { MAIL_CHANGED_EVENT } from './useMailUnread';
-import { buildSeed, formatBytes, type SeedKind } from './recipients';
+import { buildSeed, type SeedKind } from './recipients';
 import { FOLDERS, type ComposeSeed, type Folder, type MailDetail, type MailItem, type Mailbox } from './types';
+import { MailMessageView } from '../../../shared/mail-rich/react/MailMessageView';
+import type { MailMessageView as SharedMailMessage } from '../../../shared/mail-rich/core/types';
+import { AdminMailUiProvider } from './mailUiKit';
+import '../../../shared/mail-rich/react/mail-rich.css';
 import styles from './MailPage.module.css';
 
 const EMPTY_SEED: ComposeSeed = { to: [], cc: [], bcc: [], subject: '', body: '' };
@@ -32,6 +37,7 @@ export function MailPage() {
   const [selectedId, setSelectedId] = useState('');
   const [seed, setSeed] = useState<ComposeSeed | null>(null);
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+  const [externalLink, setExternalLink] = useState<string | null>(null);
   const markedRead = useRef(new Set<string>());
 
   const boxes = useQuery({
@@ -100,20 +106,48 @@ export function MailPage() {
   };
 
   const shown = detail.data && selected ? { ...selected, ...detail.data } : null;
+  const sharedMessage: SharedMailMessage | null = shown ? {
+    mailbox_message_id: shown.mailbox_message_id,
+    message_id: shown.message_id,
+    folder: shown.folder,
+    from_address: shown.from_address,
+    from_name: shown.from_name,
+    subject: shown.subject,
+    body_format: shown.body_format ?? (shown.body_html ? 'html' : 'plain'),
+    body_text: shown.body_text ?? '',
+    body_html: shown.body_html ?? null,
+    quoted_html: shown.quoted_html ?? null,
+    snippet: shown.snippet ?? '',
+    recipients: shown.recipients,
+    attachments: shown.attachments.map((item) => ({
+      id: item.id, filename: item.filename, content_type: item.content_type,
+      size_bytes: item.size_bytes, sha256: item.sha256 ?? null,
+      scan_state: item.scan_state ?? 'unscanned', disposition: item.disposition ?? 'attachment',
+      content_id: item.content_id ?? null, blocked_reason: item.blocked_reason ?? null,
+      scan_detail: item.scan_detail ?? null, scanned_at: item.scanned_at ?? null,
+    })),
+    render_notes: shown.render_notes ?? {},
+    has_remote_images: Boolean(shown.has_remote_images),
+    can_download_original: Boolean(shown.can_download_original),
+    delivery: shown.delivery ?? null,
+  } : null;
 
   const compose = (next: ComposeSeed) => {
     if (mailboxId) setSeed(next);
   };
   const seedFor = (kind: SeedKind) => {
     if (!shown || !mailbox) return;
-    compose(
-      buildSeed(kind, shown, {
-        me: mailbox.address,
-        date: new Date(selected?.received_at ?? Date.now()).toLocaleString(),
-        wroteOn: (who, date) => t('mail.wroteOn', { who, date }),
-        forwardedHeader: t('mail.forwardedHeader'),
-      }),
-    );
+    const seed = buildSeed(kind, shown, {
+      me: mailbox.address,
+      date: new Date(selected?.received_at ?? Date.now()).toLocaleString(),
+      wroteOn: (who, date) => t('mail.wroteOn', { who, date }),
+      forwardedHeader: t('mail.forwardedHeader'),
+    });
+    const quoteKind = kind === 'replyAll' ? 'reply_all' : kind;
+    compose({
+      ...seed,
+      quote: { kind: quoteKind, source_id: shown.mailbox_message_id, include_attachments: true },
+    });
   };
   const editDraft = () => {
     if (!shown) return;
@@ -126,7 +160,10 @@ export function MailPage() {
       bcc: pickAddresses('bcc'),
       subject: shown.subject,
       body: shown.body_text,
-      attachments: shown.attachments.map((file) => ({ id: file.id, filename: file.filename, size: file.size_bytes })),
+      bodyHtml: shown.body_html ?? undefined,
+      bodyFormat: shown.body_format ?? 'plain',
+      quotedHtml: shown.quoted_html ?? null,
+      attachments: shown.attachments.map((file) => ({ ...file, size: file.size_bytes })),
     });
   };
 
@@ -137,6 +174,20 @@ export function MailPage() {
     } catch {
       setNotice({ tone: 'error', text: t('mail.downloadFailed') });
     }
+  };
+
+  const downloadOriginal = async () => {
+    if (!selectedId) return;
+    try {
+      const link = await apiClient.get<{ download_url: string }>(`/mail/messages/${selectedId}/original`);
+      window.open(link.download_url, '_blank', 'noopener,noreferrer');
+    } catch {
+      setNotice({ tone: 'error', text: t('mail.downloadFailed') });
+    }
+  };
+
+  const openExternalLink = (url: string) => {
+    setExternalLink(url);
   };
 
   // Keyboard shortcuts. Ignored while typing, while a dialog is open, and with any modifier key held.
@@ -284,6 +335,18 @@ export function MailPage() {
                     <Button variant="outline" onClick={() => seedFor('forward')}>
                       {t('mail.forward')}
                     </Button>
+                    <Button variant="outline" onClick={() => {
+                      if (!shown || !mailbox) return;
+                      const seed = buildSeed('forward', shown, {
+                        me: mailbox.address,
+                        date: new Date(selected?.received_at ?? Date.now()).toLocaleString(),
+                        wroteOn: (who, date) => t('mail.wroteOn', { who, date }),
+                        forwardedHeader: t('mail.forwardedHeader'),
+                      });
+                      compose({ ...seed, quote: { kind: 'forward_attachment', source_id: shown.mailbox_message_id } });
+                    }}>
+                      {t('mail.forwardAsAttachment')}
+                    </Button>
                   </>
                 )}
                 <Button
@@ -335,30 +398,43 @@ export function MailPage() {
                 })}
                 {t('mail.date')}: {new Date(selected?.received_at ?? '').toLocaleString()}
               </p>
-              <pre className={styles.body}>{shown.body_text}</pre>
-              {shown.attachments.length > 0 ? (
-                <div>
-                  <h3>{t('mail.attachments')}</h3>
-                  <ul className={styles.attachments}>
-                    {shown.attachments.map((attachment) => (
-                      <li key={attachment.id}>
-                        <span>
-                          {attachment.filename} · {formatBytes(attachment.size_bytes)}
-                        </span>
-                        <Button variant="outline" size="compact" onClick={() => void download(attachment.id)}>
-                          {t('mail.download')}
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
+              {sharedMessage ? <AdminMailUiProvider labels={{
+                attachments: t('mail.attachments'), download: t('mail.download'),
+                remoteImagesBlocked: t('mail.remoteImagesBlocked'), showImages: t('mail.showRemoteImages'),
+                downloadOriginal: t('mail.downloadOriginal'), from: t('mail.from'), to: t('mail.to'), cc: t('mail.cc'), date: t('mail.date'),
+              }}><MailMessageView
+                message={sharedMessage}
+                onDownload={(attachment) => void download(attachment.id)}
+                onDownloadOriginal={() => void downloadOriginal()}
+                onExternalLink={openExternalLink}
+                showRemoteImages={() => undefined}
+              /></AdminMailUiProvider> : null}
             </div>
           ) : null}
         </article>
       </div>
       <p className={styles.hint}>{t('mail.shortcuts')}</p>
 
+      {externalLink ? (
+        <Modal
+          id="mail-external-link-title"
+          title={t('mail.externalLinkTitle')}
+          subtitle={t('mail.externalLinkPrompt', { host: new URL(externalLink).hostname })}
+          onClose={() => setExternalLink(null)}
+          closeLabel={t('mail.cancel')}
+        >
+          <ButtonGroup spaced>
+            <Button
+              onClick={() => {
+                window.open(externalLink, '_blank', 'noopener,noreferrer');
+                setExternalLink(null);
+              }}
+            >
+              {t('mail.externalLinkContinue')}
+            </Button>
+          </ButtonGroup>
+        </Modal>
+      ) : null}
       {seed && mailboxId ? (
         <MailCompose mailboxId={mailboxId} seed={seed} onClose={() => setSeed(null)} onDone={onDone} />
       ) : null}

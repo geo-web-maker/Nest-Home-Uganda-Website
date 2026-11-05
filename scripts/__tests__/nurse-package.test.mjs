@@ -12,8 +12,9 @@ const PLANNED = {
   '@byteowls/capacitor-sms': 'B13 SOS SMS fallback (opens the composer only)',
   '@capacitor/android': 'native project, used by the Capacitor CLI',
 };
-// Tooling that is run by name rather than imported.
+// Tooling that is run by name rather than imported, and required peers (@tiptap/pm) that TipTap loads itself.
 const TOOLING = new Set([
+  '@tiptap/pm',
   '@capacitor/cli', 'typescript', 'vite', 'eslint', '@eslint/js', 'jsdom', '@testing-library/dom',
   '@types/node', '@types/react', '@types/react-dom', 'vitest', '@playwright/test',
 ]);
