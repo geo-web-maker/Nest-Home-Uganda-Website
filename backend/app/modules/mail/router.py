@@ -612,14 +612,14 @@ async def mail_test_send(body: TestSendBody,principal: Principal=Depends(require
     provider=await get_provider(); domain=await get_value('mail.domain')
     if provider.name=='console': return {"queued":False,"provider":"console","message":"Console provider records the test without sending external mail."}
     result=await provider.send([body.to],"Bloomwell Home Care Uganda mail test","<p>Mail provider test.</p>","Mail provider test.",from_address=f"no-reply@{domain}",from_name=await get_value('mail.from_name'),reply_to=await get_value('mail.reply_to'),idempotency_key=f"test:{principal.user_id}:{__import__('uuid').uuid4()}")
-    if not result.ok: raise Forbidden("Provider test failed. Check provider configuration and logs.")
+    if not result.ok: raise Forbidden(f"Provider test failed ({result.error or 'unknown error'}). Check provider configuration and logs.")
     return {"sent":True,"provider":provider.name,"provider_message_id":result.provider_message_id}
 
-_DIAGNOSTIC_KEYS = ("mail.enabled","mail.domain","mail.provider","mail.provider_api_key","mail.suspend_all_sending","mail.external_enabled","mail.inbound_enabled","mail.inbound_webhook_secret","mail.provider_webhook_secret")
+_DIAGNOSTIC_KEYS = ("mail.enabled","mail.domain","mail.provider","mail.provider_api_key","mail.suspend_all_sending","mail.external_enabled","mail.inbound_enabled","mail.inbound_webhook_secret","mail.provider_webhook_secret","mail.brevo_transport","mail.smtp_host","mail.smtp_port","mail.smtp_username","mail.smtp_password","mail.scan_enabled")
 
 async def _diagnostic_values() -> dict:
     from app.modules.mail.settings_service import get_value
-    return {key: await get_value(key) for key in _DIAGNOSTIC_KEYS}
+    return {key: await get_value(key, use_cache=False) for key in _DIAGNOSTIC_KEYS}
 
 async def _own_mailbox(user_id: str):
     boxes = await core_service.list_mailboxes(user_id)

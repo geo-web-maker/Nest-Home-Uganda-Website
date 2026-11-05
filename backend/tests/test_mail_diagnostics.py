@@ -243,3 +243,15 @@ async def test_inbound_selftest_explains_a_refusal_and_a_missing_secret():
         raise AssertionError("must not run without a secret")
 
     assert (await d.inbound_selftest(BOX, "nesthomecare.org", "", Pool(), Storage(), "mail", never)).status == d.FAIL
+
+
+def test_router_loads_every_setting_the_checks_read():
+    """Regression: checks read keys the router never loaded, so saved SMTP/scanner settings looked missing."""
+    import inspect
+    import re
+
+    from app.modules.mail.router import _DIAGNOSTIC_KEYS
+
+    source = inspect.getsource(d)
+    read = set(re.findall(r'values\.get\("(mail\.[a-z_0-9.]+)"\)', source))
+    assert read <= set(_DIAGNOSTIC_KEYS), sorted(read - set(_DIAGNOSTIC_KEYS))
