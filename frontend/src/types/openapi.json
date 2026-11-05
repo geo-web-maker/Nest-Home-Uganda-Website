@@ -1115,6 +1115,30 @@
         "title": "ArticleUpdate",
         "type": "object"
       },
+      "AttachDraftBody": {
+        "properties": {
+          "content_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Id"
+          },
+          "disposition": {
+            "default": "attachment",
+            "pattern": "^(attachment|inline)$",
+            "title": "Disposition",
+            "type": "string"
+          }
+        },
+        "title": "AttachDraftBody",
+        "type": "object"
+      },
       "AttachmentPresignBody": {
         "properties": {
           "content_type": {
@@ -3339,6 +3363,15 @@
             "title": "Cc",
             "type": "array"
           },
+          "format": {
+            "default": "plain",
+            "enum": [
+              "plain",
+              "html"
+            ],
+            "title": "Format",
+            "type": "string"
+          },
           "in_reply_to": {
             "anyOf": [
               {
@@ -3354,6 +3387,21 @@
           "mailbox_id": {
             "title": "Mailbox Id",
             "type": "string"
+          },
+          "quote": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuoteRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "remove_quote": {
+            "default": false,
+            "title": "Remove Quote",
+            "type": "boolean"
           },
           "subject": {
             "default": "",
@@ -5109,6 +5157,93 @@
         "title": "PublicSiteSettings",
         "type": "object"
       },
+      "QuoteLabels": {
+        "properties": {
+          "cc": {
+            "default": "Cc",
+            "maxLength": 40,
+            "title": "Cc",
+            "type": "string"
+          },
+          "date": {
+            "default": "Date",
+            "maxLength": 40,
+            "title": "Date",
+            "type": "string"
+          },
+          "forwarded": {
+            "default": "---------- Forwarded message ----------",
+            "maxLength": 200,
+            "title": "Forwarded",
+            "type": "string"
+          },
+          "from": {
+            "default": "From",
+            "maxLength": 40,
+            "title": "From",
+            "type": "string"
+          },
+          "subject": {
+            "default": "Subject",
+            "maxLength": 40,
+            "title": "Subject",
+            "type": "string"
+          },
+          "to": {
+            "default": "To",
+            "maxLength": 40,
+            "title": "To",
+            "type": "string"
+          },
+          "wrote_on": {
+            "default": "On {date}, {who} wrote:",
+            "maxLength": 200,
+            "title": "Wrote On",
+            "type": "string"
+          }
+        },
+        "title": "QuoteLabels",
+        "type": "object"
+      },
+      "QuoteRequest": {
+        "properties": {
+          "include_attachments": {
+            "default": true,
+            "title": "Include Attachments",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "reply",
+              "reply_all",
+              "forward",
+              "forward_attachment"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "labels": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuoteLabels"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "source_id"
+        ],
+        "title": "QuoteRequest",
+        "type": "object"
+      },
       "ReasonIn": {
         "properties": {
           "reason": {
@@ -5165,6 +5300,19 @@
           "most_requested_services"
         ],
         "title": "ReportsSummary",
+        "type": "object"
+      },
+      "ReprocessBody": {
+        "properties": {
+          "limit": {
+            "default": 50,
+            "maximum": 200.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "ReprocessBody",
         "type": "object"
       },
       "SOSBody": {
@@ -17881,6 +18029,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AttachDraftBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
@@ -18508,6 +18673,120 @@
         ]
       }
     },
+    "/api/v1/mail/maintenance/reprocess/preview": {
+      "post": {
+        "operationId": "reprocess_preview_api_v1_mail_maintenance_reprocess_preview_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reprocess Preview",
+        "tags": [
+          "mail"
+        ]
+      }
+    },
+    "/api/v1/mail/maintenance/reprocess/run": {
+      "post": {
+        "operationId": "reprocess_run_api_v1_mail_maintenance_reprocess_run_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReprocessBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reprocess Run",
+        "tags": [
+          "mail"
+        ]
+      }
+    },
     "/api/v1/mail/messages/{mailbox_message_id}": {
       "delete": {
         "operationId": "delete_message_api_v1_mail_messages__mailbox_message_id__delete",
@@ -18698,6 +18977,51 @@
           }
         ],
         "summary": "Attach Label",
+        "tags": [
+          "mail"
+        ]
+      }
+    },
+    "/api/v1/mail/messages/{mailbox_message_id}/original": {
+      "get": {
+        "operationId": "original_download_api_v1_mail_messages__mailbox_message_id__original_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mailbox_message_id",
+            "required": true,
+            "schema": {
+              "title": "Mailbox Message Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Original Download",
         "tags": [
           "mail"
         ]
@@ -19669,6 +19993,7 @@
     },
     "/api/v1/mail/webhooks/{provider}": {
       "post": {
+        "description": "Authenticate callbacks and persist recipient-level delivery events.",
         "operationId": "mail_provider_webhook_api_v1_mail_webhooks__provider__post",
         "parameters": [
           {

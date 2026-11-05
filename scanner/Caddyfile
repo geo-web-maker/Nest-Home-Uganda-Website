@@ -1,0 +1,8 @@
+{$SCAN_DOMAIN} {
+    encode gzip zstd
+    header {
+        -Server
+        X-Content-Type-Options nosniff
+    }
+    reverse_proxy scanner:8080
+}

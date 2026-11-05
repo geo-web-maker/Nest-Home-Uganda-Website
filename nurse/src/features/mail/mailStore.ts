@@ -1,5 +1,6 @@
 import { nurseDb } from '../../offline/db';
 import { CACHE_KEY_ID, DRAFTS_KEY_ID, destroyMailKey, openJson, sealJson } from './mailCrypto';
+import type { MailFormat } from '../../shared/mail-rich/core/types';
 
 /**
  * Mail kept on this device lives in the same IndexedDB as the visit outbox (the `meta` table), so it follows the
@@ -13,14 +14,21 @@ export type MailDraft = {
   ownerId: string;
   mailboxId: string;
   to: string[];
+  cc?: string[];
+  bcc?: string[];
   subject: string;
   body: string;
+  bodyHtml?: string;
+  bodyFormat?: MailFormat;
+  quotedHtml?: string | null;
+  removeQuote?: boolean;
   inReplyTo?: string;
+  quote?: { kind: 'reply' | 'reply_all' | 'forward' | 'forward_attachment'; source_id: string; include_attachments?: boolean };
   state: MailDraftState;
   /** Set once the server holds the draft, so a retry never creates a second one. */
   serverDraftId?: string;
   /** Files already attached to the server copy (shown only; they cannot be changed offline). */
-  attachments?: { id: string; filename: string; size: number }[];
+  attachments?: { id: string; filename: string; size: number; content_type?: string; scan_state?: string; sha256?: string | null; disposition?: 'attachment' | 'inline'; content_id?: string | null; blocked_reason?: string | null; scan_detail?: string | null; scanned_at?: string | null }[];
   savedAt: string;
 };
 
@@ -31,7 +39,8 @@ export type CachedMessage = {
   from_address: string;
   from_name?: string | null;
   subject: string;
-  body_text: string;
+  body_text?: string;
+  snippet?: string;
   origin: string;
   received_at: string;
   is_read: boolean;
@@ -109,7 +118,7 @@ export async function readMailCache(): Promise<MailCache | null> {
 export async function writeMailCache(cache: MailCache): Promise<void> {
   const trimmed: MailCache = {
     ...cache,
-    messages: cache.messages.slice(0, CACHE_MESSAGE_LIMIT).map((message) => ({ ...message, body_text: message.body_text.slice(0, CACHE_BODY_LIMIT) })),
+    messages: cache.messages.slice(0, CACHE_MESSAGE_LIMIT).map((message) => ({ ...message, body_text: (message.body_text ?? message.snippet ?? '').slice(0, CACHE_BODY_LIMIT) })),
   };
   const sealed = await sealJson(trimmed);
   if (sealed) await nurseDb.meta.put({ key: CACHE_KEY, value: sealed });

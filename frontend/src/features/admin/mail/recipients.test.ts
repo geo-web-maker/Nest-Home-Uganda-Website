@@ -42,8 +42,8 @@ describe('buildSeed', () => {
   it('replies to the sender only, threads on the original, and quotes every line', () => {
     const seed = buildSeed('reply', source, ctx);
     expect(seed).toMatchObject({ to: ['ruth@mail.test'], cc: [], bcc: [], subject: 'Re: Rota', inReplyTo: 'msg-1' });
-    expect(seed.body).toContain('On 1 Nov, Ruth <ruth@mail.test> wrote:');
-    expect(seed.body).toContain('> Line one\n> Line two');
+    // The quoted original is kept separate and added by the server, so the editable body starts empty.
+    expect(seed.body).toBe('');
   });
 
   it('does not stack Re: prefixes', () => {
@@ -57,11 +57,11 @@ describe('buildSeed', () => {
     expect(seed.bcc).toEqual([]);
   });
 
-  it('forward starts with no recipients, adds Fwd:, includes the original, and has no thread link', () => {
+  it('forward starts with no recipients, adds Fwd:, leaves the quote to the server, and has no thread link', () => {
     const seed = buildSeed('forward', source, ctx);
     expect(seed).toMatchObject({ to: [], cc: [], bcc: [], subject: 'Fwd: Rota' });
     expect(seed.inReplyTo).toBeUndefined();
-    expect(seed.body).toContain('--- Forwarded ---\nLine one\nLine two');
+    expect(seed.body).toBe('');
   });
 });
 

@@ -179,7 +179,7 @@ Through `httpx.ASGITransport`. Every new endpoint gets: success, 401 with no tok
 ### 4.6 Repository guards (scripts run by CI)
 
 - `scripts/check-no-external.mjs`: scans the built output of `frontend/dist` and `nurse/dist` and fails on any URL whose host is not on `scripts/external-allowlist.txt` (own domains, `www.w3.org` for SVG namespaces, `api.cloudinary.com` in the nurse app only, the tile setting default). Catches Google Fonts, CDNs, analytics.
-- `scripts/check-bundle-size.mjs`: fails if the nurse app's initial JavaScript is over 200 KB gzipped, or any single route chunk is over 80 KB gzipped, or Leaflet appears in the nurse bundle.
+- `scripts/check-bundle-size.mjs`: fails if the nurse app's JavaScript and CSS total over 360 KB gzipped (raised from 200 KB for the mail editor), or any single route chunk is over 160 KB gzipped (raised from 80 KB), or Leaflet appears in the nurse bundle.
 - `scripts/check-fonts.mjs`: fails if a font-family used in nurse CSS has no matching `@font-face` file.
 - `scripts/check-strings.mjs`: fails on a UI string literal in nurse JSX outside the locale files.
 - Shell guards in `ci.yml` stay (no `.env`, no Motor, no roles). Add: no `googleapis.com/css` in tracked files, and no `firebase` outside the files named in WO-17C. Cloudinary is allowed only in `backend/app/core/photo_store.py`, the nurse `photos` feature, tests and docs; a grep fails if it appears elsewhere.

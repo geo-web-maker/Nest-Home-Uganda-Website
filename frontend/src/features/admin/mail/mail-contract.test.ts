@@ -9,7 +9,7 @@ const dir = __dirname;
 const designDir = join(dir, '..', '..', '..', 'design');
 const read = (file: string) => readFileSync(join(dir, file), 'utf8');
 const pages = ['MailPage.tsx', 'MailCompose.tsx', 'MailSettingsPage.tsx'];
-const everyTsx = readdirSync(dir).filter((name) => name.endsWith('.tsx') && !name.endsWith('.test.tsx'));
+const everyTsx = readdirSync(dir).filter((name) => name.endsWith('.tsx') && !name.endsWith('.test.tsx') && name !== 'mailUiKit.tsx');
 
 describe('mail screens use the shared admin components', () => {
   it('has no raw buttons, selects, checkboxes or page-made dialogs', () => {

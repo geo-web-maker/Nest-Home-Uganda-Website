@@ -15,3 +15,9 @@ vi.mock('./lib/queries/site', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./lib/queries/site')>();
   return { ...actual, useSiteSettings: () => ({ data: actual.DEFAULT_SITE }) };
 });
+
+// jsdom has no layout, so it does not implement elementFromPoint. ProseMirror calls it on mousedown, which
+// made the mail compose tests throw uncaught errors even though every assertion passed.
+if (typeof document.elementFromPoint !== 'function') {
+  document.elementFromPoint = () => null;
+}

@@ -9,3 +9,8 @@ tinyurl.com
 www.google.com
 # Deliberate: the SOS SMS fallback text contains a maps link for the supervisor to open.
 maps.google.com
+# Doc link inside a ProseMirror (TipTap) error message in the nurse mail editor chunk. Never fetched.
+prosemirror.net
+# Reserved, non-resolvable domain (RFC 2606) used only as the base when parsing links outside a browser
+# (shared/mail-rich/core/links.ts). Never fetched.
+nest.invalid

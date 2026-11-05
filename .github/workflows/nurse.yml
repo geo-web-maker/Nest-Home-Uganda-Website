@@ -14,6 +14,9 @@ jobs:
         working-directory: nurse
     steps:
       - uses: actions/checkout@v4
+      - name: Shared mail-rich mirrors are current
+        working-directory: .
+        run: node scripts/sync-mail-rich.mjs --check
       - name: Require a committed lockfile
         run: |
           test -f package-lock.json || { echo "nurse/package-lock.json is missing. Run the nurse-lockfile workflow, review the result, and commit it."; exit 1; }

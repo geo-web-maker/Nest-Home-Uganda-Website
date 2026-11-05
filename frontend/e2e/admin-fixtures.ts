@@ -3,6 +3,7 @@ import { json } from './helpers';
 
 const LABEL_BY_ADMIN_PATH: Record<string, string> = {
   '/admin': 'Dashboard',
+  '/admin/mail': 'Mail',
   '/admin/activity': 'Audit log',
   '/admin/enquiries': 'Enquiries',
   '/admin/careers': 'Careers',
@@ -49,7 +50,7 @@ function adminSettings() {
 }
 
 /** A deterministic, authenticated admin session for browser UI tests; no real API is contacted. */
-export async function mockAdminApi(page: Page) {
+export async function mockAdminApi(page: Page, options: { scopes?: string[] } = {}) {
   let savedSettings: Record<string, unknown> | undefined;
   await page.route('**/api/v1/**', async (route: Route) => {
     const request = route.request();
@@ -65,7 +66,7 @@ export async function mockAdminApi(page: Page) {
           id: 'reference-admin',
           name: 'Reference Admin',
           email: 'admin@example.test',
-          scopes: [],
+          scopes: options.scopes ?? [],
           is_superadmin: true,
         },
       })(route);

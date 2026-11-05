@@ -1,0 +1,55 @@
+services:
+  clamav:
+    image: clamav/clamav:stable
+    restart: unless-stopped
+    mem_limit: 4g
+    volumes:
+      - clamav-signatures:/var/lib/clamav
+    expose: ["3310"]
+    healthcheck:
+      test: ["CMD-SHELL", "clamdscan --ping 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+  scanner:
+    build: .
+    restart: unless-stopped
+    environment:
+      CLAMD_HOST: clamav
+      CLAMD_PORT: "3310"
+      SCAN_BEARER_TOKEN: ${SCAN_BEARER_TOKEN:?set a long random token}
+      NEST_S3_ENDPOINT: ${NEST_S3_ENDPOINT:?set R2 endpoint}
+      NEST_S3_REGION: auto
+      NEST_S3_BUCKET_MAIL: ${NEST_S3_BUCKET_MAIL:?set bucket}
+      NEST_S3_READ_KEY: ${NEST_S3_READ_KEY:?read-only key}
+      NEST_S3_READ_SECRET: ${NEST_S3_READ_SECRET:?read-only secret}
+      SCAN_MAX_BYTES: ${SCAN_MAX_BYTES:-26214400}
+    depends_on:
+      clamav:
+        condition: service_healthy
+    expose: ["8080"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SCAN_DOMAIN: ${SCAN_DOMAIN:?set public or private DNS name for HTTPS}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      scanner:
+        condition: service_healthy
+volumes:
+  clamav-signatures:
+  caddy-data:
+  caddy-config:

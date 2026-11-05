@@ -120,7 +120,7 @@ describe('mail read cache', () => {
     const raw = await nurseDb.meta.get('mail.cache.v1');
     expect(raw?.value).toBeTruthy();
     expect(raw?.value).not.toContain('Nakato');
-    expect(raw?.value).not.toContain('s1');
+    expect(raw?.value).not.toContain('"s1"'); // quoted: a bare 's1' can occur by chance in base64 ciphertext
     expect((await readMailCache())?.messages[0]?.body_text).toBe('Client Nakato had a fall');
   });
   it('is unreadable after sign-out even if the stored text is put back', async () => {

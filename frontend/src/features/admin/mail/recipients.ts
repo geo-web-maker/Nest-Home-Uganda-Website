@@ -43,12 +43,6 @@ function prefixed(prefix: 'Re' | 'Fwd', subject: string): string {
   return new RegExp(`^${prefix}:\\s`, 'i').test(clean) ? clean : `${prefix}: ${clean}`.trim();
 }
 
-function quote(text: string): string {
-  return text
-    .split('\n')
-    .map((line) => `> ${line}`)
-    .join('\n');
-}
 
 /** Builds the compose form for reply, reply all or forward. Bcc is never copied from the original. */
 export function buildSeed(kind: SeedKind, source: SeedSource, ctx: SeedContext): ComposeSeed {
@@ -60,11 +54,10 @@ export function buildSeed(kind: SeedKind, source: SeedSource, ctx: SeedContext):
       cc: [],
       bcc: [],
       subject: prefixed('Fwd', source.subject),
-      body: `\n\n${ctx.forwardedHeader}\n${source.body_text}`,
+      body: '',
     };
   }
-  const who = source.from_name ? `${source.from_name} <${sender}>` : sender;
-  const body = `\n\n${ctx.wroteOn(who, ctx.date)}\n${quote(source.body_text)}`;
+  const body = '';
   const seed: ComposeSeed = {
     to: [sender],
     cc: [],

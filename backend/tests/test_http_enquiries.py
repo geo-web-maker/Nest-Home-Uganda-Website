@@ -76,6 +76,7 @@ def test_the_scheduler_has_the_reminder_and_retention_jobs() -> None:
         "care_retention",
         "photo_orphans",
         "mail_outbox_drain",
+        "mail_scan_queue",
         "mail_housekeeping",
         "mail_retention_purge",
         "mail_quota_check",
