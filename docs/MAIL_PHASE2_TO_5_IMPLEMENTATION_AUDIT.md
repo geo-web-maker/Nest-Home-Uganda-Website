@@ -1,4 +1,4 @@
-# Nest Home Care Mail — Phases 2–5 implementation audit
+# Bloomwell Home Care Mail — Phases 2–5 implementation audit
 
 **Audit date:** 2026-10-31  
 **Baseline:** `Nest-Home-Uganda-Website-Mail-Phase1.zip`  

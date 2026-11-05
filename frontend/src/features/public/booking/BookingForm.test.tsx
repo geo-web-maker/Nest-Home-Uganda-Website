@@ -50,7 +50,7 @@ describe('BookingForm', () => {
     const { submit, user } = setup();
     expect(screen.getByText('Please do not enter medical details here')).toBeInTheDocument();
     expect(
-      screen.getByRole('checkbox', { name: /I agree that Well Nest Home Care Uganda may contact me/ }),
+      screen.getByRole('checkbox', { name: /I agree that Bloomwell Home Care Uganda may contact me/ }),
     ).not.toBeChecked();
 
     await user.type(screen.getByLabelText(/Your name/), 'Mary Atim');
@@ -69,7 +69,7 @@ describe('BookingForm', () => {
     const link = screen.getByRole('link', { name: 'Chat on WhatsApp' });
     expect(link).toHaveAttribute(
       'href',
-      expect.stringContaining('text=Hello%20Well%20Nest%20Home%20Care%20Uganda%2C%20I%20would%20like%20to%20ask'),
+      expect.stringContaining('text=Hello%20Bloomwell%20Home%20Care%20Uganda%2C%20I%20would%20like%20to%20ask'),
     );
   });
 

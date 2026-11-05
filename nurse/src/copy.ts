@@ -1,10 +1,10 @@
 /** User-facing copy shared by the nurse app. Keep sensitive health details out of alerts. */
 export const copy = {
   theme: { heading: 'Appearance', label: 'Choose colour theme', light: 'Light', dark: 'Dark' },
-  appName: 'Well Nest Home Care Uganda',
-  appShortName: 'Well Nest Home Care Uganda',
-  manifestDescription: 'Offline-first visit workspace for authorised Well Nest Home Care Uganda nurses.',
-  organisation: 'Well Nest Home Care Uganda Ltd',
+  appName: 'Bloomwell Home Care Uganda',
+  appShortName: 'Bloomwell Home Care Uganda',
+  manifestDescription: 'Offline-first visit workspace for authorised Bloomwell Home Care Uganda nurses.',
+  organisation: 'Bloomwell Home Care Uganda Limited',
   offlinePurpose: 'Your visits stay available when the network is unavailable.',
   shell: {
     onlineLabel: 'Online', offlineLabel: 'Offline', backOnlineLabel: 'Back online',
@@ -16,12 +16,12 @@ export const copy = {
     dismissInstallHint: 'Dismiss installation help',
     installGuidance: {
       iphone: {
-        title: 'Install Well Nest Home Care Uganda on your iPhone',
+        title: 'Install Bloomwell Home Care Uganda on your iPhone',
         intro: 'Add Nest to your Home Screen so it opens in its own app-like window.',
         steps: [],
       },
       'desktop-chromium': {
-        title: 'Install Well Nest Home Care Uganda on this computer',
+        title: 'Install Bloomwell Home Care Uganda on this computer',
         intro: 'Install Nest for a separate window and quicker access from your computer.',
         steps: [
           { title: 'Open the browser install option', detail: 'Use the Install icon in the address bar, or open the menu and choose “Install app” or “Install page as app”.' },
@@ -30,7 +30,7 @@ export const copy = {
         ],
       },
       'desktop-safari': {
-        title: 'Add Well Nest Home Care Uganda to your Mac',
+        title: 'Add Bloomwell Home Care Uganda to your Mac',
         intro: 'Safari can save Nest as a separate web app on macOS Sonoma 14 or later.',
         steps: [
           { title: 'Open Safari’s File menu', detail: 'Keep this page open in Safari on your Mac.' },
@@ -39,7 +39,7 @@ export const copy = {
         ],
       },
       'desktop-firefox': {
-        title: 'Keep Well Nest Home Care Uganda handy',
+        title: 'Keep Bloomwell Home Care Uganda handy',
         intro: 'Firefox desktop does not provide built-in PWA installation.',
         steps: [
           { title: 'Bookmark this page', detail: 'Use your browser’s bookmark command for quick access.' },
@@ -48,7 +48,7 @@ export const copy = {
         ],
       },
       'desktop-other': {
-        title: 'Keep Well Nest Home Care Uganda handy',
+        title: 'Keep Bloomwell Home Care Uganda handy',
         intro: 'Your browser may offer an install or shortcut option.',
         steps: [
           { title: 'Open the browser menu', detail: 'Look for “Install app”, “Install page” or “Create shortcut”.' },
@@ -95,7 +95,7 @@ export const copy = {
   onboarding: {
     locationDisclosure: 'Location is captured only when you tap Arrive or Leave, add a note or photo, or send SOS. No background tracking between actions.',
     title: 'Before you start',
-    intro: 'Please read how Well Nest Home Care Uganda uses your location. This is shown on first login, and again if the notice changes.',
+    intro: 'Please read how Bloomwell Home Care Uganda uses your location. This is shown on first login, and again if the notice changes.',
     beforeVisit: 'Before you start',
     disclosureTitle: 'What is captured',
     locationWhen: 'Your location at the moment you tap Arrive or Leave, add a note or photo, or send SOS.',
@@ -112,7 +112,7 @@ export const copy = {
     locationWhenDetail: 'Only when you tap Arrive or Leave, add a note or photo, or send SOS.',
     locationWhoDetail: 'Your supervisor and office admins.',
     locationAndroidDetail: 'An optional prompt when you seem to have arrived. You choose.',
-    androidPromptEyebrow: 'Next, your phone’s own prompt', androidPromptTitle: 'Allow Well Nest Home Care Uganda to access this device’s location?',
+    androidPromptEyebrow: 'Next, your phone’s own prompt', androidPromptTitle: 'Allow Bloomwell Home Care Uganda to access this device’s location?',
     androidWhileUsing: 'While using the app', androidOnlyThisTime: 'Only this time', androidDontAllow: 'Don’t allow',
     setupEyebrow: 'Location',
     notificationsTitle: 'Optional notifications',
@@ -281,7 +281,7 @@ export const copy = {
     cancel: 'Cancel alert',
     sent: 'Safety alert sent or saved for retry.',
     emergency: 'SOS notifies your supervisor. In immediate danger, also call the emergency number.',
-    smsUrgent: 'I need urgent assistance. Please contact me now.', smsTime: 'Time:', smsLocation: 'Location:', smsPrepared: 'This message was prepared by the Well Nest Home Care Uganda safety feature.',
+    smsUrgent: 'I need urgent assistance. Please contact me now.', smsTime: 'Time:', smsLocation: 'Location:', smsPrepared: 'This message was prepared by the Bloomwell Home Care Uganda safety feature.',
     sms: 'Open SMS composer', callEmergency: 'Call emergency number', callSupervisor: 'Call supervisor', callContact: 'Call configured contact', safeNow: 'I’m safe now',
     liveFollowTitle: 'Live location sharing', liveFollowStart: 'Share location for up to', liveFollowMinutes: 'minutes', liveFollowActive: 'Live location sharing is active while this app remains open. Updates pause while this screen is hidden. It stops when you choose “I’m safe now” or the server deadline is reached.', liveFollowStarting: 'Starting live location sharing…', liveFollowStartButton: 'Start live location sharing', liveFollowDisclosure: 'Only foreground location snapshots are sent. Hiding the app pauses new snapshots; the server deadline remains enforced.', liveFollowDeadline: 'The live location-sharing window has ended. The SOS case remains open until a responder resolves it.', liveFollowDeadlineLabel: 'Sharing deadline', followStartUnavailable: 'Live location sharing could not be started. Your SOS alert remains open.', followPingUnavailable: 'The latest location update could not be confirmed. Keep the app open and reconnect if the issue continues.', safeSubmitting: 'Sending safe update…', liveFollowStopped: 'Live location sharing stopped. Your safe update was recorded; the SOS case remains open until a responder resolves it.', safeNotConfirmed: 'This device could not confirm the safe update with the server. Reconnect and contact your supervisor directly.',
     sentOnline: 'Alert sent to your supervisor. Help is being notified.', sentQueued: 'Alert saved on this phone, but server delivery is not confirmed. Use a call or SMS if you need immediate help.', noContactConfigured: 'No call number is configured here. Contact your supervisor using your agreed emergency procedure.',

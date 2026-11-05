@@ -1,4 +1,4 @@
-# Nest Home Care mail setup
+# Bloomwell Home Care mail setup
 
 This guide follows `docs/NEST_MAIL_MODULE_SPEC.md`. Mail is a separate Postgres-backed subsystem; the application's existing MongoDB/Beanie databases remain unchanged.
 

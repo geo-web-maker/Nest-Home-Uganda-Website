@@ -1,4 +1,4 @@
-# Well Nest Home Care Uganda: Builder Instructions
+# Bloomwell Home Care Uganda: Builder Instructions
 
 **For:** the implementing model. **Reviewer:** Claude (reviews every phase before the next starts).
 **Read this file completely before running any command.** It overrides nothing in the build spec except where Section 3 says so.
@@ -7,7 +7,7 @@
 
 ## 1. Your job in one paragraph
 
-Build the Well Nest Home Care Uganda website exactly as described in `docs/NEST_HOME_CARE_BUILD_SPEC.md` (v1.1): a React 18 + Vite + TypeScript frontend and a FastAPI + MongoDB backend, in a monorepo, modular on both sides. You work through **all phases in order, without waiting for approval** (Section 6). A phase may start only after its self-check gate passes (Section 6.1). You do not decide anything: every open question is already answered in Section 11. You stop only for the hard blockers in Section 7.
+Build the Bloomwell Home Care Uganda website exactly as described in `docs/NEST_HOME_CARE_BUILD_SPEC.md` (v1.1): a React 18 + Vite + TypeScript frontend and a FastAPI + MongoDB backend, in a monorepo, modular on both sides. You work through **all phases in order, without waiting for approval** (Section 6). A phase may start only after its self-check gate passes (Section 6.1). You do not decide anything: every open question is already answered in Section 11. You stop only for the hard blockers in Section 7.
 
 ## 2. Hard rules (violating any one fails the phase)
 
@@ -311,7 +311,7 @@ Build:
 
 | Trigger | Staff SMS | Visitor SMS |
 | --- | --- | --- |
-| New enquiry | to every number in `notify.sms_number` (a list) when `sms.staff_enabled` | to the enquiry's normalised phone when `sms.visitor_enabled`, text from `sms.visitor_text`, default: "Thank you for contacting Well Nest Home Care. A nurse will call you shortly." |
+| New enquiry | to every number in `notify.sms_number` (a list) when `sms.staff_enabled` | to the enquiry's normalised phone when `sms.visitor_enabled`, text from `sms.visitor_text`, default: "Thank you for contacting Bloomwell Home Care. A nurse will call you shortly." |
 | Enquiry still New after `notify.reminder_minutes` in working hours | reminder, up to 3 times (spec 9.8) | none |
 | New application | email only | none |
 

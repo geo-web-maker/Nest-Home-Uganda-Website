@@ -7,7 +7,7 @@ It tests the browser/web implementations first so that defects are fixed in the 
 
 The gate covers:
 
-1. Public Well Nest Home Care Uganda website.
+1. Public Bloomwell Home Care Uganda website.
 2. Admin web application, including the native/admin web bundle that will be packaged for Android.
 3. Nurse web/PWA application.
 4. Backend/API contracts, permissions, business rules, and persistence-facing tests.

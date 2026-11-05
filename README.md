@@ -1,4 +1,4 @@
-# Well Nest Home Care Uganda
+# Bloomwell Home Care Uganda
 
 Monorepo: `frontend/` (React 18 + Vite + TypeScript), `backend/` (FastAPI + Beanie on PyMongo async + MongoDB), `docs/` (spec, instructions, state ledger), `reference/` (HTML previews).
 
@@ -38,7 +38,7 @@ Exact pinned versions only (no `^`, no updates), no roles (scopes only), no Moto
 
 The admin frontend is also packaged as a dedicated Capacitor Android app. It reuses the same admin React UI, server-side scopes, native refresh-token authentication and push-registration path.
 
-- App name: `Well Nest Home Care Uganda Admin`
+- App name: `Bloomwell Home Care Uganda Admin`
 - Android application id: `ug.nesthomecare.admin`
 - Native build config: `frontend/capacitor.admin.config.ts`
 - CI workflow: `.github/workflows/admin-android.yml`

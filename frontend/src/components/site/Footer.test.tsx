@@ -64,6 +64,6 @@ describe('Footer', () => {
 
   it('ends with the copyright line', () => {
     setup();
-    expect(screen.getByText('© Well Nest Home Care Uganda Ltd')).toBeInTheDocument();
+    expect(screen.getByText('© Bloomwell Home Care Uganda Limited')).toBeInTheDocument();
   });
 });

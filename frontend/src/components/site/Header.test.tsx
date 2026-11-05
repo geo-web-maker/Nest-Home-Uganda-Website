@@ -44,7 +44,7 @@ describe('Header', () => {
     ] as const) {
       expect(within(nav).getByRole('link', { name })).toHaveAttribute('href', href);
     }
-    expect(screen.getByRole('link', { name: /Well Nest Home Care/ })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: /Bloomwell Home Care/ })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Call' })).toHaveAttribute('href', 'tel:+256787499988');
   });
 

@@ -1,4 +1,4 @@
-# Nest Home Care mail module — Phase 1 implementation audit
+# Bloomwell Home Care mail module — Phase 1 implementation audit
 
 **Patch scope:** Phase 1 foundations from `docs/NEST_MAIL_MODULE_SPEC.md`  
 **Audit date:** 2026-10-31  

@@ -92,7 +92,7 @@ async def ensure_default_mailbox(user: Any):
                     )
                     await conn.execute("INSERT INTO mailbox_member(mailbox_id,user_id,role,added_by) VALUES($1,$2,'owner',$2)", row['id'], user_id)
                     await _audit(conn, user_id, "mail.mailbox.create", row['id'], detail={"kind":"personal"})
-                    welcome=await conn.fetchval("INSERT INTO message(from_address,from_name,subject,body_text,origin) VALUES($1,'Nest Home Care','Welcome to Nest Mail','Your Nest mailbox is ready. Use it for approved work communication. Do not send client details to outside addresses.','internal') RETURNING id",f"no-reply@{domain}")
+                    welcome=await conn.fetchval("INSERT INTO message(from_address,from_name,subject,body_text,origin) VALUES($1,'Bloomwell Home Care Uganda','Welcome to Nest Mail','Your Nest mailbox is ready. Use it for approved work communication. Do not send client details to outside addresses.','internal') RETURNING id",f"no-reply@{domain}")
                     await conn.execute("INSERT INTO mailbox_message(mailbox_id,message_id,folder) VALUES($1,$2,'inbox')",row['id'],welcome)
                     return dict(row)
     raise ValueError("Unable to allocate a unique mailbox address.")
@@ -1033,7 +1033,7 @@ async def send_draft(user_id: str, draft_id: str, mailbox_id: str):
                 if blocked_count:
                     notice = await conn.fetchval(
                         "INSERT INTO message(from_address,from_name,subject,body_text,origin) "
-                        "VALUES($1,'Nest Home Care','Some recipients were not sent',$2,'internal') RETURNING id",
+                        "VALUES($1,'Bloomwell Home Care Uganda','Some recipients were not sent',$2,'internal') RETURNING id",
                         f"no-reply@{domain}",
                         f"{blocked_count} external recipient(s) were suppressed or blocked. No message was sent to them.",
                     )
