@@ -51,11 +51,11 @@ class Settings(BaseSettings):
     sms_staff_enabled: bool = True
     sms_visitor_enabled: bool = True
     sms_visitor_text: str = (
-        "Thank you for contacting Well Nest Home Care. A nurse will call you shortly."
+        "Thank you for contacting Bloomwell Home Care. A nurse will call you shortly."
     )
     business_whatsapp: str = "256787499988"
     business_email: str = ""
-    forms_whatsapp_prefix: str = "Hello Well Nest Home Care, I would like to book"
+    forms_whatsapp_prefix: str = "Hello Bloomwell Home Care, I would like to book"
     notify_reminder_minutes: int = 30
     notify_hours_from: str = "07:00"
     notify_hours_to: str = "20:00"

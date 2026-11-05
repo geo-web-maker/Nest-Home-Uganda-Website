@@ -6,7 +6,7 @@ test.describe('admin mobile/native shell contract', () => {
     await mockAdminApi(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/admin/login');
-    await expect(page).toHaveTitle(/Well Nest Home Care Uganda Admin/);
+    await expect(page).toHaveTitle(/Bloomwell Home Care Uganda Admin/);
     await signInReferenceAdmin(page);
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Admin shortcuts' })).toBeVisible();

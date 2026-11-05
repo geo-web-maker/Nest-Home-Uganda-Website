@@ -12,7 +12,7 @@ def _split(value: str) -> list[str]:
 def setting_defaults(runtime: Settings | None = None) -> dict[str, Any]:
     s = runtime or get_settings()
     values: dict[str, Any] = {
-        "business.name": "Well Nest Home Care Uganda Ltd",
+        "business.name": "Bloomwell Home Care Uganda Limited",
         "business.tagline": "Trusted · Reliable · Compassionate",
         "business.phone_display": "0787 499 988",
         "business.phone_dial": "+256787499988",
@@ -46,7 +46,7 @@ def setting_defaults(runtime: Settings | None = None) -> dict[str, Any]:
         "home.show_sticky_bar": True,
         "forms.who_options": ["self", "parent", "spouse", "child", "other"],
         "forms.start_options": ["today", "this_week", "later", "not_sure"],
-        "forms.consent_text": "I agree that Well Nest Home Care may contact me about this request.",
+        "forms.consent_text": "I agree that Bloomwell Home Care may contact me about this request.",
         "forms.thanks_message": "Thank you. A nurse will contact you shortly.",
         "forms.whatsapp_prefix": s.forms_whatsapp_prefix,
         "forms.open_whatsapp_after": False,
@@ -87,7 +87,7 @@ def setting_defaults(runtime: Settings | None = None) -> dict[str, Any]:
         "system.PAYMENT_GATEWAY_MODE": "sandbox",
         "system.API_REQUEST_TIMEOUT_SEC": 30,
         "system.SYNC_CRON_INTERVAL_MIN": 15,
-        "system.PLATFORM_SITE_NAME": "Well Nest Home Care Uganda",
+        "system.PLATFORM_SITE_NAME": "Bloomwell Home Care Uganda",
         "system.DEFAULT_TIMEZONE": "Africa/Kampala",
         "system.SUPPORT_CONTACT_EMAIL": "support@example.invalid",
         # The provider is always read from the deployment environment, never stored as a secret.

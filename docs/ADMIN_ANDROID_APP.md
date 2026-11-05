@@ -1,11 +1,11 @@
-# Well Nest Home Care Admin Android app
+# Bloomwell Home Care Admin Android app
 
 The admin frontend now has a dedicated Capacitor Android target using the same React admin screens,
 authentication, scopes, API and mobile navigation as the web admin.
 
 ## Identity
 
-- App name: **Well Nest Home Care Admin**
+- App name: **Bloomwell Home Care Admin**
 - Android application id: `ug.nesthomecare.admin`
 - Web bundle: `frontend/dist-admin-native`
 - Capacitor config: `frontend/capacitor.admin.config.ts`
@@ -46,4 +46,4 @@ registration is enabled only after an authenticated native admin session.
 
 ## Branding
 
-The public app label is **Well Nest Home Care Uganda Admin**. The legal company name **Well Nest Home Care Uganda Ltd** is reserved for legal/company contexts. See `docs/BRANDING_RULES.md`.
+The public app label is **Bloomwell Home Care Uganda Admin**. The legal company name **Bloomwell Home Care Uganda Limited** is reserved for legal/company contexts. See `docs/BRANDING_RULES.md`.

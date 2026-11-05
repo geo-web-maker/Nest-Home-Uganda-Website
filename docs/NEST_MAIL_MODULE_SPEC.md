@@ -1,4 +1,4 @@
-# Nest Home Care: Mail Module Build Specification
+# Bloomwell Home Care: Mail Module Build Specification
 
 Handoff document for the builder (ChatGPT). Read all of it before writing code. Everything marked **DECIDED** is an owner decision and must not be changed. Everything marked **ASSUMED** is a sensible default the owner can change later in the settings screen.
 
@@ -6,7 +6,7 @@ Handoff document for the builder (ChatGPT). Read all of it before writing code. 
 
 ## 1. Goal
 
-Add an in-app mail system to the Nest Home Care web app. Nurses (field PWA) and staff (admin app) get real mailboxes: inbox, sent, drafts, trash, spam, attachments, search. In-house mail is delivered inside the database and costs nothing. Only mail to or from outside addresses uses a provider.
+Add an in-app mail system to the Bloomwell Home Care web app. Nurses (field PWA) and staff (admin app) get real mailboxes: inbox, sent, drafts, trash, spam, attachments, search. In-house mail is delivered inside the database and costs nothing. Only mail to or from outside addresses uses a provider.
 
 ## 2. Owner decisions (DECIDED)
 
@@ -90,7 +90,7 @@ Verified against the uploaded repo. Follow its conventions exactly.
 |---|---|---|
 | `mail.provider` | `console` | `console`, `resend` or `brevo` |
 | `mail.provider_api_key` | unset | Secret |
-| `mail.from_name` | `Nest Home Care` | Display name for system mail |
+| `mail.from_name` | `Bloomwell Home Care` | Display name for system mail |
 | `mail.reply_to` | empty | Optional |
 | `mail.external_enabled` | `false` | Global switch for external sending; enable only after provider/attachment/Bcc acceptance checks |
 | `mail.provider_daily_limit` | `100` | ASSUMED conservative. Match the provider plan |

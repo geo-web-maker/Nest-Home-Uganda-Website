@@ -1,8 +1,8 @@
-# Well Nest Home Care Uganda — branding rules
+# Bloomwell Home Care Uganda — branding rules
 
 ## Public/user-facing brand
 
-Use **Well Nest Home Care Uganda** on normal labels and user-facing surfaces, including:
+Use **Bloomwell Home Care Uganda** on normal labels and user-facing surfaces, including:
 
 - website header/footer and page copy
 - login and sign-in screens
@@ -15,12 +15,12 @@ Use **Well Nest Home Care Uganda** on normal labels and user-facing surfaces, in
 
 Role/app qualifiers may follow the brand, for example:
 
-- **Well Nest Home Care Uganda Nurse**
-- **Well Nest Home Care Uganda Admin**
+- **Bloomwell Home Care Uganda Nurse**
+- **Bloomwell Home Care Uganda Admin**
 
 ## Legal/company name
 
-Use **Well Nest Home Care Uganda Ltd** only where the legal/company identity is required, including:
+Use **Bloomwell Home Care Uganda Limited** only where the legal/company identity is required, including:
 
 - privacy and legal notices
 - terms and conditions
@@ -30,4 +30,4 @@ Use **Well Nest Home Care Uganda Ltd** only where the legal/company identity is 
 - legal organisation fields
 - copyright/legal ownership notices where the registered company name is required
 
-Do not shorten the public brand to `Well Nest Home Care`, `Nest Home Care Nurse`, or `Nest Admin` on user-facing labels.
+Do not shorten the public brand to `Bloomwell Home Care`, `Bloomwell Home Care Nurse`, or `Nest Admin` on user-facing labels.

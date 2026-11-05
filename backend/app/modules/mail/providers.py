@@ -120,7 +120,7 @@ class ResendProvider(MailProvider):
         key = await get_value("mail.provider_api_key")
         html_body = _html_with_inline_fallback(message.html, message.attachments)
         payload = {
-            "from": f"{message.from_name or 'Nest Home Care'} <{message.from_address}>",
+            "from": f"{message.from_name or 'Bloomwell Home Care Uganda'} <{message.from_address}>",
             "to": message.to,
             "subject": message.subject,
             "text": message.text,
@@ -238,7 +238,7 @@ class BrevoProvider(MailProvider):
             return MailSendResult(False, retryable=False, error="provider_api_key_missing")
         html_body = _html_with_inline_fallback(message.html, message.attachments)
         payload = {
-            "sender": {"name": message.from_name or "Nest Home Care", "email": message.from_address},
+            "sender": {"name": message.from_name or "Bloomwell Home Care Uganda", "email": message.from_address},
             "to": [{"email": address, "contactPixelTrackingConsent": False} for address in message.to],
             "subject": message.subject,
             "htmlContent": html_body or f"<pre>{html.escape(message.text)}</pre>",
@@ -349,7 +349,7 @@ class SystemMailOutboxAdapter(MailProvider):
                     if not box:
                         box = await conn.fetchrow(
                             "INSERT INTO mailbox(local_part,kind,display_name) "
-                            "VALUES('no-reply','shared','Nest Home Care') RETURNING id"
+                            "VALUES('no-reply','shared','Bloomwell Home Care Uganda') RETURNING id"
                         )
                     message_id = await conn.fetchval(
                         "INSERT INTO message(from_address,from_name,subject,body_text,body_html,origin) "

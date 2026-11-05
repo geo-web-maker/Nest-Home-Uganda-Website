@@ -4,15 +4,15 @@ from string import Template
 
 TEMPLATES = {
     "sos": Template(
-        "Well Nest Home Care: a staff safety alert needs a response. Open the secure link: $url"
+        "Bloomwell Home Care: a staff safety alert needs a response. Open the secure link: $url"
     ),
     "critical_alert": Template(
-        "Well Nest Home Care: a critical staff alert needs a response. Open: $url"
+        "Bloomwell Home Care: a critical staff alert needs a response. Open: $url"
     ),
     "warning_alert": Template(
-        "Well Nest Home Care: an unresolved staff alert needs review. Open: $url"
+        "Bloomwell Home Care: an unresolved staff alert needs review. Open: $url"
     ),
-    "safety_timer": Template("Well Nest Home Care: a staff safety timer needs review. Open: $url"),
+    "safety_timer": Template("Bloomwell Home Care: a staff safety timer needs review. Open: $url"),
 }
 BANNED_TERMS = ("diagnosis", "medication", "medical condition", "patient name", "clinical note")
 

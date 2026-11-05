@@ -85,7 +85,7 @@ DEFINITIONS: tuple[SettingDefinition, ...] = (
     ),
     _s(
         "mail.from_name", "sending", "System sender name",
-        "Display name for system-generated email.", "string", "Nest Home Care"
+        "Display name for system-generated email.", "string", "Bloomwell Home Care Uganda"
     ),
     _s(
         "mail.reply_to", "sending", "Reply-to address",

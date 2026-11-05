@@ -1,6 +1,6 @@
 /** Public site copy. Client-supplied content stays marked with the specified placeholder. */
 export const siteEn = {
-  brand: { name: 'Well Nest Home Care Uganda', subtitle: 'Uganda · Kampala' },
+  brand: { name: 'Bloomwell Home Care Uganda', subtitle: 'Uganda · Kampala' },
   header: {
     servicesMenu: 'Services',
     mainNav: 'Main',
@@ -19,10 +19,10 @@ export const siteEn = {
     faq: 'FAQ and care tips',
     aboutUs: 'About us',
     privacy: 'Privacy and terms',
-    copyright: '© Well Nest Home Care Uganda Ltd',
+    copyright: '© Bloomwell Home Care Uganda Limited',
   },
   services: {
-    seoTitle: 'Home Care Services in Kampala | Well Nest Home Care Uganda',
+    seoTitle: 'Home Care Services in Kampala | Bloomwell Home Care Uganda',
     seoDescription: 'Everything your family needs, delivered at home. See our eight kinds of care.',
     rule: 'Services',
     title: 'Eight kinds of care, one trusted team.',
@@ -36,7 +36,7 @@ export const siteEn = {
     retry: 'Try again',
   },
   home: {
-    seoTitle: 'Well Nest Home Care Uganda | Compassionate home care',
+    seoTitle: 'Bloomwell Home Care Uganda | Compassionate home care',
     seoDescription:
       'Trained, caring nurses for your parents, your newborn and your recovery, in your own home across Kampala.',
     rule: 'Compassionate home care',
@@ -85,11 +85,11 @@ export const siteEn = {
     ctaBook: 'Book a home visit',
   },
   about: {
-    seoTitle: 'About Well Nest Home Care Uganda',
-    seoDescription: 'Learn about Well Nest Home Care Uganda and our approach to care at home.',
+    seoTitle: 'About Bloomwell Home Care Uganda',
+    seoDescription: 'Learn about Bloomwell Home Care Uganda and our approach to care at home.',
     rule: 'About us',
     title: 'Care that treats your family as ours.',
-    lead: 'Well Nest Home Care Uganda brings skilled, compassionate nursing into Ugandan homes.',
+    lead: 'Bloomwell Home Care Uganda brings skilled, compassionate nursing into Ugandan homes.',
     storyHeading: 'Our story',
     clientToSupply: 'client to supply',
     teamPhotoPlaceholder: 'Photo: the Nest team together',
@@ -112,8 +112,8 @@ export const siteEn = {
     error: 'We could not load this information just now.',
   },
   team: {
-    seoTitle: 'Our Team | Well Nest Home Care Uganda',
-    seoDescription: 'Meet the team providing home care through Well Nest Home Care Uganda.',
+    seoTitle: 'Our Team | Bloomwell Home Care Uganda',
+    seoDescription: 'Meet the team providing home care through Bloomwell Home Care Uganda.',
     rule: 'Our team',
     title: 'Faces you can trust at your door.',
     lead: 'Every visit is made by a trained member of our team.',
@@ -126,7 +126,7 @@ export const siteEn = {
     ctaBook: 'Book a home visit',
   },
   howItWorks: {
-    seoTitle: 'How It Works and Pricing | Well Nest Home Care Uganda',
+    seoTitle: 'How It Works and Pricing | Bloomwell Home Care Uganda',
     seoDescription: 'See the steps for arranging home care and how pricing is agreed.',
     rule: 'How it works',
     title: 'Clear steps, clear pricing.',
@@ -149,8 +149,8 @@ export const siteEn = {
     ctaBook: 'Book a home visit',
   },
   areas: {
-    seoTitle: 'Areas We Serve | Well Nest Home Care Uganda',
-    seoDescription: 'Check the areas served by Well Nest Home Care Uganda.',
+    seoTitle: 'Areas We Serve | Bloomwell Home Care Uganda',
+    seoDescription: 'Check the areas served by Bloomwell Home Care Uganda.',
     rule: 'Areas we serve',
     title: 'Home visits across Kampala and surrounds.',
     lead: 'Check that we reach your neighbourhood.',
@@ -165,7 +165,7 @@ export const siteEn = {
     ctaBook: 'Ask about your area',
   },
   contact: {
-    seoTitle: 'Contact and Book a Home Visit | Well Nest Home Care Uganda',
+    seoTitle: 'Contact and Book a Home Visit | Bloomwell Home Care Uganda',
     seoDescription: 'Call, WhatsApp or send a request. A nurse will reply shortly.',
     rule: 'Contact and book',
     title: 'Talk to us today.',
@@ -179,7 +179,7 @@ export const siteEn = {
     mapDescription: 'Map location to be confirmed by the client.',
   },
   faq: {
-    seoTitle: 'FAQ and Care Tips | Well Nest Home Care Uganda',
+    seoTitle: 'FAQ and Care Tips | Bloomwell Home Care Uganda',
     seoDescription: 'Answers to common questions about arranging care at home.',
     rule: 'FAQ and care tips',
     title: 'Answers to common questions.',
@@ -196,8 +196,8 @@ export const siteEn = {
     ctaBook: 'Ask us',
   },
   privacy: {
-    seoTitle: 'Privacy and Terms | Well Nest Home Care Uganda',
-    seoDescription: 'Read how Well Nest Home Care Uganda Ltd uses and protects the details you share.',
+    seoTitle: 'Privacy and Terms | Bloomwell Home Care Uganda',
+    seoDescription: 'Read how Bloomwell Home Care Uganda Limited uses and protects the details you share.',
     rule: 'Privacy and terms',
     title: 'Privacy and terms.',
     lead: 'How we handle your information.',
@@ -233,8 +233,8 @@ export const siteEn = {
     ],
   },
   careers: {
-    seoTitle: 'Careers | Well Nest Home Care Uganda',
-    seoDescription: 'Explore opportunities to join Well Nest Home Care Uganda.',
+    seoTitle: 'Careers | Bloomwell Home Care Uganda',
+    seoDescription: 'Explore opportunities to join Bloomwell Home Care Uganda.',
     rule: 'Careers',
     title: 'Join the team.',
     lead: 'Care for families across Kampala.',
@@ -280,7 +280,7 @@ export const siteEn = {
       cv: 'CV',
       cvHint: 'Upload a PDF or Word file under 5 MB.',
       coverNote: 'Short cover note',
-      consent: 'I agree that Well Nest Home Care Uganda may contact me about this application.',
+      consent: 'I agree that Bloomwell Home Care Uganda may contact me about this application.',
       privacy: 'Privacy',
       website: 'Leave this field empty',
       submit: 'Send application',

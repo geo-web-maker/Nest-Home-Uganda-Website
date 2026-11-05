@@ -43,7 +43,7 @@ function adminSettings() {
     { key: 'system.PAYMENT_GATEWAY_MODE', group: 'system', value: 'sandbox' },
     { key: 'system.API_REQUEST_TIMEOUT_SEC', group: 'system', value: 20 },
     { key: 'system.SYNC_CRON_INTERVAL_MIN', group: 'system', value: 5 },
-    { key: 'system.PLATFORM_SITE_NAME', group: 'system', value: 'Well Nest Home Care Uganda' },
+    { key: 'system.PLATFORM_SITE_NAME', group: 'system', value: 'Bloomwell Home Care Uganda' },
     { key: 'system.DEFAULT_TIMEZONE', group: 'system', value: 'Africa/Kampala' },
     { key: 'system.SUPPORT_CONTACT_EMAIL', group: 'system', value: 'support@example.test' },
   ];

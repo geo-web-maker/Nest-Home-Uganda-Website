@@ -1,4 +1,4 @@
-# Nest Home Care Uganda — Reconstruction handover: stages 08–12
+# Bloomwell Home Care Uganda — Reconstruction handover: stages 08–12
 
 ## Objective
 
@@ -25,7 +25,7 @@ Continue the precision reconstruction from the existing stages 00–07 baseline 
 - Unscheduled visits remain gated by the existing `adhocAllowed` value and continue through the existing start/sync flow.
 - SOS remains a deliberate hold action and remains visible where the authenticated shell renders it.
 - Theme colors in changed CSS/SVG use the existing design tokens; no new hard-coded hex/rgb colors were introduced.
-- The standard user-facing app name is **Well Nest Home Care Uganda**; the legal **Well Nest Home Care Uganda Ltd** value remains reserved for the organisation/legal field.
+- The standard user-facing app name is **Bloomwell Home Care Uganda**; the legal **Bloomwell Home Care Uganda Limited** value remains reserved for the organisation/legal field.
 
 ## Tests written or updated
 

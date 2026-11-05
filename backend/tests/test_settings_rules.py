@@ -18,7 +18,7 @@ def test_settings_defaults_match_the_public_build_spec() -> None:
     assert values["business.hours"] == "Add opening hours"
     assert values["seo.index"] is False
     assert values["forms.consent_text"] == (
-        "I agree that Well Nest Home Care may contact me about this request."
+        "I agree that Bloomwell Home Care may contact me about this request."
     )
     assert values["home.eggs"] == [
         {"title": "Elders", "caption": "with dignity"},

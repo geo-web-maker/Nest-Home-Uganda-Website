@@ -1,4 +1,4 @@
-# Nest Home Care Uganda — Stage 13–19 Reconstruction Audit
+# Bloomwell Home Care Uganda — Stage 13–19 Reconstruction Audit
 
 **Reconstruction date:** 29 October 2026  
 **Baseline:** `Nest-Home-Uganda-Website-reconstructed-stage08-12.zip`  

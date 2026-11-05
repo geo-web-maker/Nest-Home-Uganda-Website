@@ -181,7 +181,7 @@ async def backfill_run(principal: Principal = Depends(require_scopes("mail:setti
     pool = mail_db.get_pool()
     async with pool.acquire() as conn:
         if not await conn.fetchval("SELECT 1 FROM mailbox WHERE local_part='no-reply'"):
-            await conn.execute("INSERT INTO mailbox(local_part,kind,display_name) VALUES('no-reply','shared','Nest Home Care')")
+            await conn.execute("INSERT INTO mailbox(local_part,kind,display_name) VALUES('no-reply','shared','Bloomwell Home Care Uganda')")
         await conn.execute("INSERT INTO mail_audit(actor_user_id,action,detail) VALUES($1,'mail.backfill',$2::jsonb)", principal.user_id, __import__('json').dumps({"created": created, "skipped": len(skipped)}))
     return {"created": created, "skipped": skipped}
 
@@ -493,8 +493,8 @@ async def totp_enroll(principal: Principal=Depends(require_scopes("mail:use")),m
     if await verified(principal.user_id) and not _valid_totp_cookie(principal,mail_totp): raise Forbidden("Verify your current authenticator before replacing it.")
     import urllib.parse
     secret=await enrol(principal.user_id)
-    label=urllib.parse.quote(f"Nest Home Care:{principal.user_id}")
-    uri=f"otpauth://totp/{label}?secret={secret}&issuer=Nest%20Home%20Care&algorithm=SHA1&digits=6&period=30"
+    label=urllib.parse.quote(f"Bloomwell Home Care Uganda:{principal.user_id}")
+    uri=f"otpauth://totp/{label}?secret={secret}&issuer=Bloomwell%20Home%20Care%20Uganda&algorithm=SHA1&digits=6&period=30"
     return {"secret":secret,"otpauth_uri":uri,"instructions":"Add this account to an authenticator app, then confirm with its current six-digit code. The secret is shown once."}
 
 @router.post("/totp/reset")
@@ -611,7 +611,7 @@ async def mail_test_send(body: TestSendBody,principal: Principal=Depends(require
     if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+",body.to): raise Forbidden("Enter a valid test recipient address.")
     provider=await get_provider(); domain=await get_value('mail.domain')
     if provider.name=='console': return {"queued":False,"provider":"console","message":"Console provider records the test without sending external mail."}
-    result=await provider.send([body.to],"Nest Home Care mail test","<p>Mail provider test.</p>","Mail provider test.",from_address=f"no-reply@{domain}",from_name=await get_value('mail.from_name'),reply_to=await get_value('mail.reply_to'),idempotency_key=f"test:{principal.user_id}:{__import__('uuid').uuid4()}")
+    result=await provider.send([body.to],"Bloomwell Home Care Uganda mail test","<p>Mail provider test.</p>","Mail provider test.",from_address=f"no-reply@{domain}",from_name=await get_value('mail.from_name'),reply_to=await get_value('mail.reply_to'),idempotency_key=f"test:{principal.user_id}:{__import__('uuid').uuid4()}")
     if not result.ok: raise Forbidden("Provider test failed. Check provider configuration and logs.")
     return {"sent":True,"provider":provider.name,"provider_message_id":result.provider_message_id}
 

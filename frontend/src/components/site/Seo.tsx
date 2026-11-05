@@ -1,6 +1,6 @@
 import { Head } from 'vite-react-ssg';
 
-const SITE_NAME = 'Well Nest Home Care Uganda';
+const SITE_NAME = 'Bloomwell Home Care Uganda';
 
 export type SeoProps = {
   title: string;

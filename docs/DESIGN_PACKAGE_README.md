@@ -1,4 +1,4 @@
-# Well Nest Home Care Uganda: design package
+# Bloomwell Home Care Uganda: design package
 
 Start with `docs/NEST_HOME_CARE_BUILD_SPEC.md` for functional requirements and implementation scope.
 
