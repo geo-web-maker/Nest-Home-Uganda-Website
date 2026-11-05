@@ -11,6 +11,7 @@ import { Checkbox } from '../../../components/ui/Checkbox';
 import { Field } from '../../../components/ui/Field';
 import { apiClient } from '../../../lib/api/client';
 import { MailSetupCheck } from './MailSetupCheck';
+import { MailInboundTrace } from './MailInboundTrace';
 import { MailSmtpTrace } from './MailSmtpTrace';
 import { coerceSettingValue, displayValue, type MailSetting } from './settings';
 import styles from './MailPage.module.css';
@@ -379,6 +380,7 @@ export function MailSettingsPage() {
         </section>
 
         <MailSmtpTrace />
+        <MailInboundTrace />
       </div>
 
       {reprocessConfirming ? (

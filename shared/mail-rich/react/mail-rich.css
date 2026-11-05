@@ -15,13 +15,26 @@
 .mr-original-download { margin-top: var(--mr-gap, 12px); }
 
 .mr-editor { display: grid; gap: .75rem; min-width: 0; }
-.mr-editor-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; padding: .5rem; border: 1px solid var(--mail-border, #d8dde4); border-radius: .65rem; background: var(--mail-toolbar-bg, #f7f8fa); }
-.mr-editor-tool { min-width: 2.25rem; min-height: 2.25rem; padding: .35rem .55rem; border: 1px solid transparent; border-radius: .4rem; background: transparent; color: inherit; font: inherit; cursor: pointer; }
-.mr-editor-tool:hover, .mr-editor-tool[aria-pressed="true"] { border-color: var(--mail-border, #c8d0d8); background: var(--mail-active-bg, #e9eef5); }
+.mr-editor-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; padding: .25rem .4rem; border: 1px solid var(--mail-border, #d8dde4); border-radius: .65rem; background: var(--mail-toolbar-bg, #f7f8fa); }
+.mr-editor-toolbar > span[data-group-start="true"] { margin-inline-start: .35rem; padding-inline-start: .35rem; border-inline-start: 1px solid var(--mail-border, #d8dde4); }
+.mr-editor-sep { align-self: stretch; width: 1px; margin-inline: .35rem; background: var(--mail-border, #d8dde4); }
+.mr-editor-toolbar .mr-editor-tool { display: inline-flex; align-items: center; justify-content: center; min-width: 2rem; width: 2rem; min-height: 2rem; height: 2rem; padding: 0; border: 1px solid transparent; border-radius: .45rem; background: transparent; color: inherit; font: inherit; line-height: 1; cursor: pointer; box-shadow: none; }
+.mr-editor-toolbar .mr-editor-tool:hover:not(:disabled) { background: var(--mail-active-bg, #e9eef5); }
+.mr-editor-toolbar .mr-editor-tool[aria-pressed="true"] { border-color: var(--mail-border, #c8d0d8); background: var(--mail-active-bg, #e9eef5); }
+.mr-editor-toolbar .mr-editor-tool:disabled { opacity: .4; cursor: default; }
 .mr-editor-tool:focus-visible, .mr-editor-toolbar select:focus-visible, .mr-editor-toolbar input:focus-visible, .mr-editor-quote button:focus-visible { outline: 2px solid var(--mail-focus, #2563eb); outline-offset: 2px; }
+.mr-glyph { font-size: .95rem; font-weight: 700; }
+.mr-glyph-italic { font-style: italic; font-family: Georgia, serif; }
+.mr-glyph-underline { text-decoration: underline; }
+.mr-glyph-strike { text-decoration: line-through; }
 .mr-editor-size, .mr-editor-colour { display: inline-flex; align-items: center; gap: .3rem; font-size: .78rem; }
-.mr-editor-size select, .mr-kit-field select { min-height: 2.1rem; }
-.mr-editor-colour input, .mr-kit-field input[type="color"] { width: 2rem; height: 2rem; padding: 0; }
+.mr-editor-size label, .mr-editor-colour label { display: inline-flex; align-items: center; gap: .3rem; margin: 0; font-size: .78rem; font-weight: 500; color: var(--mail-muted, #687383); white-space: nowrap; }
+.mr-editor-size select, .mr-kit-field select { min-height: 2rem; height: 2rem; padding: 0 .4rem; border: 1px solid var(--mail-border, #c8d0d8); border-radius: .45rem; background: var(--bg, #fff); color: inherit; font: inherit; font-size: .85rem; }
+.mr-editor-colour > div { margin: 0; }
+.mr-editor-colour input[type="color"], .mr-kit-field input[type="color"] { display: block; width: 1.75rem; min-width: 0; height: 1.75rem; min-height: 0; padding: 2px; border: 1px solid var(--mail-border, #c8d0d8); border-radius: 50%; background: transparent; cursor: pointer; }
+.mr-editor-colour input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.mr-editor-colour input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
+.mr-editor-colour input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
 .mr-editor-content { min-height: 14rem; padding: .9rem; border: 1px solid var(--mail-border, #c8d0d8); border-radius: .6rem; outline: none; overflow-wrap: anywhere; }
 .mr-editor-content:focus { border-color: var(--mail-focus, #2563eb); box-shadow: 0 0 0 2px color-mix(in srgb, var(--mail-focus, #2563eb) 18%, transparent); }
 .mr-editor-content p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; color: #737b86; pointer-events: none; height: 0; }
