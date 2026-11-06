@@ -308,7 +308,8 @@ export interface paths {
         get: operations["admin_get_api_v1_admin_agreements__agreement_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Admin Delete Voided */
+        delete: operations["admin_delete_voided_api_v1_admin_agreements__agreement_id__delete"];
         options?: never;
         head?: never;
         /** Admin Patch */
@@ -8171,6 +8172,39 @@ export interface operations {
                 agreement_id: string;
             };
             cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_delete_voided_api_v1_admin_agreements__agreement_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agreement_id: string;
+            };
+            cookie?: {
+                mail_totp?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
