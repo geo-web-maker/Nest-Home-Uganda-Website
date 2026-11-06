@@ -5,6 +5,7 @@ import { Modal } from '../../../components/admin/Modal';
 import { Notice } from '../../../components/admin/Notice';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
+import { RecipientInput } from './RecipientInput';
 import { apiClient } from '../../../lib/api/client';
 import { AttachmentList } from '../../../shared/mail-rich/react/AttachmentList';
 import { useAttachmentUploader } from '../../../shared/mail-rich/react/useAttachmentUploader';
@@ -104,32 +105,45 @@ export function MailCompose({ mailboxId, seed, onClose, onDone }: Props) {
     ...(removeQuote ? { remove_quote: true } : draftId || !seed.quote ? {} : { quote: seed.quote }),
   }), [mailboxId, toList, ccList, bccList, subject, format, body, bodyHtml, seed.inReplyTo, removeQuote, draftId, seed.quote]);
 
+  /** A forward is meant to be edited, so the server-built quote moves into the editor and the saved copy is dropped. */
+  const foldQuoteIntoBody = useCallback((quoted: string) => {
+    setBodyHtml((current) => `${current && current !== '<p></p>' ? current : '<p></p>'}${quoted}`);
+    setQuoteHtml(null);
+    setRemoveQuote(true);
+  }, []);
+  const adoptCreated = useCallback((created: DraftResponse) => {
+    if (created.quoted_html) {
+      if (seed.quote?.kind === 'forward') foldQuoteIntoBody(created.quoted_html);
+      else setQuoteHtml(created.quoted_html);
+    }
+    if (created.attachments?.length) setUploads(created.attachments as Upload[]);
+  }, [seed.quote?.kind, foldQuoteIntoBody]);
+
   const ensureDraft = useCallback(async (): Promise<string> => {
     const activeDraftId = draftIdRef.current;
     if (activeDraftId) {
-      await apiClient.put(`/mail/drafts/${activeDraftId}`, payload);
+      await apiClient.put(`/mail/drafts/${activeDraftId}`, { ...payload, quote: undefined });
       return activeDraftId;
     }
     const created = await apiClient.post<DraftResponse>('/mail/drafts', payload);
     draftIdRef.current = created.id;
     setDraftId(created.id);
-    if (created.quoted_html) setQuoteHtml(created.quoted_html);
-    if (created.attachments?.length) setUploads(created.attachments as Upload[]);
+    adoptCreated(created);
     return created.id;
-  }, [payload]);
+  }, [payload, adoptCreated]);
 
   const autosave = useCallback(async (value: typeof payload) => {
     if (busy === 'send' || busy === 'delete') return;
     if (!value.subject.trim() && !value.body_text.trim() && !value.to.length && !value.cc.length && !value.bcc.length && !seed.quote) return;
     const activeDraftId = draftIdRef.current;
-    if (activeDraftId) await apiClient.put(`/mail/drafts/${activeDraftId}`, value);
+    if (activeDraftId) await apiClient.put(`/mail/drafts/${activeDraftId}`, { ...value, quote: undefined });
     else {
       const created = await apiClient.post<DraftResponse>('/mail/drafts', value);
       draftIdRef.current = created.id;
       setDraftId(created.id);
-      if (created.quoted_html) setQuoteHtml(created.quoted_html);
+      adoptCreated(created);
     }
-  }, [busy, seed.quote]);
+  }, [busy, seed.quote, adoptCreated]);
   const autosaveStatus = useDraftAutosave(payload, autosave, 1000);
 
   async function run(kind: 'send' | 'save' | 'delete' | 'attach', work: () => Promise<void>) {
@@ -194,10 +208,10 @@ export function MailCompose({ mailboxId, seed, onClose, onDone }: Props) {
     <div className={styles.composeForm}>
       {error ? <Notice tone="error" role="alert">{error}</Notice> : null}
       {editorNotice ? <Notice tone="info">{editorNotice}</Notice> : null}
-      <Field label={t('mail.to')} value={to} onChange={(event) => setTo(event.target.value)} placeholder={t('mail.toHint')} error={recipientError} autoComplete="off" />
+      <RecipientInput label={t('mail.to')} value={to} onChange={setTo} placeholder={t('mail.toHint')} error={recipientError} exclude={[...ccList, ...bccList]} />
       {showCc ? <>
-        <Field label={t('mail.cc')} value={cc} onChange={(event) => setCc(event.target.value)} autoComplete="off" />
-        <Field label={t('mail.bcc')} value={bcc} onChange={(event) => setBcc(event.target.value)} autoComplete="off" />
+        <RecipientInput label={t('mail.cc')} value={cc} onChange={setCc} exclude={[...toList, ...bccList]} />
+        <RecipientInput label={t('mail.bcc')} value={bcc} onChange={setBcc} exclude={[...toList, ...ccList]} />
       </> : <div><Button variant="outline" size="compact" onClick={() => setShowCc(true)}>{t('mail.showCcBcc')}</Button></div>}
       <Field label={t('mail.subject')} value={subject} onChange={(event) => setSubject(event.target.value)} />
       <div className="mr-composer-mode" role="group" aria-label="Message format">

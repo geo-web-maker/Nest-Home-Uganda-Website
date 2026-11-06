@@ -61,3 +61,13 @@
 .mr-delivery { margin-top: 1rem; padding: .75rem; border: 1px solid var(--mr-line, #ddd); border-radius: .65rem; }
 .mr-delivery ul { margin-block: .5rem 0; padding-inline-start: 1.25rem; overflow-wrap: anywhere; }
 .mr-message { min-width: 0; overflow-wrap: anywhere; }
+
+/* Colour tools: one 2rem button like the others, with the picker laid invisibly over it. */
+.mr-colour-tool { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; margin: 0; border: 1px solid transparent; border-radius: .45rem; cursor: pointer; }
+.mr-colour-tool:hover, .mr-colour-tool:focus-within { background: var(--mail-active-bg, #e9eef5); }
+.mr-colour-tool[data-disabled="true"] { opacity: .4; pointer-events: none; }
+.mr-colour-glyph { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: .95rem; font-weight: 700; line-height: 1; pointer-events: none; }
+.mr-colour-glyph::after { content: ""; width: 1rem; height: 4px; border-radius: 2px; background: var(--swatch); box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); }
+.mr-colour-tool[data-variant="highlight"] .mr-colour-glyph { padding: 0 .25rem; border-radius: .2rem; background: var(--swatch); color: #202124; }
+.mr-colour-tool[data-variant="highlight"] .mr-colour-glyph::after { display: none; }
+.mr-colour-tool input[type="color"] { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }

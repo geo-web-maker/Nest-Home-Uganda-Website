@@ -111,6 +111,38 @@ DEFINITIONS: tuple[SettingDefinition, ...] = (
         minimum=1, maximum=100_000
     ),
     _s(
+        "mail.contacts_suggestion_limit", "sending", "Address suggestions shown",
+        "How many suggestions the To, Cc and Bcc fields show at once.", "integer", 8,
+        minimum=1, maximum=25
+    ),
+    _s(
+        "mail.contacts_directory_enabled", "sending", "Suggest in-house mailboxes",
+        "Let the To, Cc and Bcc fields suggest open in-house mailboxes by name or address as people type.",
+        "boolean", True
+    ),
+    _s(
+        "mail.push_enabled", "general", "Browser notifications",
+        "Send a notification to the admin app (installed PWA or open browser) when new mail arrives. Needs the VAPID keys below.",
+        "boolean", False
+    ),
+    _s(
+        "mail.push_vapid_public", "general", "Push public key (VAPID)",
+        "Public key from scripts/gen_vapid_keys.py. Shared with browsers.", "string", ""
+    ),
+    _s(
+        "mail.push_vapid_private", "general", "Push private key (VAPID)",
+        "Write-only private key from scripts/gen_vapid_keys.py. Stored encrypted.", "secret", None, secret=True
+    ),
+    _s(
+        "mail.push_subject", "general", "Push contact",
+        "A mailto: or https: address that push services can contact, for example mailto:info@yourdomain.", "string", ""
+    ),
+    _s(
+        "mail.push_show_preview", "general", "Show sender and subject in notifications",
+        "Off by default: notifications say only that a message arrived, so no client details show on a lock screen.",
+        "boolean", False
+    ),
+    _s(
         "mail.message_recipient_limit", "sending", "Recipients per message",
         "Maximum total To, Cc and Bcc recipients.", "integer", 100,
         minimum=1, maximum=1000

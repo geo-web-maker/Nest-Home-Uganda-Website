@@ -126,6 +126,59 @@ async def read_message(mailbox_message_id: str, principal: Principal = Depends(r
     return await core_service.read_message(principal.user_id, mailbox_message_id)
 
 
+class PushKeys(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    p256dh: str = Field(min_length=10, max_length=300)
+    auth: str = Field(min_length=4, max_length=100)
+
+
+class PushSubscriptionBody(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    endpoint: str = Field(min_length=10, max_length=2000, pattern=r"^https://")
+    keys: PushKeys
+
+
+class PushUnsubscribeBody(BaseModel):
+    endpoint: str = Field(min_length=10, max_length=2000)
+
+
+@router.get("/push/key")
+async def push_key(principal: Principal = Depends(require_scopes("mail:use"))):
+    from app.modules.mail.notify import public_key
+
+    key = await public_key()
+    return {"enabled": bool(key), "public_key": key}
+
+
+@router.post("/push/subscribe")
+async def push_subscribe(
+    body: PushSubscriptionBody, request: Request, principal: Principal = Depends(require_scopes("mail:use"))
+):
+    from app.modules.mail.notify import public_key, save_subscription
+
+    if not await public_key():
+        raise Forbidden("Browser notifications are not enabled in mail settings.")
+    await save_subscription(principal.user_id, body.model_dump(), request.headers.get("user-agent"))
+    return {"subscribed": True}
+
+
+@router.post("/push/unsubscribe")
+async def push_unsubscribe(body: PushUnsubscribeBody, principal: Principal = Depends(require_scopes("mail:use"))):
+    from app.modules.mail.notify import remove_subscription
+
+    await remove_subscription(principal.user_id, body.endpoint)
+    return {"subscribed": False}
+
+
+@router.get("/contacts")
+async def contacts(
+    q: str | None = Query(default=None, max_length=100),
+    limit: int | None = Query(default=None, ge=1, le=25),
+    principal: Principal = Depends(require_scopes("mail:use")),
+):
+    return await core_service.suggest_contacts(principal.user_id, q, limit)
+
+
 @router.post("/drafts")
 async def create_draft(body: MailDraftBody, principal: Principal = Depends(require_scopes("mail:use"))):
     return await core_service.create_draft(principal.user_id, body.mailbox_id, body.model_dump())

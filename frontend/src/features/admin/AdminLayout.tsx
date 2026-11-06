@@ -6,6 +6,7 @@ import { cx } from '../../lib/cx';
 import { useAuth } from './auth/useAuth';
 import { hasScopes } from './auth/hasScopes';
 import { useMailUnread } from './mail/useMailUnread';
+import { useAdminPwa } from './mail/useMailPush';
 import { AdminIcon } from './icons';
 import { ButtonSizeProvider } from '../../components/ui/Button';
 import { ThemeSwitch } from '../../components/ui/ThemeSwitch';
@@ -46,6 +47,7 @@ export function AdminLayout() {
   }, [moreOpen]);
 
   const mailUnread = useMailUnread(hasScopes(user, ['mail:use']));
+  useAdminPwa(hasScopes(user, ['mail:use']));
   const badgeFor = (item: AdminNavItem) =>
     item.path === '/admin/mail' && mailUnread > 0 ? (
       <span className={styles.badge} role="img" aria-label={t('mail.unreadCount', { count: mailUnread })}>

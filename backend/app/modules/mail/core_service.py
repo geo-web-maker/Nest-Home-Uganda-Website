@@ -912,12 +912,12 @@ async def send_draft(user_id: str, draft_id: str, mailbox_id: str):
             if draft["in_reply_to"]:
                 parent = await conn.fetchrow(
                     "SELECT id,thread_id,message_id_header,references_header FROM message "
-                    "WHERE message_id_header=$1 OR id::text=$1 LIMIT 1",
+                    "WHERE message_id_header=$1::text OR id::text=$1::text LIMIT 1",
                     draft["in_reply_to"],
                 )
                 if parent:
                     await conn.execute(
-                        "UPDATE message SET thread_id=COALESCE($2,$3) WHERE id=$1",
+                        "UPDATE message SET thread_id=COALESCE($2::uuid,$3::uuid) WHERE id=$1",
                         draft["message_id"],
                         parent["thread_id"],
                         parent["id"],
@@ -1124,6 +1124,15 @@ async def send_draft(user_id: str, draft_id: str, mailbox_id: str):
                     target,
                     draft["message_id"],
                 )
+            if local:
+                from app.modules.mail.notify import notify_new_mail
+
+                notify_new_mail(
+                    [target for target, _address in local if str(target) != str(mailbox_id)],
+                    sender=str(draft["from_address"] or ""),
+                    subject=str(draft["subject"] or ""),
+                    exclude_user_id=user_id,
+                )
             for recipient in unique_recipients:
                 await conn.execute(
                     "INSERT INTO mailbox_contact(mailbox_id,address,last_used_at) "
@@ -1294,3 +1303,51 @@ async def remove_draft_attachment(user_id: str, draft_id: str, attachment_id: st
     except Exception:  # The row is gone, so the file can no longer be reached; a leftover object is cleaned up by retention.
         pass
     return {"removed": True}
+
+
+async def suggest_contacts(user_id: str, q: str | None, limit: int | None = None) -> dict[str, list[dict[str, Any]]]:
+    """Address suggestions for the compose fields: people this user mailed recently, then the in-house directory."""
+    await _assert_enabled()
+    cap = int(limit or await get_value("mail.contacts_suggestion_limit") or 8)
+    cap = max(1, min(cap, 25))
+    needle = (q or "").strip().lower()
+    like = f"%{needle.replace(chr(92), chr(92) * 2).replace('%', chr(92) + '%').replace('_', chr(92) + '_')}%" if needle else None
+    pool = db.get_pool()
+    recent: list[dict[str, Any]] = []
+    directory: list[dict[str, Any]] = []
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """WITH mine AS (SELECT mailbox_id FROM mailbox_member WHERE user_id=$1),
+                    seen AS (
+                      SELECT r.address::text AS address, max(r.name) AS name, max(mm.received_at) AS at
+                        FROM mailbox_message mm JOIN mine ON mine.mailbox_id=mm.mailbox_id
+                        JOIN message_recipient r ON r.message_id=mm.message_id
+                       WHERE mm.folder='sent' AND r.kind IN ('to','cc')
+                       GROUP BY r.address
+                      UNION ALL
+                      SELECT m.from_address::text, max(m.from_name), max(mm.received_at)
+                        FROM mailbox_message mm JOIN mine ON mine.mailbox_id=mm.mailbox_id
+                        JOIN message m ON m.id=mm.message_id
+                       WHERE mm.folder='inbox' AND m.origin <> 'internal'
+                       GROUP BY m.from_address)
+               SELECT address, max(name) AS name, max(at) AS at FROM seen
+                WHERE ($2::text IS NULL OR address ILIKE $2 ESCAPE '\\' OR coalesce(name,'') ILIKE $2 ESCAPE '\\')
+                GROUP BY address ORDER BY max(at) DESC LIMIT $3""",
+            user_id, like, cap,
+        )
+        recent = [{"address": str(r["address"]).lower(), "name": r["name"] or None, "source": "recent"} for r in rows]
+        if bool(await get_value("mail.contacts_directory_enabled")) and needle:
+            domain = await _domain()
+            rows = await conn.fetch(
+                """SELECT b.local_part, b.display_name FROM mailbox b
+                    WHERE b.state='open' AND b.local_part <> 'no-reply'
+                      AND (b.local_part ILIKE $1 ESCAPE '\\' OR coalesce(b.display_name,'') ILIKE $1 ESCAPE '\\')
+                    ORDER BY b.display_name NULLS LAST, b.local_part LIMIT $2""",
+                like, cap,
+            )
+            taken = {item["address"] for item in recent}
+            for r in rows:
+                address = f"{r['local_part']}@{domain}".lower()
+                if address not in taken:
+                    directory.append({"address": address, "name": r["display_name"] or None, "source": "directory"})
+    return {"recent": recent, "directory": directory}

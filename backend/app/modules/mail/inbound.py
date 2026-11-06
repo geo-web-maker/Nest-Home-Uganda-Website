@@ -187,6 +187,7 @@ async def ingest(payload: dict[str, Any], timestamp: str, signature: str) -> dic
                     )
 
                 delivered = 0
+                notify_ids: list = []
                 for address in envelope_to:
                     local_part, separator, recipient_domain = address.partition("@")
                     accepted = await get_value("mail.accepted_domains") or []
@@ -220,6 +221,7 @@ async def ingest(payload: dict[str, Any], timestamp: str, signature: str) -> dic
                         folder,
                     )
                     delivered += 1
+                    notify_ids.append(mailbox["id"])
 
                 await conn.execute(
                     "UPDATE message SET spam_score=$2,auth_results=$3::jsonb WHERE id=$1",
@@ -227,6 +229,10 @@ async def ingest(payload: dict[str, Any], timestamp: str, signature: str) -> dic
                     spam,
                     json.dumps(auth_results),
                 )
+                if folder == "inbox" and notify_ids:
+                    from app.modules.mail.notify import notify_new_mail
+
+                    notify_new_mail(notify_ids, sender=parsed.from_address or "", subject=parsed.subject or "")
                 return {"delivered": delivered, "folder": folder, "message_id": str(message_id)}
     except Exception:
         for object_key in stored_keys:

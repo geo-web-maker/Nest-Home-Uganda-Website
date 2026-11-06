@@ -62,6 +62,21 @@ def create_app() -> FastAPI:
     )
     install_error_handlers(app)
 
+    @app.middleware("http")
+    async def keep_cors_on_server_errors(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        # Added before CORS so it sits inside it: an unhandled error becomes a JSON 500 that still
+        # carries CORS headers. Without this the browser hides it as "Network request failed".
+        try:
+            return await call_next(request)
+        except Exception:
+            logging.getLogger("app.request").exception("unhandled error on %s %s", request.method, request.url.path)
+            return JSONResponse(
+                {"error": {"code": "server_error", "message": "Something went wrong on our side.", "fields": {}}},
+                status_code=500,
+            )
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,

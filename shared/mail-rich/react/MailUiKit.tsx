@@ -113,6 +113,9 @@ export type MailUiKit = {
     label: string;
     value: string;
     onChange: (value: string) => void;
+    /** 'text' shows a letter with a colour bar; 'highlight' shows a marker with the colour behind it. */
+    variant?: 'text' | 'highlight';
+    disabled?: boolean;
   }>;
   Dialog: ComponentType<{
     id: string;
