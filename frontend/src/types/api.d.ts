@@ -1963,6 +1963,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/client-errors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Receive Client Error */
+        post: operations["receive_client_error_api_v1_client_errors_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/field/app/version": {
         parameters: {
             query?: never;
@@ -1972,6 +1989,26 @@ export interface paths {
         };
         /** App Version */
         get: operations["app_version_api_v1_field_app_version_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Field Audit
+         * @description Return only the signed-in nurse's own audit events and relevant system failures.
+         */
+        get: operations["field_audit_api_v1_field_audit_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2690,6 +2727,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mail/diagnostics/inbound/trace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mail Inbound Trace
+         * @description Traces incoming mail end to end and lists what the email worker has really sent. Always needs a verified authenticator code.
+         */
+        post: operations["mail_inbound_trace_api_v1_mail_diagnostics_inbound_trace_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/mail/diagnostics/loopback": {
         parameters: {
             query?: never;
@@ -3026,6 +3083,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mail/messages/{mailbox_message_id}/retry-delivery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Message Delivery */
+        post: operations["retry_message_delivery_api_v1_mail_messages__mailbox_message_id__retry_delivery_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/mail/push/key": {
         parameters: {
             query?: never;
@@ -3104,8 +3178,34 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Mail Test Send */
+        /**
+         * Mail Test Send
+         * @description Submit a clearly labelled provider test, optionally with a small attachment.
+         *
+         *     This proves provider acceptance and attachment serialization. It cannot prove inbox
+         *     delivery; the administrator must inspect the recipient mailbox and spam folder.
+         */
         post: operations["mail_test_send_api_v1_mail_settings_test_send_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mail/settings/test-send/trace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mail Test Send Trace
+         * @description Step-by-step SMTP trace for the provider test. Always needs a verified authenticator code, whatever the TOTP scope setting says.
+         */
+        post: operations["mail_test_send_trace_api_v1_mail_settings_test_send_trace_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3262,11 +3362,25 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Totp Reset
-         * @description Remove this user's authenticator after proving it with a current code or a one-time recovery code.
-         */
+        /** Totp Reset */
         post: operations["totp_reset_api_v1_mail_totp_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mail/totp/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Totp Status */
+        get: operations["totp_status_api_v1_mail_totp_status_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3612,12 +3726,40 @@ export interface components {
              * Format: date-time
              */
             at: string;
+            /** Endpoint */
+            endpoint?: string | null;
+            /**
+             * Event Type
+             * @default activity
+             */
+            event_type: string;
+            /** Http Status */
+            http_status?: number | null;
             /** Id */
             id: string;
             /** Item Label */
             item_label: string | null;
             /** Item Type */
             item_type: string;
+            /** Message */
+            message?: string | null;
+            /**
+             * Outcome
+             * @default success
+             */
+            outcome: string;
+            /** Request Id */
+            request_id?: string | null;
+            /**
+             * Severity
+             * @default info
+             */
+            severity: string;
+            /**
+             * Source
+             * @default user
+             */
+            source: string;
             /** User Name */
             user_name: string | null;
         };
@@ -4126,6 +4268,27 @@ export interface components {
             type: string;
             /** Version */
             version: string;
+        };
+        /** ClientErrorPayload */
+        ClientErrorPayload: {
+            /** Message */
+            message: string;
+            /**
+             * Name
+             * @default ClientError
+             */
+            name: string;
+            /** Route */
+            route?: string | null;
+            /**
+             * Source
+             * @default frontend
+             */
+            source: string;
+            /** Stack */
+            stack?: string | null;
+            /** User Agent */
+            user_agent?: string | null;
         };
         /** ClientIn */
         ClientIn: {
@@ -4702,6 +4865,11 @@ export interface components {
              * @enum {string}
              */
             platform: "android" | "ios" | "web";
+        };
+        /** InboundTraceBody */
+        InboundTraceBody: {
+            /** Address */
+            address?: string | null;
         };
         /**
          * InviteOut
@@ -6104,6 +6272,13 @@ export interface components {
              */
             body_text: string;
         };
+        /** SmtpTraceBody */
+        SmtpTraceBody: {
+            /** Compare Key */
+            compare_key?: string | null;
+            /** Send To */
+            send_to?: string | null;
+        };
         /** StayIn */
         StayIn: {
             /** Id */
@@ -6265,6 +6440,11 @@ export interface components {
         };
         /** TestSendBody */
         TestSendBody: {
+            /**
+             * Include Attachment
+             * @default true
+             */
+            include_attachment: boolean;
             /** To */
             to: string;
         };
@@ -6522,13 +6702,19 @@ export interface operations {
                 actor_id?: string | null;
                 item_type?: string | null;
                 item_id?: string | null;
+                severity?: string | null;
+                event_type?: string | null;
+                source?: string | null;
+                outcome?: string | null;
                 cursor?: string | null;
                 page?: number;
                 page_size?: number;
             };
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -8545,7 +8731,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -8556,6 +8744,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -9005,7 +9202,9 @@ export interface operations {
             path: {
                 visit_id: string;
             };
-            cookie?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -10247,7 +10446,9 @@ export interface operations {
             };
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -11453,6 +11654,39 @@ export interface operations {
             };
         };
     };
+    receive_client_error_api_v1_client_errors_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientErrorPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     app_version_api_v1_field_app_version_get: {
         parameters: {
             query?: {
@@ -11461,6 +11695,37 @@ export interface operations {
             header?: never;
             path?: never;
             cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    field_audit_api_v1_field_audit_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -12567,7 +12832,9 @@ export interface operations {
             };
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -12730,6 +12997,41 @@ export interface operations {
             };
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mail_inbound_trace_api_v1_mail_diagnostics_inbound_trace_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InboundTraceBody"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -13411,7 +13713,9 @@ export interface operations {
             path: {
                 mailbox_message_id: string;
             };
-            cookie?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -13565,6 +13869,37 @@ export interface operations {
         };
     };
     report_spam_api_v1_mail_messages__mailbox_message_id__report_spam_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mailbox_message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_message_delivery_api_v1_mail_messages__mailbox_message_id__retry_delivery_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -13759,6 +14094,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["TestSendBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mail_test_send_trace_api_v1_mail_settings_test_send_trace_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SmtpTraceBody"];
             };
         };
         responses: {
@@ -14132,6 +14502,37 @@ export interface operations {
                 "application/json": components["schemas"]["TotpCodeBody"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    totp_status_api_v1_mail_totp_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

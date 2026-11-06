@@ -12,6 +12,33 @@
             "title": "At",
             "type": "string"
           },
+          "endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint"
+          },
+          "event_type": {
+            "default": "activity",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "http_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Http Status"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -29,6 +56,43 @@
           },
           "item_type": {
             "title": "Item Type",
+            "type": "string"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "outcome": {
+            "default": "success",
+            "title": "Outcome",
+            "type": "string"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "severity": {
+            "default": "info",
+            "title": "Severity",
+            "type": "string"
+          },
+          "source": {
+            "default": "user",
+            "title": "Source",
             "type": "string"
           },
           "user_name": {
@@ -1332,6 +1396,69 @@
           "version"
         ],
         "title": "ClientConsentBody",
+        "type": "object"
+      },
+      "ClientErrorPayload": {
+        "properties": {
+          "message": {
+            "maxLength": 800,
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "name": {
+            "default": "ClientError",
+            "maxLength": 120,
+            "title": "Name",
+            "type": "string"
+          },
+          "route": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route"
+          },
+          "source": {
+            "default": "frontend",
+            "maxLength": 40,
+            "title": "Source",
+            "type": "string"
+          },
+          "stack": {
+            "anyOf": [
+              {
+                "maxLength": 6000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stack"
+          },
+          "user_agent": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Agent"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "ClientErrorPayload",
         "type": "object"
       },
       "ClientIn": {
@@ -2909,6 +3036,25 @@
           "platform"
         ],
         "title": "HeartbeatIn",
+        "type": "object"
+      },
+      "InboundTraceBody": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "anyOf": [
+              {
+                "maxLength": 254,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          }
+        },
+        "title": "InboundTraceBody",
         "type": "object"
       },
       "InviteOut": {
@@ -6684,6 +6830,37 @@
         "title": "SignatureBody",
         "type": "object"
       },
+      "SmtpTraceBody": {
+        "additionalProperties": false,
+        "properties": {
+          "compare_key": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compare Key"
+          },
+          "send_to": {
+            "anyOf": [
+              {
+                "maxLength": 254,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Send To"
+          }
+        },
+        "title": "SmtpTraceBody",
+        "type": "object"
+      },
       "StayIn": {
         "properties": {
           "id": {
@@ -7094,7 +7271,13 @@
         "type": "object"
       },
       "TestSendBody": {
+        "additionalProperties": false,
         "properties": {
+          "include_attachment": {
+            "default": true,
+            "title": "Include Attachment",
+            "type": "boolean"
+          },
           "to": {
             "maxLength": 254,
             "minLength": 3,
@@ -7808,6 +7991,70 @@
           },
           {
             "in": "query",
+            "name": "severity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity"
+            }
+          },
+          {
+            "in": "query",
+            "name": "event_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outcome",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Outcome"
+            }
+          },
+          {
+            "in": "query",
             "name": "cursor",
             "required": false,
             "schema": {
@@ -7844,6 +8091,22 @@
               "minimum": 1,
               "title": "Page Size",
               "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
             }
           }
         ],
@@ -10981,6 +11244,24 @@
     "/api/v1/admin/care/sos/drills": {
       "get": {
         "operationId": "list_sos_drills_api_v1_admin_care_sos_drills_get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -10989,6 +11270,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "security": [
@@ -11738,6 +12029,22 @@
             "schema": {
               "title": "Visit Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
             }
           }
         ],
@@ -13976,6 +14283,22 @@
               ],
               "title": "To"
             }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
           }
         ],
         "responses": {
@@ -15980,6 +16303,42 @@
         ]
       }
     },
+    "/api/v1/client-errors": {
+      "post": {
+        "operationId": "receive_client_error_api_v1_client_errors_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientErrorPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Receive Client Error"
+      }
+    },
     "/api/v1/field/app/version": {
       "get": {
         "operationId": "app_version_api_v1_field_app_version_get",
@@ -16022,6 +16381,59 @@
           }
         ],
         "summary": "App Version",
+        "tags": [
+          "field"
+        ]
+      }
+    },
+    "/api/v1/field/audit": {
+      "get": {
+        "description": "Return only the signed-in nurse's own audit events and relevant system failures.",
+        "operationId": "field_audit_api_v1_field_audit_get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Field Audit",
         "tags": [
           "field"
         ]
@@ -17721,6 +18133,22 @@
               "title": "Limit",
               "type": "integer"
             }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
           }
         ],
         "responses": {
@@ -18027,6 +18455,69 @@
           }
         ],
         "summary": "Mail Diagnostics Inbound",
+        "tags": [
+          "mail"
+        ]
+      }
+    },
+    "/api/v1/mail/diagnostics/inbound/trace": {
+      "post": {
+        "description": "Traces incoming mail end to end and lists what the email worker has really sent. Always needs a verified authenticator code.",
+        "operationId": "mail_inbound_trace_api_v1_mail_diagnostics_inbound_trace_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InboundTraceBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mail Inbound Trace",
         "tags": [
           "mail"
         ]
@@ -19168,6 +19659,22 @@
               "title": "Mailbox Message Id",
               "type": "string"
             }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
           }
         ],
         "responses": {
@@ -19393,6 +19900,51 @@
           }
         ],
         "summary": "Report Spam",
+        "tags": [
+          "mail"
+        ]
+      }
+    },
+    "/api/v1/mail/messages/{mailbox_message_id}/retry-delivery": {
+      "post": {
+        "operationId": "retry_message_delivery_api_v1_mail_messages__mailbox_message_id__retry_delivery_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mailbox_message_id",
+            "required": true,
+            "schema": {
+              "title": "Mailbox Message Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retry Message Delivery",
         "tags": [
           "mail"
         ]
@@ -19624,6 +20176,7 @@
     },
     "/api/v1/mail/settings/test-send": {
       "post": {
+        "description": "Submit a clearly labelled provider test, optionally with a small attachment.\n\nThis proves provider acceptance and attachment serialization. It cannot prove inbox\ndelivery; the administrator must inspect the recipient mailbox and spam folder.",
         "operationId": "mail_test_send_api_v1_mail_settings_test_send_post",
         "parameters": [
           {
@@ -19679,6 +20232,69 @@
           }
         ],
         "summary": "Mail Test Send",
+        "tags": [
+          "mail"
+        ]
+      }
+    },
+    "/api/v1/mail/settings/test-send/trace": {
+      "post": {
+        "description": "Step-by-step SMTP trace for the provider test. Always needs a verified authenticator code, whatever the TOTP scope setting says.",
+        "operationId": "mail_test_send_trace_api_v1_mail_settings_test_send_trace_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmtpTraceBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Mail Test Send Trace",
         "tags": [
           "mail"
         ]
@@ -20290,7 +20906,6 @@
     },
     "/api/v1/mail/totp/reset": {
       "post": {
-        "description": "Remove this user's authenticator after proving it with a current code or a one-time recovery code.",
         "operationId": "totp_reset_api_v1_mail_totp_reset_post",
         "requestBody": {
           "content": {
@@ -20328,6 +20943,58 @@
           }
         ],
         "summary": "Totp Reset",
+        "tags": [
+          "mail"
+        ]
+      }
+    },
+    "/api/v1/mail/totp/status": {
+      "get": {
+        "operationId": "totp_status_api_v1_mail_totp_status_get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Totp Status",
         "tags": [
           "mail"
         ]
