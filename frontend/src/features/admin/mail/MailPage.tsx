@@ -13,6 +13,7 @@ import { Field } from '../../../components/ui/Field';
 import { apiClient } from '../../../lib/api/client';
 import { MailCompose } from './MailCompose';
 import { MAIL_CHANGED_EVENT } from './useMailUnread';
+import { useMailPush } from './useMailPush';
 import { buildSeed, type SeedKind } from './recipients';
 import { FOLDERS, type ComposeSeed, type Folder, type MailDetail, type MailItem, type Mailbox } from './types';
 import { MailMessageView } from '../../../shared/mail-rich/react/MailMessageView';
@@ -229,6 +230,7 @@ export function MailPage() {
     void refreshAll();
   };
 
+  const push = useMailPush(true);
   const loadFailed = boxes.isError || list.isError;
   const noMailbox = boxes.isSuccess && mailboxes.length === 0;
   const inTrash = folder === 'trash' || folder === 'spam';
@@ -246,9 +248,15 @@ export function MailPage() {
             <Button variant="outline" onClick={() => void refreshAll()}>
               {t('mail.refresh')}
             </Button>
+            {push.available ? (
+              <Button variant="outline" disabled={push.busy || push.blocked} onClick={() => void push.toggle()}>
+                {push.subscribed ? 'Notifications on' : push.blocked ? 'Notifications blocked' : 'Turn on notifications'}
+              </Button>
+            ) : null}
           </ButtonGroup>
         }
       />
+      {push.error ? <Notice tone="error">{push.error}</Notice> : null}
       {loadFailed ? <Notice tone="error">{t('mail.error')}</Notice> : null}
       {noMailbox ? <Notice tone="info">{t('mail.noMailbox')}</Notice> : null}
       {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}

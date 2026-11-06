@@ -6,6 +6,14 @@
   font-size: 0.92rem;
 }
 
+/* Phones and tablets: leave room for the fixed Call and WhatsApp bar inside the green, so the
+   page ends in green behind it. */
+@media (max-width: 1039px) {
+  .footer {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+}
+
 .columns {
   display: grid;
   grid-template-columns: 1fr;

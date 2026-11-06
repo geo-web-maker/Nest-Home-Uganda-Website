@@ -165,7 +165,7 @@ describe('MailPage', () => {
     await user.click(await screen.findByRole('button', { name: /Rota change/ }));
     await user.click(await within(reader()).findByRole('button', { name: 'Reply' }));
     const dialog = await screen.findByRole('dialog', { name: 'Compose' });
-    expect(within(dialog).getByLabelText('To')).toHaveValue('ruth@mail.test');
+    expect(within(dialog).getByText('ruth@mail.test')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Subject')).toHaveValue('Re: Rota change');
     // The quoted original is added by the server from source_id; the editable body starts empty.
     await user.click(within(dialog).getByRole('button', { name: 'Send' }));
@@ -232,7 +232,7 @@ describe('MailPage', () => {
     await user.click(await screen.findByRole('button', { name: /Rota change/ }));
     await user.click(await within(reader()).findByRole('button', { name: 'Compose' }));
     const dialog = await screen.findByRole('dialog', { name: 'Compose' });
-    expect(within(dialog).getByLabelText('To')).toHaveValue('sam@mail.test');
+    expect(within(dialog).getByText('sam@mail.test')).toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Send' }));
     await user.click(await within(dialog).findByRole('button', { name: 'Confirm send' })); // review step before sending
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/mail/drafts/m1', expect.objectContaining({ to: ['sam@mail.test'] })));

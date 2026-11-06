@@ -18,8 +18,11 @@ const kit: MailUiKit = {
   TextField: ({ label, value, onChange, error, autoFocus, inputMode, type = 'text' }) => (
     <Field label={label} type={type} value={value} error={error} autoFocus={autoFocus} inputMode={inputMode} onChange={(event) => onChange(event.target.value)} />
   ),
-  ColorField: ({ label, value, onChange }) => (
-    <Field label={label} type="color" value={value} onChange={(event) => onChange(event.target.value)} />
+  ColorField: ({ label, value, onChange, variant = 'text', disabled }) => (
+    <label className="mr-colour-tool" title={label} data-variant={variant} data-disabled={disabled ? 'true' : undefined} style={{ ['--swatch' as string]: value }}>
+      <span className="mr-colour-glyph" aria-hidden="true">{variant === 'highlight' ? 'ab' : 'A'}</span>
+      <input type="color" aria-label={label} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)} />
+    </label>
   ),
   Dialog: ({ id, title, closeLabel, onClose, children, actions, urgent, className }) => (
     <Modal id={id} title={title} closeLabel={closeLabel} onClose={onClose} role={urgent ? 'alertdialog' : 'dialog'} className={className}>{children}{actions}</Modal>

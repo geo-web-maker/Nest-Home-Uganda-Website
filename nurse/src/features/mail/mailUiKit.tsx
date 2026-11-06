@@ -46,8 +46,11 @@ const kit: MailUiKit = {
   TextField: ({ label, value, onChange, error, autoFocus, inputMode, type = 'text' }) => (
     <label className="mr-kit-field">{label}<input type={type} value={value} autoFocus={autoFocus} inputMode={inputMode} aria-invalid={Boolean(error)} onChange={(event) => onChange(event.target.value)} />{error ? <span role="alert">{error}</span> : null}</label>
   ),
-  ColorField: ({ label, value, onChange }) => (
-    <label className="mr-kit-field">{label}<input type="color" value={value} onChange={(event) => onChange(event.target.value)} /></label>
+  ColorField: ({ label, value, onChange, variant = 'text', disabled }) => (
+    <label className="mr-colour-tool" title={label} data-variant={variant} data-disabled={disabled ? 'true' : undefined} style={{ ['--swatch' as string]: value }}>
+      <span className="mr-colour-glyph" aria-hidden="true">{variant === 'highlight' ? 'ab' : 'A'}</span>
+      <input type="color" aria-label={label} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)} />
+    </label>
   ),
   Dialog: NurseMailDialog,
   Notice: ({ tone, children }) => <Banner tone={tone === 'error' ? 'bad' : tone === 'warning' ? 'warn' : tone === 'success' ? 'ok' : 'info'}>{children}</Banner>,

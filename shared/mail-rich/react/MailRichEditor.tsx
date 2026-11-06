@@ -120,6 +120,11 @@ function activeTableDimensions(editor: Editor): { rows: number; columns: number 
   return null;
 }
 
+/** The colour input only accepts #rrggbb, so anything else falls back to the default swatch. */
+function toHex(value: unknown, fallback: string): string {
+  return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value.trim()) ? value.trim() : fallback;
+}
+
 export type MailRichEditorProps = {
   value: string;
   onChange: (html: string, text: string) => void;
@@ -314,8 +319,8 @@ export function MailRichEditor({
       <div className="mr-editor-size">
         <Select label={labels.fontSize} value={String(Math.min(32, Math.max(10, Number.parseInt(String(editor?.getAttributes('textStyle').fontSize || '14').replace('px', ''), 10) || 14)))} options={[10, 12, 14, 16, 18, 20, 24, 28, 32].map((size) => ({ value: String(size), label: String(size) }))} onChange={(value) => editor?.chain().focus().setMark('textStyle', { fontSize: `${value}px` }).run()} compact />
       </div>
-      <div className="mr-editor-colour"><ColorField label={labels.textColour} value="#202124" onChange={(value) => editor?.chain().focus().setColor(value).run()} /></div>
-      <div className="mr-editor-colour"><ColorField label={labels.highlight} value="#fff29a" onChange={(value) => editor?.chain().focus().toggleHighlight({ color: value }).run()} /></div>
+      <div className="mr-editor-colour"><ColorField variant="text" disabled={disabled || !editor} label={labels.textColour} value={toHex(editor?.getAttributes('textStyle').color, '#202124')} onChange={(value) => editor?.chain().focus().setColor(value).run()} /></div>
+      <div className="mr-editor-colour"><ColorField variant="highlight" disabled={disabled || !editor} label={labels.highlight} value={toHex(editor?.getAttributes('highlight').color, '#fff29a')} onChange={(value) => editor?.chain().focus().setHighlight({ color: value }).run()} /></div>
     </div>
     <EditorContent editor={editor} />
     {linkOpen ? <Dialog
