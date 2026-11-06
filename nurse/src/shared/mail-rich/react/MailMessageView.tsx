@@ -26,29 +26,38 @@ export function MailMessageView({
   const [remoteImagesEnabled, setRemoteImagesEnabled] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const notes = message.render_notes ?? {};
-  const renderWarning = Boolean(
-    notes.truncated || notes.depth_exceeded || notes.failed || notes.removed_tags,
-  );
+  const hasRichBody = Boolean(message.body_html);
+  const showImagesStrip = Boolean(message.has_remote_images && showRemoteImages && !remoteImagesEnabled);
+  const hasMore = hasRichBody || Boolean(notes.signed) || Boolean(message.can_download_original && onDownloadOriginal);
   return (
     <article className="mr-message">
-      {message.has_remote_images ? (
-        <kit.Notice tone="warning">
-          <span>{labels.remoteImagesBlocked}</span>
-          {showRemoteImages ? (
-            <kit.Button variant="quiet" onClick={() => { setRemoteImagesEnabled(true); showRemoteImages(message); }}>{labels.showImages}</kit.Button>
+      {showImagesStrip || hasMore ? (
+        <div className="mr-message-bar">
+          {showImagesStrip ? (
+            <div className="mr-strip" role="status">
+              <span>{labels.remoteImagesBlocked}</span>
+              <kit.Button variant="quiet" onClick={() => { setRemoteImagesEnabled(true); showRemoteImages?.(message); }}>{labels.showImages}</kit.Button>
+            </div>
+          ) : <span />}
+          {hasMore ? (
+            <details className="mr-more">
+              <summary aria-label={labels.moreOptions} title={labels.moreOptions}><span aria-hidden="true">⋯</span></summary>
+              <div className="mr-more-panel">
+                {hasRichBody ? (
+                  <div className="mr-message-toggle" role="group" aria-label={labels.formatted}>
+                    <kit.ToolbarButton label={labels.formatted} pressed={formatted} onClick={() => setFormatted(true)}>{labels.formatted}</kit.ToolbarButton>
+                    <kit.ToolbarButton label={labels.plainText} pressed={!formatted} onClick={() => setFormatted(false)}>{labels.plainText}</kit.ToolbarButton>
+                  </div>
+                ) : null}
+                {notes.signed ? <p className="mr-more-note">{labels.signedMessage}</p> : null}
+                {message.can_download_original && onDownloadOriginal ? (
+                  <kit.Button variant="quiet" onClick={onDownloadOriginal}>{labels.downloadOriginal}</kit.Button>
+                ) : null}
+              </div>
+            </details>
           ) : null}
-        </kit.Notice>
+        </div>
       ) : null}
-      {renderWarning ? <kit.Notice tone="warning">{labels.renderingNotice}</kit.Notice> : null}
-      {notes.signed ? <kit.Notice tone="info">{labels.signedMessage}</kit.Notice> : null}
-      <div className="mr-message-toggle" role="group" aria-label={labels.formatted}>
-        <kit.ToolbarButton label={labels.formatted} pressed={formatted} onClick={() => setFormatted(true)}>
-          {labels.formatted}
-        </kit.ToolbarButton>
-        <kit.ToolbarButton label={labels.plainText} pressed={!formatted} onClick={() => setFormatted(false)}>
-          {labels.plainText}
-        </kit.ToolbarButton>
-      </div>
       {formatted && message.body_html ? (
         <SafeHtml html={message.body_html} className="mr-paper" onExternalLink={onExternalLink} allowRemoteImages={remoteImagesEnabled} />
       ) : (
@@ -68,9 +77,8 @@ export function MailMessageView({
           : allDelivered ? labels.delivered
           : delayed || message.delivery.state === 'deferred' ? labels.deferred
           : message.delivery.state === 'sent' ? labels.sent : message.delivery.state;
-        return <section className="mr-delivery" aria-label={labels.delivery} aria-live="polite">
-          <h3 className="mr-section-title">{labels.delivery}</h3>
-          <p><strong>{status}</strong>{failures.length && recipientEvents.some((item) => item.event === 'delivered') ? ' — Some recipients did not accept the message.' : ''}{message.delivery.reason ? ` — ${message.delivery.reason}` : ''}</p>
+        return <section className="mr-delivery" aria-label={labels.delivery} aria-live="polite" data-attention={failures.length || message.delivery.state === 'failed' || message.delivery.state === 'deferred' || delayed ? 'true' : undefined}>
+          <p><span className="mr-delivery-label">{labels.delivery}</span> <strong>{status}</strong>{failures.length && recipientEvents.some((item) => item.event === 'delivered') ? ' — Some recipients did not accept the message.' : ''}{message.delivery.reason ? ` — ${message.delivery.reason}` : ''}</p>
           {message.delivery.detail ? <p className="mr-delivery-error"><strong>{labels.deliveryError}:</strong> <code>{message.delivery.detail}</code></p> : null}
           {message.delivery.attempts || message.delivery.next_attempt_at ? <p className="mr-delivery-meta">
             {message.delivery.attempts ? `${labels.attemptsLabel}: ${message.delivery.attempts}` : ''}
@@ -78,14 +86,9 @@ export function MailMessageView({
             {message.delivery.next_attempt_at ? `${labels.nextTry}: ${new Date(message.delivery.next_attempt_at).toLocaleString()}` : ''}
           </p> : null}
           {message.delivery.can_retry && onRetryDelivery ? <kit.Button variant="quiet" disabled={retrying} onClick={async () => { setRetrying(true); try { await onRetryDelivery(); } finally { setRetrying(false); } }}>{retrying ? labels.retrying : labels.retryNow}</kit.Button> : null}
-          {recipientEvents.length ? <ul>{recipientEvents.map((recipient) => <li key={`${recipient.address}:${recipient.event}`}>{recipient.address}: {recipient.event.replace(/_/g, ' ')}{recipient.at ? ` · ${new Date(recipient.at).toLocaleString()}` : ''}</li>)}</ul> : null}
+          {recipientEvents.length ? <details className="mr-recipients"><summary>{labels.to} ({recipientEvents.length})</summary><ul>{recipientEvents.map((recipient) => <li key={`${recipient.address}:${recipient.event}`}>{recipient.address}: {recipient.event.replace(/_/g, ' ')}{recipient.at ? ` · ${new Date(recipient.at).toLocaleString()}` : ''}</li>)}</ul></details> : null}
         </section>;
       })() : null}
-      {message.can_download_original && onDownloadOriginal ? (
-        <div className="mr-original-download">
-          <kit.Button variant="quiet" onClick={onDownloadOriginal}>{labels.downloadOriginal}</kit.Button>
-        </div>
-      ) : null}
     </article>
   );
 }

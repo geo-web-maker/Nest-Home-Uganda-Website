@@ -29,6 +29,7 @@ import { AppShell } from './AppShell';
 import { NurseRoutes } from './routes';
 import { MailScreen } from '../features/mail/MailScreen';
 import { LoginScreen } from '../screens/LoginScreen';
+import { SetPasswordScreen } from '../screens/SetPasswordScreen';
 import { Onboarding } from '../screens/Onboarding';
 import { TodayScreen } from '../screens/TodayScreen';
 import { VisitDetail } from '../screens/VisitDetail';
@@ -796,6 +797,7 @@ function NurseWorkspace() {
   const requiredPhotoMissing = Boolean(actionVisit && checkoutPhotoRequirementMissing(requiredPhotoMode, checkoutPhotoTypes));
   const canAddRequiredPhoto = Boolean(photosEnabled && actionVisit?.photo_rules?.allowed);
   const views = {
+    setPassword: <SetPasswordScreen />,
     login: <LoginScreen identifier={identifier} password={password} busy={busy} online={online} errorMessage={loginError} onIdentifier={(value) => { setIdentifier(value); setLoginError(''); }} onPassword={(value) => { setPassword(value); setLoginError(''); }} onSubmit={signIn} />,
     today: <TodayScreen visits={visits} clients={clients} adhocAllowed={adhocAllowed} adhocOpen={adhocOpen} adhocClientId={adhocClientId} photosEnabled={photosEnabled} pendingPhotoCount={pendingPhotoCount} loading={busy} displayName={fieldProfile?.display_name} staffNumber={fieldProfile?.staff_number} onAdhocOpen={() => setAdhocOpen((open) => !open)} onAdhocClient={setAdhocClientId} onStartAdhoc={startAdhocVisit} onSync={() => void sync()} onArrive={(visit) => requestVisitAction(visit, 'check_in')} onLeave={(visit) => requestVisitAction(visit, 'check_out')} onNote={openNote} onPhoto={openPhoto} />,
     onboarding: <Onboarding accepted={locationDisclosureAccepted} onAccept={acceptLocationDisclosure} onContinue={continueOnboarding} onEnableNotifications={() => void enableReminders()} showNotifications={Capacitor.isNativePlatform()} notificationsEnabled={visitRemindersEnabled} />,

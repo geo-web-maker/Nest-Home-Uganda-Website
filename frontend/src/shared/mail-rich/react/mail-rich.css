@@ -6,7 +6,15 @@
 /* Email HTML is written for a light page and carries its own colours, so quoted mail sits on the same light surface as the message body, in light and dark app themes. */
 .mr-quoted { color: #1a1a1a; background: #fff; color-scheme: light; margin-top: var(--mr-gap, 12px); border-left: 3px solid var(--mr-line, #ddd); padding: var(--mr-gap, 12px); border-radius: var(--mr-radius, 8px); overflow-wrap: anywhere; }
 .mr-plain-body { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
-.mr-message-toggle { display: flex; gap: var(--mr-gap, 12px); margin-block: var(--mr-gap, 12px); }
+.mr-message-toggle { display: flex; gap: 8px; }
+.mr-message-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; position: relative; min-height: 32px; }
+.mr-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: .85rem; color: var(--mr-muted, #666); }
+.mr-more { margin-inline-start: auto; }
+.mr-more > summary { list-style: none; cursor: pointer; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 999px; font-size: 1.25rem; line-height: 1; color: var(--mr-muted, #666); user-select: none; }
+.mr-more > summary::-webkit-details-marker { display: none; }
+.mr-more > summary:hover, .mr-more[open] > summary { background: color-mix(in srgb, currentColor 10%, transparent); }
+.mr-more-panel { position: absolute; inset-inline-end: 0; top: 36px; z-index: 5; display: grid; gap: 10px; min-width: 220px; padding: 12px; border: 1px solid var(--mr-line, #ddd); border-radius: 12px; background: var(--surf, Canvas); color: var(--mr-fg); box-shadow: 0 8px 24px rgba(0,0,0,.14); }
+.mr-more-note { margin: 0; font-size: .85rem; color: var(--mr-muted, #666); }
 .mr-section-title { font-size: 1rem; }
 .mr-attachment-list { list-style: none; margin: 0; padding: 0; }
 .mr-attachment { display: flex; align-items: center; gap: var(--mr-gap, 12px); padding: 8px 0; border-bottom: 1px solid var(--mr-line, #ddd); }
@@ -14,7 +22,6 @@
 .mr-attachment-copy { display: grid; flex: 1; min-width: 0; }
 .mr-attachment-copy strong { overflow-wrap: anywhere; }
 .mr-attachment-copy small { color: var(--mr-muted, #666); }
-.mr-original-download { margin-top: var(--mr-gap, 12px); }
 
 .mr-editor { display: grid; gap: .75rem; min-width: 0; }
 .mr-editor-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; padding: .25rem .4rem; border: 1px solid var(--mail-border, #d8dde4); border-radius: .65rem; background: var(--mail-toolbar-bg, #f7f8fa); }
@@ -60,7 +67,12 @@
 .mr-send-confirm dd { margin: 0; }
 .mr-confirm-overlay { position: fixed; inset: 0; z-index: 10010; display: grid; align-items: center; padding: 1rem; overflow-y: auto; background: rgb(0 0 0 / 42%); }
 .mr-send-confirm :focus-visible { outline: 2px solid var(--mail-focus, #2563eb); outline-offset: 2px; }
-.mr-delivery { margin-top: 1rem; padding: .75rem; border: 1px solid var(--mr-line, #ddd); border-radius: .65rem; }
+.mr-delivery { margin-top: .75rem; font-size: .9rem; color: var(--mr-muted, #666); }
+.mr-delivery p { margin: .15rem 0; }
+.mr-delivery strong { color: var(--mr-fg); }
+.mr-delivery[data-attention="true"] { padding: .6rem .75rem; border: 1px solid var(--mr-line, #ddd); border-radius: .65rem; }
+.mr-delivery-label::after { content: ':'; }
+.mr-recipients > summary { cursor: pointer; font-size: .85rem; padding: 4px 0; }
 .mr-delivery ul { margin-block: .5rem 0; padding-inline-start: 1.25rem; overflow-wrap: anywhere; }
 .mr-message { min-width: 0; overflow-wrap: anywhere; }
 

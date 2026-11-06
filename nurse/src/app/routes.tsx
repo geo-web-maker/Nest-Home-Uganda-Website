@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 
 export type NurseRouteViews = {
   login: ReactNode;
+  setPassword: ReactNode;
   today: ReactNode;
   onboarding: ReactNode;
   history: ReactNode;
@@ -21,6 +22,7 @@ function VisitRoute({ render }: { render: (visitId: string) => ReactNode }) {
 /** Central route table for browser and Capacitor navigation. */
 export function NurseRoutes({ views, authenticated }: { views: NurseRouteViews; authenticated: boolean }) {
   return <Routes>
+    <Route path="/set-password" element={views.setPassword} />
     <Route path="/" element={authenticated ? views.today : views.login} />
     <Route path="/onboarding" element={authenticated ? views.onboarding : views.login} />
     <Route path="/history" element={authenticated ? views.history : views.login} />
