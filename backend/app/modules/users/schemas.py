@@ -24,6 +24,9 @@ class AdminUserOut(BaseModel):
     reach: str = "all"
 
 
+Delivery = Literal["email", "sms", "temp_password"]
+
+
 class UserInvite(BaseModel):
     """An invite never creates a superadmin: that flag is changed by hand, by a superadmin."""
 
@@ -33,6 +36,20 @@ class UserInvite(BaseModel):
     preset: Literal["nurse", "supervisor", "admin", "executive", "super_admin"] | None = None
     kind: Literal["staff", "nurse", "supervisor", "admin", "executive"] = "staff"
     reach: Literal["own", "team", "all"] = "all"
+    phone: Clean | None = Field(default=None, max_length=32)
+    # How the person is told: emailed link, texted link, and/or a temporary password shown to you.
+    delivery: list[Delivery] = Field(default_factory=lambda: ["email"], min_length=1, max_length=3)
+
+
+class ResetIn(BaseModel):
+    delivery: list[Delivery] = Field(default_factory=lambda: ["email"], min_length=1, max_length=3)
+
+
+class InviteOut(AdminUserOut):
+    """The temporary password is returned once, here, and never stored in readable form."""
+
+    temp_password: str | None = None
+    delivered: dict[str, str] = Field(default_factory=dict)
 
 
 class UserUpdate(BaseModel):
@@ -51,3 +68,8 @@ class SetPasswordIn(BaseModel):
 
 class Done(BaseModel):
     status: str
+
+
+class ResetOut(Done):
+    temp_password: str | None = None
+    delivered: dict[str, str] = Field(default_factory=dict)

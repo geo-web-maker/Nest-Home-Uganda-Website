@@ -338,18 +338,18 @@ async def list_shared(principal: Principal = Depends(require_scopes("mail:shared
 async def set_member(mailbox_id: str,user_id: str,body: MemberBody,principal: Principal=Depends(require_scopes("mail:shared:manage")), mail_totp: str | None = Cookie(default=None)):
     await _require_sensitive_totp(principal,mail_totp,"mail:shared:manage")
     pool=mail_db.get_pool()
-    async with pool.acquire() as conn:
+    async with pool.acquire() as conn, conn.transaction():
         await conn.execute("INSERT INTO mailbox_member(mailbox_id,user_id,role,added_by) SELECT id,$2,$3,$4 FROM mailbox WHERE id=$1 AND kind='shared' ON CONFLICT(mailbox_id,user_id) DO UPDATE SET role=EXCLUDED.role,added_by=EXCLUDED.added_by",mailbox_id,user_id,body.role,principal.user_id)
-        await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id,detail) VALUES($1,'mail.member.add',$2,jsonb_build_object('user_id',$3,'role',$4))",principal.user_id,mailbox_id,user_id,body.role)
+        await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id,detail) VALUES($1,'mail.member.add',$2,jsonb_build_object('user_id',$3::text,'role',$4::text))",principal.user_id,mailbox_id,user_id,body.role)
     return {"updated":True}
 
 @router.delete("/shared/{mailbox_id}/members/{user_id}")
 async def remove_member(mailbox_id: str,user_id: str,principal: Principal=Depends(require_scopes("mail:shared:manage")), mail_totp: str | None = Cookie(default=None)):
     await _require_sensitive_totp(principal,mail_totp,"mail:shared:manage")
     pool=mail_db.get_pool()
-    async with pool.acquire() as conn:
+    async with pool.acquire() as conn, conn.transaction():
         await conn.execute("DELETE FROM mailbox_member WHERE mailbox_id=$1 AND user_id=$2",mailbox_id,user_id)
-        await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id,detail) VALUES($1,'mail.member.remove',$2,jsonb_build_object('user_id',$3))",principal.user_id,mailbox_id,user_id)
+        await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id,detail) VALUES($1,'mail.member.remove',$2,jsonb_build_object('user_id',$3::text))",principal.user_id,mailbox_id,user_id)
     return {"removed":True}
 
 @router.post("/shared/{mailbox_id}/close")
@@ -628,7 +628,7 @@ async def patch_shared(mailbox_id: str,body: SharedPatchBody,principal: Principa
                 if not new_local_part: raise Forbidden("Shared mailbox address is invalid.")
                 await conn.execute("UPDATE mailbox SET local_part=$2 WHERE id=$1",mailbox_id,new_local_part)
                 await conn.execute("INSERT INTO mailbox_alias(mailbox_id,local_part) VALUES($1,$2)",mailbox_id,row['local_part'])
-            await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id,detail) VALUES($1,'mail.shared.update',$2,jsonb_build_object('alias_added',$3))",principal.user_id,mailbox_id,bool(body.new_local_part))
+            await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id,detail) VALUES($1,'mail.shared.update',$2,jsonb_build_object('alias_added',$3::boolean))",principal.user_id,mailbox_id,bool(body.new_local_part))
     return {"updated":True,"address":f"{new_local_part if body.new_local_part else row['local_part']}@{domain}"}
 
 @router.post("/messages/{mailbox_message_id}/report-spam")

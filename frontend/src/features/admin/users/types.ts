@@ -20,7 +20,15 @@ export type UserInvite = {
   preset?: 'nurse' | 'supervisor' | 'admin' | 'executive' | 'super_admin';
   kind: 'staff' | 'nurse' | 'supervisor' | 'admin' | 'executive';
   reach: 'own' | 'team' | 'all';
+  phone?: string;
+  delivery: Delivery[];
 };
+export type Delivery = 'email' | 'sms' | 'temp_password';
+export type Issued = {
+  temp_password?: string | null;
+  delivered?: Record<string, string>;
+};
+export type AdminUserIssued = AdminUser & Issued;
 export type UserUpdate = {
   scopes?: string[];
   active?: boolean;

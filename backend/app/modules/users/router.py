@@ -9,7 +9,16 @@ from app.core.pagination import Page, PageParams, page_params
 from app.core.rate_limit import client_ip, rate_limit
 from app.core.security import hash_ip
 from app.modules.users import service
-from app.modules.users.schemas import AdminUserOut, Done, SetPasswordIn, UserInvite, UserUpdate
+from app.modules.users.schemas import (
+    AdminUserOut,
+    Done,
+    InviteOut,
+    ResetIn,
+    ResetOut,
+    SetPasswordIn,
+    UserInvite,
+    UserUpdate,
+)
 
 public_router = APIRouter(prefix="/auth", tags=["auth"])
 admin_router = APIRouter(prefix="/admin/users", tags=["admin-users"])
@@ -47,8 +56,8 @@ async def admin_list(
     return await service.list_users(page, q)
 
 
-@admin_router.post("", response_model=AdminUserOut, status_code=201)
-async def admin_invite(body: UserInvite, principal: CanWrite, request: Request) -> AdminUserOut:
+@admin_router.post("", response_model=InviteOut, status_code=201)
+async def admin_invite(body: UserInvite, principal: CanWrite, request: Request) -> InviteOut:
     return await service.invite(principal, body, hash_ip(client_ip(request)))
 
 
@@ -59,9 +68,11 @@ async def admin_update(
     return await service.update(principal, user_id, body, hash_ip(client_ip(request)))
 
 
-@admin_router.post("/{user_id}/reset-password", response_model=Done)
-async def admin_reset_password(user_id: str, principal: CanWrite, request: Request) -> Done:
-    return await service.reset_password(principal, user_id, hash_ip(client_ip(request)))
+@admin_router.post("/{user_id}/reset-password", response_model=ResetOut)
+async def admin_reset_password(
+    user_id: str, principal: CanWrite, request: Request, body: ResetIn | None = None
+) -> ResetOut:
+    return await service.reset_password(principal, user_id, hash_ip(client_ip(request)), body)
 
 
 @admin_router.post("/{user_id}/sign-out", response_model=Done)

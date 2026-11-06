@@ -53,7 +53,7 @@ export function CreateNurseSheet({ onClose, onCreated }: { onClose: () => void; 
         <Field label="Email address" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required requiredLabel="required" autoComplete="off" />
         <Field label="Phone number" type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required requiredLabel="required" minLength={9} maxLength={24} autoComplete="off" />
         <Field label="Staff number" value={staffNumber} onChange={(event) => setStaffNumber(event.target.value)} required requiredLabel="required" minLength={2} maxLength={40} />
-        <Field label="Password (at least 8 characters)" type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} required requiredLabel="required" minLength={12} maxLength={200} autoComplete="new-password" />
+        <Field peek={false} label="Password (at least 8 characters)" type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} required requiredLabel="required" minLength={12} maxLength={200} autoComplete="new-password" />
         <Checkbox className="care-check" label="Show password" checked={showPassword} onChange={(event) => setShowPassword(event.target.checked)} />
         <Field kind="select" label="Supervisor (optional)" value={supervisorId} onChange={(event) => setSupervisorId(event.target.value)}>
           <option value="">No supervisor</option>

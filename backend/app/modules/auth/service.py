@@ -84,7 +84,8 @@ async def login(
     if user.locked_until and user.locked_until > now:
         raise RateLimited(int((user.locked_until - now).total_seconds()) + 1)
 
-    if not verify_password(password, user.password_hash) or not user.is_active:
+    temp_expired = bool(user.temp_password_expires_at and user.temp_password_expires_at <= now)
+    if not verify_password(password, user.password_hash) or not user.is_active or temp_expired:
         if user.last_failed_at and now - user.last_failed_at > FAILURE_WINDOW:
             user.failed_logins = 0
         user.failed_logins += 1

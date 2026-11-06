@@ -18,6 +18,7 @@ function fieldIsValid(field: FormField, value: string): boolean {
 export function DialogHost() {
   const [queue, setQueue] = useState<DialogRequest[]>([]);
   const [text, setText] = useState('');
+  const [reveal, setReveal] = useState(false);
   const [values, setValues] = useState<Record<string, string>>({});
   const current = queue[0];
 
@@ -92,7 +93,7 @@ export function DialogHost() {
           ) : (
             <input
               autoFocus
-              type={secret ? 'password' : 'text'}
+              type={secret && !reveal ? 'password' : 'text'}
               autoComplete={secret ? 'new-password' : 'off'}
               aria-label={current.message}
               placeholder={placeholder}
@@ -101,6 +102,11 @@ export function DialogHost() {
               style={fieldStyle}
             />
           )}
+          {secret ? (
+            <Button type="button" variant="outline" size="compact" aria-pressed={reveal} onClick={() => setReveal((v) => !v)}>
+              {reveal ? 'Hide' : 'Show'}
+            </Button>
+          ) : null}
           {minLength > 0 && !valid ? <p style={hintStyle}>At least {minLength} characters ({text.trim().length} so far).</p> : null}
           <ButtonGroup>
             <Button type="submit" disabled={!valid}>{confirmLabel}</Button>
