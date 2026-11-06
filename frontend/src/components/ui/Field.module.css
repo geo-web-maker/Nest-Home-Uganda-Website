@@ -74,3 +74,32 @@
     transform: translateY(-4px);
   }
 }
+
+.peekWrap {
+  position: relative;
+}
+
+.withPeek {
+  padding-right: 72px;
+}
+
+.peekButton {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  min-height: 36px;
+  min-width: 56px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font: 600 0.85rem var(--sans);
+  cursor: pointer;
+}
+
+.peekButton:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}

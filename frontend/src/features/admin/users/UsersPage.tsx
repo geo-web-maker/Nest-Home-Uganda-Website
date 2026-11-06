@@ -13,7 +13,21 @@ import { Checkbox } from '../../../components/ui/Checkbox';
 import { apiClient } from '../../../lib/api/client';
 import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
-import type { AdminUser, AdminUserPage, ScopeInfo, UserInvite, UserUpdate } from './types';
+import type {
+  AdminUser,
+  AdminUserIssued,
+  AdminUserPage,
+  Delivery,
+  Issued,
+  ScopeInfo,
+  UserInvite,
+  UserUpdate,
+} from './types';
+
+const DELIVERIES: Delivery[] = ['email', 'sms', 'temp_password'];
+function toggle(list: Delivery[], item: Delivery, on: boolean): Delivery[] {
+  return on ? [...list.filter((d) => d !== item), item] : list.filter((d) => d !== item);
+}
 import styles from './UsersPage.module.css';
 function listItems<T>(data: T[] | { items: T[] } | undefined): T[] {
   return Array.isArray(data) ? data : (data?.items ?? []);
@@ -26,6 +40,12 @@ export function UsersPage() {
   const [openInvite, setOpenInvite] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [delivery, setDelivery] = useState<Delivery[]>(['email']);
+  const [issued, setIssued] = useState<({ name: string } & Issued) | null>(null);
+  const [resetting, setResetting] = useState<AdminUser | null>(null);
+  const [resetDelivery, setResetDelivery] = useState<Delivery[]>(['email']);
+  const [copied, setCopied] = useState(false);
   const [chosen, setChosen] = useState<string[]>([]);
   const [invitePreset, setInvitePreset] = useState('nurse');
   const [inviteKind, setInviteKind] = useState<
@@ -67,11 +87,15 @@ export function UsersPage() {
     return [...chosenScopes].sort().join('|') === [...expected].sort().join('|');
   };
   const invite = useMutation({
-    mutationFn: (body: UserInvite) => apiClient.post<AdminUser>('/admin/users', body),
-    onSuccess: async () => {
+    mutationFn: (body: UserInvite) => apiClient.post<AdminUserIssued>('/admin/users', body),
+    onSuccess: async (created) => {
+      setIssued({ name: created.name, temp_password: created.temp_password, delivered: created.delivered });
+      setCopied(false);
       setOpenInvite(false);
       setName('');
       setEmail('');
+      setPhone('');
+      setDelivery(['email']);
       setChosen([]);
       setInviteKind('nurse');
       setInviteReach('own');
@@ -88,9 +112,14 @@ export function UsersPage() {
     },
   });
   const reset = useMutation({
-    mutationFn: (id: string) =>
-      apiClient.post(`/admin/users/${encodeURIComponent(id)}/reset-password`, {}),
-    onSuccess: async () => {
+    mutationFn: ({ id, channels }: { id: string; channels: Delivery[] }) =>
+      apiClient.post<Issued>(`/admin/users/${encodeURIComponent(id)}/reset-password`, {
+        delivery: channels,
+      }),
+    onSuccess: async (result) => {
+      setIssued({ name: resetting?.name ?? '', ...result });
+      setCopied(false);
+      setResetting(null);
       await client.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
   });
@@ -156,7 +185,11 @@ export function UsersPage() {
           <Button
             variant="outline"
             disabled={!canWrite || reset.isPending}
-            onClick={() => reset.mutate(item.id)}
+            onClick={() => {
+              setResetting(item);
+              setResetDelivery(['email']);
+              reset.reset();
+            }}
           >
             {t('users.resetPassword')}
           </Button>
@@ -230,6 +263,70 @@ export function UsersPage() {
           }}
         />
       )}
+      {issued && (
+        <section className={styles.editor} aria-live="polite">
+          <h2>{t('users.issuedHeading', { name: issued.name })}</h2>
+          {Object.entries(issued.delivered ?? {}).map(([channel, state]) => (
+            <p key={channel} role={state === 'failed' ? 'alert' : undefined}>
+              {t(`users.delivery.${channel}`)}: {t(`users.outcome.${state}`)}
+            </p>
+          ))}
+          {issued.temp_password ? (
+            <>
+              <Field
+                label={t('users.issuedTemp')}
+                value={issued.temp_password}
+                readOnly
+                onFocus={(event) => event.currentTarget.select()}
+              />
+              <p>{t('users.issuedTempNote')}</p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(issued.temp_password ?? '').then(() => setCopied(true));
+                }}
+              >
+                {copied ? t('users.copied') : t('users.copy')}
+              </Button>
+            </>
+          ) : null}
+          <ButtonGroup>
+            <Button type="button" onClick={() => setIssued(null)}>
+              {t('users.dismiss')}
+            </Button>
+          </ButtonGroup>
+        </section>
+      )}
+      {resetting && canWrite && (
+        <section className={styles.editor}>
+          <h2>{t('users.resetHeading', { name: resetting.name })}</h2>
+          <fieldset>
+            <legend>{t('users.deliveryLegend')}</legend>
+            {DELIVERIES.map((d) => (
+              <Checkbox
+                key={d}
+                label={t(`users.delivery.${d}`)}
+                checked={resetDelivery.includes(d)}
+                onChange={(event) => setResetDelivery((old) => toggle(old, d, event.target.checked))}
+              />
+            ))}
+          </fieldset>
+          {reset.isError && <p role="alert">{reset.error instanceof Error && reset.error.message ? reset.error.message : t('users.updateError')}</p>}
+          <ButtonGroup>
+            <Button
+              type="button"
+              disabled={reset.isPending || resetDelivery.length === 0}
+              onClick={() => reset.mutate({ id: resetting.id, channels: resetDelivery })}
+            >
+              {t('users.resetSend')}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setResetting(null)}>
+              {t('common.cancel')}
+            </Button>
+          </ButtonGroup>
+        </section>
+      )}
       {openInvite && canWrite && (
         <section className={styles.editor}>
           <h2>{t('users.inviteHeading')}</h2>
@@ -247,6 +344,8 @@ export function UsersPage() {
                   : {}),
                 kind: inviteKind,
                 reach: inviteReach,
+                delivery,
+                ...(phone.trim() ? { phone: phone.trim() } : {}),
               });
             }}
           >
@@ -266,6 +365,26 @@ export function UsersPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
+            <Field
+              label={t('users.phone')}
+              type="tel"
+              inputMode="tel"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              maxLength={32}
+              autoComplete="off"
+            />
+            <fieldset className={styles.fullRow}>
+              <legend>{t('users.deliveryLegend')}</legend>
+              {DELIVERIES.map((d) => (
+                <Checkbox
+                  key={d}
+                  label={t(`users.delivery.${d}`)}
+                  checked={delivery.includes(d)}
+                  onChange={(event) => setDelivery((old) => toggle(old, d, event.target.checked))}
+                />
+              ))}
+            </fieldset>
             <Field kind="select" label="Account type"
                 value={inviteKind}
                 onChange={(event) => setInviteKind(event.target.value as typeof inviteKind)}
@@ -349,9 +468,16 @@ export function UsersPage() {
                 </div>
               ))}
             </fieldset>
-            {invite.isError && <p role="alert">{t('users.inviteError')}</p>}
+            {delivery.length === 0 && <p role="alert">{t('users.deliveryNone')}</p>}
+            {invite.isError && <p role="alert">{invite.error instanceof Error && invite.error.message ? invite.error.message : t('users.inviteError')}</p>}
             <ButtonGroup className={styles.fullRow}>
-              <Button type="submit" disabled={invite.isPending || !name.trim() || !email.trim()}>
+              <Button type="submit" disabled={
+                  invite.isPending ||
+                  !name.trim() ||
+                  !email.trim() ||
+                  delivery.length === 0 ||
+                  (delivery.includes('sms') && !phone.trim())
+                }>
                 {t('users.sendInvite')}
               </Button>
               <Button type="button" variant="outline" onClick={() => setOpenInvite(false)}>

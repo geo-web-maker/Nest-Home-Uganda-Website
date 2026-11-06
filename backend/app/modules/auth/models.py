@@ -23,6 +23,8 @@ class User(TimestampedDocument):
     kind: str = "staff"
     reach: str = "all"
     phone_e164: str | None = None
+    # Set while a staff-issued temporary password is the only way in; login refuses it after this.
+    temp_password_expires_at: datetime | None = None
 
     class Settings:
         name = "users"

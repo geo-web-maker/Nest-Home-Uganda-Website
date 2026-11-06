@@ -1,10 +1,11 @@
 """User management rules (BUILDER_INSTRUCTIONS 12.5). Audit calls live here.
 
 Access rules come from `auth.service` (`validate_scope_change`, `ensure_not_last_superadmin`).
-Invites and password resets email a one-time link; no password is ever chosen or shown by staff.
+Invites and resets send a one-time link by email and/or SMS; staff may also issue a temporary password, shown once and expiring.
 """
 
 import logging
+import secrets
 from datetime import UTC, datetime, timedelta
 from html import escape
 
@@ -23,7 +24,15 @@ from app.modules.auth.models import PasswordReset, User
 from app.modules.auth.scopes import SCOPE_PRESETS
 from app.modules.notifications.providers import get_email_provider
 from app.modules.users import repository as repo
-from app.modules.users.schemas import AdminUserOut, Done, UserInvite, UserUpdate
+from app.modules.users.schemas import (
+    AdminUserOut,
+    Done,
+    InviteOut,
+    ResetIn,
+    ResetOut,
+    UserInvite,
+    UserUpdate,
+)
 
 log = logging.getLogger("app.users")
 ITEM_TYPE = "user"
@@ -73,7 +82,7 @@ def _link(raw_token: str, *, purpose: str = "reset") -> str:
     return f"{base}/admin/set-password?token={raw_token}&purpose={purpose}"
 
 
-async def _send_link(user: User, raw_token: str, *, invite: bool, minutes: int) -> None:
+async def _send_link(user: User, raw_token: str, *, invite: bool, minutes: int) -> bool:
     link = _link(raw_token, purpose="invite" if invite else "reset")
     days = minutes // 1440
     valid = f"{days} days" if days else f"{minutes} minutes"
@@ -86,9 +95,76 @@ async def _send_link(user: User, raw_token: str, *, invite: bool, minutes: int) 
     )
     try:
         await get_email_provider().send([user.email], subject, html, text)
+        return True
     except Exception:
         # The user exists and a link can be re-issued with "Reset password".
         log.exception("could not send the set-password email")
+        return False
+
+
+_TEMP_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"  # no 0/O/1/l/I
+
+
+def _temp_password() -> str:
+    return "".join(secrets.choice(_TEMP_ALPHABET) for _ in range(14))
+
+
+async def _send_sms_link(user: User, raw_token: str, *, invite: bool, minutes: int) -> bool:
+    from app.modules.notifications.config import load_config
+    from app.modules.notifications.providers import get_sms_provider
+    from app.modules.notifications.service import send_sms
+
+    if not user.phone_e164:
+        return False
+    days = minutes // 1440
+    valid = f"{days} days" if days else f"{minutes} minutes"
+    link = _link(raw_token, purpose="invite" if invite else "reset")
+    text = f"Bloomwell Home Care: {user.name}, set your password here (works once, {valid}): {link}"
+    try:
+        return await send_sms(
+            get_sms_provider(), await load_config(), to=user.phone_e164, text=text,
+            audience="staff", template="user_invite" if invite else "user_reset", enquiry=None,
+        )  # fmt: skip
+    except Exception:
+        log.exception("could not send the set-password SMS")
+        return False
+
+
+async def _deliver(
+    user: User, channels: list[str], *, invite: bool, minutes: int
+) -> tuple[str | None, dict[str, str]]:
+    """Run the chosen channels. Returns the temporary password (shown once) and each outcome."""
+    chosen = set(channels)
+    now = datetime.now(UTC)
+    result: dict[str, str] = {}
+    temp: str | None = None
+    if chosen & {"email", "sms"}:
+        raw = await _issue_link(user, now, minutes, purpose="invite" if invite else "reset")
+        if "email" in chosen:
+            result["email"] = (
+                "sent" if await _send_link(user, raw, invite=invite, minutes=minutes) else "failed"
+            )
+        if "sms" in chosen:
+            ok = await _send_sms_link(user, raw, invite=invite, minutes=minutes)
+            result["sms"] = "sent" if ok else "failed"
+    if "temp_password" in chosen:
+        temp = _temp_password()
+        user.password_hash = hash_password(temp)
+        user.temp_password_expires_at = now + timedelta(minutes=minutes)
+        user.failed_logins = 0
+        user.locked_until = None
+        await user.save()
+        result["temp_password"] = "shown"
+    return temp, result
+
+
+def _require_mobile(user_phone: str | None, channels: list[str]) -> None:
+    from app.core.phone import is_mobile
+
+    if "sms" in channels and not (user_phone and is_mobile(user_phone)):
+        raise ValidationFailed(
+            "Enter a valid mobile number (07...) to send by SMS.", {"phone": "required for SMS"}
+        )
 
 
 async def _issue_link(user: User, now: datetime, minutes: int, *, purpose: str = "reset") -> str:
@@ -110,7 +186,7 @@ async def list_users(page: PageParams, q: str | None) -> Page[AdminUserOut]:
     )
 
 
-async def invite(principal: Principal, body: UserInvite, ip_hash: str | None) -> AdminUserOut:
+async def invite(principal: Principal, body: UserInvite, ip_hash: str | None) -> InviteOut:
     if body.preset and body.scopes:
         raise ValidationFailed(
             "Choose a scope preset or explicit scopes, not both.", {"preset": "ambiguous"}
@@ -126,6 +202,14 @@ async def invite(principal: Principal, body: UserInvite, ip_hash: str | None) ->
         new_is_superadmin=False,
     )
     email = str(body.email).lower()
+    from app.core.phone import normalise_e164
+
+    phone = normalise_e164(body.phone) if body.phone else None
+    if body.phone and phone is None:
+        raise ValidationFailed("That phone number is not valid.", {"phone": "invalid"})
+    _require_mobile(phone, body.delivery)
+    if phone and await auth_repo.user_by_phone(phone) is not None:
+        raise Conflict("A user with this phone number already exists.", {"phone": "already in use"})
     if await auth_repo.user_by_email(email) is not None:
         raise Conflict("A user with this email already exists.", {"email": "already in use"})
     user = User(
@@ -136,6 +220,7 @@ async def invite(principal: Principal, body: UserInvite, ip_hash: str | None) ->
         scopes=sorted(new_scopes),
         kind=body.kind,
         reach=body.reach,
+        phone_e164=phone,
     )
     try:
         await user.insert()
@@ -148,14 +233,12 @@ async def invite(principal: Principal, body: UserInvite, ip_hash: str | None) ->
         await ensure_default_mailbox_if_configured(user)
     except Exception:
         log.warning("default mailbox creation deferred for invited user %s", str(user.id))
-    now = datetime.now(UTC)
-    raw = await _issue_link(user, now, INVITE_DAYS * 1440, purpose="invite")
-    await _send_link(user, raw, invite=True, minutes=INVITE_DAYS * 1440)
+    temp, delivered = await _deliver(user, body.delivery, invite=True, minutes=INVITE_DAYS * 1440)
     await audit.record(
         principal, "user.invite", ITEM_TYPE, str(user.id), user.email,
-        after={"scopes": sorted(user.scopes)}, ip_hash=ip_hash,
+        after={"scopes": sorted(user.scopes), "delivery": sorted(body.delivery)}, ip_hash=ip_hash,
     )  # fmt: skip
-    return to_out(user)
+    return InviteOut(**to_out(user).model_dump(), temp_password=temp, delivered=delivered)
 
 
 async def update(
@@ -225,18 +308,24 @@ async def update(
     return to_out(user)
 
 
-async def reset_password(principal: Principal, user_id: str, ip_hash: str | None) -> Done:
+async def reset_password(
+    principal: Principal, user_id: str, ip_hash: str | None, body: ResetIn | None = None
+) -> ResetOut:
     user = await _get(user_id)
     _guard_superadmin_target(principal, user)
     if not user.is_active:
         raise ValidationFailed("This user is deactivated.", {"user": "inactive"})
-    raw = await _issue_link(user, datetime.now(UTC), RESET_MINUTES, purpose="reset")
+    channels = (body or ResetIn()).delivery
+    _require_mobile(user.phone_e164, channels)
     await auth_service.sign_out_user(user)
-    await _send_link(user, raw, invite=False, minutes=RESET_MINUTES)
+    # A temporary password lasts as long as an invite; a link-only reset keeps its short window.
+    minutes = INVITE_DAYS * 1440 if "temp_password" in channels else RESET_MINUTES
+    temp, delivered = await _deliver(user, channels, invite=False, minutes=minutes)
     await audit.record(
-        principal, "user.reset_password", ITEM_TYPE, str(user.id), user.email, ip_hash=ip_hash
-    )
-    return Done(status="sent")
+        principal, "user.reset_password", ITEM_TYPE, str(user.id), user.email,
+        after={"delivery": sorted(channels)}, ip_hash=ip_hash,
+    )  # fmt: skip
+    return ResetOut(status="sent", temp_password=temp, delivered=delivered)
 
 
 async def sign_out(principal: Principal, user_id: str, ip_hash: str | None) -> Done:
@@ -269,6 +358,7 @@ async def set_password(
     if not await repo.claim_reset(PydanticObjectId(reset.id), now):
         raise bad
     user.password_hash = hash_password(password)
+    user.temp_password_expires_at = None
     if getattr(reset, "purpose", "reset") == "invite":
         user.invite_accepted_at = now
     user.failed_logins = 0

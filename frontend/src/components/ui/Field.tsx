@@ -1,4 +1,4 @@
-import { forwardRef, useId } from 'react';
+import { forwardRef, useId, useState } from 'react';
 import type {
   ForwardedRef,
   InputHTMLAttributes,
@@ -23,6 +23,8 @@ type BaseProps = {
   /** Error message. Shown below the control and linked with aria-describedby. */
   error?: string;
   className?: string;
+  /** Password fields get a Show/Hide button by default. Pass false when the screen has its own. */
+  peek?: boolean;
 } & RequiredProps;
 
 type InputFieldProps = BaseProps & { kind?: 'input' } & Omit<
@@ -50,6 +52,8 @@ export const Field = forwardRef<FieldElement, FieldProps>(function Field(props, 
   const id = props.id ?? autoId;
   const errorId = `${id}-error`;
   const { label, error, className, required, requiredLabel } = props;
+  const [revealed, setRevealed] = useState(false);
+  const canPeek = props.kind !== 'select' && props.kind !== 'textarea' && props.type === 'password' && props.peek !== false;
 
   const shared = {
     id,
@@ -68,6 +72,7 @@ export const Field = forwardRef<FieldElement, FieldProps>(function Field(props, 
       className: _className,
       required: _required,
       requiredLabel: _requiredLabel,
+      peek: _peek,
       children,
       ...rest
     } = props;
@@ -89,6 +94,7 @@ export const Field = forwardRef<FieldElement, FieldProps>(function Field(props, 
       className: _className,
       required: _required,
       requiredLabel: _requiredLabel,
+      peek: _peek,
       ...rest
     } = props;
     control = (
@@ -107,15 +113,32 @@ export const Field = forwardRef<FieldElement, FieldProps>(function Field(props, 
       className: _className,
       required: _required,
       requiredLabel: _requiredLabel,
+      peek: _peek,
       ...rest
     } = props;
-    control = (
+    const input = (
       <input
         ref={ref as ForwardedRef<HTMLInputElement>}
         {...rest}
+        type={canPeek && revealed ? 'text' : rest.type}
         {...shared}
-        className={controlClass()}
+        className={controlClass(canPeek ? styles.withPeek : undefined)}
       />
+    );
+    control = canPeek ? (
+      <div className={styles.peekWrap}>
+        {input}
+        <button
+          type="button"
+          className={styles.peekButton}
+          aria-pressed={revealed}
+          onClick={() => setRevealed((v) => !v)}
+        >
+          {revealed ? 'Hide' : 'Show'}
+        </button>
+      </div>
+    ) : (
+      input
     );
   }
 
