@@ -52,7 +52,6 @@ export function JobsPage() {
     <>
       <PageHeader
         title={t('nav.careers')}
-        subtitle={t('jobs.subtitle')}
         actions={
           canWrite ? <Button href="/admin/careers/new">{t('jobs.newJob')}</Button> : undefined
         }
