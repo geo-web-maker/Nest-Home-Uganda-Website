@@ -1403,14 +1403,18 @@ async def suggest_contacts(user_id: str, q: str | None, limit: int | None = None
         if bool(await get_value("mail.contacts_directory_enabled")) and needle:
             domain = await _domain()
             rows = await conn.fetch(
-                """SELECT b.local_part, b.display_name FROM mailbox b
+                """SELECT b.local_part, b.display_name, b.kind, b.owner_user_id FROM mailbox b
                     WHERE b.state='open' AND b.local_part <> 'no-reply'
                       AND (b.local_part ILIKE $1 ESCAPE '\\' OR coalesce(b.display_name,'') ILIKE $1 ESCAPE '\\')
                     ORDER BY b.display_name NULLS LAST, b.local_part LIMIT $2""",
                 like, cap,
             )
             taken = {item["address"] for item in recent}
+            from app.modules.mail.mailbox_admin import existing_user_ids
+            alive = await existing_user_ids([r["owner_user_id"] for r in rows if r["kind"] == "personal" and r["owner_user_id"]])
             for r in rows:
+                if r["kind"] == "personal" and r["owner_user_id"] not in alive:
+                    continue
                 address = f"{r['local_part']}@{domain}".lower()
                 if address not in taken:
                     directory.append({"address": address, "name": r["display_name"] or None, "source": "directory"})

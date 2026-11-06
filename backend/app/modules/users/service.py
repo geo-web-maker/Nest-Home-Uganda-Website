@@ -394,6 +394,8 @@ async def delete(principal: Principal, user_id: str, ip_hash: str | None) -> Non
     await RefreshToken.find(RefreshToken.user_id == user.id).delete()
     await PasswordReset.find(PasswordReset.user_id == user.id).delete()
     await user.delete()
+    from app.modules.mail.mailbox_admin import release_user_mailboxes
+    await release_user_mailboxes(str(user.id))
     await audit.record(
         principal, "user.delete", ITEM_TYPE, str(user.id), user.email,
         before=_snapshot(user), ip_hash=ip_hash,

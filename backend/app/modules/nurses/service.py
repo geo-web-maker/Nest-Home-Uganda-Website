@@ -256,6 +256,8 @@ async def delete_nurse(actor, user_id: str, ip_hash: str | None = None) -> None:
     await PasswordReset.find(PasswordReset.user_id == user.id).delete()
     await profile.delete()
     await user.delete()
+    from app.modules.mail.mailbox_admin import release_user_mailboxes
+    await release_user_mailboxes(str(user_id))
     await audit.record(
         actor, "nurse.delete", "nurse_profile", user_id, user.name,
         before={"name": user.name, "staff_number": profile.staff_number}, ip_hash=ip_hash,

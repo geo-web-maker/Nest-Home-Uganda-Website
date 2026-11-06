@@ -2536,6 +2536,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mail/admin/mailboxes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin List Mailboxes */
+        get: operations["admin_list_mailboxes_api_v1_mail_admin_mailboxes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mail/admin/mailboxes/{mailbox_id}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Delete Mailbox */
+        post: operations["admin_delete_mailbox_api_v1_mail_admin_mailboxes__mailbox_id__delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mail/admin/mailboxes/{mailbox_id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Mailbox Preview */
+        get: operations["admin_mailbox_preview_api_v1_mail_admin_mailboxes__mailbox_id__preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mail/admin/mailboxes/{mailbox_id}/reassign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Reassign Mailbox */
+        post: operations["admin_reassign_mailbox_api_v1_mail_admin_mailboxes__mailbox_id__reassign_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mail/admin/mailboxes/{mailbox_id}/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Admin Rename Mailbox */
+        patch: operations["admin_rename_mailbox_api_v1_mail_admin_mailboxes__mailbox_id__rename_patch"];
+        trace?: never;
+    };
     "/api/v1/mail/archive/mailboxes": {
         parameters: {
             query?: never;
@@ -5126,6 +5211,18 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** MailboxDeleteBody */
+        MailboxDeleteBody: {
+            /** Confirm */
+            confirm: string;
+            /** Move To Mailbox Id */
+            move_to_mailbox_id?: string | null;
+            /**
+             * Purge
+             * @default false
+             */
+            purge: boolean;
+        };
         /** MailboxPolicyBody */
         MailboxPolicyBody: {
             /** External Allowed */
@@ -5137,6 +5234,16 @@ export interface components {
             follow_global: boolean;
             /** Sending Suspended */
             sending_suspended?: boolean | null;
+        };
+        /** MailboxReassignBody */
+        MailboxReassignBody: {
+            /** User Id */
+            user_id: string;
+        };
+        /** MailboxRenameBody */
+        MailboxRenameBody: {
+            /** Local Part */
+            local_part: string;
         };
         /** MediaAdminOut */
         MediaAdminOut: {
@@ -12627,6 +12734,181 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    admin_list_mailboxes_api_v1_mail_admin_mailboxes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_delete_mailbox_api_v1_mail_admin_mailboxes__mailbox_id__delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mailbox_id: string;
+            };
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MailboxDeleteBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_mailbox_preview_api_v1_mail_admin_mailboxes__mailbox_id__preview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mailbox_id: string;
+            };
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_reassign_mailbox_api_v1_mail_admin_mailboxes__mailbox_id__reassign_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mailbox_id: string;
+            };
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MailboxReassignBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_rename_mailbox_api_v1_mail_admin_mailboxes__mailbox_id__rename_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mailbox_id: string;
+            };
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MailboxRenameBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
