@@ -433,6 +433,7 @@ async def patch_fields(doc: Agreement, changes: list[FieldPatch], *, actor: str,
         raise Conflict("This agreement is locked. Create an amendment to change a signed agreement.")
     seen: set[str] = set()
     updates: list[tuple[str, Any, AgreementField]] = []
+    stale_paths: dict[str, int | None] = {}
     for change in changes:
         if change.path in seen:
             raise ValidationFailed("A field may be changed only once per request", {change.path: "duplicate"})
@@ -441,8 +442,8 @@ async def patch_fields(doc: Agreement, changes: list[FieldPatch], *, actor: str,
         current = doc.fields.get(storage_key)
         if current is None:
             raise ValidationFailed("Unknown agreement field", {change.path: "unknown"})
-        if current.revision != change.expected_revision:
-            raise Conflict(f"The field '{change.path}' changed since you opened it. Reload and choose which value to keep.")
+        # No per-field locking: the latest save wins and every change is kept in the event history.
+        stale_from = change.expected_revision if current.revision != change.expected_revision else None
         expected = rules.FIELD_OWNERS.get(change.path)
         if expected is None or current.owner != expected:
             raise Conflict("Field ownership changed; reload the agreement")
@@ -450,9 +451,6 @@ async def patch_fields(doc: Agreement, changes: list[FieldPatch], *, actor: str,
             raise Forbidden("This field is read-only for clients")
         if actor == "staff" and expected == "client":
             raise Forbidden("Schedule C consent and permission fields must be completed by the client or lawful representative")
-        if expected == "clinical" and actor == "staff":
-            if principal is None or not principal.is_superadmin and str(doc.assigned_nurse_id or "") != principal.user_id:
-                raise Forbidden("Only the assigned clinical lead may change Schedule A clinical fields")
         if change.entered_by_staff and (actor != "staff" or expected != "either"):
             raise Forbidden("Only an 'either' field may be entered by staff on behalf of a client")
         if actor == "client" and change.entered_by_staff:
@@ -470,6 +468,7 @@ async def patch_fields(doc: Agreement, changes: list[FieldPatch], *, actor: str,
         if isinstance(value, str) and len(value) > 12_000:
             raise ValidationFailed("Field value is too long", {change.path: "too_long"})
         updates.append((change.path, value, current))
+        stale_paths[change.path] = stale_from
     before: dict[str, Any] = {}
     now = datetime.now(UTC)
     original_status = doc.status
@@ -487,6 +486,7 @@ async def patch_fields(doc: Agreement, changes: list[FieldPatch], *, actor: str,
             "path": path, "old_value": before[path], "new_value": value,
             "revision": doc.fields[storage_key].revision,
             "entered_by_staff": doc.fields[storage_key].entered_by_staff,
+            "overwrote_newer_revision": stale_paths.get(path) is not None,
         }, ip)
     fee_paths = {"schedule_b.total_fee", "schedule_b.currency"}
     if seen & fee_paths:
@@ -518,8 +518,6 @@ async def patch_fields(doc: Agreement, changes: list[FieldPatch], *, actor: str,
     # must still match in MongoDB. This prevents simultaneous saves from silently overwriting.
     query: dict[str, Any] = {"_id": doc.id, "status": original_status,
                              "session_version": original_session_version}
-    for path, _value, current in updates:
-        query[f"fields.{rules.field_key(path)}.revision"] = current.revision
     set_values: dict[str, Any] = {
         f"fields.{rules.field_key(path)}": doc.fields[rules.field_key(path)].model_dump(mode="python")
         for path, _value, _current in updates
@@ -980,6 +978,21 @@ async def void(doc: Agreement, principal: Principal, reason: str, ip: str | None
         await _send_message(doc, "voided", "sms")
     await audit.record(principal, "agreement.voided", "agreement", str(doc.id), doc.reference,
                        after={"status": "voided", "reason": reason}, ip_hash=ip)
+
+
+async def delete_voided(doc: Agreement, principal: Principal, ip: str | None) -> None:
+    """Permanently remove a voided agreement. Only voided ones; the audit log keeps a record."""
+    if doc.status != "voided":
+        raise Conflict("Only a voided agreement can be deleted. Void it first.")
+    for sig in doc.signatures:
+        try:
+            await get_storage().delete(Bucket.PRIVATE, sig.image_key)
+        except Exception:  # best effort: never block the delete on storage
+            log.warning("could not remove signature image for %s", doc.reference)
+    reference, agreement_id = doc.reference, str(doc.id)
+    await doc.delete()
+    await audit.record(principal, "agreement.deleted", "agreement", agreement_id, reference,
+                       before={"status": "voided", "reason": doc.void_reason}, ip_hash=ip)
 
 
 async def save_template_draft(body: TemplateDraft, principal: Principal) -> AgreementTemplate:

@@ -100,3 +100,21 @@
 .field input:focus-visible, .field textarea:focus-visible, .filters input:focus-visible, .messagePanel textarea:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
 .messagePreview iframe { background: var(--bg); }
 @media (prefers-reduced-motion: reduce) { .rows li, .tabs button { transition: none; } }
+
+/* Timeline (newest first) and delete action */
+.danger { color: var(--danger, #b3261e) !important; }
+.history { list-style: none; margin: 0; padding: 0 0 0 18px; border-left: 2px solid var(--straw, #e9ddb8); display: grid; gap: 10px; }
+.historyDay { margin: 10px 0 0 -18px; padding: 3px 10px; width: max-content; border-radius: 999px; background: var(--straw, #e9ddb8); color: var(--on-straw, #2a2410); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.historyItem { position: relative; padding: 10px 12px; border: 1px solid var(--line, #cbd8c6); border-radius: 12px; background: var(--surf, #fff); display: grid; gap: 3px; min-width: 0; }
+.historyItem::before { content: ""; position: absolute; left: -26px; top: 15px; width: 12px; height: 12px; border-radius: 50%; background: var(--leaf, #18784d); border: 2px solid var(--surf, #fff); box-shadow: 0 0 0 1px var(--line, #cbd8c6); }
+.tone_edit::before { background: var(--moss, #2f6b4a); }
+.tone_send::before { background: var(--gold, #c79a3b); }
+.tone_done::before { background: var(--leaf, #18784d); box-shadow: 0 0 0 3px color-mix(in srgb, var(--leaf, #18784d) 25%, transparent); }
+.tone_closed::before { background: var(--danger, #b3261e); }
+.historyHead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.historyHead strong { font-size: 14px; }
+.historyHead time { color: var(--mut, #4a6354); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.historySummary { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.historyItem small { color: var(--mut, #4a6354); font-size: 11px; }
+.historyItem details summary { cursor: pointer; color: var(--mut, #4a6354); font-size: 11px; }
+.historyItem pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; background: var(--mint, #dff0e6); padding: 8px; border-radius: 8px; margin: 6px 0 0; }

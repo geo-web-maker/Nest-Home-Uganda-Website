@@ -203,6 +203,16 @@ async def admin_void(agreement_id: str, body: VoidAgreement, request: Request,
     return service.agreement_detail(doc)
 
 
+@admin_router.delete("/{agreement_id}")
+async def admin_delete_voided(agreement_id: str, request: Request,
+                              principal: Principal = Depends(require_scopes("agreements:void")),
+                              mail_totp: str | None = Cookie(default=None)):
+    await assert_totp_session(principal, mail_totp)
+    doc = await service.get_agreement(agreement_id)
+    await service.delete_voided(doc, principal, hash_ip(client_ip(request)))
+    return {"deleted": True}
+
+
 @admin_router.post("/{agreement_id}/in-person/start")
 async def admin_in_person_start(agreement_id: str, body: InPersonStart, principal: CanWrite):
     # Do not issue an unbacked tablet token. The staged S6 kiosk flow needs its own
