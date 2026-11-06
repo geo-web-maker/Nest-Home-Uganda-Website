@@ -253,8 +253,10 @@ export function MailPage() {
       setNotice({ tone: 'success', text: t('mail.sent') });
       void refreshAll();
     } catch (cause) {
-      setNotice({ tone: 'error', text: cause instanceof Error && cause.message ? cause.message : t('mail.sendError') });
-      setSeed(item.seed);
+      // The message stays in Drafts; the reason is shown on the page (the composer is closed).
+      const reason = cause instanceof Error && cause.message ? cause.message : t('mail.sendError');
+      setNotice({ tone: 'error', text: `${reason} Your message is saved in Drafts.` });
+      void refreshAll();
     }
   };
   const flushPending = () => {

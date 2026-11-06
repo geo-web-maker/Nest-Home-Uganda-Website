@@ -407,7 +407,7 @@ export function MailScreen() {
     {drafts.length > 0 && <Card>
       <h3>{copy.mail.draftsHeading}</h3>
       <ul className="mail-drafts">
-        {drafts.map((draft) => <li key={draft.id}>
+        {drafts.filter((draft) => draft.id !== undo?.record.id).map((draft) => <li key={draft.id}>
           <Row label={draft.subject || copy.mail.noSubject} value={`${copy.mail.sentBy} ${draft.to.join(', ') || '—'}`} />
           <Chip kind={draft.state === 'failed' ? 'bad' : draft.state === 'draft' ? 'pd' : 'pg'}>{copy.mail.draftStates[draft.state]}</Chip>
           <div className="mail-actions">

@@ -87,3 +87,28 @@
   .mr-editor-toolbar .mr-editor-tool, .mr-colour-tool { min-width: 2.25rem; width: 2.25rem; height: 2.25rem; min-height: 2.25rem; }
   .mr-editor-size select { max-width: 8.5rem; }
 }
+
+/* Theme tokens for the editor: follow the app palette so the toolbar, selects and writing area work in light and dark. */
+:root {
+  --mail-border: var(--line, #d8dde4);
+  --mail-toolbar-bg: color-mix(in srgb, var(--ink, #1a1a1a) 6%, var(--surf, #ffffff));
+  --mail-active-bg: color-mix(in srgb, var(--gold, #c39a3a) 24%, transparent);
+  --mail-muted: var(--mut, #687383);
+  --mail-focus: var(--gold, #2563eb);
+}
+.mr-editor-toolbar { color: var(--ink, inherit); }
+.mr-editor-content { color: var(--ink, inherit); background: transparent; }
+.mr-editor-size select, .mr-kit-field select { background: var(--surf, #ffffff); color: var(--ink, inherit); border-color: var(--mail-border); }
+.mr-editor-size select:focus-visible { outline: 2px solid var(--mail-focus); outline-offset: 2px; }
+.mr-editor-toolbar .mr-editor-tool:disabled { opacity: .5; }
+.mr-editor-content p.is-editor-empty:first-child::before { color: var(--mail-muted); }
+.mr-send-confirm, .mr-editor-confirm { background: var(--surf, Canvas); color: var(--ink, CanvasText); }
+
+/* Original-message bar and editor buttons: wrap on narrow screens instead of running off the edge. */
+.mr-editor-quote { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.mr-editor-quote-heading { flex-wrap: wrap; justify-content: flex-start; row-gap: .4rem; }
+.mr-editor-quote-heading > strong { flex: 1 0 100%; }
+.mr-editor-quote-heading > button { flex: 0 1 auto; min-height: 2.25rem; padding: .3rem .8rem; font-size: .9rem; line-height: 1.2; max-width: 100%; white-space: normal; }
+/* Keep toolbar icons readable whatever global button colours apply. */
+.mr-editor-toolbar .mr-editor-tool { color: var(--ink, inherit); }
+.mr-composer-mode > button, .mr-upload-actions > button { flex: 0 1 auto; max-width: 100%; }
