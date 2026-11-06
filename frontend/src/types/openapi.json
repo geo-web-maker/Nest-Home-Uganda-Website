@@ -3716,6 +3716,38 @@
         "title": "MailSettingsPatch",
         "type": "object"
       },
+      "MailboxDeleteBody": {
+        "additionalProperties": false,
+        "properties": {
+          "confirm": {
+            "maxLength": 320,
+            "minLength": 1,
+            "title": "Confirm",
+            "type": "string"
+          },
+          "move_to_mailbox_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Move To Mailbox Id"
+          },
+          "purge": {
+            "default": false,
+            "title": "Purge",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "confirm"
+        ],
+        "title": "MailboxDeleteBody",
+        "type": "object"
+      },
       "MailboxPolicyBody": {
         "properties": {
           "external_allowed": {
@@ -3747,6 +3779,38 @@
           }
         },
         "title": "MailboxPolicyBody",
+        "type": "object"
+      },
+      "MailboxReassignBody": {
+        "additionalProperties": false,
+        "properties": {
+          "user_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id"
+        ],
+        "title": "MailboxReassignBody",
+        "type": "object"
+      },
+      "MailboxRenameBody": {
+        "additionalProperties": false,
+        "properties": {
+          "local_part": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Local Part",
+            "type": "string"
+          }
+        },
+        "required": [
+          "local_part"
+        ],
+        "title": "MailboxRenameBody",
         "type": "object"
       },
       "MediaAdminOut": {
@@ -17798,6 +17862,336 @@
         "summary": "Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/v1/mail/admin/mailboxes": {
+      "get": {
+        "operationId": "admin_list_mailboxes_api_v1_mail_admin_mailboxes_get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin List Mailboxes",
+        "tags": [
+          "mail"
+        ]
+      }
+    },
+    "/api/v1/mail/admin/mailboxes/{mailbox_id}/delete": {
+      "post": {
+        "operationId": "admin_delete_mailbox_api_v1_mail_admin_mailboxes__mailbox_id__delete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mailbox_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Mailbox Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MailboxDeleteBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Delete Mailbox",
+        "tags": [
+          "mail"
+        ]
+      }
+    },
+    "/api/v1/mail/admin/mailboxes/{mailbox_id}/preview": {
+      "get": {
+        "operationId": "admin_mailbox_preview_api_v1_mail_admin_mailboxes__mailbox_id__preview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mailbox_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Mailbox Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Mailbox Preview",
+        "tags": [
+          "mail"
+        ]
+      }
+    },
+    "/api/v1/mail/admin/mailboxes/{mailbox_id}/reassign": {
+      "post": {
+        "operationId": "admin_reassign_mailbox_api_v1_mail_admin_mailboxes__mailbox_id__reassign_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mailbox_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Mailbox Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MailboxReassignBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Reassign Mailbox",
+        "tags": [
+          "mail"
+        ]
+      }
+    },
+    "/api/v1/mail/admin/mailboxes/{mailbox_id}/rename": {
+      "patch": {
+        "operationId": "admin_rename_mailbox_api_v1_mail_admin_mailboxes__mailbox_id__rename_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "mailbox_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Mailbox Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MailboxRenameBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Rename Mailbox",
+        "tags": [
+          "mail"
         ]
       }
     },

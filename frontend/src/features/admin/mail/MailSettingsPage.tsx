@@ -11,6 +11,7 @@ import { Checkbox } from '../../../components/ui/Checkbox';
 import { Field } from '../../../components/ui/Field';
 import { apiClient } from '../../../lib/api/client';
 import { MailDiagnosticsSection } from './MailDiagnosticsSection';
+import { MailboxAdminSection } from './MailboxAdminSection';
 import { coerceSettingValue, displayValue, type MailSetting } from './settings';
 import styles from './MailPage.module.css';
 
@@ -275,6 +276,7 @@ export function MailSettingsPage() {
         </section>
 
         <MailDiagnosticsSection unlocked={Boolean(totpStatus.data?.enabled && totpStatus.data?.verified)} />
+        <MailboxAdminSection unlocked={Boolean(totpStatus.data?.enabled && totpStatus.data?.verified)} />
 
         {groups.map((group) => (
           <section className={styles.panel} key={group} aria-label={group}>

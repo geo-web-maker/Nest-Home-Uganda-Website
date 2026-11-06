@@ -1,6 +1,7 @@
 # ruff: noqa: E501,E701,E702
 import re
 import hashlib
+import uuid
 import time
 
 from fastapi import APIRouter, Cookie, Depends, Header, Query, Request, Response
@@ -1299,3 +1300,65 @@ async def mailbox_policy(mailbox_id: str,body: MailboxPolicyBody,principal: Prin
         if not row: raise Forbidden("Mailbox not found.")
         await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id,detail) VALUES($1,'mail.suspend',$2,$3::jsonb)",principal.user_id,mailbox_id,__import__('json').dumps(values))
     return dict(row)
+
+
+# ---- Mailbox administration (every route needs a verified authenticator session) ----
+async def _require_admin_totp(principal: Principal, token: str | None):
+    if not await is_current_totp_session(principal.user_id, token):
+        raise Forbidden("Verify your authenticator code to manage mailboxes.")
+
+
+class MailboxRenameBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    local_part: str = Field(min_length=1, max_length=64)
+
+
+class MailboxReassignBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    user_id: str = Field(min_length=1, max_length=64)
+
+
+class MailboxDeleteBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    confirm: str = Field(min_length=1, max_length=320)
+    move_to_mailbox_id: str | None = None
+    purge: bool = False
+
+
+@router.get("/admin/mailboxes")
+async def admin_list_mailboxes(response: Response, principal: Principal = Depends(require_scopes("mail:settings:manage")), mail_totp: str | None = Cookie(default=None)):
+    await _require_admin_totp(principal, mail_totp)
+    response.headers["Cache-Control"] = "no-store"
+    from app.modules.mail import mailbox_admin
+    return await mailbox_admin.list_mailboxes()
+
+
+@router.get("/admin/mailboxes/{mailbox_id}/preview")
+async def admin_mailbox_preview(mailbox_id: uuid.UUID, response: Response, principal: Principal = Depends(require_scopes("mail:settings:manage")), mail_totp: str | None = Cookie(default=None)):
+    await _require_admin_totp(principal, mail_totp)
+    response.headers["Cache-Control"] = "no-store"
+    from app.modules.mail import mailbox_admin
+    return {"messages": await mailbox_admin.preview(str(mailbox_id))}
+
+
+@router.patch("/admin/mailboxes/{mailbox_id}/rename")
+async def admin_rename_mailbox(mailbox_id: uuid.UUID, body: MailboxRenameBody, principal: Principal = Depends(require_scopes("mail:settings:manage")), mail_totp: str | None = Cookie(default=None)):
+    await _require_admin_totp(principal, mail_totp)
+    from app.modules.mail import mailbox_admin
+    return await mailbox_admin.rename(principal.user_id, str(mailbox_id), body.local_part)
+
+
+@router.post("/admin/mailboxes/{mailbox_id}/reassign")
+async def admin_reassign_mailbox(mailbox_id: uuid.UUID, body: MailboxReassignBody, principal: Principal = Depends(require_scopes("mail:settings:manage")), mail_totp: str | None = Cookie(default=None)):
+    await _require_admin_totp(principal, mail_totp)
+    from app.modules.mail import mailbox_admin
+    return await mailbox_admin.reassign(principal.user_id, str(mailbox_id), body.user_id)
+
+
+@router.post("/admin/mailboxes/{mailbox_id}/delete")
+async def admin_delete_mailbox(mailbox_id: uuid.UUID, body: MailboxDeleteBody, principal: Principal = Depends(require_scopes("mail:settings:manage")), mail_totp: str | None = Cookie(default=None)):
+    await _require_admin_totp(principal, mail_totp)
+    from app.modules.mail import mailbox_admin
+    return await mailbox_admin.delete_mailbox(
+        principal.user_id, str(mailbox_id), confirm=body.confirm,
+        move_to=str(body.move_to_mailbox_id) if body.move_to_mailbox_id else None, purge=body.purge)
