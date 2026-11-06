@@ -222,7 +222,6 @@ export function MailSettingsPage() {
     <section aria-label={t('mailSettings.title')}>
       <PageHeader
         title={t('mailSettings.title')}
-        subtitle={t('mailSettings.subtitle')}
         actions={
           <Button variant="outline" onClick={() => void reload()}>
             {t('mailSettings.refresh')}

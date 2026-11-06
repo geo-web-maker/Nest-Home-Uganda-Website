@@ -99,7 +99,6 @@ export function JobEditorPage() {
     <>
       <PageHeader
         title={isNew ? t('jobs.editor.newTitle') : t('jobs.editor.title')}
-        subtitle={t('jobs.editor.subtitle')}
       />
       {query.isError && <p role="alert">{t('jobs.editor.loadError')}</p>}
       <form

@@ -185,7 +185,6 @@ export function UsersPage() {
     <>
       <PageHeader
         title={t('nav.users')}
-        subtitle={t('users.subtitle')}
         actions={
           canWrite ? (
             <Button

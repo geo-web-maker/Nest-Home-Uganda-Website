@@ -54,7 +54,6 @@ export const adminEn = {
   },
   mail: {
     title: 'Mail',
-    subtitle: 'Internal mail is delivered within Nest. External sending follows organisation settings.',
     error: 'Mail is unavailable. Check your connection or mailbox access.',
     actionError: 'That change could not be saved. Try again.',
     sendError: 'The message could not be sent. Save it as a draft and try again.',
@@ -133,7 +132,6 @@ export const adminEn = {
   },
   mailShared: {
     title: 'Shared mailboxes',
-    subtitle: 'Create shared addresses such as info@ and assign the people who read and send from them. Mail stays in the app.',
     refresh: 'Refresh',
     needsTotp: 'Verify your authenticator code below to manage shared mailboxes.',
     verifyTitle: 'Authenticator verification',
@@ -163,7 +161,6 @@ export const adminEn = {
   },
   mailSettings: {
     title: 'Mail settings',
-    subtitle: 'Configure mail service, limits, storage, retention and security.',
     loadError: 'Mail settings could not be loaded.',
     needsTotp: 'Verify your authenticator code below to load and change mail settings.',
     saveError: 'The setting could not be saved.',
@@ -376,7 +373,6 @@ export const adminEn = {
     },
   },
   dashboard: {
-    subtitle: 'An overview of current work.',
     loading: 'Loading dashboard',
     error: 'We could not load the dashboard just now.',
     statsLabel: 'Dashboard summary',
@@ -396,7 +392,6 @@ export const adminEn = {
     viewEnquiries: 'View enquiries',
   },
   activity: {
-    subtitle: 'A record of changes made in the admin.',
     filtersLabel: 'Filter activity by date',
     from: 'From',
     to: 'To',
@@ -455,7 +450,6 @@ export const adminEn = {
     noEvents: 'No timeline events yet.',
   },
   jobs: {
-    subtitle: 'Create and manage job listings.',
     newJob: 'New job',
     error: 'We could not load jobs just now.',
     published: 'Published',
@@ -480,7 +474,6 @@ export const adminEn = {
     editor: {
       title: 'Edit job',
       newTitle: 'New job',
-      subtitle: 'Enter the job details. Client-supplied content stays marked until supplied.',
       titleLabel: 'Job title',
       department: 'Department',
       closingDate: 'Closing date',
@@ -498,7 +491,6 @@ export const adminEn = {
     },
   },
   applications: {
-    subtitle: 'Review job applications and their progress.',
     export: 'Export applications',
     stageFilter: 'Filter by stage',
     experienceYears: '{{count}} years',
@@ -572,7 +564,6 @@ export const adminEn = {
     },
   },
   content: {
-    subtitle: 'Manage published content and drafts.',
     tabsLabel: 'Content types',
     newItem: 'New item',
     editItem: 'Edit item',
@@ -650,7 +641,6 @@ export const adminEn = {
     },
   },
   settings: {
-    subtitle: 'Manage site information and behaviour.',
     tabsLabel: 'Settings sections',
     loading: 'Loading settings',
     error: 'We could not load settings just now.',
@@ -754,7 +744,6 @@ export const adminEn = {
     },
   },
   users: {
-    subtitle: 'Manage user access using scopes.',
     loading: 'Loading users',
     error: 'We could not load users just now.',
     table: { caption: 'Users', loading: 'Loading users', empty: 'No users found.' },
@@ -789,7 +778,6 @@ export const adminEn = {
     superadmin: 'Superadmin access',
   },
   reports: {
-    subtitle: 'Review activity and export reports.',
     exportLabel: 'Export options',
     statsLabel: 'Report summary',
     loading: 'Loading reports',

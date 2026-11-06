@@ -59,7 +59,7 @@ export function FlagsQueuePage() {
     finally { setSaving(false); }
   }
   return <div className="stage-page">
-    <PageHeader title="Flags" subtitle="Open flags and visit exceptions waiting for supervisor review." actions={<Button variant="outline" onClick={() => void load()}>Refresh</Button>} />
+    <PageHeader title="Flags" actions={<Button variant="outline" onClick={() => void load()}>Refresh</Button>} />
     <div className="stage-summary-strip"><div><strong>{rows.length}</strong><span>Open flags</span></div><div><strong>{rows.filter((row) => /unscheduled|no_visit/i.test(String(row.type))).length}</strong><span>Scheduling review</span></div><div><strong>{rows.filter((row) => /location|distance|accuracy/i.test(String(row.type))).length}</strong><span>Verification</span></div><div><strong>{rows.filter((row) => /photo/i.test(String(row.type))).length}</strong><span>Photo review</span></div></div>
     <FilterBar label="Filter flags"><Field label="Find a flag" type="search" className={filterBarGrow} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Flag, visit or nurse" /><Field label="Type" kind="select" value={filter} onChange={(event) => setFilter(event.target.value)}><option value="all">All open flags</option>{kinds.map((kind) => <option key={kind} value={kind}>{label(kind)}</option>)}</Field></FilterBar>
     {error && <Notice tone="error">{error}</Notice>}{notice && <Notice>{notice}</Notice>}
@@ -107,7 +107,7 @@ export function MyTeamPage() {
   const scheduledToday = visits.filter((visit) => localDateKey(visit.scheduled_start) === todayKey && !['cancelled', 'completed'].includes(String(visit.status))).length;
   const latestVisit = (nurseId: unknown) => visits.filter((visit) => String(visit.nurse_id) === String(nurseId)).sort((a, b) => new Date(String(b.scheduled_start ?? '')).getTime() - new Date(String(a.scheduled_start ?? '')).getTime())[0];
   return <div className="stage-page">
-    <PageHeader title="My team" subtitle="Supervisor view, limited to the team available to your account." actions={<Button variant="outline" onClick={() => void load()}>Refresh</Button>} />
+    <PageHeader title="My team" actions={<Button variant="outline" onClick={() => void load()}>Refresh</Button>} />
     <div className="stage-summary-strip"><div><strong>{rows.length}</strong><span>Team members</span></div><div><strong>{active}</strong><span>Active staff</span></div><div><strong>{scheduledToday}</strong><span>Visits in progress or scheduled today</span></div><div><strong>{recentlySeen}</strong><span>Seen in the past 24 hours</span></div></div>
     {error && <Notice tone="error">{error}</Notice>}
     {loading ? <p aria-busy="true">Loading team…</p> : rows.length === 0 ? <section className="stage-panel"><p>No team members are in your current scope.</p></section> : <section className="stage-panel"><DataTable
