@@ -10,6 +10,8 @@ from fastapi import APIRouter
 from fastapi.routing import APIRoute
 
 from app.modules.activity import router as activity_router
+from app.modules.agreements.models import Agreement, AgreementMessageTemplate, AgreementOtp, AgreementTemplate
+from app.modules.agreements.router import admin_router as agreements_admin_router, public_router as agreements_public_router
 from app.modules.app_releases.models import AppRelease
 from app.modules.app_releases.router import router as app_releases_api_router
 from app.modules.applications import router as applications_router
@@ -101,6 +103,10 @@ DOCUMENT_MODELS: list[type[Document]] = [
     Job,
     Application,
     SiteSetting,
+    Agreement,
+    AgreementOtp,
+    AgreementTemplate,
+    AgreementMessageTemplate,
 ]
 
 CARE_DOCUMENT_MODELS: list[type[Document]] = [
@@ -171,6 +177,8 @@ ROUTERS: list[APIRouter] = [
     care_admin_router.router,
     care_ops_router.router,
     mail_router.router,
+    agreements_admin_router,
+    agreements_public_router,
 ]
 
 

@@ -1,0 +1,49 @@
+.page { display: grid; gap: 18px; }
+.layout { display: grid; grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.6fr); gap: 18px; align-items: start; }
+.listPanel, .editorPanel { min-width: 0; background: var(--surface, #fff); border: 1px solid var(--border, #dce3de); border-radius: 14px; padding: 16px; }
+.filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+.filters label, .messagePanel label, .sendPanel label, .actions label { display: grid; gap: 5px; font-size: 13px; font-weight: 600; }
+.filters input, .filters select, .messagePanel input, .messagePanel textarea, .messagePanel select, .sendPanel select, .actions input, .field textarea { width: 100%; min-width: 0; border: 1px solid var(--border, #cbd5ce); border-radius: 8px; padding: 9px 10px; color: inherit; background: var(--surface, #fff); font: inherit; }
+.rows { display: grid; gap: 8px; list-style: none; padding: 0; margin: 0; }
+.rows li { border: 1px solid var(--border, #dce3de); border-radius: 10px; padding: 9px; }
+.selected { outline: 2px solid var(--brand, #245d4a); }
+.rowMain { display: grid; width: 100%; gap: 4px; text-align: left; border: 0; padding: 4px; background: transparent; color: inherit; cursor: pointer; }
+.rowMain small, .rowMain span { color: var(--muted, #53635a); }
+.rowActions { display: flex; gap: 10px; justify-content: flex-end; }
+.rowActions button { border: 0; background: transparent; color: var(--brand, #245d4a); text-decoration: underline; cursor: pointer; }
+.empty { padding: 28px 12px; text-align: center; color: var(--muted, #53635a); }
+.empty h2 { color: var(--text, #1d3027); }
+.editorHeading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.editorHeading h2 { margin: 0; font-size: 20px; }
+.editorHeading p { margin: 5px 0 12px; color: var(--muted, #53635a); }
+.tabs { display: flex; gap: 6px; overflow-x: auto; border-bottom: 1px solid var(--border, #dce3de); margin: 12px -2px 16px; }
+.tabs button { flex: 0 0 auto; border: 0; border-bottom: 3px solid transparent; padding: 10px 9px; background: transparent; color: inherit; cursor: pointer; }
+.tabs button[aria-current="page"] { border-color: var(--brand, #245d4a); font-weight: 700; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.field { display: grid; align-content: start; gap: 7px; border: 1px solid var(--border, #e0e6e1); border-radius: 10px; padding: 11px; min-width: 0; }
+.field > label:first-child { display: flex; justify-content: space-between; gap: 8px; text-transform: capitalize; }
+.field small { color: var(--muted, #53635a); font-size: 11px; text-align: right; }
+.field textarea { resize: vertical; min-height: 64px; }
+.field textarea[readonly] { background: var(--subtle, #f5f7f5); }
+.check { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+.conflict { padding: 9px; background: var(--warning-soft, #fff6df); border-radius: 8px; font-size: 13px; }
+.conflict p { overflow-wrap: anywhere; }
+.conflict button { margin: 2px 6px 2px 0; }
+.feeBox, .sendPanel, .messagePanel { display: grid; gap: 12px; padding: 8px 0; }
+.feeBox { grid-column: 1 / -1; background: var(--subtle, #f5f7f5); border-radius: 10px; padding: 12px; }
+.feeBox pre { white-space: pre-wrap; }
+.timeline { display: grid; gap: 13px; padding-left: 22px; }
+.timeline li { padding-left: 5px; }
+.timeline time, .timeline small { display: block; color: var(--muted, #53635a); }
+.timeline pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; background: var(--subtle, #f5f7f5); padding: 8px; border-radius: 8px; }
+.preview { border: 1px solid var(--border, #dce3de); border-radius: 10px; overflow: hidden; min-height: 650px; }
+.preview iframe { width: 100%; height: 80vh; min-height: 650px; border: 0; background: white; }
+.templateEditor { width: 100%; font-family: ui-monospace, monospace; font-size: 12px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .fields { grid-template-columns: 1fr; } }
+
+.countersign { display: grid; gap: 10px; border-top: 1px solid var(--border, #dce3de); padding-top: 16px; }
+.signaturePad { display: block; width: 100%; height: 160px; border: 1px dashed var(--border, #aab7ae); border-radius: 8px; background: #fff; touch-action: none; }
+
+.messagePreview { margin-top: 1rem; padding: 1rem; border: 1px solid var(--border, #d7ded9); border-radius: 0.75rem; }
+.messagePreview iframe { display: block; width: 100%; min-height: 560px; border: 0; background: #f2f5f2; }

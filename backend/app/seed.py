@@ -59,6 +59,8 @@ async def _main() -> None:
         print("pricing blocks created:", await seed_pricing())  # noqa: T201
         print("jobs created:", await seed_jobs(Job))  # noqa: T201
         print("settings created:", await seed_settings(settings))  # noqa: T201
+        from app.modules.agreements.seed import seed_source_template
+        print("agreement source template published:", await seed_source_template())  # noqa: T201
     finally:
         await db.disconnect()
 

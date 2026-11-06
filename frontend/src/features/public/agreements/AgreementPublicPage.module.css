@@ -1,0 +1,48 @@
+.page { min-height: 100vh; background: #f3f6f3; color: #20342b; padding: 24px 14px 36px; font-family: Figtree, Arial, sans-serif; }
+.brand { width: min(100%, 760px); margin: 0 auto 18px; display: flex; align-items: center; gap: 11px; }
+.brandMark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #245d4a; color: white; font-size: 21px; font-weight: 800; }
+.brand strong, .brand small { display: block; }
+.brand small { color: #637169; font-size: 12px; margin-top: 3px; }
+.card { width: min(100%, 760px); margin: auto; padding: clamp(20px, 5vw, 42px); background: #fff; border: 1px solid #dbe4dd; border-radius: 18px; box-shadow: 0 12px 38px rgba(26, 49, 36, .06); }
+.eyebrow { color: #527365; letter-spacing: .08em; font-size: 11px; font-weight: 700; }
+.card h1 { margin: 8px 0; font-size: clamp(25px, 5vw, 34px); line-height: 1.15; }
+.reference { color: #617269; font-size: 13px; margin-bottom: 22px; }
+.verify, .review, .done { display: grid; gap: 17px; }
+.verify p, .review > p, .done p { line-height: 1.6; }
+.contactHint { display: flex; gap: 12px; flex-wrap: wrap; color: #52645a; font-size: 14px; }
+.card label { display: grid; gap: 7px; font-size: 14px; font-weight: 700; }
+.card input, .card select, .card textarea { width: 100%; min-width: 0; padding: 12px; border: 1px solid #cbd8ce; border-radius: 9px; background: #fff; color: #20342b; font: inherit; }
+.card textarea { resize: vertical; min-height: 52px; font-weight: 400; line-height: 1.5; }
+.card textarea[readonly] { background: #f4f7f4; color: #52645a; }
+.primary, .secondary { border: 0; border-radius: 9px; padding: 13px 18px; min-height: 48px; font: inherit; font-weight: 700; cursor: pointer; }
+.primary { background: #245d4a; color: #fff; }
+.primary:disabled { opacity: .55; cursor: wait; }
+.secondary { border: 1px solid #b8c9bd; background: white; color: #245d4a; }
+.security { color: #617269; font-size: 12px; line-height: 1.5; }
+.error, .notice { padding: 12px; border-radius: 9px; font-size: 14px; line-height: 1.45; }
+.error { background: #fff0ef; color: #8c2822; }
+.notice { background: #eaf4ee; color: #245d4a; }
+.progress { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; color: #617269; font-size: 12px; }
+.clauses { display: grid; gap: 7px; }
+.card details { border: 1px solid #dce5de; border-radius: 9px; padding: 12px; }
+.card summary { font-weight: 700; cursor: pointer; }
+.card details p { line-height: 1.6; white-space: pre-wrap; }
+.review h2 { font-size: 21px; margin: 12px 0 0; }
+.formField { display: grid; gap: 6px; border-bottom: 1px solid #edf1ed; padding: 8px 0 13px; }
+.formField label { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; text-transform: capitalize; }
+.formField small { color: #66766d; font-weight: 400; font-size: 11px; }
+.fees { padding: 16px; background: #f3f7f3; border-radius: 10px; }
+.fees h3 { margin: 0 0 8px; }
+.fees p { display: flex; justify-content: space-between; gap: 12px; margin: 5px 0; text-transform: capitalize; }
+.signature { width: 100%; height: 180px; border: 1px dashed #8aa193; border-radius: 10px; background: repeating-linear-gradient(to bottom, #fff 0 42px, #e5ece7 43px 44px, #fff 45px 60px); touch-action: none; }
+.signatureActions { display: flex; flex-wrap: wrap; gap: 10px; }
+.linkButton { border: 0; background: transparent; color: #245d4a; text-decoration: underline; font: inherit; justify-self: start; cursor: pointer; }
+.signedBanner { background: #e6f3ea; color: #245d4a; padding: 14px; border-radius: 8px; font-weight: 800; }
+.successMark { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; background: #e6f3ea; color: #245d4a; font-size: 28px; }
+.certificate { border-top: 1px solid #dce5de; padding-top: 14px; }
+.certificate p { overflow-wrap: anywhere; }
+.footer { width: min(100%, 760px); margin: 18px auto 0; text-align: center; color: #64736a; font-size: 12px; line-height: 1.6; }
+.footer a { color: #245d4a; }
+@media print { .page { background: #fff; padding: 0; } .brand, .footer, .primary { display: none; } .card { width: 100%; border: 0; box-shadow: none; } }
+
+.turnstile { display: flex; justify-content: center; margin: 14px 0; min-height: 65px; }

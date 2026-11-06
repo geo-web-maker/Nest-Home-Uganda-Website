@@ -19,9 +19,9 @@ describe('hasScopes', () => {
 
 describe('mockup-aligned admin navigation', () => {
   it('declares implemented screens in the reference information architecture', () => {
-    expect(ADMIN_NAV).toHaveLength(40);
-    expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 11, careOperations: 7, monitoring: 8, safety: 4, setup: 10 });
-    expect(paths(visibleNav(user([], true)))).toHaveLength(40);
+    expect(ADMIN_NAV).toHaveLength(41);
+    expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 11, careOperations: 8, monitoring: 8, safety: 4, setup: 10 });
+    expect(paths(visibleNav(user([], true)))).toHaveLength(41);
     expect(visibleNav(user([], true)).some((item) => item.path.includes('/care/patients'))).toBe(false);
   });
 
@@ -63,7 +63,7 @@ describe('mockup-aligned admin navigation', () => {
       '/admin/care/alerts',
       '/admin/care/sos',
     ]);
-    expect(bottomNav(all).more).toHaveLength(36);
+    expect(bottomNav(all).more).toHaveLength(37);
     expect(paths(bottomNav(user(['content:read'])).primary)).toEqual(['/admin/content']);
     expect(bottomNav(user(['content:read'])).more).toEqual([]);
   });
@@ -128,6 +128,7 @@ describe('mail navigation', () => {
     expect(scopesFor('/admin/mail')).toEqual(['mail:use']);
     expect(scopesFor('/admin/mail/settings')).toEqual(['mail:settings:manage']);
     expect(scopesFor('/admin/mail/shared')).toEqual(['mail:shared:manage']);
+    expect(scopesFor('/admin/agreements')).toEqual(['agreements:read']);
     expect(paths(visibleNav(user(['mail:use'])))).toEqual(['/admin/mail']);
     expect(navItemFor('/admin/mail/settings')?.path).toBe('/admin/mail/settings');
     expect(navItemFor('/admin/mail')?.path).toBe('/admin/mail');

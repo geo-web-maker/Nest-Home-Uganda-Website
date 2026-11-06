@@ -34,6 +34,13 @@ PUBLIC_WRITES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/api/v1/public/enquiries"),
         ("POST", "/api/v1/public/applications"),
         ("POST", "/api/v1/public/clicks"),
+        ("POST", "/api/v1/public/agreements/{token}/otp/request"),
+        ("POST", "/api/v1/public/agreements/{token}/otp/request-view"),
+        ("POST", "/api/v1/public/agreements/{token}/otp/verify"),
+        ("POST", "/api/v1/public/agreements/{token}/otp/verify-view"),
+        ("PATCH", "/api/v1/public/agreements/session/fields"),
+        ("POST", "/api/v1/public/agreements/session/request-change"),
+        ("POST", "/api/v1/public/agreements/session/sign"),
         ("POST", "/api/v1/auth/login"),
         ("POST", "/api/v1/auth/refresh"),
         ("POST", "/api/v1/auth/logout"),
@@ -77,6 +84,7 @@ def test_every_admin_module_prefix_has_routes() -> None:
     paths = {p for _, p in all_cases()}
     for prefix in (
         "/api/v1/admin/dashboard",
+        "/api/v1/admin/agreements",
         "/api/v1/admin/enquiries",
         "/api/v1/admin/jobs",
         "/api/v1/admin/applications",

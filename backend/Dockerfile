@@ -8,6 +8,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# WeasyPrint needs the Pango/Cairo runtime to create selectable vector PDFs.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libffi8 shared-mime-info \
+    && rm -rf /var/lib/apt/lists/*
+
 # Dependencies first so the layer is cached until requirements.lock changes.
 COPY requirements.lock ./
 RUN pip install -r requirements.lock
