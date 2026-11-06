@@ -361,6 +361,72 @@
         "title": "AdminUserOut",
         "type": "object"
       },
+      "AgreementCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "assigned_nurse_id": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned Nurse Id"
+          },
+          "enquiry_id": {
+            "anyOf": [
+              {
+                "maxLength": 30,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enquiry Id"
+          }
+        },
+        "title": "AgreementCreate",
+        "type": "object"
+      },
+      "AgreementPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/FieldPatch"
+            },
+            "maxItems": 80,
+            "minItems": 1,
+            "title": "Changes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "changes"
+        ],
+        "title": "AgreementPatch",
+        "type": "object"
+      },
+      "AmendmentCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "variation_clause": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Variation Clause",
+            "type": "string"
+          }
+        },
+        "required": [
+          "variation_clause"
+        ],
+        "title": "AmendmentCreate",
+        "type": "object"
+      },
       "AnnotateIn": {
         "properties": {
           "comment": {
@@ -1762,6 +1828,38 @@
         "title": "ContentPageUpdate",
         "type": "object"
       },
+      "CountersignAgreement": {
+        "additionalProperties": false,
+        "properties": {
+          "method": {
+            "default": "drawn",
+            "enum": [
+              "drawn",
+              "thumbprint"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 160,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          },
+          "signature_base64": {
+            "maxLength": 1500000,
+            "minLength": 100,
+            "title": "Signature Base64",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "signature_base64"
+        ],
+        "title": "CountersignAgreement",
+        "type": "object"
+      },
       "CvLink": {
         "properties": {
           "expires_at": {
@@ -2840,6 +2938,37 @@
         "title": "FaqUpdate",
         "type": "object"
       },
+      "FieldPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "entered_by_staff": {
+            "default": false,
+            "title": "Entered By Staff",
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "path": {
+            "maxLength": 120,
+            "minLength": 3,
+            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*){1,3}$",
+            "title": "Path",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value"
+          }
+        },
+        "required": [
+          "path",
+          "expected_revision"
+        ],
+        "title": "FieldPatch",
+        "type": "object"
+      },
       "FieldTimesheetIssue": {
         "properties": {
           "explanation": {
@@ -3036,6 +3165,19 @@
           "platform"
         ],
         "title": "HeartbeatIn",
+        "type": "object"
+      },
+      "InPersonStart": {
+        "properties": {
+          "duration_minutes": {
+            "default": 15,
+            "maximum": 60.0,
+            "minimum": 5.0,
+            "title": "Duration Minutes",
+            "type": "integer"
+          }
+        },
+        "title": "InPersonStart",
         "type": "object"
       },
       "InboundTraceBody": {
@@ -3987,6 +4129,43 @@
         "title": "MessagePatch",
         "type": "object"
       },
+      "MessageTemplatePatch": {
+        "additionalProperties": false,
+        "properties": {
+          "body": {
+            "default": "",
+            "maxLength": 6000,
+            "title": "Body",
+            "type": "string"
+          },
+          "button": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Button",
+            "type": "string"
+          },
+          "footer_note": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Footer Note",
+            "type": "string"
+          },
+          "preheader": {
+            "default": "",
+            "maxLength": 240,
+            "title": "Preheader",
+            "type": "string"
+          },
+          "subject": {
+            "default": "",
+            "maxLength": 998,
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "title": "MessageTemplatePatch",
+        "type": "object"
+      },
       "MostRequestedService": {
         "properties": {
           "count": {
@@ -4653,6 +4832,55 @@
           "active"
         ],
         "title": "NurseProfileResponse",
+        "type": "object"
+      },
+      "OtpRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "channel": {
+            "anyOf": [
+              {
+                "enum": [
+                  "sms",
+                  "email"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "turnstile_token": {
+            "anyOf": [
+              {
+                "maxLength": 2048,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Turnstile Token"
+          }
+        },
+        "title": "OtpRequest",
+        "type": "object"
+      },
+      "OtpVerify": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "pattern": "^\\d{6}$",
+            "title": "Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "OtpVerify",
         "type": "object"
       },
       "Page_AdminUserOut_": {
@@ -5741,6 +5969,22 @@
         "title": "ReprocessBody",
         "type": "object"
       },
+      "RequestChange": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 5,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "RequestChange",
+        "type": "object"
+      },
       "ResetIn": {
         "properties": {
           "delivery": {
@@ -5980,6 +6224,30 @@
           "label"
         ],
         "title": "ScopeOut",
+        "type": "object"
+      },
+      "SendAgreement": {
+        "additionalProperties": false,
+        "properties": {
+          "channels": {
+            "default": "both",
+            "enum": [
+              "email",
+              "sms",
+              "both"
+            ],
+            "title": "Channels",
+            "type": "string"
+          },
+          "expires_days": {
+            "default": 14,
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Expires Days",
+            "type": "integer"
+          }
+        },
+        "title": "SendAgreement",
         "type": "object"
       },
       "SendDraftBody": {
@@ -6882,6 +7150,56 @@
         "title": "SharedPatchBody",
         "type": "object"
       },
+      "SignAgreement": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_content_hash": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Expected Content Hash",
+            "type": "string"
+          },
+          "method": {
+            "default": "drawn",
+            "enum": [
+              "drawn",
+              "thumbprint"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 160,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "default": "client",
+            "enum": [
+              "client",
+              "representative",
+              "witness",
+              "interpreter"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "signature_base64": {
+            "maxLength": 1500000,
+            "minLength": 100,
+            "title": "Signature Base64",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "signature_base64",
+          "expected_content_hash"
+        ],
+        "title": "SignAgreement",
+        "type": "object"
+      },
       "SignatureBody": {
         "properties": {
           "body_text": {
@@ -7332,6 +7650,37 @@
           }
         },
         "title": "TeamMemberUpdate",
+        "type": "object"
+      },
+      "TemplateDraft": {
+        "additionalProperties": false,
+        "properties": {
+          "clauses": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "maxProperties": 80,
+            "minProperties": 1,
+            "title": "Clauses",
+            "type": "object"
+          },
+          "source_file": {
+            "anyOf": [
+              {
+                "maxLength": 240,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source File"
+          }
+        },
+        "required": [
+          "clauses"
+        ],
+        "title": "TemplateDraft",
         "type": "object"
       },
       "TestSendBody": {
@@ -7883,6 +8232,22 @@
         "title": "VisitIn",
         "type": "object"
       },
+      "VoidAgreement": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "maxLength": 2000,
+            "minLength": 5,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "VoidAgreement",
+        "type": "object"
+      },
       "app__modules__applications__schemas__NoteIn": {
         "properties": {
           "text": {
@@ -8204,6 +8569,1529 @@
         "summary": "Activity List",
         "tags": [
           "admin-activity"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements": {
+      "get": {
+        "operationId": "admin_list_api_v1_admin_agreements_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 32,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "nurse",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 30,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Nurse"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "skip",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Skip",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin List",
+        "tags": [
+          "admin-agreements"
+        ]
+      },
+      "post": {
+        "operationId": "admin_create_api_v1_admin_agreements_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgreementCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Create",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/diagnostics/delivery-test/{channel}": {
+      "post": {
+        "description": "Send one clearly labelled test to the authenticated staff member only.",
+        "operationId": "admin_diagnostics_delivery_api_v1_admin_agreements_diagnostics_delivery_test__channel__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channel",
+            "required": true,
+            "schema": {
+              "enum": [
+                "email",
+                "sms"
+              ],
+              "title": "Channel",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Diagnostics Delivery",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/diagnostics/run": {
+      "post": {
+        "description": "Run passive readiness checks. No client message is sent.",
+        "operationId": "admin_diagnostics_run_api_v1_admin_agreements_diagnostics_run_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Diagnostics Run",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/diagnostics/workflow": {
+      "post": {
+        "description": "Exercise the real agreement flow using synthetic data and intercepted notifications.",
+        "operationId": "admin_diagnostics_workflow_api_v1_admin_agreements_diagnostics_workflow_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Diagnostics Workflow",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/message-templates/{stage_key}/{channel}": {
+      "get": {
+        "operationId": "admin_message_template_api_v1_admin_agreements_message_templates__stage_key___channel__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "stage_key",
+            "required": true,
+            "schema": {
+              "title": "Stage Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "channel",
+            "required": true,
+            "schema": {
+              "enum": [
+                "email",
+                "sms"
+              ],
+              "title": "Channel",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Message Template",
+        "tags": [
+          "admin-agreements"
+        ]
+      },
+      "put": {
+        "operationId": "admin_message_template_save_api_v1_admin_agreements_message_templates__stage_key___channel__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "stage_key",
+            "required": true,
+            "schema": {
+              "title": "Stage Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "channel",
+            "required": true,
+            "schema": {
+              "enum": [
+                "email",
+                "sms"
+              ],
+              "title": "Channel",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageTemplatePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Message Template Save",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/message-templates/{stage_key}/{channel}/preview": {
+      "post": {
+        "operationId": "admin_message_template_preview_api_v1_admin_agreements_message_templates__stage_key___channel__preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "stage_key",
+            "required": true,
+            "schema": {
+              "title": "Stage Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "channel",
+            "required": true,
+            "schema": {
+              "enum": [
+                "email",
+                "sms"
+              ],
+              "title": "Channel",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageTemplatePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Message Template Preview",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/message-templates/{stage_key}/{channel}/reset": {
+      "post": {
+        "operationId": "admin_message_template_reset_api_v1_admin_agreements_message_templates__stage_key___channel__reset_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "stage_key",
+            "required": true,
+            "schema": {
+              "title": "Stage Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "channel",
+            "required": true,
+            "schema": {
+              "enum": [
+                "email",
+                "sms"
+              ],
+              "title": "Channel",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Message Template Reset",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/message-templates/{stage_key}/{channel}/test-send": {
+      "post": {
+        "description": "Send a conspicuously labelled preview only to the authenticated staff member.",
+        "operationId": "admin_message_template_test_send_api_v1_admin_agreements_message_templates__stage_key___channel__test_send_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "stage_key",
+            "required": true,
+            "schema": {
+              "title": "Stage Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "channel",
+            "required": true,
+            "schema": {
+              "enum": [
+                "email",
+                "sms"
+              ],
+              "title": "Channel",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Message Template Test Send",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/template/current": {
+      "get": {
+        "operationId": "admin_template_api_v1_admin_agreements_template_current_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Template",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/template/drafts": {
+      "post": {
+        "operationId": "admin_template_draft_api_v1_admin_agreements_template_drafts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateDraft"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Template Draft",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/template/versions": {
+      "get": {
+        "operationId": "admin_template_versions_api_v1_admin_agreements_template_versions_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Template Versions",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/template/{version}": {
+      "get": {
+        "operationId": "admin_template_version_api_v1_admin_agreements_template__version__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "title": "Version",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Template Version",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/template/{version}/publish": {
+      "post": {
+        "operationId": "admin_template_publish_api_v1_admin_agreements_template__version__publish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "title": "Version",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Template Publish",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/{agreement_id}": {
+      "get": {
+        "operationId": "admin_get_api_v1_admin_agreements__agreement_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Get",
+        "tags": [
+          "admin-agreements"
+        ]
+      },
+      "patch": {
+        "operationId": "admin_patch_api_v1_admin_agreements__agreement_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgreementPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Patch",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/{agreement_id}/amend": {
+      "post": {
+        "operationId": "admin_amend_api_v1_admin_agreements__agreement_id__amend_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AmendmentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Amend",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/{agreement_id}/countersign": {
+      "post": {
+        "operationId": "admin_countersign_api_v1_admin_agreements__agreement_id__countersign_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CountersignAgreement"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Countersign",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/{agreement_id}/events": {
+      "get": {
+        "operationId": "admin_events_api_v1_admin_agreements__agreement_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Events",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/{agreement_id}/in-person/start": {
+      "post": {
+        "operationId": "admin_in_person_start_api_v1_admin_agreements__agreement_id__in_person_start_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InPersonStart"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin In Person Start",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/{agreement_id}/preview": {
+      "get": {
+        "operationId": "admin_preview_api_v1_admin_agreements__agreement_id__preview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Preview",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/{agreement_id}/preview-data": {
+      "get": {
+        "operationId": "admin_preview_data_api_v1_admin_agreements__agreement_id__preview_data_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Preview Data",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/{agreement_id}/reissue-link": {
+      "post": {
+        "operationId": "admin_reissue_api_v1_admin_agreements__agreement_id__reissue_link_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "channels",
+            "required": false,
+            "schema": {
+              "default": "both",
+              "enum": [
+                "email",
+                "sms",
+                "both"
+              ],
+              "title": "Channels",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Reissue",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/{agreement_id}/resend": {
+      "post": {
+        "operationId": "admin_resend_api_v1_admin_agreements__agreement_id__resend_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Resend",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/{agreement_id}/sealed-pdf": {
+      "get": {
+        "operationId": "admin_sealed_pdf_api_v1_admin_agreements__agreement_id__sealed_pdf_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Sealed Pdf",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/{agreement_id}/send": {
+      "post": {
+        "operationId": "admin_send_api_v1_admin_agreements__agreement_id__send_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendAgreement"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Send",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/{agreement_id}/void": {
+      "post": {
+        "operationId": "admin_void_api_v1_admin_agreements__agreement_id__void_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoidAgreement"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Void",
+        "tags": [
+          "admin-agreements"
         ]
       }
     },
@@ -21528,6 +23416,511 @@
         "summary": "Mail Provider Webhook",
         "tags": [
           "mail"
+        ]
+      }
+    },
+    "/api/v1/public/agreements/session": {
+      "get": {
+        "operationId": "public_session_api_v1_public_agreements_session_get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "agreement_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agreement Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Session",
+        "tags": [
+          "public-agreements"
+        ]
+      }
+    },
+    "/api/v1/public/agreements/session/fields": {
+      "patch": {
+        "operationId": "public_patch_api_v1_public_agreements_session_fields_patch",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "agreement_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agreement Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgreementPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Patch",
+        "tags": [
+          "public-agreements"
+        ]
+      }
+    },
+    "/api/v1/public/agreements/session/request-change": {
+      "post": {
+        "operationId": "public_request_change_api_v1_public_agreements_session_request_change_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "agreement_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agreement Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Request Change",
+        "tags": [
+          "public-agreements"
+        ]
+      }
+    },
+    "/api/v1/public/agreements/session/sign": {
+      "post": {
+        "operationId": "public_sign_api_v1_public_agreements_session_sign_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "agreement_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agreement Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignAgreement"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Sign",
+        "tags": [
+          "public-agreements"
+        ]
+      }
+    },
+    "/api/v1/public/agreements/session/signed": {
+      "get": {
+        "operationId": "public_signed_api_v1_public_agreements_session_signed_get",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "agreement_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agreement Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Signed",
+        "tags": [
+          "public-agreements"
+        ]
+      }
+    },
+    "/api/v1/public/agreements/{token}": {
+      "get": {
+        "operationId": "public_pre_otp_api_v1_public_agreements__token__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Pre Otp",
+        "tags": [
+          "public-agreements"
+        ]
+      }
+    },
+    "/api/v1/public/agreements/{token}/otp/request": {
+      "post": {
+        "operationId": "public_otp_request_api_v1_public_agreements__token__otp_request_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Otp Request",
+        "tags": [
+          "public-agreements"
+        ]
+      }
+    },
+    "/api/v1/public/agreements/{token}/otp/request-view": {
+      "post": {
+        "operationId": "public_view_otp_request_api_v1_public_agreements__token__otp_request_view_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public View Otp Request",
+        "tags": [
+          "public-agreements"
+        ]
+      }
+    },
+    "/api/v1/public/agreements/{token}/otp/verify": {
+      "post": {
+        "operationId": "public_otp_verify_api_v1_public_agreements__token__otp_verify_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtpVerify"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Otp Verify",
+        "tags": [
+          "public-agreements"
+        ]
+      }
+    },
+    "/api/v1/public/agreements/{token}/otp/verify-view": {
+      "post": {
+        "operationId": "public_view_otp_verify_api_v1_public_agreements__token__otp_verify_view_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtpVerify"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public View Otp Verify",
+        "tags": [
+          "public-agreements"
         ]
       }
     },
