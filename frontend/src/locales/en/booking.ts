@@ -7,6 +7,7 @@ export type BookingCopy = {
   required: string;
   name: string;
   phone: string;
+  email: string;
   relationship: string;
   relationshipOptions: Record<'self' | 'parent' | 'spouse' | 'child' | 'other', string>;
   careNeeded: string;
@@ -33,6 +34,7 @@ export type BookingCopy = {
     name: string;
     nameLink: string;
     phone: string;
+    email: string;
     relationship: string;
     services: string;
     area: string;
@@ -48,6 +50,7 @@ export const bookingCopyEn: BookingCopy = {
   required: '(required)',
   name: 'Your name',
   phone: 'Phone number',
+  email: 'Email (optional)',
   relationship: 'Who needs care',
   relationshipOptions: {
     self: 'Myself',
@@ -85,6 +88,7 @@ export const bookingCopyEn: BookingCopy = {
     name: 'Enter your name (2 to 80 characters).',
     nameLink: 'Please enter your name only.',
     phone: 'Enter a valid Uganda phone number, for example 0787 499 988.',
+    email: 'Enter a valid email address, or leave it empty.',
     relationship: 'Choose who needs care.',
     services: 'Choose at least one kind of care.',
     area: 'Enter your area (2 to 80 characters).',

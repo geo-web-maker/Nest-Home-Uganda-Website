@@ -12,6 +12,8 @@ const LINK = /(https?:|www\.|:\/\/|\b[\w-]+\.(?:com|net|org|info|biz|xyz|ru|cn|i
 const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g;
 
 const clean = (value: string) => value.replace(CONTROL, '').trim();
+// Optional email: simple shape check here, the server does the strict one.
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /** Zod schema for the booking form. Messages come from the copy so they can be translated. */
 export function createBookingSchema(errors: BookingCopy['errors']) {
@@ -27,6 +29,15 @@ export function createBookingSchema(errors: BookingCopy['errors']) {
           .refine((v) => !LINK.test(v), errors.nameLink),
       ),
     phone: z.string().transform(clean).pipe(z.string().refine(isValidUgPhone, errors.phone)),
+    email: z
+      .string()
+      .transform(clean)
+      .pipe(
+        z
+          .string()
+          .max(254, errors.email)
+          .refine((v) => v === '' || EMAIL.test(v), errors.email),
+      ),
     relationship: z.enum(RELATIONSHIPS, { error: errors.relationship }),
     service_ids: z.array(z.string()).min(1, errors.services).max(8, errors.services),
     area: z.string().transform(clean).pipe(z.string().min(2, errors.area).max(80, errors.area)),

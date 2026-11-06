@@ -128,6 +128,7 @@ async def anonymise_before(cutoff: datetime, now: datetime) -> int:
                 "name": "Anonymised",
                 "phone_raw": "",
                 "phone_e164": "",
+                "email": None,
                 "note": "",
                 "ip_hash": None,
                 "user_agent": None,

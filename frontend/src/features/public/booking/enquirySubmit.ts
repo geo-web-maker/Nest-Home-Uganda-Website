@@ -16,7 +16,7 @@ export async function submitEnquiryViaClient(
   try {
     const result = await client.post<{ reference: string; whatsapp_url: string }>(
       '/public/enquiries',
-      { ...payload, preferred_start: payload.preferred_start || null },
+      { ...payload, email: payload.email || null, preferred_start: payload.preferred_start || null },
       { params: { lang: 'en' } },
     );
     return { reference: result.reference, whatsappUrl: result.whatsapp_url };

@@ -65,6 +65,20 @@ describe('EnquiryDetailPage', () => {
     expect(screen.getByRole('link', { name: 'Call' })).toHaveAttribute('href', 'tel:+256787499988');
     expect(screen.getByRole('link', { name: 'WhatsApp' })).toHaveAttribute('target', '_blank');
   });
+  it('offers Email client only when the enquiry has an email and the user can use mail', async () => {
+    signIn(['enquiries:read', 'enquiries:write', 'mail:use']);
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ ...detail, email: 'mary@example.com' });
+    setup();
+    expect(await screen.findByText('mary@example.com')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Email client' })).toBeInTheDocument();
+  });
+  it('hides Email client when there is no email', async () => {
+    signIn(['enquiries:read', 'mail:use']);
+    vi.mocked(apiClient.get).mockResolvedValueOnce(detail);
+    setup();
+    await screen.findByRole('heading', { name: 'Mary Atim' });
+    expect(screen.queryByRole('button', { name: 'Email client' })).not.toBeInTheDocument();
+  });
   it('shows the timeline empty state', async () => {
     vi.mocked(apiClient.get).mockResolvedValueOnce(detail);
     setup();

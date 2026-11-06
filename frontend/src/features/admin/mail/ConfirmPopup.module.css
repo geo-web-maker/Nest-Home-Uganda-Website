@@ -1,0 +1,22 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120; /* above the compose window (Modal is 100) */
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--ink) 55%, transparent);
+}
+
+.popup {
+  width: min(100%, 34rem);
+  max-height: 90dvh;
+  overflow-y: auto;
+  margin: 0 !important;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+
+.popup:focus {
+  outline: none;
+}

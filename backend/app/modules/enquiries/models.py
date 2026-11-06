@@ -37,6 +37,7 @@ class Enquiry(TimestampedDocument):
     name: str
     phone_raw: str
     phone_e164: str
+    email: str | None = None  # optional; lets staff write to the client from the in-house mail
     relationship: Relationship
     services: list[EnquiryService] = Field(default_factory=list)
     area: str

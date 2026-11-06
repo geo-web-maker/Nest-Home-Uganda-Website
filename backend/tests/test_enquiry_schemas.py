@@ -72,3 +72,13 @@ def test_click_rules() -> None:
     ):
         with pytest.raises(ValidationError):
             ClickIn(**bad)
+
+
+def test_email_is_optional_and_stored_lowercase() -> None:
+    assert EnquiryCreate(**valid()).email is None
+    assert EnquiryCreate(**valid(email="")).email is None
+    assert EnquiryCreate(**valid(email="  Mary.Atim@Example.COM ")).email == "mary.atim@example.com"
+
+
+def test_a_bad_email_is_rejected() -> None:
+    assert errors(email="not-an-email") == {"email"}
