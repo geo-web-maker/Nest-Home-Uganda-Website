@@ -558,6 +558,21 @@ async def run_workflow_simulation(principal: Any) -> list[Check]:
     return checks
 
 
+async def staff_delivery_targets(principal: Any) -> dict[str, Any]:
+    """Masked destinations the staff self-tests will use (the signed-in account only)."""
+    from app.core.phone import is_mobile, normalise_e164
+    from app.modules.auth.models import User
+
+    user = await User.get(PydanticObjectId(principal.user_id))
+    if user is None:
+        return {"email": None, "phone": None}
+    email = (user.email or "").strip()
+    masked_email = (email.split("@", 1)[0][:1] + "***@" + email.split("@", 1)[1]) if "@" in email else None
+    phone = normalise_e164(user.phone_e164 or "")
+    masked_phone = ("*" * max(len(phone) - 3, 0) + phone[-3:]) if phone and is_mobile(phone) else None
+    return {"email": masked_email, "phone": masked_phone, "name": user.name or None}
+
+
 async def run_staff_delivery_test(principal: Any, channel: str) -> Check:
     """Send a clearly labelled test only to the currently authenticated staff member."""
     from app.core.phone import is_mobile, normalise_e164

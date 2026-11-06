@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Notice } from '../../../components/admin/Notice';
 import { SectionHeader } from '../../../components/admin/SectionHeader';
 import { Badge } from '../../../components/ui/Badge';
@@ -47,6 +47,13 @@ export function AgreementDiagnostics({ canRunWorkflow, canSeedTemplate = false }
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [seedMessage, setSeedMessage] = useState('');
+  const [targets, setTargets] = useState<{ email: string | null; phone: string | null } | null>(null);
+  useEffect(() => {
+    let live = true;
+    apiClient.get<{ email: string | null; phone: string | null }>('/admin/agreements/diagnostics/delivery-targets')
+      .then((result) => { if (live) setTargets(result); }).catch(() => { if (live) setTargets(null); });
+    return () => { live = false; };
+  }, []);
 
   const run = async (kind: 'run' | 'workflow') => {
     setBusy(kind); setError('');
@@ -104,6 +111,11 @@ export function AgreementDiagnostics({ canRunWorkflow, canSeedTemplate = false }
       <div className={styles.selfTests}>
         <h3>Real notification delivery tests</h3>
         <p className={styles.help}>These send a clearly labelled test only to your own signed-in staff account email or saved staff mobile number. They never use a client contact.</p>
+        <ul className={styles.help}>
+          <li>Email goes to your <strong>staff login email</strong>{targets?.email ? <>: <strong>{targets.email}</strong></> : <>, which is missing or invalid on your profile</>}. It is not a shared mailbox such as info@bhcug.com.</li>
+          <li>SMS goes to the <strong>mobile number saved on your staff profile</strong>{targets?.phone ? <>: <strong>{targets.phone}</strong></> : <>, which is missing or not a Uganda mobile</>}.</li>
+          <li>Not arriving? Check spam and promotions, confirm the address above is one you can open, and run the Mail section's SPF, DKIM and DMARC checks for bhcug.com. "Provider accepted" only means the provider queued it.</li>
+        </ul>
         <div className={styles.actions}>
           <Button variant="outline" disabled={Boolean(busy)} onClick={() => void sendTest('email')}>
             {busy === 'email' ? 'Sending…' : 'Send test email to me'}

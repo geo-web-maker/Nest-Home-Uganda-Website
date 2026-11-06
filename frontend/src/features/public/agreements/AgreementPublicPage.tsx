@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { apiClient } from '../../../lib/api/client';
+import { AgreementFieldInput } from '../../agreements/AgreementFieldInput';
+import { SCHEDULE_SECTIONS, fieldLabel as metaLabel, fieldMeta } from '../../agreements/fieldMeta';
 import styles from './AgreementPublicPage.module.css';
 
 type AgreementField = { value: unknown; owner: 'staff' | 'clinical' | 'client' | 'either'; revision: number; entered_by_staff: boolean };
@@ -23,7 +25,7 @@ type TurnstileApi = {
 };
 declare global { interface Window { turnstile?: TurnstileApi } }
 
-function fieldLabel(path: string): string { return path.split('.').at(-1)?.replaceAll('_', ' ') ?? path; }
+function fieldLabel(path: string): string { return metaLabel(path); }
 function toText(value: unknown): string { return value === null || value === undefined ? '' : typeof value === 'string' ? value : JSON.stringify(value, null, 2); }
 
 export function AgreementPublicPage() {
@@ -124,11 +126,11 @@ export function AgreementPublicPage() {
     finally { setBusy(false); }
   };
 
-  const saveField = async (path: string) => {
+  const saveField = async (path: string, override?: string) => {
     if (!view) return;
     const field = view.fields[path];
     if (!field || !['client', 'either'].includes(field.owner)) return;
-    const value = drafts[path] ?? '';
+    const value = override ?? drafts[path] ?? '';
     if (value === toText(field.value)) return;
     setBusy(true); setError('');
     try {
@@ -231,15 +233,39 @@ export function AgreementPublicPage() {
         <div className={styles.clauses}>{Object.entries(view.clauses).map(([number, text]) => <details key={number}><summary>Clause {number}</summary><div>{text.split('\n').map((line, i) => line ? <p key={`${number}-${i}`}>{line}</p> : null)}</div></details>)}</div>
         <h2>Agreement details and schedules</h2>
         <p>Fields marked read-only have been completed by Bloomwell staff. You can edit fields marked as client or shared.</p>
-        {Object.entries(view.fields).map(([path, field]) => {
-          const editable = field.owner === 'client' || field.owner === 'either';
-          return <div className={styles.formField} key={path}>
-            <label htmlFor={`client-${path}`}><span>{fieldLabel(path)}</span><small>{editable ? 'Your field' : 'Read-only · Bloomwell staff'}</small></label>
-            <textarea id={`client-${path}`} rows={2} value={drafts[path] ?? toText(field.value)} readOnly={!editable} onChange={(e) => setDrafts((old) => ({ ...old, [path]: e.target.value }))} onBlur={() => void saveField(path)} />
-            {field.entered_by_staff && <small>Entered by a Bloomwell staff member on your behalf; please check it carefully.</small>}
-          </div>;
-        })}
-        <div className={styles.fees}><h3>Schedule B fee summary</h3>{Object.entries(view.schedule_b_computed).map(([key, value]) => <p key={key}><span>{key.replaceAll('_', ' ')}</span><strong>{String(value)}</strong></p>)}</div>
+        {(() => {
+          const groups = (['parties', 'schedule_a', 'schedule_b', 'schedule_c'] as const).flatMap((tabId) => SCHEDULE_SECTIONS[tabId].sections.map((section) => ({ ...section, group: SCHEDULE_SECTIONS[tabId].title })));
+          const known = new Set(groups.flatMap((section) => section.paths));
+          const leftovers = Object.keys(view.fields).filter((path) => !known.has(path));
+          const all = leftovers.length ? [...groups, { id: 'other', group: 'Other', title: 'Other details', paths: leftovers }] : groups;
+          const currency = toText((drafts['schedule_b.currency'] ?? view.fields['schedule_b.currency']?.value)) || 'UGX';
+          let lastGroup = '';
+          return all.map((section) => {
+            const paths = section.paths.filter((path) => view.fields[path]);
+            if (!paths.length) return null;
+            const heading = section.group !== lastGroup ? <h3 className={styles.groupHeading}>{section.group}</h3> : null;
+            lastGroup = section.group;
+            return <div key={section.id}>
+              {heading}
+              <fieldset className={styles.fieldGroup}>
+                <legend>{section.title}</legend>
+                {paths.map((path) => {
+                  const field = view.fields[path];
+                  const editable = field.owner === 'client' || field.owner === 'either';
+                  const meta = fieldMeta(path);
+                  return <div className={styles.formField} key={path}>
+                    <label htmlFor={`client-${path}`}><span>{meta.label}{meta.required && <abbr title="Required"> *</abbr>}</span><small>{editable ? 'Your field' : 'Completed by Bloomwell'}</small></label>
+                    {meta.help && <small>{meta.help}</small>}
+                    <AgreementFieldInput path={path} id={`client-${path}`} value={drafts[path] ?? toText(field.value)} readOnly={!editable} currency={currency}
+                      onChange={(value) => setDrafts((old) => ({ ...old, [path]: value }))} onCommit={(value) => void saveField(path, value)} />
+                    {field.entered_by_staff && <small>Entered by a Bloomwell staff member on your behalf; please check it carefully.</small>}
+                  </div>;
+                })}
+              </fieldset>
+            </div>;
+          });
+        })()}
+        <div className={styles.fees}><h3>Schedule B fee summary</h3>{Object.entries(view.schedule_b_computed).map(([key, value]) => <p key={key}><span>{key.replaceAll('_', ' ')}</span><strong>{typeof value === 'number' ? value.toLocaleString('en-US', { maximumFractionDigits: 2 }) : String(value)}</strong></p>)}</div>
         <h2>Sign your agreement</h2>
         <p>By signing, you confirm that you have reviewed the agreement and the information shown above. Your signature is bound to this exact version.</p>
         <label>Your full name<input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" /></label>

@@ -133,6 +133,13 @@ async def admin_diagnostics_workflow(principal: CanAgreementWorkflowTest, respon
     return {"checks": [item.as_dict() for item in checks], "summary": diagnostics.summarize(checks)}
 
 
+@admin_router.get("/diagnostics/delivery-targets")
+async def admin_diagnostics_targets(principal: CanDiagnostics, response: Response):
+    """Show (masked) where the staff self-tests will be delivered."""
+    response.headers["Cache-Control"] = "no-store"
+    return await diagnostics.staff_delivery_targets(principal)
+
+
 @admin_router.post("/diagnostics/delivery-test/{channel}")
 async def admin_diagnostics_delivery(channel: Literal["email", "sms"], principal: CanDiagnostics,
                                      response: Response,
