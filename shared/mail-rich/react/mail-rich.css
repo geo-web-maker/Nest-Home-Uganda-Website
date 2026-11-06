@@ -1,8 +1,9 @@
-.mr-message { color: var(--mr-fg, #1a1a1a); }
+.mr-message { --mr-fg: var(--ink, #1a1a1a); --mr-line: var(--line, #ddd); --mr-muted: var(--mut, #666); color: var(--mr-fg); }
 .mr-paper { color: #1a1a1a; background: #fff; color-scheme: light; overflow-wrap: anywhere; padding: var(--mr-gap, 12px); border: 1px solid var(--mr-line, #ddd); border-radius: var(--mr-radius, 8px); }
 .mr-paper img { max-width: 100%; height: auto; }
 .mr-paper table { max-width: 100%; border-collapse: collapse; }
-.mr-quoted { margin-top: var(--mr-gap, 12px); border-left: 3px solid var(--mr-line, #ddd); padding-left: var(--mr-gap, 12px); }
+/* Email HTML is written for a light page and carries its own colours, so quoted mail sits on the same light surface as the message body, in light and dark app themes. */
+.mr-quoted { color: #1a1a1a; background: #fff; color-scheme: light; margin-top: var(--mr-gap, 12px); border-left: 3px solid var(--mr-line, #ddd); padding: var(--mr-gap, 12px); border-radius: var(--mr-radius, 8px); overflow-wrap: anywhere; }
 .mr-plain-body { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
 .mr-message-toggle { display: flex; gap: var(--mr-gap, 12px); margin-block: var(--mr-gap, 12px); }
 .mr-section-title { font-size: 1rem; }

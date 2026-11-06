@@ -61,7 +61,7 @@ export function VisitListPage() {
   useEffect(() => { void load(); }, [load]);
   const visible = useMemo(() => rows.filter((row) => !status || row.status === status), [rows, status]);
   return <div className="stage-page">
-    <PageHeader title="Visits" subtitle="Review scheduled and completed visits, including verification details." actions={<><Button variant="outline" onClick={() => void load()}>Refresh</Button>{canSchedule && <Button onClick={() => navigate('/admin/care/schedule')}>Open schedule</Button>}</>} />
+    <PageHeader title="Visits" actions={<><Button variant="outline" onClick={() => void load()}>Refresh</Button>{canSchedule && <Button onClick={() => navigate('/admin/care/schedule')}>Open schedule</Button>}</>} />
     <FilterBar label="Filter visits" meta={`${visible.length} visit${visible.length === 1 ? '' : 's'} shown`}><Field label="Status" kind="select" value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option><option value="scheduled">Scheduled</option><option value="in_progress">In progress</option><option value="completed">Completed</option><option value="missed">Missed</option><option value="cancelled">Cancelled</option></Field></FilterBar>
     {error && <Notice tone="error">{error}</Notice>}
     {loading ? <p aria-busy="true">Loading visits…</p> : visible.length === 0 ? <section className="stage-panel"><p>No visits match this status.</p></section> : <section className="stage-panel"><DataTable

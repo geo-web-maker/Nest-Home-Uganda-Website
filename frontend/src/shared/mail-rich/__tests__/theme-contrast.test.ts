@@ -1,14 +1,15 @@
 /* GENERATED from shared/mail-rich. Edit there, then run: node scripts/sync-mail-rich.mjs */
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const css = readFileSync(new URL('../react/mail-rich.css', import.meta.url), 'utf8');
+const css = readFileSync(resolve(__dirname, '../react/mail-rich.css'), 'utf8');
 
 /** Declarations of the first rule whose selector is exactly `selector`. */
 function rule(selector: string): string {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const match = css.match(new RegExp(`(?:^|\\})\\s*${escaped}\\s*\\{([^}]*)\\}`, 'm'));
-  return match ? match[1] : '';
+  return match?.[1] ?? '';
 }
 
 describe('mail HTML is readable in light and dark app themes', () => {

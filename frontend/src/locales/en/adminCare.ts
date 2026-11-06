@@ -1,6 +1,5 @@
 export const adminCareEn = {
   title: 'Care operations',
-  subtitle: 'Set up care delivery and review visit activity.',
   tabs: {
     clients: 'Clients',
     visits: 'Visits',
