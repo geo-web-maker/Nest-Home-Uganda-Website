@@ -40,12 +40,13 @@ function CheckRows({ checks }: { checks: SetupCheck[] }) {
 }
 
 /** Protected checks for the complete Bloomwell agreement path. */
-export function AgreementDiagnostics({ canRunWorkflow }: { canRunWorkflow: boolean }) {
+export function AgreementDiagnostics({ canRunWorkflow, canSeedTemplate = false }: { canRunWorkflow: boolean; canSeedTemplate?: boolean }) {
   const [readiness, setReadiness] = useState<Run | null>(null);
   const [workflow, setWorkflow] = useState<Run | null>(null);
   const [delivery, setDelivery] = useState<Record<string, SetupCheck>>({});
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  const [seedMessage, setSeedMessage] = useState('');
 
   const run = async (kind: 'run' | 'workflow') => {
     setBusy(kind); setError('');
@@ -54,6 +55,17 @@ export function AgreementDiagnostics({ canRunWorkflow }: { canRunWorkflow: boole
       if (kind === 'run') setReadiness(result); else setWorkflow(result);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'The agreement diagnostic could not be completed.');
+    } finally { setBusy(''); }
+  };
+
+  const seedTemplate = async () => {
+    setBusy('seed'); setError(''); setSeedMessage('');
+    try {
+      const result = await apiClient.post<{ created: number; message: string }>('/admin/agreements/template/seed', {});
+      setSeedMessage(result.message);
+      await run('run');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The source template could not be installed.');
     } finally { setBusy(''); }
   };
 
@@ -87,7 +99,7 @@ export function AgreementDiagnostics({ canRunWorkflow }: { canRunWorkflow: boole
           {busy === 'workflow' ? 'Simulating…' : 'Run full workflow simulation'}
         </Button>
       </div>
-      {!canRunWorkflow && <p className={styles.help}>The full simulation also requires the `agreements:sign` scope. Readiness checks and staff delivery tests require `agreements:templates`.</p>}
+      {!canRunWorkflow && <p className={styles.help}>The full simulation also requires the `agreements:sign` scope. Readiness checks and staff delivery tests require `agreements:diagnostics`.</p>}
 
       <div className={styles.selfTests}>
         <h3>Real notification delivery tests</h3>
@@ -103,6 +115,16 @@ export function AgreementDiagnostics({ canRunWorkflow }: { canRunWorkflow: boole
       </div>
 
       {error && <Notice tone="error">{error}</Notice>}
+      {seedMessage && <Notice tone="success">{seedMessage}</Notice>}
+      {canSeedTemplate && readiness?.checks.some((item) => item.id === 'agreement_template' && item.status === 'fail') && (
+        <div className={styles.selfTests}>
+          <h3>Install agreement wording</h3>
+          <p className={styles.help}>No published agreement wording exists. This installs the reviewed source PDF wording (published as the first version on an empty database; saved as an unpublished draft if another version is already live). Requires a recently verified authenticator session.</p>
+          <div className={styles.actions}>
+            <Button disabled={Boolean(busy)} onClick={() => void seedTemplate()}>{busy === 'seed' ? 'Installing…' : 'Install source template'}</Button>
+          </div>
+        </div>
+      )}
       {readiness && <div className={styles.result}><h3>Readiness results</h3><Summary summary={readiness.summary} /><CheckRows checks={readiness.checks} /></div>}
       {workflow && <div className={styles.result}><h3>Full workflow results</h3><Summary summary={workflow.summary} /><CheckRows checks={workflow.checks} /></div>}
       {Object.keys(delivery).length > 0 && <div className={styles.result}><h3>Staff delivery results</h3><CheckRows checks={Object.values(delivery)} /></div>}

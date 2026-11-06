@@ -67,6 +67,8 @@ SCOPES: tuple[Scope, ...] = (
     Scope("agreements:sign", "Agreements", "Countersign agreements on behalf of Bloomwell"),
     Scope("agreements:void", "Agreements", "Void an agreement after authenticator verification"),
     Scope("agreements:templates", "Agreements", "Manage agreement wording and email/SMS templates"),
+    Scope("agreements:notifications", "Agreements", "View agreement email/SMS notification wording"),
+    Scope("agreements:diagnostics", "Agreements", "Run agreement readiness checks, workflow simulation and delivery tests"),
 )
 
 ALL_SCOPE_IDS: frozenset[str] = frozenset(s.id for s in SCOPES)
@@ -143,6 +145,7 @@ SCOPE_PRESETS: dict[str, frozenset[str]] = {
             "agreements:write",
             "agreements:void",
             "agreements:templates",
+            "agreements:notifications",
         }
     ),
     "executive": frozenset(

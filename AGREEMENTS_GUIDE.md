@@ -157,3 +157,9 @@ Run the Mail section's SPF/DKIM/DMARC and outbox diagnostics as well. The agreem
 - **Old link unavailable:** this is expected after staff revision, client signing, reissue, expiry or void. Use only the latest issued link.
 - **PDF seal failure:** inspect WeasyPrint/Pango packages, private storage access and diagnostic cleanup. Do not send a manually produced or unverified PDF as the official sealed copy.
 - **Test run leaves artifacts:** note the `BHC-TEST-` reference from the failure result; inspect the agreement/OTP collections and private `agreements/<reference>/` keys before cleanup.
+
+## Permission scopes (diagnostics and notifications)
+
+- `agreements:diagnostics` — run readiness checks, the workflow simulation (also needs `agreements:sign`) and staff delivery tests. Not granted to the `admin` role by default; grant it explicitly. Superadmins have it.
+- `agreements:notifications` — view the email/SMS notification wording. Editing, previewing, test-sending and resetting still need `agreements:templates`.
+- **Install source template (UI):** if the readiness check reports no published wording, Agreements → diagnostics shows an *Install source template* button (needs `agreements:templates` and a verified authenticator session). It calls the same idempotent seed as `python -m app.seed`.

@@ -152,18 +152,25 @@ async def run_readiness_checks() -> list[Check]:
     else:
         checks.append(Check("agreement_turnstile", WARN, "Turnstile is not configured. Public OTP routes rely on IP/token rate limits only."))
 
+    _missing = [n for n, v in (("S3_BUCKET_PRIVATE", settings.s3_bucket_private), ("S3_ENDPOINT", settings.s3_endpoint), ("S3_KEY", settings.s3_key), ("S3_SECRET", settings.s3_secret)) if not v]
     storage = get_storage()
     key = f"agreements/diagnostics/{uuid.uuid4().hex}.txt"
     payload = b"Bloomwell agreement private storage diagnostics - synthetic data only"
     storage_ok = False
     try:
+        if _missing:
+            raise RuntimeError("storage not configured")
         await storage.put(Bucket.PRIVATE, key, payload, "text/plain")
         storage_ok = await storage.get(Bucket.PRIVATE, key) == payload
         checks.append(Check("agreement_private_storage", PASS if storage_ok else FAIL,
                             "Private storage wrote and read the probe object." if storage_ok else "Private storage returned different bytes from the test write."))
     except Exception as exc:
-        checks.append(Check("agreement_private_storage", FAIL, f"Private storage read/write failed ({type(exc).__name__}). Check the R2 private bucket and credentials."))
+        if _missing:
+            checks.append(Check("agreement_private_storage", FAIL, "Private storage is not configured. Missing environment variables: " + ", ".join(_missing) + "."))
+        else:
+            checks.append(Check("agreement_private_storage", FAIL, f"Private storage read/write failed ({type(exc).__name__}). Check the R2 private bucket and credentials."))
     finally:
+      if not _missing:
         try:
             await storage.delete(Bucket.PRIVATE, key)
         except Exception:
@@ -266,11 +273,11 @@ async def run_readiness_checks() -> list[Check]:
 
     try:
         from app.modules.auth.scopes import ALL_SCOPE_IDS
-        required_scopes = {"agreements:read", "agreements:write", "agreements:sign", "agreements:void", "agreements:templates"}
+        required_scopes = {"agreements:read", "agreements:write", "agreements:sign", "agreements:void", "agreements:templates", "agreements:notifications", "agreements:diagnostics"}
         missing_scopes = sorted(required_scopes - set(ALL_SCOPE_IDS))
         checks.append(Check("agreement_scopes", FAIL if missing_scopes else PASS,
                             "Missing agreement scopes: " + ", ".join(missing_scopes) if missing_scopes
-                            else "All five agreement permission scopes are registered."))
+                            else "All seven agreement permission scopes are registered."))
     except Exception as exc:
         checks.append(Check("agreement_scopes", FAIL, f"Agreement permission registry could not be checked ({type(exc).__name__})."))
     return checks
