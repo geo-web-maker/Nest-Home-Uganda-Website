@@ -7,7 +7,7 @@ export function apiAssetUrl(path: string): string {
   const apiPath = path.startsWith('/api/v1/') ? path : `/api/v1${path.startsWith('/') ? path : `/${path}`}`;
   return `${apiBase}${apiPath}`;
 }
-export type ApiError = { status: number; detail: string };
+export type ApiError = { status: number; detail: string; code?: string; requestId?: string; endpoint?: string };
 
 /** A static host answers POST with 405. Fail with a clear message when the API origin was never set at build time. */
 function assertApiConfigured(): void {
@@ -46,7 +46,13 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   if (token) headers.set('Authorization', `Bearer ${token}`);
   if (Capacitor.isNativePlatform() && path.startsWith('/auth/native/')) headers.set('X-Client','native');
   assertApiConfigured();
-  let response = await fetch(`${apiBase}/api/v1${path}`, { ...init, headers, credentials: apiBase ? 'include' : 'same-origin' });
+  let response: Response;
+  try {
+    response = await fetch(`${apiBase}/api/v1${path}`, { ...init, headers, credentials: apiBase ? 'include' : 'same-origin' });
+  } catch (cause) {
+    const reason = cause instanceof Error ? cause.message : String(cause);
+    throw { status: 0, code: 'network_error', endpoint: `${init.method ?? 'GET'} /api/v1${path}`, detail: `Could not reach the API endpoint. No HTTP response was received. Check the API URL, internet connection, DNS/TLS and CORS configuration. Browser detail: ${reason}.` } satisfies ApiError;
+  }
   if (response.status === 401 && Capacitor.isNativePlatform() && !path.startsWith('/auth/native/')) {
     const refreshToken=await readRefreshToken();
     if (refreshToken) {
@@ -58,9 +64,16 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
     }
   }
   if (!response.ok) {
-    let detail = `Request failed (${response.status})`;
-    try { const body = await response.json() as { detail?: string }; detail = body.detail ?? detail; } catch { /* response may not contain JSON */ }
-    throw { status: response.status, detail } satisfies ApiError;
+    let detail = `The API returned HTTP ${response.status} for ${init.method ?? 'GET'} ${path}.`;
+    let code: string | undefined;
+    let requestId = response.headers.get('X-Request-ID') ?? undefined;
+    try {
+      const body = await response.json() as { error?: { code?: string; message?: string; request_id?: string }; detail?: string; message?: string };
+      detail = body.error?.message ?? body.detail ?? body.message ?? detail;
+      code = body.error?.code;
+      requestId = body.error?.request_id ?? requestId;
+    } catch { /* proxy may return plain text or HTML */ }
+    throw { status: response.status, detail, code, requestId, endpoint: `${init.method ?? 'GET'} /api/v1${path}` } satisfies ApiError;
   }
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;

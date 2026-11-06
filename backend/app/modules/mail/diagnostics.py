@@ -24,6 +24,9 @@ DOMAIN = re.compile(r"^(?=.{4,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]
 # Selectors the supported providers publish DKIM under. Anything else is reported as skipped, never as a failure.
 DKIM_SELECTORS = {"resend": ["resend._domainkey"], "brevo": ["brevo1._domainkey", "brevo2._domainkey"]}
 
+TEST_ATTACHMENT_FILENAME = "nest-email-diagnostics.txt"
+TEST_ATTACHMENT_DATA = b"Nest email diagnostics attachment\nThis is a harmless test file.\n"
+
 DnsLookup = Callable[[str, str], Awaitable["list[str] | None"]]
 
 
@@ -208,10 +211,42 @@ async def check_smtp_port(values: dict[str, Any]) -> Check:
         return Check("smtpPort", WARN, f"SMTP port {port} is not reachable from this host. Try port 2525 or the Brevo API transport.")
 
 
+def check_mime_attachments() -> Check:
+    """Exercise the local RFC 5322 builder/parser attachment round-trip without sending mail."""
+    try:
+        from app.modules.mail.mime_build import build_eml
+        from app.modules.mail.mime_parse import parse_message
+
+        raw = build_eml(
+            {"from_address": "diagnostics@example.org", "subject": "Attachment MIME check", "body_text": "Attachment check"},
+            [{"filename": TEST_ATTACHMENT_FILENAME, "content_type": "text/plain", "data": TEST_ATTACHMENT_DATA}],
+            {"to": ["recipient@example.org"]},
+        )
+        parsed = parse_message(
+            raw,
+            blocked_extensions=set(),
+            max_attachment_bytes=1024 * 1024,
+            max_html_bytes=1024 * 1024,
+            max_text_bytes=1024 * 1024,
+        )
+        found = next((item for item in parsed.attachments if item.filename == TEST_ATTACHMENT_FILENAME), None)
+        if (
+            found
+            and found.content_type == "text/plain"
+            and found.data == TEST_ATTACHMENT_DATA
+            and found.size_bytes == len(TEST_ATTACHMENT_DATA)
+        ):
+            return Check("mimeAttachments", PASS, "The MIME builder and parser preserve the attachment name, content type, bytes and size.")
+        return Check("mimeAttachments", FAIL, "The MIME round-trip changed or lost the test attachment.")
+    except Exception as exc:
+        return Check("mimeAttachments", FAIL, f"The MIME attachment round-trip failed ({type(exc).__name__}).")
+
+
 async def run_passive_checks(values: dict[str, Any], pool: Any, storage: Any, bucket: Any, lookup: DnsLookup = doh_lookup) -> list[Check]:
     checks = check_settings(values)
     checks.append(await check_smtp_port(values))
     checks.append(await check_scanner(values))
+    checks.append(check_mime_attachments())
     async with pool.acquire() as conn:
         checks.extend(await check_database(conn))
         if any(check.id == "database" and check.status == PASS for check in checks):
@@ -231,17 +266,85 @@ async def _inbox_has(pool: Any, mailbox_id: str, marker: str) -> bool:
     return bool(found)
 
 
-async def loopback(user_id: str, mailbox: dict[str, Any], pool: Any, core: Any) -> Check:
-    """Sends from the administrator's mailbox to itself through the normal draft and send path, then looks for it."""
-    marker = f"Setup check {time.strftime('%Y-%m-%d %H:%M:%S')}"
+async def _attach_test_file_to_draft(
+    draft: dict[str, Any], mailbox: dict[str, Any], pool: Any, storage: Any, bucket: Any,
+    *, scan_enabled: bool = False,
+) -> tuple[str, str]:
+    """Store a tiny harmless file and link it to a diagnostic draft like a confirmed upload."""
+    key = f"mail/attachments/diagnostics-{uuid.uuid4()}.txt"
+    digest = hashlib.sha256(TEST_ATTACHMENT_DATA).hexdigest()
+    await storage.put(bucket, key, TEST_ATTACHMENT_DATA, "text/plain")
+    scan_state = "unscanned"
     try:
-        draft = await core.create_draft(user_id, str(mailbox["id"]), {"to": [mailbox["address"]], "subject": marker, "body_text": "This message was created by the mail setup check. You can delete it."})
+        if scan_enabled:
+            from app.modules.mail.scanner import scan_object
+            verdict = await scan_object(key, digest)
+            if str(verdict.state) != "clean":
+                raise RuntimeError("The attachment scanner did not confirm the test file is clean.")
+            scan_state = "clean"
+        async with pool.acquire() as conn:
+            await conn.execute(
+                "INSERT INTO attachment(message_id,uploader_mailbox_id,object_key,filename,content_type,size_bytes,sha256,scan_state,disposition) "
+                "VALUES($1,$2,$3,$4,'text/plain',$5,$6,$7,'attachment')",
+                draft["message_id"], mailbox["id"], key, TEST_ATTACHMENT_FILENAME,
+                len(TEST_ATTACHMENT_DATA), digest, scan_state,
+            )
+        return key, digest
+    except Exception:
+        try:
+            await storage.delete(bucket, key)
+        except Exception:
+            pass
+        raise
+
+
+async def _inbox_attachment_matches(pool: Any, mailbox_id: str, marker: str, storage: Any, bucket: Any) -> bool:
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT a.object_key,a.sha256,a.filename,a.content_type,a.size_bytes FROM mailbox_message mm "
+            "JOIN message m ON m.id=mm.message_id JOIN attachment a ON a.message_id=m.id "
+            "WHERE mm.mailbox_id=$1 AND mm.folder='inbox' AND m.subject=$2 AND a.filename=$3 LIMIT 1",
+            mailbox_id, marker, TEST_ATTACHMENT_FILENAME,
+        )
+    if not row or not row["object_key"]:
+        return False
+    try:
+        data = await storage.get(bucket, row["object_key"])
+    except Exception:
+        return False
+    return (
+        data == TEST_ATTACHMENT_DATA
+        and str(row["content_type"] or "").lower() == "text/plain"
+        and len(data) == int(row["size_bytes"] or 0)
+        and hashlib.sha256(data).hexdigest() == str(row["sha256"])
+    )
+
+
+async def loopback(
+    user_id: str, mailbox: dict[str, Any], pool: Any, core: Any,
+    *, storage: Any | None = None, bucket: Any = None, scan_enabled: bool = False,
+) -> Check:
+    """Send to the administrator's mailbox through the normal draft/send path and verify its file attachment."""
+    marker = f"Setup check {time.strftime('%Y-%m-%d %H:%M:%S')}"
+    attachment_key: str | None = None
+    try:
+        draft = await core.create_draft(user_id, str(mailbox["id"]), {
+            "to": [mailbox["address"]], "subject": marker,
+            "body_text": "This message was created by the email diagnostics suite. You can delete it.",
+        })
+        if storage is not None:
+            attachment_key, _digest = await _attach_test_file_to_draft(
+                draft, mailbox, pool, storage, bucket, scan_enabled=scan_enabled,
+            )
         await core.send_draft(user_id, draft["id"], str(mailbox["id"]))
     except Exception as error:
         return Check("loopback", FAIL, f"Sending inside Nest failed: {str(error)[:140] or type(error).__name__}")
-    if await _inbox_has(pool, str(mailbox["id"]), marker):
-        return Check("loopback", PASS, f'Sending inside Nest works. "{marker}" arrived in {mailbox["address"]}.')
-    return Check("loopback", FAIL, "The message was sent but did not arrive in the inbox.")
+    if not await _inbox_has(pool, str(mailbox["id"]), marker):
+        return Check("loopback", FAIL, "The message was sent but did not arrive in the inbox.")
+    if storage is not None and not await _inbox_attachment_matches(pool, str(mailbox["id"]), marker, storage, bucket):
+        return Check("loopback", FAIL, "The internal message arrived, but its attachment was missing or its stored bytes failed the integrity check.")
+    suffix = f" and {TEST_ATTACHMENT_FILENAME} passed the storage integrity check" if attachment_key else ""
+    return Check("loopback", PASS, f'Internal sending works. "{marker}" arrived in {mailbox["address"]}{suffix}.')
 
 
 def sign_inbound(secret: str, timestamp: str, payload: dict[str, Any]) -> str:
@@ -259,7 +362,8 @@ async def inbound_selftest(mailbox: dict[str, Any], domain: str, secret: str, po
     message["To"] = mailbox["address"]
     message["Subject"] = marker
     message["Message-ID"] = f"<setup-{uuid.uuid4()}@{domain}>"
-    message.set_content("This message was created by the mail setup check. You can delete it.")
+    message.set_content("This message was created by the email diagnostics suite. You can delete it.")
+    message.add_attachment(TEST_ATTACHMENT_DATA, maintype="text", subtype="plain", filename=TEST_ATTACHMENT_FILENAME)
     key = f"mail/inbound/selftest-{uuid.uuid4()}.eml"
     payload = {"object_key": key, "envelope_to": [str(mailbox["address"]).lower()], "auth_results": {}}
     timestamp = str(int(time.time()))
@@ -270,6 +374,8 @@ async def inbound_selftest(mailbox: dict[str, Any], domain: str, secret: str, po
         return Check("inboundTest", FAIL, f"Inbound mail was refused: {error}")
     except Exception as error:
         return Check("inboundTest", FAIL, f"Inbound mail could not be processed: {str(error)[:140] or type(error).__name__}")
-    if await _inbox_has(pool, str(mailbox["id"]), marker):
-        return Check("inboundTest", PASS, f'Inbound mail works. "{marker}" arrived in {mailbox["address"]}.')
-    return Check("inboundTest", FAIL, "The message was accepted but did not reach the inbox.")
+    if not await _inbox_has(pool, str(mailbox["id"]), marker):
+        return Check("inboundTest", FAIL, "The message was accepted but did not reach the inbox.")
+    if not await _inbox_attachment_matches(pool, str(mailbox["id"]), marker, storage, bucket):
+        return Check("inboundTest", FAIL, "The inbound message arrived, but its attachment was missing or its stored bytes failed the integrity check.")
+    return Check("inboundTest", PASS, f'Inbound mail works. "{marker}" and its attachment arrived in {mailbox["address"]}; stored bytes match the original.')

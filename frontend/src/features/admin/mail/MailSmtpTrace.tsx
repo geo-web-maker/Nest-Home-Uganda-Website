@@ -10,7 +10,7 @@ import { ApiError, apiClient } from '../../../lib/api/client';
 import styles from './MailPage.module.css';
 
 type TraceStep = { step: string; ok: boolean; ms?: number; detail?: string; smtp_code?: number | null; error_type?: string } & Record<string, unknown>;
-type WireLine = { dir: 'client' | 'server'; line: string; decoded?: string };
+type WireLine = { dir: 'client' | 'server'; line: string };
 export type SmtpTrace = {
   steps: TraceStep[];
   wire?: WireLine[];
@@ -21,10 +21,7 @@ export type SmtpTrace = {
 
 const SHOWN_ELSEWHERE = new Set(['step', 'ok', 'ms', 'detail', 'smtp_code', 'error_type']);
 
-/**
- * Full, unredacted SMTP trace for the Test provider panel. The server only answers with a verified authenticator code,
- * and the result includes the saved SMTP key, so it is shown only here, only on request, and never stored in the browser.
- */
+/** Credential-safe SMTP diagnostics. The server never returns the SMTP password or AUTH payloads. */
 export function MailSmtpTrace() {
   const [sendTo, setSendTo] = useState('');
   const [compareKey, setCompareKey] = useState('');
@@ -63,7 +60,7 @@ export function MailSmtpTrace() {
     <section className={styles.panel} aria-label="Full SMTP trace">
       <SectionHeader title="Full SMTP trace" />
       <p className={styles.settingHelp}>
-        Shows every step the Brevo SMTP sender takes: the exact values it uses (including the saved SMTP key), each login method tried, and the raw conversation with the server. Needs a verified authenticator code. Rotate the SMTP key in Brevo when you are done.
+        Shows each Brevo SMTP connection, TLS, authentication and send step, plus server replies. Credentials are represented only by short fingerprints and basic format checks; SMTP AUTH payloads are redacted. Requires a verified authenticator session.
       </p>
       <Field type="email" label="Send a test message to (optional)" value={sendTo} onChange={(event) => setSendTo(event.target.value)} />
       <Field label="Key you know works (optional, to compare with the saved one)" value={compareKey} autoComplete="off" onChange={(event) => setCompareKey(event.target.value)} />
@@ -104,9 +101,9 @@ export function MailSmtpTrace() {
           </ul>
           {trace.wire?.length ? (
             <>
-              <strong>Raw conversation (after TLS is decrypted)</strong>
+              <strong>SMTP conversation (after TLS is decrypted; AUTH data redacted)</strong>
               <pre className={styles.body}>
-                {trace.wire.map((w) => `${w.dir === 'client' ? 'C: ' : 'S: '}${w.line}${w.decoded !== undefined ? `\n      ↳ decoded: ${w.decoded}` : ''}`).join('\n')}
+                {trace.wire.map((w) => `${w.dir === 'client' ? 'C: ' : 'S: '}${w.line}`).join('\n')}
               </pre>
             </>
           ) : null}

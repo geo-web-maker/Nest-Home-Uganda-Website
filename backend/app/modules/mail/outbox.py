@@ -134,8 +134,8 @@ async def drain(limit: int = 20) -> int:
     async with pool.acquire() as conn:
         async with conn.transaction():
             stale = await conn.fetch(
-                "SELECT id,to_addresses,cc_addresses,bcc_addresses,counter_reserved,"
-                "counter_day,counter_month FROM outbox WHERE state='sending' "
+                "SELECT id,from_mailbox_id,to_addresses,cc_addresses,bcc_addresses,counter_reserved,"
+                "counter_day,counter_month,send_started_at FROM outbox WHERE state='sending' "
                 "AND (claimed_at IS NULL OR claimed_at < now()-interval '10 minutes') "
                 "FOR UPDATE SKIP LOCKED"
             )
@@ -154,12 +154,50 @@ async def drain(limit: int = 20) -> int:
                         count,
                         old["counter_month"],
                     )
+                # A worker may have crashed after SMTP accepted DATA but before the
+                # database acknowledgement. SMTP has no idempotency key; never resend
+                # an attempt whose provider call had started. Require admin reconciliation.
+                uncertain = old.get("send_started_at") is not None
                 await conn.execute(
-                    "UPDATE outbox SET state='deferred',next_attempt_at=now(),claimed_at=NULL,"
-                    "counter_reserved=false,counter_day=NULL,counter_month=NULL,"
-                    "last_error='worker lease expired' WHERE id=$1",
-                    old["id"],
+                    "UPDATE outbox SET state=CASE WHEN $2 THEN 'failed' ELSE 'deferred' END,"
+                    "next_attempt_at=CASE WHEN $2 THEN next_attempt_at ELSE now() END,"
+                    "claimed_at=NULL,counter_reserved=false,counter_day=NULL,counter_month=NULL,"
+                    "last_error=CASE WHEN $2 THEN 'delivery_outcome_unknown_manual_review' ELSE 'worker lease expired' END "
+                    "WHERE id=$1",
+                    old["id"], uncertain,
                 )
+                if uncertain:
+                    # Notify the sender without exposing the provider's raw response.
+                    if old.get("from_mailbox_id"):
+                        sender = await conn.fetchrow(
+                            "SELECT id FROM mailbox WHERE id=$1", old["from_mailbox_id"]
+                        )
+                        if sender:
+                            domain = str(await get_value("mail.domain") or "invalid.local")
+                            notice = await conn.fetchval(
+                                "INSERT INTO message(from_address,from_name,subject,body_text,origin) "
+                                "VALUES($1,'Mail Delivery Subsystem','Delivery status needs review',$2,'internal') "
+                                "RETURNING id",
+                                f"mailer-daemon@{domain}",
+                                "We could not confirm whether the mail provider accepted your message. "
+                                "To prevent duplicate delivery, it was not sent again automatically. "
+                                "Contact an administrator to check the provider delivery records.",
+                            )
+                            await conn.execute(
+                                "INSERT INTO mailbox_message(mailbox_id,message_id,folder) "
+                                "VALUES($1,$2,'inbox') ON CONFLICT DO NOTHING",
+                                sender["id"], notice,
+                            )
+                    try:
+                        from app.modules.audit.service import record_system_event
+                        await record_system_event(
+                            action="mail.outbox.delivery_outcome_unknown",
+                            message="A mail worker lost its lease after an outbound provider send began. Automatic retry was stopped to prevent duplicate delivery; administrator reconciliation is required.",
+                            severity="critical", source="integration", outcome="pending",
+                            details={"outbox_id": str(old["id"]), "manual_review_required": True}, event_type="error",
+                        )
+                    except Exception:
+                        log.exception("could not record uncertain mail delivery outcome")
             rows = await conn.fetch(
                 """SELECT o.*,m.subject,m.body_text,m.body_html,m.message_id_header,
                          m.in_reply_to,m.references_header,m.render_notes,
@@ -174,7 +212,7 @@ async def drain(limit: int = 20) -> int:
             ids = [row["id"] for row in rows]
             if ids:
                 await conn.execute(
-                    "UPDATE outbox SET state='sending',attempts=attempts+1,claimed_at=now() "
+                    "UPDATE outbox SET state='sending',attempts=attempts+1,claimed_at=now(),send_started_at=NULL "
                     "WHERE id=ANY($1::uuid[])",
                     ids,
                 )
@@ -184,6 +222,8 @@ async def drain(limit: int = 20) -> int:
         counter_day = None
         counter_month = None
         recipient_count = recipient_total(row)
+        provider_send_started = False
+        provider_send_idempotent = False
         try:
             if row["mailbox_state"] == "closed":
                 async with pool.acquire() as conn:
@@ -196,9 +236,10 @@ async def drain(limit: int = 20) -> int:
             if not bool(await get_value("mail.external_enabled")) or row["sending_suspended"]:
                 async with pool.acquire() as conn:
                     await conn.execute(
-                        "UPDATE outbox SET state='queued',next_attempt_at=now(),claimed_at=NULL "
-                        "WHERE id=$1",
+                        "UPDATE outbox SET state='queued',next_attempt_at=now(),claimed_at=NULL,"
+                        "last_error=$2 WHERE id=$1",
                         row["id"],
+                        "External sending is switched off or this mailbox is suspended.",
                     )
                 continue
 
@@ -227,10 +268,15 @@ async def drain(limit: int = 20) -> int:
                             "month" if month + recipient_count > provider_month else "day",
                         )
                         await conn.execute(
-                            "UPDATE outbox SET state='deferred',next_attempt_at=$2,claimed_at=NULL "
-                            "WHERE id=$1",
+                            "UPDATE outbox SET state='deferred',next_attempt_at=$2,claimed_at=NULL,"
+                            "last_error=$3 WHERE id=$1",
                             row["id"],
                             next_time,
+                            (
+                                f"Monthly send limit reached ({month}/{provider_month}); retrying next month."
+                                if month + recipient_count > provider_month
+                                else f"Daily send limit reached ({today}/{provider_day}); retrying after the daily reset."
+                            ),
                         )
                         continue
                     await conn.execute(
@@ -328,6 +374,12 @@ async def drain(limit: int = 20) -> int:
                             "jsonb_build_object('provider_filename_simplifications',$2,'provider_inline_images_attached_separately',$3) WHERE id=$1",
                             row["message_id"], simplified, inline_degraded,
                         )
+            async with pool.acquire() as conn:
+                await conn.execute("UPDATE outbox SET send_started_at=now() WHERE id=$1 AND state='sending'", row["id"])
+            # The DB marker is committed immediately before the provider side effect.
+            # API transports deduplicate the stable idempotency key; SMTP cannot.
+            provider_send_started = True
+            provider_send_idempotent = bool(json_transport)
             result = await provider.send_message(message)
             async with pool.acquire() as conn:
                 if result.ok:
@@ -347,7 +399,7 @@ async def drain(limit: int = 20) -> int:
                             )
                     await conn.execute(
                         "UPDATE outbox SET state='sent',provider=$2,provider_message_id=$3,"
-                        "sent_at=now(),claimed_at=NULL,counter_reserved=false,counter_day=NULL,"
+                        "sent_at=now(),claimed_at=NULL,send_started_at=NULL,counter_reserved=false,counter_day=NULL,"
                         "counter_month=NULL,last_error=NULL WHERE id=$1",
                         row["id"],
                         provider.name,
@@ -359,28 +411,41 @@ async def drain(limit: int = 20) -> int:
                         await _release_counter_reservation(
                             conn, recipient_count, counter_day, counter_month, row["id"]
                         )
-                    await _fail(conn, row, result.error or "provider failure", result.retryable)
+                    await _fail(
+                        conn, row, result.error or "provider failure", result.retryable,
+                        outcome_unknown=bool(getattr(result, "outcome_unknown", False)),
+                    )
         except ValueError as exc:
+            uncertain_smtp = provider_send_started and not provider_send_idempotent
             async with pool.acquire() as conn:
                 if reserved:
                     await _release_counter_reservation(
                         conn, recipient_count, counter_day, counter_month, row["id"]
                     )
-                await _fail(conn, row, str(exc), False)
+                await _fail(conn, row, str(exc), False, outcome_unknown=uncertain_smtp)
         except Exception as exc:
+            uncertain_smtp = provider_send_started and not provider_send_idempotent
             async with pool.acquire() as conn:
                 if reserved:
                     await _release_counter_reservation(
                         conn, recipient_count, counter_day, counter_month, row["id"]
                     )
-                await _fail(conn, row, type(exc).__name__, True)
+                await _fail(
+                    conn, row, type(exc).__name__, not uncertain_smtp,
+                    outcome_unknown=uncertain_smtp,
+                )
             log.warning("mail outbox delivery failed id=%s type=%s", row["id"], type(exc).__name__)
         await asyncio.sleep(1 / max(1, float(await get_value("mail.send_rate_per_second"))))
     return sent
 
 
-async def _fail(conn, row, error, retryable):
+async def _fail(conn, row, error, retryable, *, outcome_unknown: bool = False):
     attempts = int(row["attempts"]) + 1
+    if outcome_unknown:
+        # Preserve the failure type for protected admin diagnostics while ensuring
+        # mailbox users see only the generic notice and the message is never retried.
+        error = f"delivery_outcome_unknown_manual_review: {str(error)[:200]}"
+        retryable = False
     if retryable and attempts < 6:
         delay = BACKOFF[min(attempts - 1, len(BACKOFF) - 1)]
         await conn.execute(
@@ -404,10 +469,17 @@ async def _fail(conn, row, error, retryable):
                 domain = str(await get_value("mail.domain") or "invalid.local")
                 notice = await conn.fetchval(
                     "INSERT INTO message(from_address,from_name,subject,body_text,origin) "
-                    "VALUES($1,'Mail Delivery Subsystem','Delivery failed','Your message could not be "
-                    "delivered. Review the recipient address or contact an administrator.','internal') "
+                    "VALUES($1,'Mail Delivery Subsystem','Delivery failed',$2,'internal') "
                     "RETURNING id",
                     f"mailer-daemon@{domain}",
+                    (
+                        "We could not confirm whether the mail provider accepted your message. "
+                        "To prevent duplicate delivery, it was not sent again automatically. "
+                        "Contact an administrator to check the provider delivery records."
+                        if outcome_unknown else
+                        "Your message could not be delivered. Check the recipient address and try again. "
+                        "If the problem continues, contact an administrator with the message timestamp."
+                    ),
                 )
                 await conn.execute(
                     "INSERT INTO mailbox_message(mailbox_id,message_id,folder) "
@@ -415,6 +487,20 @@ async def _fail(conn, row, error, retryable):
                     sender["id"],
                     notice,
                 )
+    try:
+        from app.modules.audit.service import record_system_event
+        await record_system_event(
+            action=("mail.outbox.delivery_outcome_unknown" if outcome_unknown else
+                    "mail.outbox.delivery_failed" if not (retryable and attempts < 6) else "mail.outbox.delivery_deferred"),
+            message=("The SMTP provider may have accepted an email, but the application could not confirm the result. Automatic retry was stopped to prevent a duplicate; administrator reconciliation is required." if outcome_unknown else
+                    "An outbound email delivery attempt failed. Detailed provider diagnostics are retained in the protected mail outbox."),
+            severity="critical" if outcome_unknown else ("error" if not (retryable and attempts < 6) else "warning"),
+            source="integration", outcome="failure" if not (retryable and attempts < 6) else "pending",
+            details={"outbox_id": str(row["id"]), "attempt": attempts, "retryable": bool(retryable), "outcome_unknown": bool(outcome_unknown), "error_type": type(error).__name__ if isinstance(error, Exception) else "provider_error"},
+            event_type="error",
+        )
+    except Exception:
+        log.exception("could not persist mail delivery failure to audit log")
 
 
 async def _release_counter_reservation(conn, count: int, day, month, outbox_id):

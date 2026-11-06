@@ -21,12 +21,29 @@ from app.modules.mail.settings_service import get_value
 log = logging.getLogger("app.mail.provider")
 
 
+def _reason(text: str, limit: int = 200) -> str:
+    """Short provider reason for admins; email addresses are redacted."""
+    text = re.sub(r"[^\s@<>\"']+@[^\s@<>\"']+", "[address]", str(text or ""))
+    return " ".join(text.split())[:limit]
+
+
+def _http_error(response) -> str:
+    try:
+        data = response.json()
+        detail = data.get("message") or data.get("error") or data.get("name") or ""
+    except Exception:
+        detail = response.text
+    detail = _reason(detail)
+    return f"HTTP {response.status_code}: {detail}" if detail else f"HTTP {response.status_code}"
+
+
 @dataclass(frozen=True)
 class MailSendResult:
     ok: bool
     provider_message_id: str | None = None
     retryable: bool = False
     error: str | None = None
+    outcome_unknown: bool = False
 
 
 @dataclass(frozen=True)
@@ -156,7 +173,7 @@ class ResendProvider(MailProvider):
             return MailSendResult(
                 False,
                 retryable=response.status_code == 429 or response.status_code >= 500,
-                error=f"HTTP {response.status_code}",
+                error=_http_error(response),
             )
         except httpx.HTTPError as exc:
             return MailSendResult(False, retryable=True, error=type(exc).__name__)
@@ -176,10 +193,10 @@ class BrevoProvider(MailProvider):
 
     async def _send_smtp(self, message: OutboundMessage) -> MailSendResult:
         """Send frozen RFC 5322 bytes; Bcc is envelope-only, never a header."""
-        host = str(await get_value("mail.smtp_host") or "smtp-relay.brevo.com")
+        host = str(await get_value("mail.smtp_host") or "smtp-relay.brevo.com").strip()
         port = int(await get_value("mail.smtp_port") or 587)
-        username = str(await get_value("mail.smtp_username") or "")
-        password = str(await get_value("mail.smtp_password") or "")
+        username = str(await get_value("mail.smtp_username") or "").strip()
+        password = str(await get_value("mail.smtp_password") or "").strip()
         if not username or not password:
             return MailSendResult(False, retryable=False, error="smtp_credentials_missing")
         raw = message.rfc822
@@ -227,9 +244,14 @@ class BrevoProvider(MailProvider):
             )
             return MailSendResult(True, message.message_id)
         except Exception as exc:
-            # Never persist SMTP exception text: it may contain server data or addresses.
-            retryable = type(exc).__name__ not in {"SMTPAuthenticationError", "SMTPNotSupported"}
-            return MailSendResult(False, retryable=retryable, error=f"smtp_{type(exc).__name__}")
+            # Once SMTP DATA may have been transmitted, the connection can fail
+            # before the final acceptance response reaches us. SMTP has no standard
+            # idempotency key, so automatic retry could deliver a duplicate.
+            return MailSendResult(
+                False, retryable=False,
+                error=f"smtp_{type(exc).__name__}: {_reason(exc)}".rstrip(": "),
+                outcome_unknown=True,
+            )
 
     async def _send_api(self, message: OutboundMessage) -> MailSendResult:
         """Brevo JSON fallback. Its documented limitations are recorded in render_notes."""
@@ -265,7 +287,7 @@ class BrevoProvider(MailProvider):
             return MailSendResult(
                 False,
                 retryable=response.status_code == 429 or response.status_code >= 500,
-                error=f"HTTP {response.status_code}",
+                error=_http_error(response),
             )
         except httpx.HTTPError as exc:
             return MailSendResult(False, retryable=True, error=type(exc).__name__)

@@ -69,11 +69,20 @@ describe('createApiClient', () => {
     });
   });
 
-  it('turns a network failure into status 0', async () => {
+  it('turns a network failure into an actionable endpoint-specific diagnosis', async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockRejectedValue(new TypeError('offline'));
-    await expect(createApiClient({ baseUrl: BASE, fetchImpl }).get('/x')).rejects.toMatchObject({
+    await expect(createApiClient({ baseUrl: BASE, fetchImpl }).get('/mail/attachments/presign')).rejects.toMatchObject({
       status: 0,
       code: 'network_error',
+      message: expect.stringContaining('Check your internet connection, API base URL, DNS/TLS, and browser CORS configuration'),
+      endpoint: 'GET /api/v1/mail/attachments/presign',
+    });
+  });
+
+  it('preserves server request IDs and useful proxy error text', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(new Response('upstream storage unavailable', { status: 502, headers: { 'X-Request-ID': 'req-123' } }));
+    await expect(createApiClient({ baseUrl: BASE, fetchImpl }).post('/mail/attachments/presign', {})).rejects.toMatchObject({
+      status: 502, message: expect.stringContaining('upstream storage unavailable'), requestId: 'req-123',
     });
   });
 

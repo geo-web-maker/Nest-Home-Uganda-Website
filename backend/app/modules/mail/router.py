@@ -1,12 +1,20 @@
 # ruff: noqa: E501,E701,E702
 import re
+import hashlib
+import time
 
 from fastapi import APIRouter, Cookie, Depends, Header, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Literal
 
 from app.core.deps import Principal, require_scopes
-from app.core.errors import Forbidden, ValidationFailed
+from app.core.errors import Forbidden, ValidationFailed, RateLimited
+from app.core.rate_limit import rate_limit, client_ip
+from app.core.security import hash_ip
+from app.core.totp_guard import (
+    assert_totp_session, require_totp_session, valid_totp_session_cookie,
+    is_current_totp_session, sign_totp_session,
+)
 from app.modules.mail import service, core_service
 from app.modules.mail import db as mail_db
 from app.modules.mail.schemas import MailSettingsPatch
@@ -14,24 +22,62 @@ from app.modules.mail.settings_service import get_value, _fernet
 
 router = APIRouter(prefix="/mail", tags=["mail"])
 
+
 def _valid_totp_cookie(principal: Principal, token: str | None) -> bool:
-    if not token: return False
-    try:
-        import hashlib,hmac,time
-        user_id,expires,sig=token.split(':',2)
-        payload=f"{user_id}:{expires}"
-        expected=hmac.new(_fernet()._signing_key,payload.encode(),hashlib.sha256).hexdigest()
-        return user_id==principal.user_id and int(expires)>int(time.time()) and hmac.compare_digest(sig,expected)
-    except Exception: return False
+    return valid_totp_session_cookie(principal.user_id, token)
+
 
 async def _require_sensitive_totp(principal: Principal, token: str | None, scope: str):
-    from app.modules.mail.settings_service import get_value
-    configured=str(await get_value("mail.require_totp_for_scopes") or "")
-    required={item.strip() for item in configured.split(",") if item.strip()}
-    if scope in required and not _valid_totp_cookie(principal,token):
+    configured = str(await get_value("mail.require_totp_for_scopes") or "")
+    required = {item.strip() for item in configured.split(",") if item.strip()}
+    if scope in required and not await is_current_totp_session(principal.user_id, token):
         raise Forbidden("Verify your authenticator code to continue.")
 
 
+async def _require_diagnostics_totp(principal: Principal, token: str | None):
+    """Diagnostics can send mail and reveal transport details; TOTP is mandatory."""
+    if not await is_current_totp_session(principal.user_id, token):
+        raise Forbidden("Verify your authenticator code to run email diagnostics.")
+
+
+def _totp_rate_limit(name: str, limit: int = 5, window_seconds: int = 300):
+    """Shared PostgreSQL fixed-window limiter, keyed by account and trusted client IP."""
+    async def dependency(request: Request, principal: Principal = Depends(require_scopes("mail:use"))):
+        ip_key = hashlib.sha256(f"{name}:ip:{hash_ip(client_ip(request))}".encode()).hexdigest()
+        user_key = hashlib.sha256(f"{name}:user:{principal.user_id}".encode()).hexdigest()
+        pool = mail_db.get_pool()  # fail closed if shared limiter storage is unavailable
+        retry_after = None
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                for key in (ip_key, user_key):
+                    row = await conn.fetchrow(
+                        "INSERT INTO security_rate_limit(bucket_key,window_start,hits) "
+                        "VALUES($1,to_timestamp(floor(extract(epoch from now())/$2::double precision)*$2::double precision),1) "
+                        "ON CONFLICT(bucket_key) DO UPDATE SET "
+                        "hits=CASE WHEN security_rate_limit.window_start=EXCLUDED.window_start THEN security_rate_limit.hits+1 ELSE 1 END, "
+                        "window_start=EXCLUDED.window_start RETURNING hits,window_start",
+                        key, window_seconds,
+                    )
+                    if int(row["hits"]) > limit:
+                        retry_after = max(retry_after or 0, int(row["window_start"].timestamp() + window_seconds - time.time()))
+            await conn.execute("DELETE FROM security_rate_limit WHERE window_start < now()-interval '2 days'")
+        if retry_after is not None:
+            raise RateLimited(max(1, retry_after))
+    return dependency
+
+
+async def _record_totp_event(principal: Principal, action: str, outcome: str, message: str) -> None:
+    try:
+        from app.modules.audit.service import record_system_event
+        await record_system_event(
+            action=action, message=message,
+            severity="info" if outcome == "success" else "warning",
+            source="security", user_id=principal.user_id, outcome=outcome,
+            event_type="security", details={"account_id": principal.user_id},
+        )
+    except Exception:
+        import logging
+        logging.getLogger("app.security.totp").exception("could not record TOTP lifecycle event")
 
 
 @router.get("/settings")
@@ -122,8 +168,16 @@ async def messages(
 
 
 @router.get("/messages/{mailbox_message_id}")
-async def read_message(mailbox_message_id: str, principal: Principal = Depends(require_scopes("mail:use"))):
-    return await core_service.read_message(principal.user_id, mailbox_message_id)
+async def read_message(mailbox_message_id: str, principal: Principal = Depends(require_scopes("mail:use")), mail_totp: str | None = Cookie(default=None)):
+    show_diagnostics = principal.has("mail:audit:read")
+    if show_diagnostics:
+        await assert_totp_session(principal, mail_totp)
+    return await core_service.read_message(principal.user_id, mailbox_message_id, include_admin_diagnostics=show_diagnostics)
+
+
+@router.post("/messages/{mailbox_message_id}/retry-delivery")
+async def retry_message_delivery(mailbox_message_id: str, principal: Principal = Depends(require_scopes("mail:use"))):
+    return await core_service.retry_delivery(principal.user_id, mailbox_message_id)
 
 
 class PushKeys(BaseModel):
@@ -372,25 +426,48 @@ async def archive_mailboxes(principal: Principal=Depends(require_scopes("mail:ar
     return {"items":[dict(r) for r in rows],"banner":"Archived mailbox. Access is logged."}
 
 @router.get("/audit")
-async def mail_audit(limit: int=Query(default=100,ge=1,le=500),principal: Principal=Depends(require_scopes("mail:audit:read"))):
+async def mail_audit(
+    limit: int = Query(default=100, ge=1, le=500),
+    principal: Principal = Depends(require_scopes("mail:audit:read")),
+    _totp: Principal = Depends(require_totp_session),
+):
     pool=mail_db.get_pool()
     async with pool.acquire() as conn:
         rows=await conn.fetch("SELECT id,at,actor_user_id,action,mailbox_id,message_id,detail FROM mail_audit ORDER BY at DESC LIMIT $1",limit)
+    await _record_totp_event(principal, "audit.view.mail", "success", "Administrator viewed mail audit records.")
     return {"items":[dict(r) for r in rows]}
 
 @router.post("/inbound")
 async def inbound_mail(request: Request, x_nest_timestamp: str = Header(default=""), x_nest_signature: str = Header(default="")):
+    import time
+    from fastapi import HTTPException
     from app.modules.mail.inbound import ingest
+    from app.modules.mail import inbound_trace
+    started=time.monotonic()
+    meta=dict(remote_ip=request.headers.get("cf-connecting-ip") or (request.client.host if request.client else None),user_agent=request.headers.get("user-agent"),skew_seconds=(int(time.time())-int(x_nest_timestamp)) if x_nest_timestamp.isdigit() else None)
     payload=await request.json()
+    if not isinstance(payload,dict): payload={}
+    meta.update(object_key=str(payload.get("object_key") or "")[:300],size_bytes=payload.get("size_bytes") if isinstance(payload.get("size_bytes"),int) else None,envelope_to=[str(a)[:254] for a in (payload.get("envelope_to") or []) if isinstance(a,str)][:20])
+    async def _log(**row):
+        try: pool=mail_db.get_pool()
+        except Exception: return
+        await inbound_trace.record(pool,ms=int((time.monotonic()-started)*1000),**meta,**row)
     try:
         result = await ingest(payload,x_nest_timestamp,x_nest_signature)
+        if result.get("duplicate"):
+            await _log(outcome="duplicate",http_status=200)
+        else:
+            await _log(outcome="delivered" if result.get("delivered") else "orphaned",http_status=200,folder=result.get("folder"),message_id=result.get("message_id"),routing=result.get("routing"),reason=None if result.get("delivered") else "Stored, but no open mailbox matched the recipient")
         if result.get("delivered"):
             from app.modules.mail.scan_queue import kick as kick_scan
             kick_scan()
         return result
     except PermissionError as exc:
-        from fastapi import HTTPException
+        await _log(outcome="refused",http_status=401,reason=str(exc))
         raise HTTPException(status_code=401,detail="Invalid inbound authentication") from exc
+    except Exception as exc:
+        await _log(outcome="error",http_status=500,reason=f"{type(exc).__name__}: {str(exc)[:300]}")
+        raise
 
 class AttachmentPresignBody(BaseModel):
     mailbox_id: str
@@ -542,50 +619,75 @@ async def attachment_download(attachment_id: str,principal: Principal=Depends(re
     return {"download_url":url,"filename":row['filename'],"expires_seconds":300}
 
 class TotpCodeBody(BaseModel):
-    code: str = Field(min_length=6,max_length=32)
+    code: str = Field(min_length=6, max_length=32)
 
-@router.post("/totp/enroll")
-async def totp_enroll(principal: Principal=Depends(require_scopes("mail:use")),mail_totp: str | None=Cookie(default=None)):
-    from app.modules.mail.totp import enrol,verified
-    if await verified(principal.user_id) and not _valid_totp_cookie(principal,mail_totp): raise Forbidden("Verify your current authenticator before replacing it.")
+
+@router.get("/totp/status", dependencies=[Depends(rate_limit("totp_status", 30, 60))])
+async def totp_status(principal: Principal = Depends(require_scopes("mail:use")), mail_totp: str | None = Cookie(default=None)):
+    from app.modules.mail.totp import verified
+    enabled = bool(await verified(principal.user_id))
+    return {"enabled": enabled, "verified": bool(enabled and await is_current_totp_session(principal.user_id, mail_totp))}
+
+
+@router.post("/totp/enroll", dependencies=[Depends(_totp_rate_limit("totp_enroll", 5, 300))])
+async def totp_enroll(principal: Principal = Depends(require_scopes("mail:use")), mail_totp: str | None = Cookie(default=None)):
+    from app.modules.mail.totp import enrol, verified
+    if await verified(principal.user_id) and not await is_current_totp_session(principal.user_id, mail_totp):
+        await _record_totp_event(principal, "security.totp.enroll", "blocked", "Authenticator replacement was blocked because the current session was not verified.")
+        raise Forbidden("Verify your current authenticator before replacing it.")
     import urllib.parse
-    secret=await enrol(principal.user_id)
-    label=urllib.parse.quote(f"Bloomwell Home Care Uganda:{principal.user_id}")
-    uri=f"otpauth://totp/{label}?secret={secret}&issuer=Bloomwell%20Home%20Care%20Uganda&algorithm=SHA1&digits=6&period=30"
-    return {"secret":secret,"otpauth_uri":uri,"instructions":"Add this account to an authenticator app, then confirm with its current six-digit code. The secret is shown once."}
+    secret = await enrol(principal.user_id)
+    await _record_totp_event(principal, "security.totp.enroll", "pending", "Authenticator enrollment started.")
+    label = urllib.parse.quote(f"Bloomwell Home Care Uganda:{principal.user_id}")
+    uri = f"otpauth://totp/{label}?secret={secret}&issuer=Bloomwell%20Home%20Care%20Uganda&algorithm=SHA1&digits=6&period=30"
+    return {"secret": secret, "otpauth_uri": uri, "instructions": "Add this account to an authenticator app, then confirm with its current six-digit code. The secret is shown once."}
 
-@router.post("/totp/reset")
-async def totp_reset(body: TotpCodeBody,response: Response,principal: Principal=Depends(require_scopes("mail:use"))):
-    """Remove this user's authenticator after proving it with a current code or a one-time recovery code."""
+
+@router.post("/totp/reset", dependencies=[Depends(_totp_rate_limit("totp_reset", 5, 300))])
+async def totp_reset(body: TotpCodeBody, response: Response, principal: Principal = Depends(require_scopes("mail:use"))):
     from app.modules.mail.totp import verify_code_or_recovery
-    if not await verify_code_or_recovery(principal.user_id,body.code): raise Forbidden("Authenticator code is invalid.")
-    pool=mail_db.get_pool()
+    if not await verify_code_or_recovery(principal.user_id, body.code):
+        await _record_totp_event(principal, "security.totp.reset", "failure", "Authenticator reset verification failed.")
+        raise Forbidden("Authenticator code is invalid.")
+    pool = mail_db.get_pool()
     async with pool.acquire() as conn:
-        await conn.execute("DELETE FROM totp_secret WHERE user_id=$1",principal.user_id)
-    response.delete_cookie("mail_totp",path="/")
-    return {"reset":True}
+        await conn.execute("DELETE FROM totp_secret WHERE user_id=$1", principal.user_id)
+    response.delete_cookie("mail_totp", path="/")
+    await _record_totp_event(principal, "security.totp.reset", "success", "Authenticator reset completed; prior audit sessions were invalidated.")
+    return {"reset": True}
 
-@router.post("/totp/confirm")
-async def totp_confirm(body: TotpCodeBody,principal: Principal=Depends(require_scopes("mail:use"))):
+
+@router.post("/totp/confirm", dependencies=[Depends(_totp_rate_limit("totp_confirm", 5, 300))])
+async def totp_confirm(body: TotpCodeBody, principal: Principal = Depends(require_scopes("mail:use"))):
     from app.modules.mail.totp import confirm
-    recovery=await confirm(principal.user_id,body.code)
-    if recovery is False: raise Forbidden("Authenticator code is invalid.")
-    return {"enabled":True,"recovery_codes":recovery,"warning":"Store these recovery codes securely. They are shown once."}
+    recovery = await confirm(principal.user_id, body.code)
+    if recovery is False:
+        await _record_totp_event(principal, "security.totp.confirm", "failure", "Authenticator confirmation failed.")
+        raise Forbidden("Authenticator code is invalid.")
+    await _record_totp_event(principal, "security.totp.confirm", "success", "Authenticator enrollment was confirmed.")
+    return {"enabled": True, "recovery_codes": recovery, "warning": "Store these recovery codes securely. They are shown once."}
 
-@router.post("/totp/verify")
-async def totp_verify(body: TotpCodeBody,response: Response,principal: Principal=Depends(require_scopes("mail:use"))):
-    from app.modules.mail.totp import verify_code_or_recovery,verified
-    import hashlib,hmac,time
-    if not await verified(principal.user_id): raise Forbidden("Set up authenticator verification first.")
-    if not await verify_code_or_recovery(principal.user_id,body.code): raise Forbidden("Authenticator code is invalid.")
-    key=_fernet()._signing_key
-    expires=int(time.time())+12*3600
-    payload=f"{principal.user_id}:{expires}"
-    sig=hmac.new(key,payload.encode(),hashlib.sha256).hexdigest()
+
+@router.post("/totp/verify", dependencies=[Depends(_totp_rate_limit("totp_verify", 5, 300))])
+async def totp_verify(body: TotpCodeBody, response: Response, principal: Principal = Depends(require_scopes("mail:use"))):
+    from app.modules.mail.totp import verify_code_or_recovery, verified, enrollment_epoch
+    if not await verified(principal.user_id):
+        await _record_totp_event(principal, "security.totp.verify", "blocked", "Authenticator verification was attempted before enrollment.")
+        raise Forbidden("Set up authenticator verification first.")
+    if not await verify_code_or_recovery(principal.user_id, body.code):
+        await _record_totp_event(principal, "security.totp.verify", "failure", "Authenticator verification failed.")
+        raise Forbidden("Authenticator code is invalid.")
+    epoch = await enrollment_epoch(principal.user_id)
+    if epoch is None:
+        raise Forbidden("Set up authenticator verification first.")
+    expires = int(time.time()) + 12 * 3600
+    signed_cookie = sign_totp_session(principal.user_id, expires, epoch)
+    await _record_totp_event(principal, "security.totp.verify", "success", "Authenticator verification succeeded.")
     from app.core.config import get_settings
-    cfg=get_settings()  # same cookie policy as login, so a cross-site frontend still sends it
-    response.set_cookie("mail_totp",f"{payload}:{sig}",max_age=12*3600,httponly=True,secure=cfg.cookie_secure,samesite=cfg.cookie_samesite,path="/")
-    return {"verified":True,"expires_in":43200}
+    cfg = get_settings()
+    response.set_cookie("mail_totp", signed_cookie, max_age=12 * 3600, httponly=True, secure=cfg.cookie_secure, samesite=cfg.cookie_samesite, path="/")
+    return {"verified": True, "expires_in": 43200}
+
 
 @router.get("/archive/mailboxes/{mailbox_id}/messages")
 async def archive_messages(mailbox_id: str,principal: Principal=Depends(require_scopes("mail:archive:read")),mail_totp: str | None=Cookie(default=None)):
@@ -657,20 +759,101 @@ async def mail_usage(principal: Principal=Depends(require_scopes("mail:settings:
     return {"today":int(day or 0),"month":int(month or 0),"queue":dict(queue),"top_mailboxes":[dict(r) for r in top]}
 
 class TestSendBody(BaseModel):
-    to: str = Field(min_length=3,max_length=254)
+    model_config = ConfigDict(extra="forbid")
+    to: str = Field(min_length=3, max_length=254)
+    include_attachment: bool = True
+
 
 @router.post("/settings/test-send")
-async def mail_test_send(body: TestSendBody,principal: Principal=Depends(require_scopes("mail:settings:manage")),mail_totp: str | None=Cookie(default=None)):
-    await _require_sensitive_totp(principal,mail_totp,"mail:settings:manage")
-    from app.modules.mail.providers import get_provider
-    from app.modules.mail.settings_service import get_value
+async def mail_test_send(body: TestSendBody, response: Response, principal: Principal = Depends(require_scopes("mail:settings:manage")), mail_totp: str | None = Cookie(default=None)):
+    """Submit a clearly labelled provider test, optionally with a small attachment.
+
+    This proves provider acceptance and attachment serialization. It cannot prove inbox
+    delivery; the administrator must inspect the recipient mailbox and spam folder.
+    """
+    await _require_diagnostics_totp(principal, mail_totp)
+    response.headers["Cache-Control"] = "no-store"
+    import hashlib
     import re
-    if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+",body.to): raise Forbidden("Enter a valid test recipient address.")
-    provider=await get_provider(); domain=await get_value('mail.domain')
-    if provider.name=='console': return {"queued":False,"provider":"console","message":"Console provider records the test without sending external mail."}
-    result=await provider.send([body.to],"Bloomwell Home Care Uganda mail test","<p>Mail provider test.</p>","Mail provider test.",from_address=f"no-reply@{domain}",from_name=await get_value('mail.from_name'),reply_to=await get_value('mail.reply_to'),idempotency_key=f"test:{principal.user_id}:{__import__('uuid').uuid4()}")
-    if not result.ok: raise Forbidden(f"Provider test failed ({result.error or 'unknown error'}). Check provider configuration and logs.")
-    return {"sent":True,"provider":provider.name,"provider_message_id":result.provider_message_id}
+    import uuid
+    from app.modules.mail.providers import OutboundAttachment, get_provider
+    from app.modules.mail.settings_service import get_value
+
+    if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", body.to):
+        raise Forbidden("Enter a valid test recipient address.")
+    if not bool(await get_value("mail.enabled")):
+        raise Forbidden("Mail is disabled. Enable mail before running an external send test.")
+    if bool(await get_value("mail.suspend_all_sending")):
+        raise Forbidden("All mail sending is suspended. Resume sending before testing.")
+    if not bool(await get_value("mail.external_enabled")):
+        raise Forbidden("External sending is disabled. Enable it before running an external send test.")
+
+    provider = await get_provider()
+    domain = str(await get_value("mail.domain") or "").strip().lower()
+    if provider.name == "console":
+        return {
+            "sent": False,
+            "queued": False,
+            "provider": "console",
+            "attachment_included": False,
+            "message": "The console provider records messages but sends nothing externally. Select a real provider to test external delivery.",
+        }
+    if not domain:
+        raise Forbidden("Set the mail domain before running an external send test.")
+
+    test_id = str(uuid.uuid4())
+    fixture = b"Nest email diagnostics attachment\nThis is a harmless test file.\n"
+    attachments = []
+    if body.include_attachment:
+        attachments.append(OutboundAttachment(
+            filename="nest-email-diagnostics.txt",
+            content_type="text/plain",
+            data=fixture,
+        ))
+    subject = f"Email diagnostics test {test_id[:8]}"
+    result = await provider.send(
+        [body.to],
+        subject,
+        "<p>This is a test message from Email Settings.</p><p>It was submitted by the email diagnostics suite.</p>",
+        "This is a test message from Email Settings.\nIt was submitted by the email diagnostics suite.",
+        from_address=f"no-reply@{domain}",
+        from_name=await get_value("mail.from_name"),
+        reply_to=await get_value("mail.reply_to"),
+        attachments=attachments,
+        idempotency_key=f"mail-diagnostics:{principal.user_id}:{test_id}",
+    )
+    if not result.ok:
+        raise Forbidden(f"Provider test failed ({result.error or 'unknown provider error'}). Check the diagnostics and provider logs.")
+    return {
+        "sent": True,
+        "provider": provider.name,
+        "provider_message_id": result.provider_message_id,
+        "test_id": test_id,
+        "subject": subject,
+        "recipient": body.to,
+        "attachment_included": bool(body.include_attachment),
+        "attachment_filename": "nest-email-diagnostics.txt" if body.include_attachment else None,
+        "attachment_size_bytes": len(fixture) if body.include_attachment else 0,
+        "attachment_sha256": hashlib.sha256(fixture).hexdigest() if body.include_attachment else None,
+        "message": "The provider accepted the test message. This is not a delivery receipt; check the recipient inbox and spam folder.",
+    }
+
+class SmtpTraceBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    send_to: str | None = Field(default=None, max_length=254)
+    compare_key: str | None = Field(default=None, max_length=500)
+
+@router.post("/settings/test-send/trace")
+async def mail_test_send_trace(body: SmtpTraceBody,response: Response,principal: Principal=Depends(require_scopes("mail:settings:manage")),mail_totp: str | None=Cookie(default=None)):
+    """Step-by-step SMTP trace for the provider test. Always needs a verified authenticator code, whatever the TOTP scope setting says."""
+    await _require_diagnostics_totp(principal, mail_totp)
+    import re
+    from app.modules.mail.smtp_trace import run_trace
+    if body.send_to and not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+",body.send_to): raise Forbidden("Enter a valid test recipient address.")
+    response.headers["Cache-Control"]="no-store"
+    async def _get(key: str):
+        return await get_value(key,use_cache=False)
+    return await run_trace(_get,send_to=body.send_to or None,compare_key=body.compare_key or None)
 
 _DIAGNOSTIC_KEYS = ("mail.enabled","mail.domain","mail.provider","mail.provider_api_key","mail.suspend_all_sending","mail.external_enabled","mail.inbound_enabled","mail.inbound_webhook_secret","mail.provider_webhook_secret","mail.brevo_transport","mail.smtp_host","mail.smtp_port","mail.smtp_username","mail.smtp_password","mail.scan_enabled")
 
@@ -683,27 +866,36 @@ async def _own_mailbox(user_id: str):
     return dict(boxes[0]) if boxes else None
 
 @router.post("/diagnostics/run")
-async def mail_diagnostics_run(principal: Principal=Depends(require_scopes("mail:settings:manage")),mail_totp: str | None=Cookie(default=None)):
+async def mail_diagnostics_run(response: Response, principal: Principal=Depends(require_scopes("mail:settings:manage")),mail_totp: str | None=Cookie(default=None)):
     """Passive checks of settings, database, queue, file store and DNS. Sends nothing."""
-    await _require_sensitive_totp(principal,mail_totp,"mail:settings:manage")
+    await _require_diagnostics_totp(principal, mail_totp)
+    response.headers["Cache-Control"] = "no-store"
     from app.core.storage import Bucket,get_storage
     from app.modules.mail import diagnostics
     checks=await diagnostics.run_passive_checks(await _diagnostic_values(),mail_db.get_pool(),get_storage(),Bucket.MAIL)
     return {"checks":[c.as_dict() for c in checks],"summary":diagnostics.summarize(checks)}
 
 @router.post("/diagnostics/loopback")
-async def mail_diagnostics_loopback(principal: Principal=Depends(require_scopes("mail:settings:manage")),mail_totp: str | None=Cookie(default=None)):
+async def mail_diagnostics_loopback(response: Response, principal: Principal=Depends(require_scopes("mail:settings:manage")),mail_totp: str | None=Cookie(default=None)):
     """Sends a labelled message from the administrator's own mailbox to itself."""
-    await _require_sensitive_totp(principal,mail_totp,"mail:settings:manage")
+    await _require_diagnostics_totp(principal, mail_totp)
+    response.headers["Cache-Control"] = "no-store"
+    from app.core.storage import Bucket, get_storage
     from app.modules.mail import diagnostics
-    box=await _own_mailbox(principal.user_id)
-    if not box: return {"check":diagnostics.Check("loopback",diagnostics.SKIP,"You do not have a mailbox to test with. Create one first.").as_dict()}
-    return {"check":(await diagnostics.loopback(principal.user_id,box,mail_db.get_pool(),core_service)).as_dict()}
+    box = await _own_mailbox(principal.user_id)
+    if not box:
+        return {"check": diagnostics.Check("loopback", diagnostics.SKIP, "You do not have a mailbox to test with. Create one first.").as_dict()}
+    return {"check": (await diagnostics.loopback(
+        principal.user_id, box, mail_db.get_pool(), core_service,
+        storage=get_storage(), bucket=Bucket.MAIL,
+        scan_enabled=bool(await get_value("mail.scan_enabled")),
+    )).as_dict()}
 
 @router.post("/diagnostics/inbound")
-async def mail_diagnostics_inbound(principal: Principal=Depends(require_scopes("mail:settings:manage")),mail_totp: str | None=Cookie(default=None)):
+async def mail_diagnostics_inbound(response: Response, principal: Principal=Depends(require_scopes("mail:settings:manage")),mail_totp: str | None=Cookie(default=None)):
     """Pushes a signed message through the same ingest the email worker uses."""
-    await _require_sensitive_totp(principal,mail_totp,"mail:settings:manage")
+    await _require_diagnostics_totp(principal, mail_totp)
+    response.headers["Cache-Control"] = "no-store"
     from app.core.storage import Bucket,get_storage
     from app.modules.mail import diagnostics
     from app.modules.mail.inbound import ingest
@@ -712,6 +904,35 @@ async def mail_diagnostics_inbound(principal: Principal=Depends(require_scopes("
     if not box: return {"check":diagnostics.Check("inboundTest",diagnostics.SKIP,"You do not have a mailbox to test with. Create one first.").as_dict()}
     domain=str(await get_value('mail.domain') or '').lower(); secret=str(await get_value('mail.inbound_webhook_secret') or '')
     return {"check":(await diagnostics.inbound_selftest(box,domain,secret,mail_db.get_pool(),get_storage(),Bucket.MAIL,ingest)).as_dict()}
+
+class InboundTraceBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    address: str | None = Field(default=None, max_length=254)
+
+@router.post("/diagnostics/inbound/trace")
+async def mail_inbound_trace(body: InboundTraceBody,request: Request,response: Response,principal: Principal=Depends(require_scopes("mail:settings:manage")),mail_totp: str | None=Cookie(default=None)):
+    """Traces incoming mail end to end and lists what the email worker has really sent. Always needs a verified authenticator code."""
+    await _require_diagnostics_totp(principal, mail_totp)
+    import re
+    from app.core.storage import Bucket,get_storage
+    from app.modules.mail import inbound_trace
+    from app.modules.mail.diagnostics import doh_lookup
+    from app.modules.mail.inbound import ingest
+    if body.address and not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+",body.address): raise Forbidden("Enter a valid address to trace.")
+    response.headers["Cache-Control"]="no-store"
+    import traceback
+    try:
+        root=request.scope.get("root_path","") or ""; path=request.url.path
+        if root and not path.startswith(root): path=root+path
+        suffix="/diagnostics/inbound/trace"
+        path=(path[:-len(suffix)] if path.endswith(suffix) else path.rsplit("/mail/",1)[0]+"/mail")+"/inbound"
+        url=f"{request.url.scheme}://{request.url.netloc}{path}"
+        if url.startswith("http://") and "localhost" not in url and "127.0.0.1" not in url: url="https://"+url[len("http://"):]
+        async def _get(key: str):
+            return await get_value(key,use_cache=False)
+        return await inbound_trace.run_trace(_get,pool=mail_db.get_pool(),storage=get_storage(),bucket=Bucket.MAIL,ingest_url=url,ingest=ingest,address=body.address or None,dns_lookup=doh_lookup)
+    except Exception as exc:
+        return {"steps":[{"step":"trace_crashed","ok":False,"detail":f"{type(exc).__name__}: {exc}","traceback":traceback.format_exc()[-1800:]}],"notes":["The trace itself failed. If the error names a missing table such as inbound_log, the hoster has not applied migration 0007 yet: redeploy it."],"attempts":[]}
 
 @router.post("/webhooks/{provider}")
 async def mail_provider_webhook(provider: str, request: Request):
@@ -761,6 +982,7 @@ async def mail_provider_webhook(provider: str, request: Request):
 
     pool = mail_db.get_pool()
     recorded = 0
+    failure_audit: list[dict] = []
     async with pool.acquire() as conn:
         for event_item in events:
             outbox_id = None
@@ -789,6 +1011,27 @@ async def mail_provider_webhook(provider: str, request: Request):
             if inserted:
                 recorded += 1
             event = event_item["event"]
+            if inserted and event in {"failed", "error", "hard_bounce", "blocked", "invalid_email", "complaint"}:
+                failure_audit.append({"outbox_id": str(outbox_id), "event": str(event)})
+                sender_row = await conn.fetchrow(
+                    "SELECT o.from_mailbox_id,b.id AS sender_id,m.local_part "
+                    "FROM outbox o LEFT JOIN mailbox b ON b.id=o.from_mailbox_id "
+                    "LEFT JOIN mailbox m ON m.id=o.from_mailbox_id WHERE o.id=$1",
+                    outbox_id,
+                )
+                if sender_row and sender_row["sender_id"]:
+                    domain = str(await get_value("mail.domain") or "invalid.local")
+                    notice = await conn.fetchval(
+                        "INSERT INTO message(from_address,from_name,subject,body_text,origin) "
+                        "VALUES($1,'Mail Delivery Subsystem','Delivery status update',$2,'internal') RETURNING id",
+                        f"mailer-daemon@{domain}",
+                        "The mail provider reported a delivery problem for a message you sent. "
+                        "Open Sent mail to review its delivery status, or contact an administrator if you need help.",
+                    )
+                    await conn.execute(
+                        "INSERT INTO mailbox_message(mailbox_id,message_id,folder) VALUES($1,$2,'inbox') ON CONFLICT DO NOTHING",
+                        sender_row["sender_id"], notice,
+                    )
             if event in {"failed", "error"}:
                 # Provider transport failures are visible in Sent delivery status,
                 # but do not suppress the recipient address.
@@ -813,6 +1056,18 @@ async def mail_provider_webhook(provider: str, request: Request):
             "INSERT INTO mail_audit(action,detail) VALUES('mail.provider.webhook',$1::jsonb)",
             json.dumps({"provider": provider, "recorded": recorded}),
         )
+    for failure in failure_audit:
+        try:
+            from app.modules.audit.service import record_system_event
+            await record_system_event(
+                action="mail.provider.delivery_event",
+                message="The mail provider reported a late delivery failure or bounce.",
+                severity="error", source="integration", outcome="failure",
+                details=failure, event_type="error",
+            )
+        except Exception:
+            import logging
+            logging.getLogger("app.mail.webhook").exception("could not record provider delivery event")
     return {"accepted": True, "recorded": recorded}
 
 @router.delete("/drafts/{draft_id}/attachments/{attachment_id}")

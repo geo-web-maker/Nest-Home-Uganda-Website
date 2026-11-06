@@ -2,12 +2,14 @@ import re
 from datetime import UTC, datetime
 
 import httpx
+from beanie import PydanticObjectId
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
 from app.core.deps import Principal, ReachContext, get_care_actor, require_scopes
+from app.core.totp_guard import require_totp_session
 from app.core.photo_store import (
     signed_delivery_url,
     temporary_stream_signature,
@@ -73,8 +75,11 @@ class SOSDrillBody(BaseModel):
 
 
 async def audit(actor, action, kind, item_id, before=None, after=None):
+    actor_id = getattr(actor, "user_id", None)
     await AuditLog(
-        action=action, item_type=kind, item_id=item_id, before=before, after=after
+        user_id=PydanticObjectId(actor_id) if actor_id and PydanticObjectId.is_valid(actor_id) else None,
+        scope=",".join(getattr(actor, "authorised_by", ()) or ()),
+        action=action, item_type=kind, item_id=item_id, before=before, after=after,
     ).insert()
 
 
@@ -1026,8 +1031,13 @@ async def resolve_sos_case(
 
 
 @router.get("/sos/drills")
-async def list_sos_drills(_: Principal = Depends(require_scopes("carecfg:read"))):
+async def list_sos_drills(
+    _: Principal = Depends(require_scopes("carecfg:read")),
+    _totp: Principal = Depends(require_totp_session),
+):
     rows = await AuditLog.find(AuditLog.action == "care.sos.drill").sort("-at").limit(100).to_list()
+    from app.modules.audit.service import record_system_event
+    await record_system_event(action="audit.view.sos_drills", message="An administrator viewed SOS drill audit history.", severity="info", source="audit", user_id=_.user_id, outcome="success", event_type="activity")
     return {
         "items": [
             {

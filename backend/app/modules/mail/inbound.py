@@ -187,7 +187,10 @@ async def ingest(payload: dict[str, Any], timestamp: str, signature: str) -> dic
                     )
 
                 delivered = 0
+                routing: list[dict[str, str]] = []
                 notify_ids: list = []
+                if not envelope_to:
+                    routing.append({"address": "", "status": "no_envelope_to"})
                 for address in envelope_to:
                     local_part, separator, recipient_domain = address.partition("@")
                     accepted = await get_value("mail.accepted_domains") or []
@@ -195,6 +198,7 @@ async def ingest(payload: dict[str, Any], timestamp: str, signature: str) -> dic
                         domain,
                         *[str(item).lower() for item in accepted],
                     }:
+                        routing.append({"address": address, "status": "foreign_domain"})
                         continue
                     mailbox = await conn.fetchrow(
                         """SELECT id,state FROM mailbox WHERE local_part=$1
@@ -205,6 +209,7 @@ async def ingest(payload: dict[str, Any], timestamp: str, signature: str) -> dic
                         local_part,
                     )
                     if not mailbox or mailbox["state"] != "open":
+                        routing.append({"address": address, "status": "no_mailbox" if not mailbox else "mailbox_closed"})
                         continue
                     await conn.execute(
                         "INSERT INTO message_recipient(message_id,kind,address,mailbox_id) "
@@ -222,6 +227,7 @@ async def ingest(payload: dict[str, Any], timestamp: str, signature: str) -> dic
                     )
                     delivered += 1
                     notify_ids.append(mailbox["id"])
+                    routing.append({"address": address, "status": "delivered"})
 
                 await conn.execute(
                     "UPDATE message SET spam_score=$2,auth_results=$3::jsonb WHERE id=$1",
@@ -233,7 +239,7 @@ async def ingest(payload: dict[str, Any], timestamp: str, signature: str) -> dic
                     from app.modules.mail.notify import notify_new_mail
 
                     notify_new_mail(notify_ids, sender=parsed.from_address or "", subject=parsed.subject or "")
-                return {"delivered": delivered, "folder": folder, "message_id": str(message_id)}
+                return {"delivered": delivered, "folder": folder, "message_id": str(message_id), "routing": routing}
     except Exception:
         for object_key in stored_keys:
             try:

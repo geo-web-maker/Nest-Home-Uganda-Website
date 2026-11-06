@@ -21,6 +21,10 @@ async def list_activity(
     item_type: str | None = None,
     item_id: str | None = None,
     cursor: str | None = None,
+    severity: str | None = None,
+    event_type: str | None = None,
+    source: str | None = None,
+    outcome: str | None = None,
 ) -> ActivityPage:
     if start and end and end < start:
         from app.core.errors import ValidationFailed
@@ -40,6 +44,9 @@ async def list_activity(
         query["item_type"] = item_type
     if item_id:
         query["item_id"] = item_id
+    for field, value in (("severity", severity), ("event_type", event_type), ("source", source), ("outcome", outcome)):
+        if value:
+            query[field] = value
     if cursor:
         try:
             raw = json.loads(base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)).decode())
@@ -56,7 +63,7 @@ async def list_activity(
             ) from None
     finder = AuditLog.find(query)
     total = await finder.count()
-    docs = await finder.sort("-at").skip(page.skip).limit(page.page_size).to_list()
+    docs = await finder.sort([("at", -1), ("_id", -1)]).skip(0 if cursor else page.skip).limit(page.page_size).to_list()
     actor_ids: set[PydanticObjectId] = {doc.user_id for doc in docs if doc.user_id is not None}
     users = await User.find({"_id": {"$in": list(actor_ids)}}).to_list() if actor_ids else []
     names = {str(user.id): user.name for user in users}
@@ -68,6 +75,14 @@ async def list_activity(
             action=display_action(doc.action, doc.item_type, doc.before, doc.after, doc.item_label),
             item_type=doc.item_type,
             item_label=doc.item_label,
+            event_type=getattr(doc, "event_type", "activity"),
+            severity=getattr(doc, "severity", "info"),
+            source=getattr(doc, "source", "user"),
+            outcome=getattr(doc, "outcome", "success"),
+            message=getattr(doc, "message", None),
+            request_id=getattr(doc, "request_id", None),
+            endpoint=getattr(doc, "endpoint", None),
+            http_status=getattr(doc, "http_status", None),
         )
         for doc in docs
     ]

@@ -10,7 +10,8 @@ from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
 from app.core.db import get_care_database, start_session
-from app.core.deps import Principal, require_scopes
+from app.core.deps import Principal, get_principal, require_scopes
+from app.core.totp_guard import require_totp_session
 from app.core.photo_store import (
     signed_delivery_url,
     temporary_stream_signature,
@@ -32,6 +33,47 @@ from app.modules.settings.rules import resolve_sos_enabled
 from app.modules.visits.models import Visit, VisitEvent, VisitPhoto
 
 router = APIRouter(prefix="/field", tags=["field"])
+
+
+@router.get("/audit")
+async def field_audit(principal: Principal = Depends(require_totp_session)):
+    """Return only the signed-in nurse's own audit events and relevant system failures."""
+    from beanie import PydanticObjectId
+    from app.modules.audit.models import AuditLog
+
+    user_id = PydanticObjectId(principal.user_id)
+    rows = await AuditLog.find({"$or": [
+        {"user_id": user_id},
+        {"source": {"$in": ["system", "scheduler", "integration"]}, "severity": {"$in": ["error", "critical"]}},
+    ]}).sort("-at").limit(100).to_list()
+    from app.modules.visits.models import VisitEvent
+    visit_events = await VisitEvent.find(VisitEvent.nurse_id == principal.user_id).sort("-received_at").limit(100).to_list()
+    items = [{
+        "id": str(row.id), "at": row.at, "action": row.action,
+        "item_type": row.item_type, "item_label": row.item_label,
+        "event_type": getattr(row, "event_type", "activity"),
+        "severity": getattr(row, "severity", "info"),
+        "outcome": getattr(row, "outcome", "success"),
+        "message": getattr(row, "message", None),
+        "request_id": getattr(row, "request_id", None),
+        "http_status": getattr(row, "http_status", None),
+    } for row in rows]
+    already_audited = {
+        (row.action, (getattr(row, "after", None) or {}).get("visit_id"))
+        for row in rows
+    }
+    items.extend({
+        "id": f"visit-event:{row.id}", "at": row.received_at,
+        "action": f"nurse.visit.{row.type}", "item_type": "visit",
+        "item_label": "Visit activity", "event_type": "activity",
+        "severity": "info", "outcome": row.result,
+        "message": f"Visit {row.type.replace('_', ' ')} recorded ({row.verification.replace('_', ' ')}).",
+        "request_id": None, "http_status": None,
+    } for row in visit_events if (f"nurse.visit.{row.type}", row.visit_id) not in already_audited)
+    items.sort(key=lambda item: item["at"], reverse=True)
+    from app.modules.audit.service import record_system_event
+    await record_system_event(action="audit.view.nurse", message="Nurse viewed their own activity history.", severity="info", source="audit", user_id=principal.user_id, outcome="success", event_type="activity")
+    return {"items": items[:100]}
 
 
 class AdhocVisitIn(BaseModel):

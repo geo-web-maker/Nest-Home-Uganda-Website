@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from app.core.config import get_settings
 from app.core.db import get_care_database, start_session
 from app.core.deps import Principal, ReachContext, get_care_actor, require_scopes
+from app.core.totp_guard import require_totp_session
 from app.core.errors import Conflict
 from app.modules.audit.models import AuditLog
 from app.modules.care_clients.models import CareClient
@@ -95,8 +96,11 @@ class SettingIn(BaseModel):
 
 
 async def _audit(actor, action, kind, item_id, before=None, after=None):
+    actor_id = getattr(actor, "user_id", None)
     await AuditLog(
-        action=action, item_type=kind, item_id=item_id, before=before, after=after
+        user_id=PydanticObjectId(actor_id) if actor_id and PydanticObjectId.is_valid(actor_id) else None,
+        scope=",".join(getattr(actor, "authorised_by", ()) or ()),
+        action=action, item_type=kind, item_id=item_id, before=before, after=after,
     ).insert()
 
 
@@ -569,11 +573,14 @@ async def create_visit(
 async def visit_detail(
     visit_id: str,
     _: Principal = Depends(require_scopes("visits:read")),
+    _totp: Principal = Depends(require_totp_session),
     ctx: ReachContext = Depends(get_care_actor),
 ):
     row = await Visit.find_one(Visit.id == visit_id)
     if not row or not await _visit_reachable(row, ctx):
         raise HTTPException(404, detail="Visit not found")
+    from app.modules.audit.service import record_system_event
+    await record_system_event(action="audit.view.visit", message="A permitted administrator viewed visit audit details.", severity="info", source="audit", user_id=_.user_id, outcome="success", event_type="activity", details={"visit_id": visit_id})
     return {
         "visit": row,
         "events": await VisitEvent.find(VisitEvent.visit_id == visit_id).to_list(),

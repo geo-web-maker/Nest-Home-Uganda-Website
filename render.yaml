@@ -50,6 +50,8 @@ services:
         sync: false
       - key: NEST_PG_URL
         sync: false
+      - key: MAIL_MIGRATIONS_REQUIRED
+        value: "true"
       - key: NEST_MAIL_SECRET_KEY
         sync: false
       - key: NEST_MAIL_DOMAIN

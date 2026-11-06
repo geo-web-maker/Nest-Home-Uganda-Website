@@ -1,5 +1,7 @@
 """Migrations and seed against a real MongoDB (needs TEST_MONGODB_URI)."""
 
+import asyncio
+
 import pytest
 from pymongo.errors import DuplicateKeyError
 
@@ -40,6 +42,26 @@ async def test_migrations_run_once_then_change_nothing(mongo) -> None:
     care_names = {d["_id"] async for d in db.get_care_database()["migrations"].find()}
     assert "0001_indexes" in names
     assert care_migrations <= care_names
+
+
+
+
+async def test_concurrent_migration_startup_runs_a_migration_only_once(mongo, tmp_path) -> None:
+    migration = tmp_path / "0001_lock_probe.py"
+    migration.write_text(
+        "async def up(db):\n"
+        "    await db['migration_lock_probe'].insert_one({'_id': 'only-once'})\n",
+        encoding="utf-8",
+    )
+
+    first, second = await asyncio.gather(
+        run_migrations(mongo, directory=tmp_path),
+        run_migrations(mongo, directory=tmp_path),
+    )
+
+    assert sorted(first + second) == ["0001_lock_probe"]
+    assert await mongo["migration_lock_probe"].count_documents({}) == 1
+    assert await mongo["_schema_migration_locks"].count_documents({}) == 0
 
 
 async def test_indexes_exist_with_ttls(mongo) -> None:

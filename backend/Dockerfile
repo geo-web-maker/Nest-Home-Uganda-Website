@@ -21,5 +21,7 @@ RUN useradd --system --no-create-home appuser
 USER appuser
 
 EXPOSE 8000
-# Migrations are idempotent (tracked in the `migrations` collection). The platform sets PORT.
-CMD ["sh", "-c", "python -m app.migrate && exec python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# FastAPI lifespan applies MongoDB and configured mail SQL migrations before accepting
+# traffic. Keeping this in the app lifecycle also covers platforms that override CMD.
+# The platform sets PORT.
+CMD ["sh", "-c", "exec python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
