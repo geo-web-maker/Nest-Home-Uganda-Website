@@ -176,7 +176,8 @@ export function isBlank(value: unknown): boolean {
 /** Money is stored as plain digits (one optional decimal point) so the server can calculate it. */
 export function cleanMoney(raw: string): string {
   const stripped = raw.replace(/[^\d.]/g, '');
-  const [whole, ...rest] = stripped.split('.');
+  const [first, ...rest] = stripped.split('.');
+  const whole = first ?? '';
   return rest.length ? `${whole}.${rest.join('').slice(0, 2)}` : whole;
 }
 export function formatMoney(value: string): string {

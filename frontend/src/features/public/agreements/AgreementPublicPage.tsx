@@ -251,6 +251,7 @@ export function AgreementPublicPage() {
                 <legend>{section.title}</legend>
                 {paths.map((path) => {
                   const field = view.fields[path];
+                  if (!field) return null;
                   const editable = field.owner === 'client' || field.owner === 'either';
                   const meta = fieldMeta(path);
                   return <div className={styles.formField} key={path}>

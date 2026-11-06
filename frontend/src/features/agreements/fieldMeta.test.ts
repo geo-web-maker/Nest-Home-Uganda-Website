@@ -10,12 +10,12 @@ describe('agreement field metadata', () => {
   });
 
   it('never offers N/A for the values the server must calculate or check', () => {
-    expect(FIELD_META['schedule_b.total_fee'].na).toBe(false);
-    expect(FIELD_META['schedule_b.currency'].options).toEqual(['UGX', 'USD']);
+    expect(FIELD_META['schedule_b.total_fee']?.na).toBe(false);
+    expect(FIELD_META['schedule_b.currency']?.options).toEqual(['UGX', 'USD']);
   });
 
   it('keeps every representative option free of the word "patient" so representative details are required', () => {
-    const options = FIELD_META['schedule_c.decision_maker'].options ?? [];
+    const options = FIELD_META['schedule_c.decision_maker']?.options ?? [];
     expect(options.filter((option) => !option.toLowerCase().includes('patient'))).toHaveLength(options.length - 1);
   });
 
