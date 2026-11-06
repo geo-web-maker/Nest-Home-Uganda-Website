@@ -2911,6 +2911,98 @@
         "title": "HeartbeatIn",
         "type": "object"
       },
+      "InviteOut": {
+        "description": "The temporary password is returned once, here, and never stored in readable form.",
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "delivered": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Delivered",
+            "type": "object"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_superadmin": {
+            "title": "Is Superadmin",
+            "type": "boolean"
+          },
+          "kind": {
+            "default": "staff",
+            "title": "Kind",
+            "type": "string"
+          },
+          "last_login": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Login"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "reach": {
+            "default": "all",
+            "title": "Reach",
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "invited"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "temp_password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temp Password"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "scopes",
+          "is_superadmin",
+          "last_login",
+          "status",
+          "active"
+        ],
+        "title": "InviteOut",
+        "type": "object"
+      },
       "JobAdminOut": {
         "properties": {
           "applicants_count": {
@@ -5410,6 +5502,57 @@
         "title": "ReprocessBody",
         "type": "object"
       },
+      "ResetIn": {
+        "properties": {
+          "delivery": {
+            "items": {
+              "enum": [
+                "email",
+                "sms",
+                "temp_password"
+              ],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Delivery",
+            "type": "array"
+          }
+        },
+        "title": "ResetIn",
+        "type": "object"
+      },
+      "ResetOut": {
+        "properties": {
+          "delivered": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Delivered",
+            "type": "object"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "temp_password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temp Password"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "ResetOut",
+        "type": "object"
+      },
       "SOSBody": {
         "properties": {
           "id": {
@@ -7169,6 +7312,20 @@
       "UserInvite": {
         "description": "An invite never creates a superadmin: that flag is changed by hand, by a superadmin.",
         "properties": {
+          "delivery": {
+            "items": {
+              "enum": [
+                "email",
+                "sms",
+                "temp_password"
+              ],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Delivery",
+            "type": "array"
+          },
           "email": {
             "format": "email",
             "maxLength": 254,
@@ -7192,6 +7349,18 @@
             "minLength": 2,
             "title": "Name",
             "type": "string"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "maxLength": 32,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
           },
           "preset": {
             "anyOf": [
@@ -15058,7 +15227,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminUserOut"
+                  "$ref": "#/components/schemas/InviteOut"
                 }
               }
             },
@@ -15195,12 +15364,29 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ResetIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Done"
+                  "$ref": "#/components/schemas/ResetOut"
                 }
               }
             },
