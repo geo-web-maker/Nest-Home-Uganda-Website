@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
 import { ApiError, apiClient } from '../../../lib/api/client';
+import { MIN_PASSWORD_LENGTH, isWeakPassword, passwordStrength } from '../../../lib/passwordStrength';
 import styles from './LoginPage.module.css';
 
 type Values = { password: string; confirm: string };
@@ -23,7 +24,11 @@ export function SetPasswordPage() {
 
   const schema = z
     .object({
-      password: z.string().min(12, t('setPassword.errors.short')).max(200),
+      password: z
+        .string()
+        .min(MIN_PASSWORD_LENGTH, t('setPassword.errors.short'))
+        .max(200)
+        .refine((v) => !isWeakPassword(v), t('setPassword.errors.weak')),
       confirm: z.string(),
     })
     .refine((v) => v.password === v.confirm, {
@@ -33,12 +38,14 @@ export function SetPasswordPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: { password: '', confirm: '' },
   });
 
+  const strength = passwordStrength(watch('password'));
   const bind = (name: keyof Values) => {
     const { onChange, onBlur, ref, name: fieldName } = register(name);
     return { onChange, onBlur, ref, name: fieldName };
@@ -53,6 +60,8 @@ export function SetPasswordPage() {
     } catch (error) {
       if (error instanceof ApiError && error.status === 429) {
         setFormError(t('login.errors.rateLimited'));
+      } else if (error instanceof ApiError && error.status === 422 && error.fields?.password) {
+        setFormError(t('setPassword.errors.weak'));
       } else if (error instanceof ApiError && error.status === 422 && error.fields?.token) {
         setFormError(t('setPassword.errors.link'));
       } else {
@@ -93,6 +102,11 @@ export function SetPasswordPage() {
             error={errors.password?.message}
             {...bind('password')}
           />
+          {strength !== 'empty' && (
+            <p className={styles.strength} data-level={strength} aria-live="polite">
+              {t(`setPassword.strength.${strength}`)}
+            </p>
+          )}
           <Field
             label={t('setPassword.confirm')}
             type="password"

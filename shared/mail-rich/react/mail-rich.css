@@ -5,15 +5,19 @@
 /* Email HTML is written for a light page and carries its own colours, so quoted mail sits on the same light surface as the message body, in light and dark app themes. */
 .mr-quoted { color: #1a1a1a; background: #fff; color-scheme: light; margin-top: var(--mr-gap, 12px); border-left: 3px solid var(--mr-line, #ddd); padding: var(--mr-gap, 12px); border-radius: var(--mr-radius, 8px); overflow-wrap: anywhere; }
 .mr-plain-body { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
-.mr-message-toggle { display: flex; gap: 8px; }
 .mr-message-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; position: relative; min-height: 32px; }
+.mr-link-button { background: none; border: 0; padding: 4px 0; font: inherit; font-size: .85rem; font-weight: 600; color: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.mr-more { position: relative; margin-inline-start: auto; }
+.mr-more-trigger { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 999px; background: transparent; font-size: 1.35rem; line-height: 1; color: var(--mr-muted, #666); cursor: pointer; }
+.mr-more-trigger:hover, .mr-more-trigger[aria-expanded="true"] { background: color-mix(in srgb, currentColor 10%, transparent); }
+.mr-menu { position: absolute; inset-inline-end: 0; top: calc(100% + 4px); z-index: 20; min-width: 230px; max-width: calc(100vw - 2rem); margin: 0; padding: 6px; list-style: none; border: 1px solid var(--mr-line, #ddd); border-radius: 14px; background: var(--surf, Canvas); color: var(--mr-fg); box-shadow: 0 10px 28px rgba(0,0,0,.16); }
+.mr-menu li { margin: 0; }
+.mr-menu button { width: 100%; display: flex; align-items: center; gap: 8px; padding: 11px 12px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: .95rem; color: inherit; text-align: start; cursor: pointer; }
+.mr-menu button:hover, .mr-menu button:focus-visible { background: color-mix(in srgb, currentColor 8%, transparent); }
+.mr-menu-check { width: 1.1em; flex: none; font-weight: 700; }
+.mr-menu-sep { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--mr-line, #ddd); }
+.mr-menu-note { padding: 8px 12px; font-size: .85rem; color: var(--mr-muted, #666); }
 .mr-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: .85rem; color: var(--mr-muted, #666); }
-.mr-more { margin-inline-start: auto; }
-.mr-more > summary { list-style: none; cursor: pointer; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 999px; font-size: 1.25rem; line-height: 1; color: var(--mr-muted, #666); user-select: none; }
-.mr-more > summary::-webkit-details-marker { display: none; }
-.mr-more > summary:hover, .mr-more[open] > summary { background: color-mix(in srgb, currentColor 10%, transparent); }
-.mr-more-panel { position: absolute; inset-inline-end: 0; top: 36px; z-index: 5; display: grid; gap: 10px; min-width: 220px; padding: 12px; border: 1px solid var(--mr-line, #ddd); border-radius: 12px; background: var(--surf, Canvas); color: var(--mr-fg); box-shadow: 0 8px 24px rgba(0,0,0,.14); }
-.mr-more-note { margin: 0; font-size: .85rem; color: var(--mr-muted, #666); }
 .mr-section-title { font-size: 1rem; }
 .mr-attachment-list { list-style: none; margin: 0; padding: 0; }
 .mr-attachment { display: flex; align-items: center; gap: var(--mr-gap, 12px); padding: 8px 0; border-bottom: 1px solid var(--mr-line, #ddd); }

@@ -34,7 +34,7 @@ describe('SetPasswordPage', () => {
     const post = vi.spyOn(apiClient, 'post');
     setup();
     await fill('short', 'short');
-    expect(await screen.findByText('Use at least 12 characters.')).toBeInTheDocument();
+    expect(await screen.findByText('Use at least 8 characters.')).toBeInTheDocument();
     expect(post).not.toHaveBeenCalled();
   });
 

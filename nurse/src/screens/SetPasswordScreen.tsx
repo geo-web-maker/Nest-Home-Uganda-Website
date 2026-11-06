@@ -2,11 +2,11 @@ import { useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { apiRequest } from '../lib/api/client';
 import { copy } from '../copy';
+import { MIN_PASSWORD_LENGTH, isWeakPassword, passwordStrength } from '../lib/passwordStrength';
 import { Banner } from '../ui/Banner';
 import { Card } from '../ui/Card';
 import { PillButton } from '../ui/PillButton';
 
-const MIN_LENGTH = 12;
 
 /** Public route: redeems the one-time link from an invite or password-reset email. */
 export function SetPasswordScreen() {
@@ -19,10 +19,12 @@ export function SetPasswordScreen() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
   const text = copy.setPassword;
+  const strength = passwordStrength(password);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (password.length < MIN_LENGTH) return setError(text.errors.short);
+    if (password.length < MIN_PASSWORD_LENGTH) return setError(text.errors.short);
+    if (isWeakPassword(password)) return setError(text.errors.weak);
     if (password !== confirm) return setError(text.errors.mismatch);
     setBusy(true);
     setError('');
@@ -34,7 +36,7 @@ export function SetPasswordScreen() {
       setDone(true);
     } catch (caught) {
       const status = (caught as { status?: number }).status;
-      setError(status === 429 ? text.errors.rateLimited : status === 422 ? text.errors.link : text.errors.failed);
+      setError(status === 429 ? text.errors.rateLimited : status === 422 && /password/i.test(String((caught as { detail?: unknown }).detail)) ? text.errors.weak : status === 422 ? text.errors.link : text.errors.failed);
     } finally {
       setBusy(false);
     }
@@ -52,6 +54,7 @@ export function SetPasswordScreen() {
         <form onSubmit={(event) => void submit(event)}>
           <label htmlFor="new-password">{text.password}</label>
           <input id="new-password" type="password" autoComplete="new-password" value={password} onChange={(event) => { setPassword(event.target.value); setError(''); }} required />
+          {strength !== 'empty' && <small className="password-strength" data-level={strength} aria-live="polite">{text.strength[strength]}</small>}
           <label htmlFor="confirm-password">{text.confirm}</label>
           <input id="confirm-password" type="password" autoComplete="new-password" value={confirm} onChange={(event) => { setConfirm(event.target.value); setError(''); }} required />
           <PillButton type="submit" tone="forest" disabled={busy} size="full">{busy ? text.submitting : text.submit}</PillButton>
