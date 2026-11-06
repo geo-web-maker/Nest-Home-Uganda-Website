@@ -5379,6 +5379,23 @@ export interface components {
             /** Total */
             total: number;
         };
+        /**
+         * PasswordChangeRequiredResponse
+         * @description Returned instead of a session when the caller signed in with a temporary password.
+         */
+        PasswordChangeRequiredResponse: {
+            /** Expires In */
+            expires_in: number;
+            /**
+             * Password Change Required
+             * @default true
+             */
+            password_change_required: boolean;
+            /** Purpose */
+            purpose: string;
+            /** Set Password Token */
+            set_password_token: string;
+        };
         /** PhotoComplete */
         PhotoComplete: {
             /** Id */
@@ -11200,7 +11217,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TokenResponse"];
+                    "application/json": components["schemas"]["TokenResponse"] | components["schemas"]["PasswordChangeRequiredResponse"];
                 };
             };
             /** @description Validation Error */
@@ -11287,7 +11304,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NativeLoginResponse"];
+                    "application/json": components["schemas"]["NativeLoginResponse"] | components["schemas"]["PasswordChangeRequiredResponse"];
                 };
             };
             /** @description Validation Error */

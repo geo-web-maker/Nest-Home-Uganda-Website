@@ -4848,6 +4848,35 @@
         "title": "Page[TestimonialAdminOut]",
         "type": "object"
       },
+      "PasswordChangeRequiredResponse": {
+        "description": "Returned instead of a session when the caller signed in with a temporary password.",
+        "properties": {
+          "expires_in": {
+            "title": "Expires In",
+            "type": "integer"
+          },
+          "password_change_required": {
+            "default": true,
+            "title": "Password Change Required",
+            "type": "boolean"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "set_password_token": {
+            "title": "Set Password Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "set_password_token",
+          "purpose",
+          "expires_in"
+        ],
+        "title": "PasswordChangeRequiredResponse",
+        "type": "object"
+      },
       "PhotoComplete": {
         "properties": {
           "id": {
@@ -15520,7 +15549,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TokenResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/TokenResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PasswordChangeRequiredResponse"
+                    }
+                  ],
+                  "title": "Response Login Api V1 Auth Login Post"
                 }
               }
             },
@@ -15679,7 +15716,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/NativeLoginResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/NativeLoginResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PasswordChangeRequiredResponse"
+                    }
+                  ],
+                  "title": "Response Native Login Api V1 Auth Native Login Post"
                 }
               }
             },
