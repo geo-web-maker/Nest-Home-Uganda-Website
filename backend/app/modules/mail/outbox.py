@@ -309,7 +309,6 @@ async def drain(limit: int = 20) -> int:
             json_transport = provider.name == "resend" or (provider.name == "brevo" and provider_transport == "api")
             if json_transport:
                 import unicodedata
-                import re
                 simplified = 0
                 inline_degraded = sum(1 for item in attachments if item.disposition == "inline")
                 if provider.name == "brevo":
