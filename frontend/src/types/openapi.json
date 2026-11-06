@@ -8724,6 +8724,31 @@
         ]
       }
     },
+    "/api/v1/admin/agreements/diagnostics/delivery-targets": {
+      "get": {
+        "description": "Show (masked) where the staff self-tests will be delivered.",
+        "operationId": "admin_diagnostics_targets_api_v1_admin_agreements_diagnostics_delivery_targets_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Diagnostics Targets",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
     "/api/v1/admin/agreements/diagnostics/delivery-test/{channel}": {
       "post": {
         "description": "Send one clearly labelled test to the authenticated staff member only.",
