@@ -5,6 +5,12 @@ import { clearRefreshToken, saveRefreshToken } from '../platform/secureTokenStor
 import { copy } from '../copy';
 
 type SessionResponse = { access_token: string; refresh_token?: string; csrf_token?: string };
+type PasswordChangeResponse = { password_change_required: true; set_password_token: string; purpose: 'invite' | 'reset' };
+
+/** The password was a temporary one: no session is issued until the nurse chooses their own. */
+export class PasswordChangeRequiredError extends Error {
+  constructor(readonly token: string, readonly purpose: 'invite' | 'reset') { super('password_change_required'); }
+}
 export type SessionCallbacks = {
   onAuthenticated?: (token: string) => Promise<void> | void;
   onMessage?: (message: string) => void;
@@ -16,7 +22,9 @@ export function useSession(callbacks: SessionCallbacks = {}) {
   const [token, setToken] = useState(() => sessionStorage.getItem('nurse_access_token') ?? '');
   const signIn = useCallback(async (identifier: string, password: string) => {
     const path = Capacitor.isNativePlatform() ? '/auth/native/login' : '/auth/login';
-    const body = await apiRequest<SessionResponse>(path, { method: 'POST', body: JSON.stringify({ email: identifier, password }) });
+    const result = await apiRequest<SessionResponse | PasswordChangeResponse>(path, { method: 'POST', body: JSON.stringify({ email: identifier, password }) });
+    if ('password_change_required' in result && result.password_change_required) throw new PasswordChangeRequiredError(result.set_password_token, result.purpose);
+    const body = result as SessionResponse;
     sessionStorage.setItem('nurse_access_token', body.access_token);
     if (Capacitor.isNativePlatform() && body.refresh_token) await saveRefreshToken(body.refresh_token);
     if (!Capacitor.isNativePlatform() && body.csrf_token) sessionStorage.setItem('nurse_csrf_token', body.csrf_token);

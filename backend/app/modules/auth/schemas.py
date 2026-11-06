@@ -22,6 +22,15 @@ class TokenResponse(BaseModel):
     user: UserPublic
 
 
+class PasswordChangeRequiredResponse(BaseModel):
+    """Returned instead of a session when the caller signed in with a temporary password."""
+
+    password_change_required: bool = True
+    set_password_token: str
+    purpose: str  # "invite" | "reset"
+    expires_in: int
+
+
 class ScopeOut(BaseModel):
     id: str
     group: str

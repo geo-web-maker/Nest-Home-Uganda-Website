@@ -1,6 +1,13 @@
 import { ApiError, apiClient, type ApiClient } from '../../../lib/api/client';
 import { authStore } from './authStore';
-import { installAuthHooks, login, logout, refreshSession, restoreSession } from './session';
+import {
+  PasswordChangeRequiredError,
+  installAuthHooks,
+  login,
+  logout,
+  refreshSession,
+  restoreSession,
+} from './session';
 
 const USER = {
   id: 'u1',
@@ -27,6 +34,20 @@ const json = (status: number, body: unknown) => new Response(JSON.stringify(body
 
 describe('session', () => {
   beforeEach(() => authStore.reset());
+
+  it('login with a temporary password signs nobody in and hands back the set-password token', async () => {
+    const { client, post } = mockClient();
+    post.mockResolvedValue({
+      password_change_required: true,
+      set_password_token: 'tok-1',
+      purpose: 'invite',
+      expires_in: 1800,
+    });
+    const attempt = login('ada@example.test', 'TEMPpass', client);
+    await expect(attempt).rejects.toBeInstanceOf(PasswordChangeRequiredError);
+    await expect(attempt).rejects.toMatchObject({ token: 'tok-1', purpose: 'invite' });
+    expect(authStore.getState().status).not.toBe('signedIn');
+  });
 
   it('login keeps the token and user in memory and stores only the CSRF token', async () => {
     const { client, post } = mockClient();

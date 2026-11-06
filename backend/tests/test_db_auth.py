@@ -157,3 +157,40 @@ async def test_scopes_endpoint_lists_the_registry(mongo: object, client: httpx.A
     r = await client.get("/api/v1/admin/scopes", headers=auth(make_token(["users:read"])))
     assert r.status_code == 200
     assert {s["id"] for s in r.json()} == ALL_SCOPE_IDS
+
+
+async def test_temp_password_gives_a_set_password_step_not_a_session(
+    mongo: object, client: httpx.AsyncClient
+) -> None:
+    """A staff-issued temp password must not sign anyone in: it only opens set-password."""
+    from app.modules.auth.models import PasswordReset
+
+    await make_user(temp_password_expires_at=datetime.now(UTC) + timedelta(days=7))
+    r = await login(client)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["password_change_required"] is True
+    assert body["purpose"] == "invite"  # never accepted an invite yet
+    assert "access_token" not in body
+    assert "set-cookie" not in r.headers
+    assert (await User.find_one(User.email == "user@example.com")).last_login_at is None
+    assert await RefreshToken.find().count() == 0
+    # The token it hands out redeems once and clears the temp password.
+    done = await client.post(
+        "/api/v1/auth/accept-invite", json={"token": body["set_password_token"], "password": "a brand new passphrase"}
+    )
+    assert done.status_code == 200
+    user = await User.find_one(User.email == "user@example.com")
+    assert user.temp_password_expires_at is None and user.invite_accepted_at is not None
+    assert (await login(client)).status_code == 401  # the temp password no longer works
+    assert (await login(client, "a brand new passphrase")).status_code == 200
+    assert await PasswordReset.find().count() == 1
+
+
+async def test_temp_password_after_a_reset_uses_the_reset_purpose(
+    mongo: object, client: httpx.AsyncClient
+) -> None:
+    now = datetime.now(UTC)
+    await make_user(temp_password_expires_at=now + timedelta(days=7), invite_accepted_at=now)
+    body = (await login(client)).json()
+    assert body["password_change_required"] is True and body["purpose"] == "reset"

@@ -26,6 +26,18 @@ LOCK_DURATION = timedelta(minutes=15)
 BAD_CREDENTIALS = "Incorrect email or password."
 
 
+TEMP_LINK_MINUTES = 30  # how long a temp-password user has to choose their own password
+
+
+@dataclass(frozen=True)
+class PasswordChangeRequired:
+    """The temporary password was right, but no session is issued until a real one is chosen."""
+
+    token: str  # one-time set-password token, redeemed at /auth/set-password or /auth/accept-invite
+    purpose: str  # "invite" (first sign-in) or "reset"
+    expires_in: int  # seconds
+
+
 @dataclass(frozen=True)
 class Session:
     access_token: str
@@ -53,7 +65,7 @@ async def _issue_session(user: User, user_agent: str | None, now: datetime) -> S
 
 async def login(
     email: str, password: str, ip_hash: str, user_agent: str | None, now: datetime | None = None
-) -> Session:
+) -> Session | PasswordChangeRequired:
     now = now or datetime.now(UTC)
     from app.core.phone import normalise_e164
     from app.modules.settings.care_env import env_value
@@ -106,6 +118,21 @@ async def login(
     user.failed_logins = 0
     user.last_failed_at = None
     user.locked_until = None
+
+    if user.temp_password_expires_at:
+        # A staff-issued temporary password (invite or reset) only opens the "choose your own
+        # password" step. No session, no last_login_at: the account stays "invited" until then.
+        from app.modules.users import service as users_service
+
+        purpose = "reset" if user.invite_accepted_at else "invite"
+        token = await users_service._issue_link(user, now, TEMP_LINK_MINUTES, purpose=purpose)
+        await user.save()
+        await audit.record(
+            _principal(user), "auth.temp_password_login", "user", str(user.id), user.email,
+            ip_hash=ip_hash,
+        )  # fmt: skip
+        return PasswordChangeRequired(token, purpose, TEMP_LINK_MINUTES * 60)
+
     user.last_login_at = now
     if password_needs_rehash(user.password_hash):
         user.password_hash = hash_password(password)

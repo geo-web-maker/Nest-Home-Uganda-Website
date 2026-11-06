@@ -30,6 +30,7 @@ import { NurseRoutes } from './routes';
 import { MailScreen } from '../features/mail/MailScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { SetPasswordScreen } from '../screens/SetPasswordScreen';
+import { PasswordChangeRequiredError } from './useSession';
 import { Onboarding } from '../screens/Onboarding';
 import { TodayScreen } from '../screens/TodayScreen';
 import { VisitDetail } from '../screens/VisitDetail';
@@ -332,6 +333,14 @@ function NurseWorkspace() {
       setMessage(copy.messages.signedIn);
       if ((profile.consents_required ?? []).length === 0) await sync();
     } catch (error: unknown) {
+      if (error instanceof PasswordChangeRequiredError) {
+        // Temporary password accepted: choose a real one before signing in.
+        setPassword('');
+        setLoginError('');
+        setMessage('');
+        navigate(`/set-password?token=${encodeURIComponent(error.token)}&purpose=${error.purpose}&from=temp`, { replace: true });
+        return;
+      }
       const status = typeof error === 'object' && error !== null && 'status' in error ? Number((error as { status?: unknown }).status) : -1;
       setLoginError(status === 0 ? copy.login.offlineServer : status === 401 ? copy.login.invalidCredentials : copy.login.failed);
     } finally {

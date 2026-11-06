@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Capacitor } from '@capacitor/core';
 import { apiRequest } from '../lib/api/client';
 import { saveRefreshToken } from '../platform/secureTokenStorage';
-import { useSession } from './useSession';
+import { PasswordChangeRequiredError, useSession } from './useSession';
 
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: vi.fn(() => false) } }));
 vi.mock('../lib/api/client', () => ({ apiRequest: vi.fn() }));
@@ -37,6 +37,15 @@ describe('nurse session hook', () => {
     vi.mocked(apiRequest).mockRejectedValue(new Error('invalid credentials'));
     const { result } = renderHook(() => useSession());
     await expect(act(async () => { await result.current.signIn('nurse@example.test', 'wrong'); })).rejects.toThrow('invalid credentials');
+    expect(sessionStorage.getItem('nurse_access_token')).toBeNull();
+    expect(result.current.token).toBe('');
+  });
+
+  it('does not sign in when the password was a temporary one; it asks for a new password instead', async () => {
+    vi.mocked(apiRequest).mockResolvedValue({ password_change_required: true, set_password_token: 'tok-9', purpose: 'reset' } as never);
+    const { result } = renderHook(() => useSession());
+    const attempt = act(async () => { await result.current.signIn('nurse@example.test', 'TEMPpass'); });
+    await expect(attempt).rejects.toBeInstanceOf(PasswordChangeRequiredError);
     expect(sessionStorage.getItem('nurse_access_token')).toBeNull();
     expect(result.current.token).toBe('');
   });

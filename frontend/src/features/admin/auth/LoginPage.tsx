@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Head } from 'vite-react-ssg';
 import { z } from 'zod';
 import { LoginMark } from '../../../components/brand/Logo';
@@ -11,6 +11,7 @@ import { Field } from '../../../components/ui/Field';
 import { ApiError } from '../../../lib/api/client';
 import styles from './LoginPage.module.css';
 import { firstReachablePath } from '../nav';
+import { PasswordChangeRequiredError } from './session';
 import { useAuth } from './useAuth';
 
 const DEFAULT_LANDING = '/admin';
@@ -30,6 +31,7 @@ export function LoginPage() {
   const { t } = useTranslation('admin');
   const { status, user, login } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [formError, setFormError] = useState<string | null>(null);
 
   const schema = z.object({
@@ -59,6 +61,16 @@ export function LoginPage() {
     try {
       await login(email, password);
     } catch (error) {
+      if (error instanceof PasswordChangeRequiredError) {
+        // Temporary password accepted: choose a real one before getting in.
+        const query = new URLSearchParams({
+          token: error.token,
+          purpose: error.purpose,
+          from: 'temp',
+        });
+        navigate(`/admin/set-password?${query.toString()}`, { replace: true });
+        return;
+      }
       if (error instanceof ApiError && error.status === 401) {
         setFormError(t('login.errors.credentials'));
       } else if (error instanceof ApiError && error.status === 429) {
