@@ -249,12 +249,26 @@ export function MailPage() {
   const timer = useRef<number | undefined>(undefined);
   const dispatchSend = async (item: PendingSend) => {
     try {
-      await apiClient.post(`/mail/drafts/${item.draftId}/send`, { mailbox_id: item.mailboxId });
+      // Sending is idempotent on the server (a draft already sent answers "already_sent"), so a dropped
+      // connection is retried instead of failing a message that may have gone through.
+      let attempt = 0;
+      for (;;) {
+        try {
+          await apiClient.post(`/mail/drafts/${item.draftId}/send`, { mailbox_id: item.mailboxId });
+          break;
+        } catch (failure) {
+          const dropped = failure instanceof Error && 'status' in failure && (failure as { status?: number }).status === 0;
+          if (!dropped || attempt >= 2) throw failure;
+          attempt += 1;
+          await new Promise((resolve) => window.setTimeout(resolve, 1500 * attempt));
+        }
+      }
       setNotice({ tone: 'success', text: t('mail.sent') });
       void refreshAll();
     } catch (cause) {
       // The message stays in Drafts; the reason is shown on the page (the composer is closed).
-      const reason = cause instanceof Error && cause.message ? cause.message : t('mail.sendError');
+      const dropped = cause instanceof Error && (cause as { status?: number }).status === 0;
+      const reason = dropped ? 'The server did not answer the send request, so the message may not have been sent.' : cause instanceof Error && cause.message ? cause.message : t('mail.sendError');
       setNotice({ tone: 'error', text: `${reason} Your message is saved in Drafts.` });
       void refreshAll();
     }

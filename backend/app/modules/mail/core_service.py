@@ -942,18 +942,38 @@ async def send_draft(user_id: str, draft_id: str, mailbox_id: str):
             parent = None
             reply_header = _rfc_message_id(draft["in_reply_to"])
             if draft["in_reply_to"]:
-                parent = await conn.fetchrow(
-                    "SELECT id,thread_id,message_id_header,references_header FROM message "
-                    "WHERE message_id_header=$1::text OR id::text=$1::text LIMIT 1",
-                    draft["in_reply_to"],
-                )
-                if parent:
-                    await conn.execute(
-                        "UPDATE message SET thread_id=COALESCE($2::uuid,$3::uuid) WHERE id=$1",
-                        draft["message_id"],
-                        parent["thread_id"],
-                        parent["id"],
-                    )
+                # Threading is best effort: a lookup problem must never stop the message from being sent.
+                # The lookups are split so each can use an index (an OR across a cast id and the header
+                # forced a scan of the whole message table on every reply).
+                try:
+                    async with conn.transaction():
+                        target = str(draft["in_reply_to"]).strip()
+                        parent = await conn.fetchrow(
+                            "SELECT id,thread_id,message_id_header,references_header FROM message "
+                            "WHERE message_id_header=$1 LIMIT 1",
+                            target,
+                        )
+                        if not parent:
+                            try:
+                                parent_uuid = uuid.UUID(target)
+                            except ValueError:
+                                parent_uuid = None
+                            if parent_uuid:
+                                parent = await conn.fetchrow(
+                                    "SELECT id,thread_id,message_id_header,references_header FROM message "
+                                    "WHERE id=$1 LIMIT 1",
+                                    parent_uuid,
+                                )
+                        if parent:
+                            await conn.execute(
+                                "UPDATE message SET thread_id=COALESCE($2::uuid,$3::uuid) WHERE id=$1",
+                                draft["message_id"],
+                                parent["thread_id"],
+                                parent["id"],
+                            )
+                except Exception as threading_error:
+                    parent = None
+                    log.warning("reply threading skipped type=%s", type(threading_error).__name__)
             else:
                 await conn.execute(
                     "UPDATE message SET thread_id=COALESCE(thread_id,id) WHERE id=$1",
