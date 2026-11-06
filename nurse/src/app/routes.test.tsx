@@ -5,6 +5,7 @@ import { NurseRoutes, type NurseRouteViews } from './routes';
 
 const views: NurseRouteViews = {
   login: <h2>Login view</h2>,
+  setPassword: <h2>Set password view</h2>,
   today: <h2>Today view</h2>,
   onboarding: <h2>Onboarding view</h2>,
   history: <h2>History view</h2>,
@@ -21,6 +22,11 @@ function renderRoute(path: string, authenticated = true) {
 }
 
 describe('nurse route table', () => {
+  it('serves the set-password page without a session', () => {
+    renderRoute('/set-password?token=t&purpose=invite', false);
+    expect(screen.getByRole('heading', { name: 'Set password view' })).toBeTruthy();
+  });
+
   it('routes authenticated tabs and visit detail paths', () => {
     const historyRoute = renderRoute('/history');
     expect(screen.getByRole('heading', { name: 'History view' })).toBeTruthy();
