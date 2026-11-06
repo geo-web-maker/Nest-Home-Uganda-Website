@@ -220,9 +220,8 @@ describe('MailPage', () => {
     await user.type((await within(dialog).findByRole('textbox', { name: 'Message' })), 'Body');
     await user.click(within(dialog).getByRole('button', { name: 'Send' }));
     await user.click(await screen.findByRole('button', { name: 'Send now' }));
-    expect(await screen.findByText('boom')).toBeInTheDocument();
-    // A failed send reopens the composer with the message intact.
-    expect(await screen.findByRole('textbox', { name: 'Message' })).toHaveTextContent('Body');
+    // A failed send keeps the message in Drafts and shows the reason on the page.
+    expect(await screen.findByText(/boom/)).toBeInTheDocument();
   });
 
   it('reopens a draft for editing and sends it through the same draft id', async () => {

@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Literal
 
 from app.core.deps import Principal, require_scopes
-from app.core.errors import Forbidden
+from app.core.errors import Forbidden, ValidationFailed
 from app.modules.mail import service, core_service
 from app.modules.mail import db as mail_db
 from app.modules.mail.schemas import MailSettingsPatch
@@ -191,7 +191,11 @@ async def update_draft(draft_id: str, body: MailDraftBody, principal: Principal 
 
 @router.post("/drafts/{draft_id}/send")
 async def send_draft(draft_id: str, body: SendDraftBody, principal: Principal = Depends(require_scopes("mail:use"))):
-    result = await core_service.send_draft(principal.user_id, draft_id, body.mailbox_id)
+    try:
+        result = await core_service.send_draft(principal.user_id, draft_id, body.mailbox_id)
+    except ValueError as exc:
+        # Rules such as "external sending is disabled" or "add a recipient" are the person's to fix: show the real reason, not a generic 500.
+        raise ValidationFailed(str(exc) or "This message could not be sent.", {"send": str(exc)}) from exc
     if result.get("external_queued"):
         from app.modules.mail.outbox import kick
         kick()
