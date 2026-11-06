@@ -29,6 +29,13 @@ function toggle(list: Delivery[], item: Delivery, on: boolean): Delivery[] {
   return on ? [...list.filter((d) => d !== item), item] : list.filter((d) => d !== item);
 }
 import styles from './UsersPage.module.css';
+/** The server's message plus the fields it rejected, e.g. "Please check the highlighted fields. (scopes: List should have at most 64 items)". */
+function describeError(error: unknown, fallback: string): string {
+  if (!(error instanceof Error) || !error.message) return fallback;
+  const fields = (error as { fields?: Record<string, string> }).fields ?? {};
+  const detail = Object.entries(fields).map(([name, why]) => `${name}: ${why}`).join('; ');
+  return detail ? `${error.message} (${detail})` : error.message;
+}
 function listItems<T>(data: T[] | { items: T[] } | undefined): T[] {
   return Array.isArray(data) ? data : (data?.items ?? []);
 }
@@ -469,7 +476,7 @@ export function UsersPage() {
               ))}
             </fieldset>
             {delivery.length === 0 && <p role="alert">{t('users.deliveryNone')}</p>}
-            {invite.isError && <p role="alert">{invite.error instanceof Error && invite.error.message ? invite.error.message : t('users.inviteError')}</p>}
+            {invite.isError && <p role="alert" ref={(el) => el?.scrollIntoView({ block: 'center' })}>{describeError(invite.error, t('users.inviteError'))}</p>}
             <ButtonGroup className={styles.fullRow}>
               <Button type="submit" disabled={
                   invite.isPending ||
