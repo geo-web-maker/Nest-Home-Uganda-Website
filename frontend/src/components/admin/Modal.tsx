@@ -24,7 +24,8 @@ export function Modal({ id, title, subtitle, onClose, closeLabel = 'Close', clas
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
-    dialog.current?.focus();
+    // Leave focus on a field that already took it (autoFocus); otherwise focus the dialog itself.
+    if (!dialog.current?.contains(document.activeElement)) dialog.current?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       const dialogs = Array.from(document.querySelectorAll<HTMLElement>('[aria-modal="true"]'));

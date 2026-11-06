@@ -170,7 +170,6 @@ export function MailRichEditor({
   const UiButton = kit.Button;
   const editorId = useId().replace(/:/g, '');
   const [focusIndex, setFocusIndex] = useState(0);
-  const [removeQuoteOpen, setRemoveQuoteOpen] = useState(false);
   const [quoteExpanded, setQuoteExpanded] = useState(quoteInitiallyExpanded);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
@@ -352,20 +351,9 @@ export function MailRichEditor({
     {quotedHtml ? <section className="mr-editor-quote" aria-label={quoteLabel}>
       <div className="mr-editor-quote-heading"><strong>{quoteLabel}</strong>
         <UiButton variant="quiet" onClick={() => setQuoteExpanded((current) => !current)}>{quoteExpanded ? labels.hideQuotedMessage : labels.showQuotedMessage}</UiButton>
-        {onRemoveQuote ? <UiButton variant="quiet" onClick={() => setRemoveQuoteOpen(true)}>{removeQuoteLabel}</UiButton> : null}
+        {onRemoveQuote ? <UiButton variant="quiet" onClick={() => onRemoveQuote?.()}>{removeQuoteLabel}</UiButton> : null}
       </div>
       {quoteExpanded ? <SafeHtml html={quotedHtml} className="mr-quoted" /> : null}
     </section> : null}
-    {removeQuoteOpen ? <Dialog
-      id={`${editorId}-remove-quote`}
-      title={labels.removeQuoteTitle}
-      closeLabel={labels.keepQuote}
-      onClose={() => setRemoveQuoteOpen(false)}
-      urgent
-      className="mr-editor-confirm"
-      actions={<div className="mr-editor-dialog-actions"><UiButton onClick={() => { setRemoveQuoteOpen(false); onRemoveQuote?.(); }}>{labels.removeQuote}</UiButton></div>}
-    >
-      <p>{labels.removeQuoteHint}</p>
-    </Dialog> : null}
   </div>;
 }

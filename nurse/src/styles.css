@@ -295,7 +295,7 @@ small, .muted, .hint { color: var(--mut); }
 .adhoc-options { display: grid; }
 .adhoc-options label { display: grid; grid-template-columns: 1.5rem 1fr; align-items: center; min-height: 50px; margin: 0; border-bottom: 1px solid var(--line); font-weight: 500; }
 .adhoc-options input { width: 1.35rem; min-height: 1.35rem; margin: 0; accent-color: var(--leaf); }
-.adhoc-sheet .sheet-actions { display: grid; grid-template-columns: 1fr; }
+.adhoc-sheet .sheet-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
 .adhoc-sheet .sheet-actions button:first-child { justify-content: space-between; min-height: 56px; border-radius: 999px; background: var(--gold); color: var(--on-gold); }
 .adhoc-sheet .sheet-actions button:first-child span { width: 2.4rem; height: 2.4rem; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--on-gold) 12%, transparent); }
 @media (min-width: 820px) { .adhoc-sheet { width: min(540px, 92%); } }
@@ -328,7 +328,7 @@ small, .muted, .hint { color: var(--mut); }
 /* Stages 13–17: consistent touch-friendly action sheets, photo review, history and device help. */
 .arrival-sheet, .departure-sheet, .note-sheet, .photo-sheet, .sos-sheet { padding-top: .8rem; }
 .arrival-sheet h2, .departure-sheet h2, .note-sheet h2, .photo-sheet h2, .sos-sheet h2 { font-family: var(--serif); font-size: clamp(1.45rem, 5vw, 1.85rem); }
-.arrival-sheet .sheet-actions, .departure-sheet .sheet-actions, .note-sheet .sheet-actions, .photo-sheet .sheet-actions, .sos-sheet .sheet-actions { display: grid; grid-template-columns: 1fr; gap: .6rem; }
+.arrival-sheet .sheet-actions, .departure-sheet .sheet-actions, .note-sheet .sheet-actions, .photo-sheet .sheet-actions, .sos-sheet .sheet-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: .6rem; }
 .arrival-sheet .sheet-actions > *, .departure-sheet .sheet-actions > *, .note-sheet .sheet-actions > *, .photo-sheet .sheet-actions > *, .sos-sheet .sheet-actions > * { width: 100%; min-height: 48px; }
 .required-photo-notice { border-left-color: var(--danger); }
 .required-photo-notice + .sheet-actions { margin-top: 1.1rem; }
@@ -377,7 +377,7 @@ small, .muted, .hint { color: var(--mut); }
 .live-follow-panel h3 { margin-top: 0; }
 .live-follow-panel button { width: 100%; }
 .live-follow-panel p { margin: .35rem 0; }
-.sos-sheet .sheet-actions { grid-template-columns: 1fr; }
+.sos-sheet .sheet-actions { grid-template-columns: minmax(0, 1fr); }
 .sos-sheet .sheet-actions a { justify-content: center; border: 1px solid var(--line); border-radius: .75rem; background: var(--surf); }
 @media (min-width: 620px) {
   .arrival-sheet .sheet-actions, .departure-sheet .sheet-actions, .note-sheet .sheet-actions, .photo-sheet .sheet-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -415,7 +415,7 @@ small, .muted, .hint { color: var(--mut); }
 @media (prefers-reduced-motion: reduce) {
   .sos-button.is-holding::before { animation-duration: 1ms; }
 }
-.photo-local-actions { display: grid; grid-template-columns: 1fr; gap: .35rem; margin-top: .35rem; }
+.photo-local-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: .35rem; margin-top: .35rem; }
 .photo-local-actions button { width: 100%; min-height: 44px; padding: .45rem .5rem; font-size: .76rem; }
 .photo-local-confirm .sheet-actions { display: grid; gap: .6rem; }
 
@@ -450,7 +450,7 @@ small, .muted, .hint { color: var(--mut); }
 .timesheet-reason h4, .timesheet-issues h4 { margin: 0 0 .4rem; }
 .timesheet-reason p { margin: 0; overflow-wrap: anywhere; }
 .timesheet-issues { display: grid; gap: .6rem; }
-.timesheet-issue { display: grid; grid-template-columns: 1fr auto; gap: .4rem; align-items: start; padding: .7rem 0; border-top: 1px solid var(--line); }
+.timesheet-issue { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .4rem; align-items: start; padding: .7rem 0; border-top: 1px solid var(--line); }
 .timesheet-issue p { grid-column: 1 / -1; margin: 0; overflow-wrap: anywhere; }
 .timesheets-screen .privacy-hint { margin: .15rem 0 0; }
 @media (min-width: 760px) {
@@ -465,7 +465,7 @@ small, .muted, .hint { color: var(--mut); }
   .timesheet-period-total { grid-column: 1; }
   .timesheet-detail .screen-heading { display: grid; }
   .timesheet-detail .screen-heading .timesheet-status { justify-self: start; }
-  .timesheet-issue { grid-template-columns: 1fr; }
+  .timesheet-issue { grid-template-columns: minmax(0, 1fr); }
 }
 
 
@@ -594,7 +594,7 @@ small, .muted, .hint { color: var(--mut); }
 .mk-map span { font-family: 'Fraunces', Georgia, serif; font-size: 1.15rem; font-weight: 600; }
 .mk-map small { max-width: 100%; font-size: 11px; overflow-wrap: anywhere; }
 .mk-summary-card h2 { margin: 0 0 15px; }
-.mk-summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 8px; }
+.mk-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 8px; }
 .mk-summary-grid > div { display: grid; gap: 3px; padding: 13px; border-radius: 17px; background: var(--bg); }
 .mk-summary-grid strong { color: var(--ink); font-family: 'Fraunces', Georgia, serif; font-size: 1.9rem; font-weight: 550; line-height: 1; }
 .mk-summary-grid span { color: var(--mut); font-size: 11px; }
@@ -805,7 +805,7 @@ html[data-theme="dark"] .mk-photo-add, html[data-theme="dark"] .mk-quick-note { 
 .mk-timesheet-summary .mk-row { justify-content: space-between; border-bottom: 1px solid var(--line); }
 .mk-timesheet-issues { display: grid; gap: 8px; margin-top: 14px; }
 .mk-timesheet-issues h4, .mk-timesheet-reason h4 { margin: 0 0 7px; font-family: var(--serif); font-size: 1rem; }
-.mk-timesheet-issue { display: grid; grid-template-columns: 1fr auto; gap: 7px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.mk-timesheet-issue { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
 .mk-timesheet-issue strong { font-size: 12px; }
 .mk-timesheet-issue p { grid-column: 1 / -1; margin: 0; color: var(--mut); font-size: 12px; }
 .mk-timesheet-reason { margin-top: 14px; padding: 12px 14px; border-radius: 15px; background: color-mix(in srgb, var(--gold) 11%, var(--surf)); }
@@ -837,7 +837,7 @@ html[data-theme="dark"] .mk-timesheet-total { background: var(--mk-dark-timeshee
 .mk-leave-total > span { color:var(--mut); font-size:.78rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
 .mk-leave-total .mk-timer--lg { margin:0; font-size:clamp(2rem, 8vw, 2.75rem); line-height:1.05; }
 .departure-sheet .mk-banner { margin:.8rem 0; }
-.departure-sheet .sheet-actions { display:grid; grid-template-columns:1fr; gap:.6rem; }
+.departure-sheet .sheet-actions { display:grid; grid-template-columns: minmax(0, 1fr); gap:.6rem; }
 .departure-sheet .sheet-actions > .mk-btn { width:100%; min-height:48px; }
 
 .mk-update-notice { display:grid; gap:.6rem; min-width:0; }
@@ -847,7 +847,7 @@ html[data-theme="dark"] .mk-timesheet-total { background: var(--mk-dark-timeshee
 .logout-guard { display:grid; gap:.8rem; }
 .logout-guard h2 { margin:0; font-family:var(--serif); font-size:clamp(1.45rem, 5vw, 1.9rem); }
 .logout-guard p { margin:0; line-height:1.55; }
-.logout-guard-actions { display:grid; grid-template-columns:1fr; gap:.6rem; margin-top:.35rem; }
+.logout-guard-actions { display:grid; grid-template-columns: minmax(0, 1fr); gap:.6rem; margin-top:.35rem; }
 .logout-guard-actions > .mk-btn { width:100%; min-height:48px; }
 
 /* Optional, device-aware PWA installation guidance. This is informational only:
@@ -975,7 +975,7 @@ html[data-theme="dark"] .mk-timesheet-total { background: var(--mk-dark-timeshee
 .mail-body { margin: 0.75rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .mail-problem { margin: 0; color: var(--danger); font-weight: 700; }
 .mail-compose-sheet textarea { min-height: 9rem; }
-.mail-compose-sheet .sheet-actions { display: grid; grid-template-columns: 1fr; gap: .6rem; }
+.mail-compose-sheet .sheet-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: .6rem; }
 
 
 /* Mobile fixes: five-tab bar, centred labels on arrow-less buttons, header actions clear of the floating theme button. */
@@ -985,3 +985,14 @@ html[data-theme="dark"] .mk-timesheet-total { background: var(--mk-dark-timeshee
 .app-shell .screen-heading { padding-right: 60px; }
 @media (min-width: 1040px) { .app-shell .screen-heading { padding-right: 96px; } }
 .mail-screen .screen-heading { flex-wrap: wrap; }
+
+/* Mobile fit: sheets, forms and the mail editor must never exceed the screen width. */
+html, body { overflow-x: clip; max-width: 100%; }
+.sheet { box-sizing: border-box; max-width: 100%; min-width: 0; overflow-x: hidden; overflow-y: auto; }
+.sheet > *, .stack-form, .stack-form > * { min-width: 0; max-width: 100%; }
+.mail-compose-sheet { overflow-x: hidden; }
+.mail-compose-sheet input, .mail-compose-sheet select, .mail-compose-sheet textarea { max-width: 100%; box-sizing: border-box; }
+
+/* Undo-send bar, held above the bottom nav. */
+.mail-undo-bar { position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: .5rem; max-width: calc(100vw - 1.5rem); padding: .5rem .75rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surf); color: var(--ink); box-shadow: 0 8px 28px color-mix(in srgb, var(--forest) 25%, transparent); }
+@media (min-width: 820px) { .mail-undo-bar { bottom: 1.5rem; } }

@@ -169,7 +169,7 @@ describe('MailPage', () => {
     expect(within(dialog).getByLabelText('Subject')).toHaveValue('Re: Rota change');
     // The quoted original is added by the server from source_id; the editable body starts empty.
     await user.click(within(dialog).getByRole('button', { name: 'Send' }));
-    await user.click(await within(dialog).findByRole('button', { name: 'Confirm send' })); // review step before sending
+    await user.click(await screen.findByRole('button', { name: 'Send now' }));
     await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/mail/drafts/d1/send', { mailbox_id: 'b1' }));
     expect(apiClient.post).toHaveBeenCalledWith('/mail/drafts', expect.objectContaining({ mailbox_id: 'b1', to: ['ruth@mail.test'], subject: 'Re: Rota change', in_reply_to: 'msg1', quote: expect.objectContaining({ kind: 'reply' }) }));
     expect(await screen.findByText('Message sent.')).toBeInTheDocument();
@@ -219,9 +219,10 @@ describe('MailPage', () => {
     await user.type(within(dialog).getByLabelText('Subject'), 'Hi');
     await user.type((await within(dialog).findByRole('textbox', { name: 'Message' })), 'Body');
     await user.click(within(dialog).getByRole('button', { name: 'Send' }));
-    await user.click(await within(dialog).findByRole('button', { name: 'Confirm send' })); // review step before sending
-    expect(await within(dialog).findByText('boom')).toBeInTheDocument();
-    expect(await within(dialog).findByRole('textbox', { name: 'Message' })).toHaveTextContent('Body');
+    await user.click(await screen.findByRole('button', { name: 'Send now' }));
+    expect(await screen.findByText('boom')).toBeInTheDocument();
+    // A failed send reopens the composer with the message intact.
+    expect(await screen.findByRole('textbox', { name: 'Message' })).toHaveTextContent('Body');
   });
 
   it('reopens a draft for editing and sends it through the same draft id', async () => {
@@ -234,7 +235,7 @@ describe('MailPage', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Compose' });
     expect(within(dialog).getByText('sam@mail.test')).toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Send' }));
-    await user.click(await within(dialog).findByRole('button', { name: 'Confirm send' })); // review step before sending
+    await user.click(await screen.findByRole('button', { name: 'Send now' }));
     await waitFor(() => expect(apiClient.put).toHaveBeenCalledWith('/mail/drafts/m1', expect.objectContaining({ to: ['sam@mail.test'] })));
     expect(apiClient.post).toHaveBeenCalledWith('/mail/drafts/m1/send', { mailbox_id: 'b1' });
     expect(apiClient.post).not.toHaveBeenCalledWith('/mail/drafts', expect.anything());

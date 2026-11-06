@@ -367,7 +367,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                 type="button"
                 variant="outline"
                 onClick={async () => {
-                  const note = await dialogs.prompt('Resolution note (required)');
+                  const note = await dialogs.prompt('Resolution note', '', { minLength: 3, multiline: true, confirmLabel: 'Resolve' });
                   if (note && note.trim().length >= 3)
                     void act(
                       `/admin/care/flags/${encodeURIComponent(String(r.id ?? ''))}/resolve`,
@@ -402,7 +402,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                   type="button"
                   variant="outline"
                   onClick={async () => {
-                    const note = await dialogs.prompt('Reason for hiding this photo (required)');
+                    const note = await dialogs.prompt('Reason for hiding this photo', '', { minLength: 3, multiline: true, confirmLabel: 'Hide photo' });
                     if (note && note.trim().length >= 3)
                       void act(
                         `/admin/care/photos/${encodeURIComponent(String(r.id ?? ''))}/hide`,
@@ -432,7 +432,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                   type="button"
                   variant="outline"
                   onClick={async () => {
-                    const note = await dialogs.prompt('Resolution note (required)');
+                    const note = await dialogs.prompt('Resolution note', '', { minLength: 3, multiline: true, confirmLabel: 'Resolve' });
                     if (note && note.trim().length >= 3)
                       void act(
                         `/admin/care/alerts/${encodeURIComponent(String(r.id ?? ''))}/resolve`,
@@ -461,7 +461,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                   type="button"
                   variant="outline"
                   onClick={async () => {
-                    const note = await dialogs.prompt('Reason for sending back (required)');
+                    const note = await dialogs.prompt('Reason for sending back', '', { minLength: 3, multiline: true, confirmLabel: 'Send back' });
                     if (note && note.trim().length >= 3)
                       void act(
                         `/admin/care/timesheets/${encodeURIComponent(String(r.id ?? ''))}/send-back`,
@@ -475,12 +475,18 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                   type="button"
                   variant="outline"
                   onClick={async () => {
-                    const minutes = await dialogs.prompt('Adjustment minutes');
-                    const reason = await dialogs.prompt('Adjustment reason (required)');
-                    if (minutes && reason && reason.trim().length >= 3)
+                    const answers = await dialogs.form(
+                      'Adjust this timesheet',
+                      [
+                        { name: 'minutes', label: 'Adjustment minutes (use a minus sign to remove time)', type: 'number', required: true },
+                        { name: 'reason', label: 'Reason', type: 'textarea', minLength: 3 },
+                      ],
+                      'Apply adjustment',
+                    );
+                    if (answers)
                       void act(
                         `/admin/care/timesheets/${encodeURIComponent(String(r.id ?? ''))}/adjust`,
-                        { minutes: Number(minutes), reason: reason.trim() },
+                        { minutes: Number(answers.minutes), reason: answers.reason },
                       );
                   }}
                 >

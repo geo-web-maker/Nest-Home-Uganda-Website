@@ -29,6 +29,8 @@ export function formatBytes(bytes: number): string {
 
 type SeedSource = {
   message_id: string;
+  /** RFC Message-ID of the original (for example `<abc@host>`); preferred for In-Reply-To. */
+  message_id_header?: string | null;
   from_address: string;
   from_name?: string | null;
   subject: string;
@@ -64,7 +66,7 @@ export function buildSeed(kind: SeedKind, source: SeedSource, ctx: SeedContext):
     bcc: [],
     subject: prefixed('Re', source.subject),
     body,
-    inReplyTo: source.message_id,
+    inReplyTo: source.message_id_header || source.message_id,
   };
   if (kind === 'replyAll') {
     const taken = new Set([me, sender.toLowerCase()]);

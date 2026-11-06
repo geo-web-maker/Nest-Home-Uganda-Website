@@ -332,6 +332,36 @@ async def read_message(user_id: str, item_id: str):
     }
 
 
+_RFC_MESSAGE_ID = re.compile(r"^<[^<>\s@]+@[^<>\s@]+>$")
+
+
+def _rfc_message_id(value: Any) -> str | None:
+    """Return ``value`` only when it is a well-formed RFC 5322 Message-ID such as ``<abc@host>``."""
+    text = str(value or "").strip()
+    return text if _RFC_MESSAGE_ID.match(text) else None
+
+
+async def _threading_header(conn: Any, value: Any) -> str | None:
+    """Resolve a client-supplied reply target to a real Message-ID header.
+
+    Clients historically sent the internal message row id. Putting that into In-Reply-To makes
+    some providers reject the whole send, so it is translated to the parent's header, or dropped.
+    """
+    text = str(value or "").strip()
+    if not text:
+        return None
+    direct = _rfc_message_id(text)
+    if direct:
+        return direct
+    try:
+        header = await conn.fetchval(
+            "SELECT message_id_header FROM message WHERE id::text=$1::text LIMIT 1", text
+        )
+    except Exception:
+        return None
+    return _rfc_message_id(header)
+
+
 async def create_draft(user_id: str, mailbox_id: str, payload: dict[str, Any], draft_id: str | None = None):
     """Create or update a draft, optionally composing a server-built reply/forward quote."""
     from html import escape
@@ -626,6 +656,7 @@ async def create_draft(user_id: str, mailbox_id: str, payload: dict[str, Any], d
                     stored_keys.append(key)
                     inline_image_keys.append(key)
 
+                reply_header = await _threading_header(conn, payload.get("in_reply_to"))
                 if draft_id:
                     current = await conn.fetchrow(
                         "SELECT message_id,folder FROM mailbox_message "
@@ -684,7 +715,7 @@ async def create_draft(user_id: str, mailbox_id: str, payload: dict[str, Any], d
                         json.dumps(render_notes),
                         POLICY_VERSION,
                         len(text.encode("utf-8")) + len((body_html or "").encode("utf-8")),
-                        payload.get("in_reply_to"),
+                        reply_header,
                         quoted_html,
                         quote_kind,
                         quote_source_message_id,
@@ -774,18 +805,18 @@ async def create_draft(user_id: str, mailbox_id: str, payload: dict[str, Any], d
                         await conn.execute(
                             """UPDATE message SET subject=$2,body_text=$3,body_html=$4,body_format=$5,
                                snippet=$6,render_notes=$7::jsonb,sanitizer_version=$8,size_bytes=$9,
-                               in_reply_to=$10,quoted_html=NULL,quote_kind=NULL,quote_source_message_id=NULL
+                               in_reply_to=COALESCE($10,in_reply_to),quoted_html=NULL,quote_kind=NULL,quote_source_message_id=NULL
                                WHERE id=$1""",
                             mid, subject, text, body_html, body_format, make_snippet(text),
-                            json.dumps(render_notes), POLICY_VERSION, total_size, payload.get("in_reply_to"),
+                            json.dumps(render_notes), POLICY_VERSION, total_size, reply_header,
                         )
                     else:
                         await conn.execute(
                             """UPDATE message SET subject=$2,body_text=$3,body_html=$4,body_format=$5,
                                snippet=$6,render_notes=$7::jsonb,sanitizer_version=$8,size_bytes=$9,
-                               in_reply_to=$10 WHERE id=$1""",
+                               in_reply_to=COALESCE($10,in_reply_to) WHERE id=$1""",
                             mid, subject, text, body_html, body_format, make_snippet(text),
-                            json.dumps(render_notes), POLICY_VERSION, total_size, payload.get("in_reply_to"),
+                            json.dumps(render_notes), POLICY_VERSION, total_size, reply_header,
                         )
                 else:
                     await conn.execute(
@@ -794,7 +825,7 @@ async def create_draft(user_id: str, mailbox_id: str, payload: dict[str, Any], d
                            in_reply_to=$10,quoted_html=$11,quote_kind=$12,quote_source_message_id=$13
                            WHERE id=$1""",
                         mid, subject, text, body_html, body_format, make_snippet(text),
-                        json.dumps(render_notes), POLICY_VERSION, total_size, payload.get("in_reply_to"),
+                        json.dumps(render_notes), POLICY_VERSION, total_size, reply_header,
                         quoted_html, quote_kind, quote_source_message_id,
                     )
                 if quote:
@@ -909,6 +940,7 @@ async def send_draft(user_id: str, draft_id: str, mailbox_id: str):
 
             message_id_header = str(draft.get("message_id_header") or f"<{draft['message_id']}@{domain}>")
             parent = None
+            reply_header = _rfc_message_id(draft["in_reply_to"])
             if draft["in_reply_to"]:
                 parent = await conn.fetchrow(
                     "SELECT id,thread_id,message_id_header,references_header FROM message "
@@ -927,6 +959,8 @@ async def send_draft(user_id: str, draft_id: str, mailbox_id: str):
                     "UPDATE message SET thread_id=COALESCE(thread_id,id) WHERE id=$1",
                     draft["message_id"],
                 )
+            if parent and _rfc_message_id(parent["message_id_header"]):
+                reply_header = _rfc_message_id(parent["message_id_header"])
             references = []
             if parent and parent["references_header"]:
                 references.extend(str(parent["references_header"]).split())
@@ -1105,7 +1139,7 @@ async def send_draft(user_id: str, draft_id: str, mailbox_id: str):
             await conn.execute(
                 "UPDATE message SET body_text=$2,body_html=$3,body_format=$4,quoted_html=NULL,"
                 "message_id_header=$5,references_header=$6,snippet=$7,render_notes=$8::jsonb,"
-                "sanitizer_version=$9,size_bytes=$10 WHERE id=$1",
+                "sanitizer_version=$9,size_bytes=$10,in_reply_to=$11 WHERE id=$1",
                 draft["message_id"],
                 final_text,
                 final_html,
@@ -1116,6 +1150,7 @@ async def send_draft(user_id: str, draft_id: str, mailbox_id: str):
                 json.dumps(render_notes),
                 POLICY_VERSION,
                 size_bytes,
+                reply_header,
             )
             for target, _address in local:
                 await conn.execute(
@@ -1190,7 +1225,7 @@ async def send_draft(user_id: str, draft_id: str, mailbox_id: str):
                             "body_text": final_text,
                             "body_html": final_html,
                             "message_id_header": message_id_header,
-                            "in_reply_to": draft["in_reply_to"],
+                            "in_reply_to": reply_header,
                             "references_header": references_header,
                         },
                         sent_attachments,

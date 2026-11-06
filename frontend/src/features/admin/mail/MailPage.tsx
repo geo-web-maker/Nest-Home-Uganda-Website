@@ -23,6 +23,8 @@ import { AdminMailUiProvider } from './mailUiKit';
 import '../../../shared/mail-rich/react/mail-rich.css';
 import styles from './MailPage.module.css';
 
+const UNDO_SEND_MS = 8000;
+type PendingSend = { draftId: string; mailboxId: string; seed: ComposeSeed };
 const EMPTY_SEED: ComposeSeed = { to: [], cc: [], bcc: [], subject: '', body: '' };
 
 function isTyping(target: EventTarget | null): boolean {
@@ -241,6 +243,50 @@ export function MailPage() {
     void refreshAll();
   };
 
+  // Undo send: the message is already saved as a draft; it is only sent once the undo window passes.
+  const [pending, setPending] = useState<PendingSend | null>(null);
+  const pendingRef = useRef<PendingSend | null>(null);
+  const timer = useRef<number | undefined>(undefined);
+  const dispatchSend = async (item: PendingSend) => {
+    try {
+      await apiClient.post(`/mail/drafts/${item.draftId}/send`, { mailbox_id: item.mailboxId });
+      setNotice({ tone: 'success', text: t('mail.sent') });
+      void refreshAll();
+    } catch (cause) {
+      setNotice({ tone: 'error', text: cause instanceof Error && cause.message ? cause.message : t('mail.sendError') });
+      setSeed(item.seed);
+    }
+  };
+  const flushPending = () => {
+    window.clearTimeout(timer.current);
+    const item = pendingRef.current;
+    pendingRef.current = null;
+    setPending(null);
+    if (item) void dispatchSend(item);
+  };
+  const startSend = (item: PendingSend) => {
+    window.clearTimeout(timer.current);
+    if (pendingRef.current) void dispatchSend(pendingRef.current);
+    pendingRef.current = item;
+    setSeed(null);
+    setNotice(null);
+    setPending(item);
+    timer.current = window.setTimeout(flushPending, UNDO_SEND_MS);
+  };
+  const undoSend = () => {
+    window.clearTimeout(timer.current);
+    const item = pendingRef.current;
+    pendingRef.current = null;
+    setPending(null);
+    if (item) setSeed(item.seed);
+  };
+  // Leaving the page or closing the tab inside the window sends the message instead of stranding it.
+  useEffect(() => {
+    const leave = () => { const item = pendingRef.current; if (item) { pendingRef.current = null; void apiClient.post(`/mail/drafts/${item.draftId}/send`, { mailbox_id: item.mailboxId }); } };
+    window.addEventListener('pagehide', leave);
+    return () => { window.removeEventListener('pagehide', leave); window.clearTimeout(timer.current); leave(); };
+  }, []);
+
   const push = useMailPush(true);
   const loadFailed = boxes.isError || list.isError;
   const noMailbox = boxes.isSuccess && mailboxes.length === 0;
@@ -454,8 +500,15 @@ export function MailPage() {
           </ButtonGroup>
         </Modal>
       ) : null}
+      {pending ? (
+        <div className={styles.undoBar} role="status" aria-live="polite">
+          <span>Sending… </span>
+          <Button variant="outline" size="compact" onClick={undoSend}>Undo</Button>
+          <Button variant="outline" size="compact" onClick={flushPending}>Send now</Button>
+        </div>
+      ) : null}
       {seed && mailboxId ? (
-        <MailCompose mailboxId={mailboxId} seed={seed} onClose={() => setSeed(null)} onDone={onDone} />
+        <MailCompose mailboxId={mailboxId} seed={seed} onClose={() => setSeed(null)} onDone={onDone} onSendLater={startSend} />
       ) : null}
     </section>
   );

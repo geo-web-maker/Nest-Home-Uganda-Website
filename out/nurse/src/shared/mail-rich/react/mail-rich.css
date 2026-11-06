@@ -1,0 +1,89 @@
+/* GENERATED from shared/mail-rich. Edit there, then run: node scripts/sync-mail-rich.mjs */
+.mr-message { color: var(--mr-fg, #1a1a1a); }
+.mr-paper { color: #1a1a1a; background: #fff; color-scheme: light; overflow-wrap: anywhere; padding: var(--mr-gap, 12px); border: 1px solid var(--mr-line, #ddd); border-radius: var(--mr-radius, 8px); }
+.mr-paper img { max-width: 100%; height: auto; }
+.mr-paper table { max-width: 100%; border-collapse: collapse; }
+.mr-quoted { margin-top: var(--mr-gap, 12px); border-left: 3px solid var(--mr-line, #ddd); padding-left: var(--mr-gap, 12px); }
+.mr-plain-body { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
+.mr-message-toggle { display: flex; gap: var(--mr-gap, 12px); margin-block: var(--mr-gap, 12px); }
+.mr-section-title { font-size: 1rem; }
+.mr-attachment-list { list-style: none; margin: 0; padding: 0; }
+.mr-attachment { display: flex; align-items: center; gap: var(--mr-gap, 12px); padding: 8px 0; border-bottom: 1px solid var(--mr-line, #ddd); }
+.mr-file-type { min-width: 3rem; font-size: .7rem; font-weight: 700; }
+.mr-attachment-copy { display: grid; flex: 1; min-width: 0; }
+.mr-attachment-copy strong { overflow-wrap: anywhere; }
+.mr-attachment-copy small { color: var(--mr-muted, #666); }
+.mr-original-download { margin-top: var(--mr-gap, 12px); }
+
+.mr-editor { display: grid; gap: .75rem; min-width: 0; }
+.mr-editor-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; padding: .25rem .4rem; border: 1px solid var(--mail-border, #d8dde4); border-radius: .65rem; background: var(--mail-toolbar-bg, #f7f8fa); }
+.mr-editor-toolbar > span[data-group-start="true"] { margin-inline-start: .35rem; padding-inline-start: .35rem; border-inline-start: 1px solid var(--mail-border, #d8dde4); }
+.mr-editor-sep { align-self: stretch; width: 1px; margin-inline: .35rem; background: var(--mail-border, #d8dde4); }
+.mr-editor-toolbar .mr-editor-tool { display: inline-flex; align-items: center; justify-content: center; min-width: 2rem; width: 2rem; min-height: 2rem; height: 2rem; padding: 0; border: 1px solid transparent; border-radius: .45rem; background: transparent; color: inherit; font: inherit; line-height: 1; cursor: pointer; box-shadow: none; }
+.mr-editor-toolbar .mr-editor-tool:hover:not(:disabled) { background: var(--mail-active-bg, #e9eef5); }
+.mr-editor-toolbar .mr-editor-tool[aria-pressed="true"] { border-color: var(--mail-border, #c8d0d8); background: var(--mail-active-bg, #e9eef5); }
+.mr-editor-toolbar .mr-editor-tool:disabled { opacity: .4; cursor: default; }
+.mr-editor-tool:focus-visible, .mr-editor-toolbar select:focus-visible, .mr-editor-toolbar input:focus-visible, .mr-editor-quote button:focus-visible { outline: 2px solid var(--mail-focus, #2563eb); outline-offset: 2px; }
+.mr-glyph { font-size: .95rem; font-weight: 700; }
+.mr-glyph-italic { font-style: italic; font-family: Georgia, serif; }
+.mr-glyph-underline { text-decoration: underline; }
+.mr-glyph-strike { text-decoration: line-through; }
+.mr-editor-size, .mr-editor-colour { display: inline-flex; align-items: center; gap: .3rem; font-size: .78rem; }
+.mr-editor-size label, .mr-editor-colour label { display: inline-flex; align-items: center; gap: .3rem; margin: 0; font-size: .78rem; font-weight: 500; color: var(--mail-muted, #687383); white-space: nowrap; }
+.mr-editor-size select, .mr-kit-field select { min-height: 2rem; height: 2rem; padding: 0 .4rem; border: 1px solid var(--mail-border, #c8d0d8); border-radius: .45rem; background: var(--bg, #fff); color: inherit; font: inherit; font-size: .85rem; }
+.mr-editor-colour > div { margin: 0; }
+.mr-editor-colour input[type="color"], .mr-kit-field input[type="color"] { display: block; width: 1.75rem; min-width: 0; height: 1.75rem; min-height: 0; padding: 2px; border: 1px solid var(--mail-border, #c8d0d8); border-radius: 50%; background: transparent; cursor: pointer; }
+.mr-editor-colour input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.mr-editor-colour input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
+.mr-editor-colour input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
+.mr-editor-content { min-height: 14rem; padding: .9rem; border: 1px solid var(--mail-border, #c8d0d8); border-radius: .6rem; outline: none; overflow-wrap: anywhere; }
+.mr-editor-content:focus { border-color: var(--mail-focus, #2563eb); box-shadow: 0 0 0 2px color-mix(in srgb, var(--mail-focus, #2563eb) 18%, transparent); }
+.mr-editor-content p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; color: #737b86; pointer-events: none; height: 0; }
+.mr-editor-content table, .mr-paper table, .mr-quoted table { border-collapse: collapse; width: 100%; max-width: 100%; }
+.mr-editor-content td, .mr-editor-content th, .mr-paper td, .mr-paper th, .mr-quoted td, .mr-quoted th { border: 1px solid #aeb7c2; padding: .35rem .5rem; vertical-align: top; }
+.mr-editor-quote { border-inline-start: 3px solid var(--mail-border, #9aa5b1); padding-inline-start: .75rem; }
+.mr-editor-quote-heading { display: flex; justify-content: space-between; gap: .75rem; align-items: center; margin-bottom: .5rem; }
+.mr-editor-quote-heading button, .mr-editor-confirm button { min-height: 2.5rem; padding: .4rem .7rem; }
+.mr-editor-confirm-backdrop { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 1rem; background: rgb(0 0 0 / 55%); }
+.mr-editor-confirm { max-width: 28rem; width: 100%; padding: 1.25rem; border-radius: .8rem; background: Canvas; color: CanvasText; box-shadow: 0 12px 40px rgb(0 0 0 / 25%); }
+.mr-editor-confirm > div, .mr-editor-dialog-actions { display: flex; justify-content: flex-end; gap: .5rem; margin-top: 1rem; }
+.mr-editor-quote .mr-quoted { max-height: 18rem; overflow: auto; }
+
+
+.mr-composer-mode { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .5rem; }
+.mr-upload-actions { display: flex; justify-content: flex-start; }
+.mr-autosave-status { margin: 0; color: var(--mail-muted, #687383); font-size: .82rem; }
+.mr-send-confirm { position: relative; z-index: 1; max-width: 34rem; margin: 1rem auto 0; padding: 1rem; border: 1px solid var(--mail-border, #c8d0d8); border-radius: .8rem; background: Canvas; color: CanvasText; box-shadow: 0 8px 28px rgb(0 0 0 / 18%); }
+.mr-send-confirm dl { display: grid; grid-template-columns: minmax(4rem, 5.5rem) minmax(0, 1fr); gap: .45rem .7rem; overflow-wrap: anywhere; }
+.mr-send-confirm dt { font-weight: 700; }
+.mr-send-confirm dd { margin: 0; }
+.mr-confirm-overlay { position: fixed; inset: 0; z-index: 10010; display: grid; align-items: center; padding: 1rem; overflow-y: auto; background: rgb(0 0 0 / 42%); }
+.mr-send-confirm :focus-visible { outline: 2px solid var(--mail-focus, #2563eb); outline-offset: 2px; }
+.mr-delivery { margin-top: 1rem; padding: .75rem; border: 1px solid var(--mr-line, #ddd); border-radius: .65rem; }
+.mr-delivery ul { margin-block: .5rem 0; padding-inline-start: 1.25rem; overflow-wrap: anywhere; }
+.mr-message { min-width: 0; overflow-wrap: anywhere; }
+
+/* Colour tools: one 2rem button like the others, with the picker laid invisibly over it. */
+.mr-colour-tool { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; margin: 0; border: 1px solid transparent; border-radius: .45rem; cursor: pointer; }
+.mr-colour-tool:hover, .mr-colour-tool:focus-within { background: var(--mail-active-bg, #e9eef5); }
+.mr-colour-tool[data-disabled="true"] { opacity: .4; pointer-events: none; }
+.mr-colour-glyph { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: .95rem; font-weight: 700; line-height: 1; pointer-events: none; }
+.mr-colour-glyph::after { content: ""; width: 1rem; height: 4px; border-radius: 2px; background: var(--swatch); box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); }
+.mr-colour-tool[data-variant="highlight"] .mr-colour-glyph { padding: 0 .25rem; border-radius: .2rem; background: var(--swatch); color: #202124; }
+.mr-colour-tool[data-variant="highlight"] .mr-colour-glyph::after { display: none; }
+.mr-colour-tool input[type="color"] { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+
+/* Mobile fit: nothing in the editor may be wider than the screen. */
+.mr-editor { grid-template-columns: minmax(0, 1fr); max-width: 100%; }
+.mr-editor > * { min-width: 0; max-width: 100%; }
+.mr-editor-toolbar { box-sizing: border-box; max-width: 100%; }
+.mr-editor-content { box-sizing: border-box; max-width: 100%; overflow-x: auto; }
+.mr-editor-content table { display: block; overflow-x: auto; width: max-content; min-width: 100%; max-width: 100%; }
+.mr-quoted, .mr-paper { max-width: 100%; overflow-x: auto; }
+.mr-quoted table, .mr-paper table { display: block; overflow-x: auto; }
+.mr-composer-mode, .mr-upload-actions { min-width: 0; }
+.mr-send-confirm { box-sizing: border-box; max-width: 100%; }
+@media (max-width: 560px) {
+  .mr-editor-toolbar .mr-editor-tool, .mr-colour-tool { min-width: 2.25rem; width: 2.25rem; height: 2.25rem; min-height: 2.25rem; }
+  .mr-editor-size select { max-width: 8.5rem; }
+}

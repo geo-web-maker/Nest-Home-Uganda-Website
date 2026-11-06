@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from email.message import EmailMessage
 from email.policy import SMTP
 from email.utils import formataddr
@@ -43,8 +44,9 @@ def build_eml(
         result["Reply-To"] = str(getter("reply_to"))
     if getter("message_id_header"):
         result["Message-ID"] = str(getter("message_id_header"))
-    if getter("in_reply_to"):
-        result["In-Reply-To"] = str(getter("in_reply_to"))
+    reply_value = str(getter("in_reply_to") or "").strip()
+    if re.match(r"^<[^<>\s@]+@[^<>\s@]+>$", reply_value):
+        result["In-Reply-To"] = reply_value
     if getter("references_header"):
         result["References"] = str(getter("references_header"))
     for key, value in (headers or {}).items():

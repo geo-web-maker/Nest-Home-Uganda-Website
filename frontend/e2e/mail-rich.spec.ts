@@ -47,9 +47,7 @@ test('admin reads formatted mail and composes a table-backed message through the
   await tableDialog.getByRole('button', { name: 'Insert table' }).click();
   await expect(editor.locator('table')).toBeVisible();
   await dialog.getByRole('button', { name: 'Send' }).click();
-  const confirm = dialog.getByRole('alertdialog', { name: /Review before sending/ });
-  await expect(confirm).toBeVisible();
-  await confirm.getByRole('button', { name: 'Confirm send' }).click();
+  // A single-recipient message without attachments sends straight away; no review popup.
   await expect.poll(() => outbound.some((item) => item.path === '/api/v1/mail/drafts/draft-1/send')).toBeTruthy();
   const savedDraft = outbound.find((item) => item.path === '/api/v1/mail/drafts' && item.method === 'POST');
   expect(savedDraft?.body).toMatchObject({ to: ['recipient@example.test'], format: 'html' });

@@ -56,13 +56,12 @@ export function MailComposeSheet({ value, problem, online, attaching, onAttach, 
   const cancelRef = useRef(onCancel);
   const initialSnapshot = useRef(JSON.stringify(value));
   const [closeConfirm, setCloseConfirm] = useState(false);
-  const [sendConfirm, setSendConfirm] = useState(false);
-  const [plainConfirm, setPlainConfirm] = useState(false);
   const [editorNotice, setEditorNotice] = useState('');
   const [format, setFormat] = useState<MailFormat>(value.bodyFormat ?? 'html');
   cancelRef.current = onCancel;
   const dirty = JSON.stringify(value) !== initialSnapshot.current;
-  const requestClose = () => { if (dirty) setCloseConfirm(true); else onCancel(); };
+  // The draft is already autosaved on this device, so closing keeps it instead of asking.
+  const requestClose = () => { if (dirty) onSaveDraft(); else onCancel(); };
 
   useEffect(() => {
     initialSnapshot.current = JSON.stringify(value);
@@ -80,15 +79,15 @@ export function MailComposeSheet({ value, problem, online, attaching, onAttach, 
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !sendConfirm && !plainConfirm && !closeConfirm) {
+      if (event.key === 'Escape' && !closeConfirm) {
         const dialogs = document.querySelectorAll('section.sheet');
         if (dialogs.length > 1) return;
-        if (JSON.stringify(value) !== initialSnapshot.current) setCloseConfirm(true); else cancelRef.current();
+        if (JSON.stringify(value) !== initialSnapshot.current) onSaveDraft(); else cancelRef.current();
       }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [sendConfirm, plainConfirm, closeConfirm, value]);
+  }, [closeConfirm, value, onSaveDraft]);
 
   useEffect(() => {
     if (!dirty) return;
@@ -99,20 +98,25 @@ export function MailComposeSheet({ value, problem, online, attaching, onAttach, 
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    setSendConfirm(true);
+    onSend();
   };
   const hasRecipient = value.to.trim() !== '' || value.cc.trim() !== '' || value.bcc.trim() !== '';
   const bodyHasContent = format === 'html' ? (Boolean((value.bodyHtml ?? '').replace(/<[^>]+>/g, '').trim()) || /<(img|table)\b/i.test(value.bodyHtml ?? '')) : value.body.trim() !== '';
   const canSend = hasRecipient && value.subject.trim() !== '' && (bodyHasContent || Boolean(value.quote || value.quotedHtml)) && !attaching;
   const attachmentItems: MailAttachment[] = value.attachments.map(({ size: _size, ...file }) => file);
 
-  const confirmPlain = () => {
-    onChange({ ...value, body: (value.bodyHtml ?? '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li)>/gi, '\n').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>'), bodyHtml: undefined, bodyFormat: 'plain' });
+  // Switching to plain text never asks: the rich version is kept, and switching back restores it
+  // as long as the plain text was not edited in between.
+  const richBackup = useRef<{ html: string; text: string } | null>(null);
+  const requestPlain = () => {
+    const text = (value.bodyHtml ?? '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li)>/gi, '\n').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    richBackup.current = { html: value.bodyHtml ?? '', text };
+    onChange({ ...value, body: text, bodyHtml: undefined, bodyFormat: 'plain' });
     setFormat('plain');
-    setPlainConfirm(false);
   };
   const switchRich = () => {
-    onChange({ ...value, bodyHtml: plainToHtml(value.body), bodyFormat: 'html' });
+    const backup = richBackup.current;
+    onChange({ ...value, bodyHtml: backup && backup.text === value.body ? backup.html : plainToHtml(value.body), bodyFormat: 'html' });
     setFormat('html');
   };
 
@@ -129,7 +133,7 @@ export function MailComposeSheet({ value, problem, online, attaching, onAttach, 
       <input id="mail-subject" value={value.subject} onChange={(event) => onChange({ ...value, subject: event.target.value })} />
       <div className="mr-composer-mode" role="group" aria-label="Message format">
         <PillButton type="button" tone={format === 'html' ? 'forest' : 'ghost'} size="sm" showArrow={false} aria-pressed={format === 'html'} onClick={switchRich}>Rich text</PillButton>
-        <PillButton type="button" tone={format === 'plain' ? 'forest' : 'ghost'} size="sm" showArrow={false} aria-pressed={format === 'plain'} onClick={() => setPlainConfirm(true)}>Plain text</PillButton>
+        <PillButton type="button" tone={format === 'plain' ? 'forest' : 'ghost'} size="sm" showArrow={false} aria-pressed={format === 'plain'} onClick={requestPlain}>Plain text</PillButton>
       </div>
       {format === 'html' ? <Suspense fallback={<p role="status">Loading editor…</p>}>
         <LazyMailRichEditor
@@ -165,15 +169,5 @@ export function MailComposeSheet({ value, problem, online, attaching, onAttach, 
       </SheetActions>
     </form>
     {closeConfirm ? <Sheet role="alertdialog" placement="center" labelledBy="mail-close-confirm-title" className="mr-send-confirm"><h3 id="mail-close-confirm-title">Save your changes?</h3><p>Your draft has changed since it was opened.</p><SheetActions><PillButton type="button" tone="forest" size="full" showArrow={false} onClick={onSaveDraft}>Save draft and close</PillButton><PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={() => onDiscard(value)}>Discard changes</PillButton><PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={() => setCloseConfirm(false)}>Keep editing</PillButton></SheetActions></Sheet> : null}
-    {sendConfirm ? <Sheet role="alertdialog" placement="center" labelledBy="mail-send-confirm-title" className="mr-send-confirm">
-      <h3 id="mail-send-confirm-title">Review before sending</h3>
-      <dl><dt>To</dt><dd>{value.to || '—'}</dd><dt>Cc</dt><dd>{value.cc || '—'}</dd><dt>Bcc</dt><dd>{value.bcc ? `${value.bcc} (hidden from other recipients)` : '—'}</dd><dt>Subject</dt><dd>{value.subject || '—'}</dd><dt>Attachments</dt><dd>{value.attachments.length ? value.attachments.map((file) => file.filename).join(', ') : 'None'}</dd></dl>
-      <p>Check the recipients and attachments. Sending cannot be undone.</p>
-      <SheetActions><PillButton type="button" tone="forest" size="full" showArrow={false} onClick={() => { setSendConfirm(false); onSend(); }}>Confirm send</PillButton><PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={() => setSendConfirm(false)}>Go back</PillButton></SheetActions>
-    </Sheet> : null}
-    {plainConfirm ? <Sheet role="alertdialog" placement="center" labelledBy="mail-plain-confirm-title" className="mr-send-confirm">
-      <h3 id="mail-plain-confirm-title">Switch to plain text?</h3><p>Formatting, tables and links will be converted to plain text.</p>
-      <SheetActions><PillButton type="button" tone="forest" size="full" showArrow={false} onClick={confirmPlain}>Switch to plain text</PillButton><PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={() => setPlainConfirm(false)}>Keep rich text</PillButton></SheetActions>
-    </Sheet> : null}
   </Sheet></NurseMailUiProvider>;
 }

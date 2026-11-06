@@ -51,10 +51,10 @@ const fill = async (dialog: HTMLElement, to: string, subject = 'Hello', body = '
   // The message is a rich-text editor (contenteditable), so it is typed into, not assigned.
   await userEvent.type(await within(dialog).findByRole('textbox', { name: 'Message' }), body);
 };
-/** Sending now goes through a review step: press Send, then Confirm send. */
+/** Press Send, then skip the undo window with "Send now" so the message goes out immediately. */
 const sendNow = async (dialog: HTMLElement) => {
   fireEvent.click(within(dialog).getByRole('button', { name: 'Send' }));
-  fireEvent.click(await screen.findByRole('button', { name: 'Confirm send' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Send now' }));
 };
 
 describe('nurse MailScreen', () => {
