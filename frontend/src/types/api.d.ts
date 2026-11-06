@@ -4703,6 +4703,47 @@ export interface components {
              */
             platform: "android" | "ios" | "web";
         };
+        /**
+         * InviteOut
+         * @description The temporary password is returned once, here, and never stored in readable form.
+         */
+        InviteOut: {
+            /** Active */
+            active: boolean;
+            /** Delivered */
+            delivered?: {
+                [key: string]: string;
+            };
+            /** Email */
+            email: string;
+            /** Id */
+            id: string;
+            /** Is Superadmin */
+            is_superadmin: boolean;
+            /**
+             * Kind
+             * @default staff
+             */
+            kind: string;
+            /** Last Login */
+            last_login: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Reach
+             * @default all
+             */
+            reach: string;
+            /** Scopes */
+            scopes: string[];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "invited";
+            /** Temp Password */
+            temp_password?: string | null;
+        };
         /** JobAdminOut */
         JobAdminOut: {
             /** Applicants Count */
@@ -5636,6 +5677,22 @@ export interface components {
              */
             limit: number;
         };
+        /** ResetIn */
+        ResetIn: {
+            /** Delivery */
+            delivery?: ("email" | "sms" | "temp_password")[];
+        };
+        /** ResetOut */
+        ResetOut: {
+            /** Delivered */
+            delivered?: {
+                [key: string]: string;
+            };
+            /** Status */
+            status: string;
+            /** Temp Password */
+            temp_password?: string | null;
+        };
         /** SOSBody */
         SOSBody: {
             /** Id */
@@ -6299,6 +6356,8 @@ export interface components {
          * @description An invite never creates a superadmin: that flag is changed by hand, by a superadmin.
          */
         UserInvite: {
+            /** Delivery */
+            delivery?: ("email" | "sms" | "temp_password")[];
             /**
              * Email
              * Format: email
@@ -6312,6 +6371,8 @@ export interface components {
             kind: "staff" | "nurse" | "supervisor" | "admin" | "executive";
             /** Name */
             name: string;
+            /** Phone */
+            phone?: string | null;
             /** Preset */
             preset?: ("nurse" | "supervisor" | "admin" | "executive" | "super_admin") | null;
             /**
@@ -10943,7 +11004,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminUserOut"];
+                    "application/json": components["schemas"]["InviteOut"];
                 };
             };
             /** @description Validation Error */
@@ -11030,7 +11091,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ResetIn"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -11038,7 +11103,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Done"];
+                    "application/json": components["schemas"]["ResetOut"];
                 };
             };
             /** @description Validation Error */
