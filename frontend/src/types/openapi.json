@@ -7394,7 +7394,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 40,
+            "maxItems": 64,
             "title": "Scopes",
             "type": "array"
           }
@@ -7496,7 +7496,7 @@
                 "items": {
                   "type": "string"
                 },
-                "maxItems": 40,
+                "maxItems": 64,
                 "type": "array"
               },
               {
