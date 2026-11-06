@@ -6,7 +6,7 @@ import { MailSmtpTrace } from './MailSmtpTrace';
 
 vi.mock('../../../lib/api/client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../lib/api/client')>();
-  return { ...actual, apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), put: vi.fn(), delete: vi.fn() } };
+  return { ...actual, apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), put: vi.fn(), delete: vi.fn(), getBlob: vi.fn() } };
 });
 
 const renderIt = () =>

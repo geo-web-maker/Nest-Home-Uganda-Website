@@ -5,7 +5,7 @@ import { apiClient } from '../../../lib/api/client';
 import { MailSetupCheck } from './MailSetupCheck';
 
 vi.mock('../../../lib/api/client', () => ({
-  apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), put: vi.fn(), delete: vi.fn() },
+  apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), put: vi.fn(), delete: vi.fn(), getBlob: vi.fn() },
 }));
 
 const passing = { checks: [{ id: 'enabled', status: 'pass', detail: 'Mail is switched on.' }, { id: 'storage', status: 'pass', detail: 'Files can be written, read and deleted.' }], summary: { pass: 2, warn: 0, fail: 0, skip: 0 } };
