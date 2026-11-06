@@ -260,7 +260,7 @@ export function VisitSchedulePage() {
 
   return (
     <div className="stage-page">
-      <PageHeader title="Schedule" actions={canCreate ? <Button onClick={() => void loadCreateOptions()}>New visit</Button> : undefined} />
+      <PageHeader title="Schedule" subtitle="Create, review and coordinate home visits." actions={canCreate ? <Button onClick={() => void loadCreateOptions()}>New visit</Button> : undefined} />
       <div className="stage-toolbar stage-toolbar--schedule">
         <FilterTabs label="Schedule view" value={view} onChange={(value) => setView(value as 'day' | 'week')} tabs={[{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }]} />
         <div className="stage-date-navigation">

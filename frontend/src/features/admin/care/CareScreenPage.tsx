@@ -908,6 +908,7 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
     <>
       <PageHeader
         title={titles[screen]}
+        subtitle={t('care.subtitle')}
         actions={
           <Button variant="outline" onClick={() => void load()}>
             {t('care.refresh')}

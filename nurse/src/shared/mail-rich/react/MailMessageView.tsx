@@ -11,16 +11,20 @@ export function MailMessageView({
   onDownloadOriginal,
   onExternalLink,
   showRemoteImages,
+  onRetryDelivery,
 }: {
   message: Message;
   onDownload: (attachment: MailAttachment) => void;
   onDownloadOriginal?: () => void;
   onExternalLink?: (url: string, hostname: string) => void;
   showRemoteImages?: (message: Message) => void;
+  /** Re-queues a deferred or failed send; the host calls the API and refreshes the message. */
+  onRetryDelivery?: () => Promise<void> | void;
 }) {
   const { kit, labels } = useMailUi();
   const [formatted, setFormatted] = useState(Boolean(message.body_html || message.quoted_html));
   const [remoteImagesEnabled, setRemoteImagesEnabled] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const notes = message.render_notes ?? {};
   const renderWarning = Boolean(
     notes.truncated || notes.depth_exceeded || notes.failed || notes.removed_tags,
@@ -62,11 +66,18 @@ export function MailMessageView({
         const status = message.delivery.state === 'failed' ? labels.failed
           : failures.length ? labels.bounced
           : allDelivered ? labels.delivered
-          : delayed ? labels.deferred
+          : delayed || message.delivery.state === 'deferred' ? labels.deferred
           : message.delivery.state === 'sent' ? labels.sent : message.delivery.state;
         return <section className="mr-delivery" aria-label={labels.delivery} aria-live="polite">
           <h3 className="mr-section-title">{labels.delivery}</h3>
           <p><strong>{status}</strong>{failures.length && recipientEvents.some((item) => item.event === 'delivered') ? ' — Some recipients did not accept the message.' : ''}{message.delivery.reason ? ` — ${message.delivery.reason}` : ''}</p>
+          {message.delivery.detail ? <p className="mr-delivery-error"><strong>{labels.deliveryError}:</strong> <code>{message.delivery.detail}</code></p> : null}
+          {message.delivery.attempts || message.delivery.next_attempt_at ? <p className="mr-delivery-meta">
+            {message.delivery.attempts ? `${labels.attemptsLabel}: ${message.delivery.attempts}` : ''}
+            {message.delivery.attempts && message.delivery.next_attempt_at ? ' · ' : ''}
+            {message.delivery.next_attempt_at ? `${labels.nextTry}: ${new Date(message.delivery.next_attempt_at).toLocaleString()}` : ''}
+          </p> : null}
+          {message.delivery.can_retry && onRetryDelivery ? <kit.Button variant="quiet" disabled={retrying} onClick={async () => { setRetrying(true); try { await onRetryDelivery(); } finally { setRetrying(false); } }}>{retrying ? labels.retrying : labels.retryNow}</kit.Button> : null}
           {recipientEvents.length ? <ul>{recipientEvents.map((recipient) => <li key={`${recipient.address}:${recipient.event}`}>{recipient.address}: {recipient.event.replace(/_/g, ' ')}{recipient.at ? ` · ${new Date(recipient.at).toLocaleString()}` : ''}</li>)}</ul> : null}
         </section>;
       })() : null}

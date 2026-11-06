@@ -200,6 +200,17 @@ export function MailPage() {
     }
   };
 
+  const retryDelivery = async () => {
+    if (!selectedId) return;
+    try {
+      await apiClient.post(`/mail/messages/${selectedId}/retry-delivery`);
+      setNotice({ tone: 'success', text: t('mail.retryQueued') });
+      await refreshAll();
+    } catch {
+      setNotice({ tone: 'error', text: t('mail.retryFailed') });
+    }
+  };
+
   const openExternalLink = (url: string) => {
     setExternalLink(url);
   };
@@ -312,6 +323,7 @@ export function MailPage() {
     <section aria-label={t('mail.title')}>
       <PageHeader
         title={t('mail.title')}
+        subtitle={t('mail.subtitle')}
         actions={
           <ButtonGroup>
             <Button onClick={() => compose(EMPTY_SEED)} disabled={!mailboxId}>
@@ -488,6 +500,7 @@ export function MailPage() {
                 onDownloadOriginal={() => void downloadOriginal()}
                 onExternalLink={openExternalLink}
                 showRemoteImages={() => undefined}
+                onRetryDelivery={retryDelivery}
               /></AdminMailUiProvider> : null}
             </div>
           ) : null}

@@ -1,3 +1,5 @@
+import type { MailDelivery } from '../../../shared/mail-rich/core/types';
+
 export const FOLDERS = ['inbox', 'sent', 'drafts', 'trash', 'spam', 'starred'] as const;
 export type Folder = (typeof FOLDERS)[number];
 
@@ -58,7 +60,7 @@ export type MailDetail = {
   folder: string;
   recipients: MailRecipient[];
   attachments: MailAttachment[];
-  delivery?: { state: string; reason?: string | null; provider?: string; recipients: { address: string; event: string; at?: string | null }[] } | null;
+  delivery?: MailDelivery | null;
 };
 
 export type ComposeSeed = {

@@ -64,6 +64,7 @@ const defaults: MailLabels = {
   signedMessage: 'This message has a digital signature.', renderingNotice: 'Some unsafe or unsupported content was removed.',
   scanning: 'Scanning…', scannedClean: 'Scanned: no threats found', notScanned: 'Not scanned', delivery: 'Delivery status',
   delivered: 'Delivered', bounced: 'Bounced', deferred: 'Deferred', sent: 'Sent', failed: 'Failed',
+  retryNow: 'Retry now', retrying: 'Retrying…', deliveryError: 'Error', attemptsLabel: 'Attempts', nextTry: 'Next try',
   messageFormatting: 'Message formatting', bold: 'Bold', italic: 'Italic', underline: 'Underline',
   strikethrough: 'Strikethrough', bulletedList: 'Bulleted list', numberedList: 'Numbered list',
   blockQuote: 'Block quote', insertEditLink: 'Insert or edit link', insertTable: 'Insert table',

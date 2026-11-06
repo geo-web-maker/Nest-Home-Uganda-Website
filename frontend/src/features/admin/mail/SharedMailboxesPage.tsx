@@ -100,6 +100,7 @@ export function SharedMailboxesPage() {
     <>
       <PageHeader
         title={t('mailShared.title')}
+        subtitle={t('mailShared.subtitle')}
         actions={
           <Button variant="outline" onClick={() => void reload()}>
             {t('mailShared.refresh')}

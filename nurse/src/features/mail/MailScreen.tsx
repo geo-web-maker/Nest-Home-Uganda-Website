@@ -10,7 +10,7 @@ import { MailRow } from './MailRow';
 import { MailComposeSheet, type ComposeState } from './MailComposeSheet';
 import { invalidAddresses, parseAddresses, replySubject } from './mailAddresses';
 import { MailMessageView } from '../../shared/mail-rich/react/MailMessageView';
-import type { MailMessageView as SharedMailMessage } from '../../shared/mail-rich/core/types';
+import type { MailDelivery, MailMessageView as SharedMailMessage } from '../../shared/mail-rich/core/types';
 import { useAttachmentUploader } from '../../shared/mail-rich/react/useAttachmentUploader';
 import { NurseMailUiProvider } from './mailUiKit';
 import '../../shared/mail-rich/react/mail-rich.css';
@@ -19,7 +19,7 @@ import { listDrafts, putDraft, readMailCache, recoverInterruptedDrafts, removeDr
 
 type Folder = keyof typeof copy.mail.folders;
 const FOLDERS = Object.keys(copy.mail.folders) as Folder[];
-type Detail = { message_id_header?: string | null; recipients: { kind: 'to' | 'cc' | 'bcc' | string; address: string; name?: string | null }[]; attachments: { id: string; filename: string; size_bytes: number; content_type?: string; scan_state?: string; sha256?: string | null; disposition?: 'attachment' | 'inline'; content_id?: string | null; blocked_reason?: string | null; scan_detail?: string | null; scanned_at?: string | null }[]; body_text: string; body_html?: string | null; quoted_html?: string | null; has_remote_images?: boolean; can_download_original?: boolean; render_notes?: Record<string, unknown>; delivery?: { state: string; reason?: string | null; provider?: string; recipients: { address: string; event: string; at?: string | null }[] } | null };
+type Detail = { message_id_header?: string | null; recipients: { kind: 'to' | 'cc' | 'bcc' | string; address: string; name?: string | null }[]; attachments: { id: string; filename: string; size_bytes: number; content_type?: string; scan_state?: string; sha256?: string | null; disposition?: 'attachment' | 'inline'; content_id?: string | null; blocked_reason?: string | null; scan_detail?: string | null; scanned_at?: string | null }[]; body_text: string; body_html?: string | null; quoted_html?: string | null; has_remote_images?: boolean; can_download_original?: boolean; render_notes?: Record<string, unknown>; delivery?: MailDelivery | null };
 
 function escapeMailHtml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;');
@@ -197,6 +197,18 @@ export function MailScreen() {
       window.open(link.download_url, '_blank', 'noopener,noreferrer');
     } catch {
       setError(copy.mail.downloadFailed);
+    }
+  };
+
+  const retryDelivery = async () => {
+    if (!selected) return;
+    if (!navigator.onLine) { setNotice(copy.mail.offlineAction); return; }
+    try {
+      await apiRequest(`/mail/messages/${selected.mailbox_message_id}/retry-delivery`, { method: 'POST' });
+      setNotice('Queued to send again. Open the message again in a moment to see the result.');
+      setDetail(await apiRequest<Detail>(`/mail/messages/${selected.mailbox_message_id}`));
+    } catch {
+      setError(copy.mail.actionError);
     }
   };
 
@@ -456,7 +468,7 @@ export function MailScreen() {
         render_notes: detail.render_notes ?? {}, has_remote_images: Boolean(detail.has_remote_images),
         can_download_original: Boolean(detail.can_download_original), delivery: detail.delivery ?? null,
       }} onDownload={(attachment) => void download(attachment.id)} onDownloadOriginal={() => void downloadOriginal()}
-        onExternalLink={(url) => setExternalLink(url)} showRemoteImages={() => undefined} /></NurseMailUiProvider>}
+        onExternalLink={(url) => setExternalLink(url)} showRemoteImages={() => undefined} onRetryDelivery={retryDelivery} /></NurseMailUiProvider>}
     </Card> : <>
       <div className="mail-folders" role="group" aria-label={copy.mail.folder}>
         {FOLDERS.map((name) => <PillButton key={name} type="button" tone={folder === name ? 'forest' : 'ghost'} size="sm" showArrow={false} aria-pressed={folder === name} onClick={() => { setFolder(name); setSelectedId(''); }}>{copy.mail.folders[name]}</PillButton>)}
