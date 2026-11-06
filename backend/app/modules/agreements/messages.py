@@ -174,7 +174,7 @@ def render_email(stage_key: str, template: DefaultMessage, variables: dict[str, 
     body = render_variables(template.body, variables)
     button = render_variables(template.button, variables)
     note = render_variables(template.footer_note, variables)
-    escaped_body = "".join(f"<p style=\"margin:0 0 16px;color:#26352f;line-height:1.55;font-size:16px\">{html.escape(line)}</p>" for line in body.split("\n") if line)
+    escaped_body = "".join(f"<p style=\"margin:0 0 16px;color:#123524;line-height:1.6;font-size:16px\">{html.escape(line)}</p>" for line in body.split("\n") if line)
     raw_link = variables.get("link", "")
     if stage_key in LINK_REQUIRED and not raw_link:
         raise ValueError("This email stage requires a secure agreement link")
@@ -182,19 +182,20 @@ def render_email(stage_key: str, template: DefaultMessage, variables: dict[str, 
         validate_link_url(raw_link)
     link = html.escape(raw_link, quote=True)
     button_html = (
-        f'<a href="{link}" style="display:inline-block;padding:14px 22px;min-height:44px;box-sizing:border-box;background:#245d4a;color:#fff;text-decoration:none;border-radius:6px;font-weight:700">{html.escape(button)}</a>'
+        f'<a href="{link}" style="display:inline-block;padding:14px 22px;min-height:44px;box-sizing:border-box;background:#18784D;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;border-bottom:3px solid #C79A3B">{html.escape(button)}</a>'
         if button and link else ""
     )
-    copy_link = f'<p style="margin:18px 0 0;font-size:13px;color:#52645c">Or copy this link: <a href="{link}" style="color:#245d4a;word-break:break-all">{link}</a></p>' if link else ""
-    note_html = f'<p style="font-size:13px;color:#52645c">{html.escape(note)}</p>' if note else ""
-    preheader_html = f'<div style="display:none;font-size:1px;color:#f7f8f6;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden">{html.escape(preheader)}</div>'
+    copy_link = f'<p style="margin:18px 0 0;font-size:13px;color:#4A6354">Or copy this link: <a href="{link}" style="color:#18784D;word-break:break-all">{link}</a></p>' if link else ""
+    note_html = f'<p style="font-size:13px;color:#4A6354;margin:0 0 20px;padding:10px 14px;background:#F8F3E1;border-left:3px solid #C79A3B">{html.escape(note)}</p>' if note else ""
+    preheader_html = f'<div style="display:none;font-size:1px;color:#F3F8F1;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden">{html.escape(preheader)}</div>'
     body_html = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:24px 8px;background:#f2f5f2;font-family:Arial,Helvetica,sans-serif">
+<body style="margin:0;padding:24px 8px;background:#F3F8F1;font-family:Arial,Helvetica,sans-serif">
 {preheader_html}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:#fff;border-collapse:collapse">
-<tr><td style="padding:22px 28px;background:#245d4a;color:#fff;font-size:20px;font-weight:700">Bloomwell Home Care</td></tr>
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:#ffffff;border-collapse:separate;border:1px solid #CBD8C6;border-radius:12px;overflow:hidden">
+<tr><td style="height:5px;line-height:5px;font-size:0;background:#C79A3B">&nbsp;</td></tr>
+<tr><td style="padding:24px 28px;background:#123524;color:#F4F1DF;font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;letter-spacing:.02em">Bloomwell <span style="color:#E3BB62">Home Care</span></td></tr>
 <tr><td style="padding:30px 28px">{escaped_body}{note_html}{button_html}{copy_link}</td></tr>
-<tr><td style="padding:20px 28px;background:#f7f8f6;color:#52645c;font-size:12px;line-height:1.6">Bloomwell Home Care Uganda Limited · Kampala, Uganda<br><a href="mailto:info@bhcug.com" style="color:#245d4a">info@bhcug.com</a> · 0787499988<br>You received this because a care agreement was prepared for you.<br>Bloomwell will never ask for payment or passwords by email or SMS.</td></tr>
+<tr><td style="padding:20px 28px;background:#F8F3E1;border-top:1px solid #E9DDB8;color:#4A6354;font-size:12px;line-height:1.6">Bloomwell Home Care Uganda Limited · Kampala, Uganda<br><a href="mailto:info@bhcug.com" style="color:#18784D">info@bhcug.com</a> · 0787499988<br>You received this because a care agreement was prepared for you.<br>Bloomwell will never ask for payment or passwords by email or SMS.</td></tr>
 </table></td></tr></table></body></html>'''
     plain = body
     if link:

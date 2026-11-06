@@ -42,7 +42,7 @@ type Tab = typeof tabs[number]['id'];
 function label(path: string): string { return fieldLabel(path); }
 function isScheduleTab(value: string): value is ScheduleTab { return value === 'parties' || value === 'schedule_a' || value === 'schedule_b' || value === 'schedule_c'; }
 function outstanding(fields: Record<string, AgreementField>, paths: string[]): string[] {
-  return paths.filter((path) => { const field = fields[path]; return Boolean(field) && (field.owner === 'staff' || field.owner === 'clinical') && isBlank(field.value); });
+  return paths.filter((path) => { const field = fields[path]; return field !== undefined && (field.owner === 'staff' || field.owner === 'clinical') && isBlank(field.value); });
 }
 function valueText(value: unknown): string {
   if (value === null || value === undefined) return '';
@@ -387,7 +387,7 @@ export function AgreementsPage() {
                 {sections.map((section) => {
                   const paths = section.paths.filter((path) => detail.fields[path]);
                   if (!paths.length) return null;
-                  const done = paths.filter((path) => !isBlank(detail.fields[path].value)).length;
+                  const done = paths.filter((path) => !isBlank(detail.fields[path]?.value)).length;
                   return <section className={styles.sectionCard} key={section.id} aria-label={section.title}>
                     <header className={styles.sectionHead}><h4>{section.title}</h4><span className={styles.count}>{done} of {paths.length} filled</span></header>
                     {section.hint && <p className={styles.fieldHelp}>{section.hint}</p>}
