@@ -14,6 +14,7 @@ from app.modules.auth.schemas import (
     LoginRequest,
     NativeLoginResponse,
     NativeRefreshRequest,
+    PasswordChangeRequiredResponse,
     ScopeOut,
     TokenResponse,
     UserPublic,
@@ -74,37 +75,49 @@ def require_csrf(
         raise Forbidden("Security check failed. Please sign in again.")
 
 
+def _must_change(result: service.PasswordChangeRequired) -> PasswordChangeRequiredResponse:
+    return PasswordChangeRequiredResponse(
+        set_password_token=result.token, purpose=result.purpose, expires_in=result.expires_in
+    )
+
+
 @router.post(
     "/login",
-    response_model=TokenResponse,
+    response_model=TokenResponse | PasswordChangeRequiredResponse,
     dependencies=[Depends(rate_limit("login", 10, 900))],
 )
-async def login(body: LoginRequest, request: Request, response: Response) -> TokenResponse:
+async def login(
+    body: LoginRequest, request: Request, response: Response
+) -> TokenResponse | PasswordChangeRequiredResponse:
     session = await service.login(
         body.email,
         body.password,
         hash_ip(client_ip(request)),
         request.headers.get("user-agent"),
     )
+    if isinstance(session, service.PasswordChangeRequired):
+        return _must_change(session)
     _set_cookies(response, session)
     return _token_response(session)
 
 
 @router.post(
     "/native/login",
-    response_model=NativeLoginResponse,
+    response_model=NativeLoginResponse | PasswordChangeRequiredResponse,
     dependencies=[Depends(rate_limit("auth_native", 10, 60))],
 )
 async def native_login(
     body: LoginRequest,
     request: Request,
     x_client: Annotated[str | None, Header(alias="X-Client")] = None,
-) -> NativeLoginResponse:
+) -> NativeLoginResponse | PasswordChangeRequiredResponse:
     if x_client != "native":
         raise HTTPException(400, detail="Native client header required")
     session = await service.login(
         body.email, body.password, hash_ip(client_ip(request)), request.headers.get("user-agent")
     )
+    if isinstance(session, service.PasswordChangeRequired):
+        return _must_change(session)
     return NativeLoginResponse(
         access_token=session.access_token,
         refresh_token=session.refresh_token,

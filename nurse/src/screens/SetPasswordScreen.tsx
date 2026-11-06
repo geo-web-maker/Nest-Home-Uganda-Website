@@ -13,6 +13,7 @@ export function SetPasswordScreen() {
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
   const isInvite = params.get('purpose') === 'invite';
+  const fromTemp = params.get('from') === 'temp';
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
@@ -49,6 +50,7 @@ export function SetPasswordScreen() {
         <p role="status">{text.done}</p>
         <Link className="set-password-link" to="/">{text.toLogin}</Link>
       </> : token.length === 0 ? <Banner tone="warn" role="alert">{text.errors.noToken}</Banner> : <>
+        {fromTemp && <Banner tone="info" role="status">{text.tempAccepted}</Banner>}
         <p className="login-subtitle">{text.hint}</p>
         {error && <Banner tone="warn" role="alert">{error}</Banner>}
         <form onSubmit={(event) => void submit(event)}>

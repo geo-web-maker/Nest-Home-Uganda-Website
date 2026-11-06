@@ -74,6 +74,7 @@ export const copy = {
   },
   setPassword: {
     heading: 'Set your password',
+    tempAccepted: 'Your temporary password worked. Choose your own password to finish signing in.',
     hint: 'Use at least 8 characters. Longer is stronger, and a few unrelated words work well.',
     password: 'New password',
     confirm: 'Confirm password',

@@ -9,6 +9,33 @@ import type { TokenResponse } from '../../../types';
 import { authStore } from './authStore';
 
 let inFlight: Promise<boolean> | null = null;
+
+/**
+ * Thrown by `login` when the password was a staff-issued temporary one. No session exists yet:
+ * the caller sends the user to the set-password screen with this one-time token.
+ */
+export class PasswordChangeRequiredError extends Error {
+  constructor(
+    readonly token: string,
+    readonly purpose: 'invite' | 'reset',
+  ) {
+    super('password_change_required');
+  }
+}
+
+type PasswordChangeRequired = {
+  password_change_required: true;
+  set_password_token: string;
+  purpose: 'invite' | 'reset';
+};
+
+function isPasswordChange(body: unknown): body is PasswordChangeRequired {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    (body as { password_change_required?: unknown }).password_change_required === true
+  );
+}
 type NativeSession = {
   access_token: string;
   refresh_token: string;
@@ -91,11 +118,13 @@ export async function login(
   client: ApiClient = apiClient,
 ): Promise<void> {
   if (Capacitor.isNativePlatform()) {
-    const session = await client.post<NativeSession>(
+    const session = await client.post<NativeSession | PasswordChangeRequired>(
       '/auth/native/login',
       { email, password },
       { retryOn401: false, headers: { 'X-Client': 'native' } },
     );
+    if (isPasswordChange(session))
+      throw new PasswordChangeRequiredError(session.set_password_token, session.purpose);
     await saveNativeRefreshToken(session.refresh_token);
     authStore.setSession({
       access_token: session.access_token,
@@ -104,11 +133,13 @@ export async function login(
     });
     return;
   }
-  const session = await client.post<TokenResponse>(
+  const session = await client.post<TokenResponse | PasswordChangeRequired>(
     '/auth/login',
     { email, password },
     { retryOn401: false },
   );
+  if (isPasswordChange(session))
+    throw new PasswordChangeRequiredError(session.set_password_token, session.purpose);
   authStore.setSession(session);
 }
 

@@ -19,6 +19,7 @@ export function SetPasswordPage() {
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
   const isInvite = params.get('purpose') === 'invite';
+  const fromTemp = params.get('from') === 'temp';
   const [formError, setFormError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
@@ -92,6 +93,7 @@ export function SetPasswordPage() {
       ) : (
         <form className={styles.card} onSubmit={(e) => void handleSubmit(onValid)(e)} noValidate>
           <h1 className={styles.title}>{t('setPassword.title')}</h1>
+          {fromTemp && <p role="status">{t('setPassword.tempAccepted')}</p>}
           <p>{t('setPassword.hint')}</p>
           <Field
             label={t('setPassword.password')}
