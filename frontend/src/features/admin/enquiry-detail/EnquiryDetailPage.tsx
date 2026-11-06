@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { components } from '../../../types/api';
@@ -33,11 +33,13 @@ const dateFormat = new Intl.DateTimeFormat('en-GB', {
 });
 export function EnquiryDetailPage() {
   const { id = '' } = useParams();
+  const navigate = useNavigate();
   const { t } = useTranslation('admin');
   const { t: tb } = useTranslation('booking');
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const canWrite = hasScopes(user, ['enquiries:write']);
+  const canMail = hasScopes(user, ['mail:use']);
   const [status, setStatus] = useState<EnquiryUpdate['status'] | null>(null);
   const [assignedTo, setAssignedTo] = useState('');
   const [reason, setReason] = useState('');
@@ -103,6 +105,12 @@ export function EnquiryDetailPage() {
               <dt>{t('enquiries.columns.phone')}</dt>
               <dd>{formatUgPhone(item.phone_e164)}</dd>
             </div>
+            {item.email ? (
+              <div>
+                <dt>{t('enquiryDetail.email')}</dt>
+                <dd>{item.email}</dd>
+              </div>
+            ) : null}
             <div>
               <dt>{t('enquiries.columns.area')}</dt>
               <dd>{item.area}</dd>
@@ -134,6 +142,23 @@ export function EnquiryDetailPage() {
           </dl>
           <div className={styles.actions}>
             <Button href={`tel:${item.phone_e164}`}>{t('enquiryDetail.call')}</Button>
+            {item.email && canMail ? (
+              <Button
+                variant="outline"
+                onClick={() =>
+                  navigate('/admin/mail', {
+                    state: {
+                      compose: {
+                        to: [item.email],
+                        subject: t('enquiryDetail.emailSubject', { reference: item.reference }),
+                      },
+                    },
+                  })
+                }
+              >
+                {t('enquiryDetail.emailClient')}
+              </Button>
+            ) : null}
             <Button
               href={whatsappUrl(
                 item.phone_e164.replace(/\D/g, ''),

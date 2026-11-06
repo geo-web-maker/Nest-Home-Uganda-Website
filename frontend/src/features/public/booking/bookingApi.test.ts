@@ -4,6 +4,7 @@ import type { BookingPayload } from './bookingSchema';
 const PAYLOAD: BookingPayload = {
   name: 'Mary Atim',
   phone: '0787 499 988',
+  email: '',
   relationship: 'parent',
   service_ids: ['a'.repeat(24)],
   area: 'Ntinda',

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ButtonGroup } from '../../../components/admin/ButtonGroup';
 import { FilterTabs } from '../../../components/admin/FilterTabs';
 import { Modal } from '../../../components/admin/Modal';
@@ -40,6 +41,8 @@ export function MailPage() {
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [externalLink, setExternalLink] = useState<string | null>(null);
   const markedRead = useRef(new Set<string>());
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const boxes = useQuery({
     queryKey: ['mail', 'mailboxes'],
@@ -136,6 +139,14 @@ export function MailPage() {
   const compose = (next: ComposeSeed) => {
     if (mailboxId) setSeed(next);
   };
+  // Opened from elsewhere (for example an enquiry's "Email client" button) with a ready-made
+  // recipient and subject. Consumed once, then cleared so a refresh does not reopen it.
+  useEffect(() => {
+    const handoff = (location.state as { compose?: { to?: string[]; subject?: string } } | null)?.compose;
+    if (!handoff || !mailboxId) return;
+    setSeed({ ...EMPTY_SEED, to: handoff.to ?? [], subject: handoff.subject ?? '' });
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.state, location.pathname, mailboxId, navigate]);
   const seedFor = (kind: SeedKind) => {
     if (!shown || !mailbox) return;
     const seed = buildSeed(kind, shown, {

@@ -67,6 +67,7 @@ export function BookingForm({
     defaultValues: {
       name: '',
       phone: '',
+      email: '',
       relationship: undefined,
       service_ids: preselectedServiceIds,
       area: '',
@@ -174,6 +175,14 @@ export function BookingForm({
         requiredLabel={copy.required}
         error={errors.phone?.message}
         {...bind('phone')}
+      />
+      <Field
+        label={copy.email}
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        error={errors.email?.message}
+        {...bind('email')}
       />
       <Field
         kind="select"

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Annotated
 
 from beanie import PydanticObjectId
-from pydantic import BaseModel, BeforeValidator, Field, field_validator
+from pydantic import BaseModel, BeforeValidator, EmailStr, Field, field_validator
 
 from app.core.phone import normalise_e164
 from app.modules.enquiries.models import PreferredStart, Relationship, Source, Status
@@ -26,11 +26,21 @@ class EnquiryFields(BaseModel):
 
     name: Clean = Field(min_length=2, max_length=80)
     phone: Clean = Field(max_length=30)
+    email: EmailStr | None = Field(default=None, max_length=254)
     relationship: Relationship
     service_ids: list[str] = Field(min_length=1, max_length=8)
     area: Clean = Field(min_length=2, max_length=80)
     preferred_start: PreferredStart | None = None
     note: Clean = Field(default="", max_length=500)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _email(cls, value: object) -> object:
+        # Optional: an empty box means "no email". Stored lower-case so it matches mail addresses.
+        if value is None:
+            return None
+        text = _clean(str(value)).lower()
+        return text or None
 
     @field_validator("name")
     @classmethod
@@ -104,6 +114,7 @@ class EnquiryListItem(BaseModel):
 
 class EnquiryDetail(EnquiryListItem):
     phone_raw: str
+    email: str | None = None
     relationship: Relationship
     preferred_start: PreferredStart | None
     note: str

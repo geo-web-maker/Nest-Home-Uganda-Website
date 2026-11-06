@@ -63,6 +63,7 @@ def to_detail(doc: Enquiry) -> EnquiryDetail:
     return EnquiryDetail(
         **to_list_item(doc).model_dump(),
         phone_raw=doc.phone_raw,
+        email=doc.email,
         relationship=doc.relationship,
         preferred_start=doc.preferred_start,
         note=doc.note,
@@ -103,6 +104,7 @@ async def _insert(
         name=body.name,
         phone_raw=body.phone,
         phone_e164=phone,
+        email=body.email,
         relationship=body.relationship,
         services=services,
         area=body.area,

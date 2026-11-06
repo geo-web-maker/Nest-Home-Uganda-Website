@@ -4333,6 +4333,8 @@ export interface components {
             phone_e164: string;
             /** Phone Raw */
             phone_raw: string;
+            /** Email */
+            email?: string | null;
             /** Preferred Start */
             preferred_start: ("today" | "this_week" | "later" | "not_sure") | null;
             /** Reference */

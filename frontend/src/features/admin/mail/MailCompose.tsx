@@ -5,6 +5,7 @@ import { Modal } from '../../../components/admin/Modal';
 import { Notice } from '../../../components/admin/Notice';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
+import { ConfirmPopup } from './ConfirmPopup';
 import { RecipientInput } from './RecipientInput';
 import { apiClient } from '../../../lib/api/client';
 import { AttachmentList } from '../../../shared/mail-rich/react/AttachmentList';
@@ -233,17 +234,17 @@ export function MailCompose({ mailboxId, seed, onClose, onDone }: Props) {
         <Button variant="outline" disabled={busy !== '' || bad.length > 0} onClick={() => void save()}>{t('mail.saveDraft')}</Button>
         <Button variant="outline" disabled={busy !== ''} onClick={() => void discard()}>{t('mail.deleteDraft')}</Button>
       </ButtonGroup>
-      {closeConfirm ? <section className="mr-send-confirm" role="alertdialog" aria-modal="true" aria-labelledby="mail-close-confirm-title"><h3 id="mail-close-confirm-title">Save your changes?</h3><p>Your draft has changed since it was opened.</p><ButtonGroup spaced><Button disabled={busy !== ''} onClick={() => void save()}>Save draft and close</Button><Button variant="outline" disabled={busy !== ''} onClick={() => void discard()}>Discard changes</Button><Button variant="outline" onClick={() => setCloseConfirm(false)}>Keep editing</Button></ButtonGroup></section> : null}
-      {sendConfirm ? <section className="mr-send-confirm" role="alertdialog" aria-modal="true" aria-labelledby="mail-send-confirm-title">
+      {closeConfirm ? <ConfirmPopup labelledBy="mail-close-confirm-title" onDismiss={() => setCloseConfirm(false)}><h3 id="mail-close-confirm-title">Save your changes?</h3><p>Your draft has changed since it was opened.</p><ButtonGroup spaced><Button disabled={busy !== ''} onClick={() => void save()}>Save draft and close</Button><Button variant="outline" disabled={busy !== ''} onClick={() => void discard()}>Discard changes</Button><Button variant="outline" onClick={() => setCloseConfirm(false)}>Keep editing</Button></ButtonGroup></ConfirmPopup> : null}
+      {sendConfirm ? <ConfirmPopup labelledBy="mail-send-confirm-title" onDismiss={() => { if (busy === '') setSendConfirm(false); }}>
         <h3 id="mail-send-confirm-title">Review before sending</h3>
         <dl><dt>To</dt><dd>{toList.join(', ') || '—'}</dd><dt>Cc</dt><dd>{ccList.join(', ') || '—'}</dd><dt>Bcc</dt><dd>{bccList.length ? `${bccList.join(', ')} (hidden from other recipients)` : '—'}</dd><dt>Subject</dt><dd>{subject || '—'}</dd><dt>Attachments</dt><dd>{uploads.length ? uploads.map((file) => file.filename).join(', ') : 'None'}</dd></dl>
         <p>Check the recipients and attachments. Sending cannot be undone.</p>
         <ButtonGroup spaced><Button disabled={!canSend} onClick={() => void send()}>{busy === 'send' ? t('mail.sending') : 'Confirm send'}</Button><Button variant="outline" disabled={busy !== ''} onClick={() => setSendConfirm(false)}>Go back</Button></ButtonGroup>
-      </section> : null}
-      {plainConfirm ? <section className="mr-send-confirm" role="alertdialog" aria-modal="true" aria-labelledby="mail-plain-confirm-title">
+      </ConfirmPopup> : null}
+      {plainConfirm ? <ConfirmPopup labelledBy="mail-plain-confirm-title" onDismiss={() => setPlainConfirm(false)}>
         <h3 id="mail-plain-confirm-title">Switch to plain text?</h3><p>Formatting, tables and links will be converted to plain text. This cannot be undone in the current editor session.</p>
         <ButtonGroup spaced><Button onClick={confirmPlainMode}>Switch to plain text</Button><Button variant="outline" onClick={() => setPlainConfirm(false)}>Keep rich text</Button></ButtonGroup>
-      </section> : null}
+      </ConfirmPopup> : null}
     </div>
   </Modal></AdminMailUiProvider>;
 }
