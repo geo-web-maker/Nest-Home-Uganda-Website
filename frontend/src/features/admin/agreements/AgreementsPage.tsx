@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Notice } from '../../../components/admin/Notice';
 import { Button } from '../../../components/ui/Button';
@@ -11,7 +11,7 @@ import { AgreementFieldInput } from '../../agreements/AgreementFieldInput';
 import { OWNER_LABEL, SCHEDULE_SECTIONS, fieldLabel, fieldMeta, isBlank, type FieldSection, type ScheduleTab } from '../../agreements/fieldMeta';
 
 type Owner = 'staff' | 'clinical' | 'client' | 'either';
-type AgreementField = { value: unknown; owner: Owner; revision: number; entered_by_staff: boolean };
+type AgreementField = { value: unknown; owner: Owner; revision: number; entered_by_staff: boolean; updated_at?: string | null; updated_by?: string | null };
 type AgreementRow = {
   id: string; reference: string; status: string; client_name?: string | null; patient_name?: string | null;
   client_email?: string | null; client_phone?: string | null; assigned_nurse_id?: string | null;
@@ -130,13 +130,8 @@ export function AgreementsPage() {
       }] });
       await loadDetail(detail.id); await loadList(); setNotice(`${label(path)} saved.`);
     } catch (cause) {
-      if (cause instanceof ApiError && cause.status === 409) {
-        const latest = await apiClient.get<AgreementDetail>(`/admin/agreements/${detail.id}`);
-        const remote = latest.fields[path];
-        setDetail(latest);
-        setConflicts((old) => ({ ...old, [path]: { local, remote: valueText(remote?.value), revision: remote?.revision ?? 0 } }));
-        setError(`Another person changed ${label(path)}. Choose which value to keep.`);
-      } else setError(cause instanceof Error ? cause.message : 'The field could not be saved.');
+      if (cause instanceof ApiError && cause.status === 409) await loadDetail(detail.id).catch(() => undefined);
+      setError(cause instanceof Error ? cause.message : 'The field could not be saved.');
     } finally { setBusy(false); }
   };
 
@@ -239,6 +234,13 @@ export function AgreementsPage() {
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not resend the agreement.'); }
     finally { setBusy(false); }
   };
+  const performDelete = async (id: string, reference: string) => {
+    if (!window.confirm(`Permanently delete voided agreement ${reference}? This cannot be undone.`)) return;
+    setBusy(true); setError('');
+    try { await apiClient.delete(`/admin/agreements/${id}`); if (selected === id) { setSelected(''); setDetail(null); } await loadList(); setNotice(`${reference} deleted.`); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not delete the agreement.'); }
+    finally { setBusy(false); }
+  };
   const performVoid = async (id: string) => {
     const reason = window.prompt('Reason for cancelling this agreement (required):');
     if (!reason?.trim()) return;
@@ -330,7 +332,7 @@ export function AgreementsPage() {
                 <strong>{row.reference}</strong><span>{row.client_name || 'Client not named'}</span><small>{row.patient_name ? `Patient: ${row.patient_name}` : 'Patient details pending'}</small>
                 <StatusBadge status={statusTone(row.status)}>{row.status.replaceAll('_', ' ')}</StatusBadge>
               </button>
-              {(canWrite || canVoid) && <div className={styles.rowActions}>{canWrite && <button type="button" onClick={() => void performResend(row.id)} disabled={busy || !['draft','sent','client_in_progress','changes_requested','expired'].includes(row.status)}>Resend</button>}{canVoid && <button type="button" onClick={() => void performVoid(row.id)} disabled={busy || row.status === 'completed' || row.status === 'voided'}>Void</button>}</div>}
+              {(canWrite || canVoid) && <div className={styles.rowActions}>{canWrite && <button type="button" onClick={() => void performResend(row.id)} disabled={busy || !['draft','sent','client_in_progress','changes_requested','expired'].includes(row.status)}>Resend</button>}{canVoid && <button type="button" onClick={() => void performVoid(row.id)} disabled={busy || row.status === 'completed' || row.status === 'voided'}>Void</button>}{canVoid && row.status === 'voided' && <button type="button" className={styles.danger} onClick={() => void performDelete(row.id, row.reference)} disabled={busy}>Delete</button>}</div>}
             </li>)}</ul>
           )}
         </section>
@@ -352,8 +354,8 @@ export function AgreementsPage() {
                 if (!field) return null;
                 const meta = fieldMeta(path);
                 const local = drafts[path] ?? valueText(field.value);
-                const canClinical = user?.is_superadmin || detail.assigned_nurse_id === user?.id;
-                const readOnly = !canWrite || field.owner === 'client' || (field.owner === 'clinical' && !canClinical);
+                const locked = ['voided', 'expired', 'client_signed', 'completed'].includes(detail.status);
+                const readOnly = !canWrite || locked || field.owner === 'client';
                 const conflict = conflicts[path];
                 const blank = isBlank(field.value);
                 const staffNeeds = blank && (field.owner === 'staff' || field.owner === 'clinical');
@@ -368,7 +370,7 @@ export function AgreementsPage() {
                   <div className={styles.fieldFoot}>
                     <span className={blank ? (staffNeeds ? styles.statusNeeded : styles.statusWaiting) : styles.statusDone}>
                       {!blank ? '✓ Saved' : staffNeeds ? 'Needed before sending' : field.owner === 'client' ? 'Waiting for client' : 'Optional'}
-                      {field.entered_by_staff ? ' · entered by staff' : ''} · rev {field.revision}
+                      {field.entered_by_staff ? ' · entered by staff' : ''}{field.updated_at ? ` · last edited ${new Date(field.updated_at).toLocaleString()}${field.updated_by && field.updated_by !== 'client' ? ` by staff ${field.updated_by.slice(-4)}` : field.updated_by === 'client' ? ' by client' : ''}` : ''}
                     </span>
                     {!readOnly && <Button size="compact" variant="outline" onClick={() => void saveField(path)} disabled={busy || local === valueText(field.value)}>Save</Button>}
                   </div>
@@ -408,7 +410,7 @@ export function AgreementsPage() {
               </div>;
             })()}
             {tab === 'preview' && <PreviewPanel id={detail.id} />}
-            {tab === 'timeline' && <ol className={styles.timeline}>{detail.events.map((event, index) => <li key={`${event.type}-${event.at}-${index}`}><strong>{event.type.replaceAll('_', ' ')}</strong><time>{new Date(event.at).toLocaleString()}</time><small>{event.actor}</small><pre>{JSON.stringify(event.detail, null, 2)}</pre></li>)}</ol>}
+            {tab === 'timeline' && <Timeline events={detail.events} />}
             {tab === 'send' && <div className={styles.sendPanel}>
               {canWrite && <><h3>Send agreement for review</h3><p>Messages contain a secure link only. No patient name, care details or fees are sent by email or SMS.</p><label>Send via<select value={channels} onChange={(e) => setChannels(e.target.value as typeof channels)}><option value="both">Email and SMS</option><option value="email">Email only</option><option value="sms">SMS only</option></select></label><p>Link expiry: 14 days. Reminders: 48 hours and day 5. Expiry warning: 48 hours before expiry.</p><Button onClick={() => void send()} disabled={busy || !['draft','changes_requested','expired'].includes(detail.status)}>Validate and send</Button></>}
               {canSign && detail.status === 'client_signed' && <section className={styles.countersign}><h3>Bloomwell countersignature</h3><p>By countersigning, the system seals the agreement and stores its PDF in private storage.</p><label>Authorised signatory name<input value={bloomwellName} onChange={(e) => setBloomwellName(e.target.value)} /></label><canvas ref={signatureCanvas} className={styles.signaturePad} width={800} height={160} aria-label="Bloomwell countersignature area" onPointerDown={beginSignature} onPointerMove={moveSignature} onPointerUp={() => { drawing.current = false; }} onPointerCancel={() => { drawing.current = false; }} /><div className={styles.actions}><Button variant="outline" onClick={clearSignature}>Clear signature</Button><Button onClick={() => void countersign()} disabled={busy}>Countersign and seal</Button></div></section>}
@@ -441,4 +443,37 @@ function PreviewPanel({ id }: { id: string }) {
   useEffect(() => { let live = true; void apiClient.get<Preview>(`/admin/agreements/${id}/preview-data`).then((value) => { if (live) setHtml(value.html); }).catch((cause: unknown) => { if (live) setError(cause instanceof Error ? cause.message : 'Preview unavailable.'); }); return () => { live = false; }; }, [id]);
   if (error) return <Notice tone="error">{error}</Notice>;
   return <div className={styles.preview}><iframe title="Rendered client agreement preview" srcDoc={html} sandbox="" /></div>;
+}
+
+function describeEvent(event: AgreementDetail['events'][number]): { title: string; summary?: string; tone: string } {
+  const d = event.detail ?? {};
+  const type = event.type;
+  if (type === 'field_changed') {
+    const path = String(d.path ?? '');
+    const from = valueText(d.old_value) || 'empty';
+    const to = valueText(d.new_value) || 'empty';
+    return { title: `${label(path)} updated`, summary: `${from.length > 60 ? `${from.slice(0, 60)}…` : from} → ${to.length > 60 ? `${to.slice(0, 60)}…` : to}${d.overwrote_newer_revision ? ' (replaced a newer edit)' : ''}`, tone: 'edit' };
+  }
+  const tone = /sign|complet/.test(type) ? 'done' : /void|expire|delete/.test(type) ? 'closed' : /sent|resend|revised|remind/.test(type) ? 'send' : 'info';
+  const reason = typeof d.reason === 'string' ? d.reason : undefined;
+  return { title: type.replaceAll('_', ' ').replace(/^./, (c) => c.toUpperCase()), summary: reason ? `Reason: ${reason}` : undefined, tone };
+}
+function Timeline({ events }: { events: AgreementDetail['events'] }) {
+  const ordered = [...events].map((event, index) => ({ event, index })).sort((a, b) => new Date(b.event.at).getTime() - new Date(a.event.at).getTime() || b.index - a.index);
+  if (!ordered.length) return <p className={styles.empty}>No activity yet.</p>;
+  let lastDay = '';
+  return <ol className={styles.history}>{ordered.map(({ event, index }) => {
+    const when = new Date(event.at);
+    const day = when.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    const heading = day !== lastDay ? <li className={styles.historyDay} key={`day-${day}-${index}`} aria-hidden="true">{day}</li> : null;
+    lastDay = day;
+    const info = describeEvent(event);
+    const who = event.actor === 'client' ? 'Client' : event.actor === 'system' ? 'System' : `Staff ${String(event.actor).slice(-4)}`;
+    return <Fragment key={`${event.type}-${event.at}-${index}`}>{heading}<li className={`${styles.historyItem} ${styles[`tone_${info.tone}`] ?? ''}`}>
+      <div className={styles.historyHead}><strong>{info.title}</strong><time dateTime={event.at}>{when.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</time></div>
+      {info.summary && <p className={styles.historySummary}>{info.summary}</p>}
+      <small>{who}</small>
+      <details><summary>Details</summary><pre>{JSON.stringify(event.detail, null, 2)}</pre></details>
+    </li></Fragment>;
+  })}</ol>;
 }
