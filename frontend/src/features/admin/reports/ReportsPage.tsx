@@ -66,7 +66,7 @@ export function ReportsPage() {
   };
   return (
     <>
-      <PageHeader title={t('nav.reports')} subtitle={t('reports.subtitle')} />
+      <PageHeader title={t('nav.reports')} />
       {report.isError ? (
         <div role="alert">
           <p>{t('reports.error')}</p>

@@ -312,7 +312,6 @@ export function MailPage() {
     <section aria-label={t('mail.title')}>
       <PageHeader
         title={t('mail.title')}
-        subtitle={t('mail.subtitle')}
         actions={
           <ButtonGroup>
             <Button onClick={() => compose(EMPTY_SEED)} disabled={!mailboxId}>
