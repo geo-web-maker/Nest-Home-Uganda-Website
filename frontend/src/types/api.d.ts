@@ -3026,6 +3026,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mail/push/key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Push Key */
+        get: operations["push_key_api_v1_mail_push_key_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mail/push/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Push Subscribe */
+        post: operations["push_subscribe_api_v1_mail_push_subscribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mail/push/unsubscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Push Unsubscribe */
+        post: operations["push_unsubscribe_api_v1_mail_push_unsubscribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/mail/settings": {
         parameters: {
             query?: never;
@@ -4269,6 +4320,8 @@ export interface components {
             area: string;
             /** Consent */
             consent: boolean;
+            /** Email */
+            email?: string | null;
             /** Name */
             name: string;
             /**
@@ -4315,6 +4368,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Email */
+            email?: string | null;
             /** Events */
             events: components["schemas"]["EnquiryEventOut"][];
             /** First Contacted At */
@@ -4333,8 +4388,6 @@ export interface components {
             phone_e164: string;
             /** Phone Raw */
             phone_raw: string;
-            /** Email */
-            email?: string | null;
             /** Preferred Start */
             preferred_start: ("today" | "this_week" | "later" | "not_sure") | null;
             /** Reference */
@@ -4414,6 +4467,8 @@ export interface components {
         EnquiryManualIn: {
             /** Area */
             area: string;
+            /** Email */
+            email?: string | null;
             /** Name */
             name: string;
             /**
@@ -5482,6 +5537,24 @@ export interface components {
             theme: {
                 [key: string]: unknown;
             };
+        };
+        /** PushKeys */
+        PushKeys: {
+            /** Auth */
+            auth: string;
+            /** P256Dh */
+            p256dh: string;
+        };
+        /** PushSubscriptionBody */
+        PushSubscriptionBody: {
+            /** Endpoint */
+            endpoint: string;
+            keys: components["schemas"]["PushKeys"];
+        };
+        /** PushUnsubscribeBody */
+        PushUnsubscribeBody: {
+            /** Endpoint */
+            endpoint: string;
         };
         /** QuoteLabels */
         QuoteLabels: {
@@ -13419,6 +13492,92 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    push_key_api_v1_mail_push_key_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    push_subscribe_api_v1_mail_push_subscribe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushSubscriptionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    push_unsubscribe_api_v1_mail_push_unsubscribe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushUnsubscribeBody"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
