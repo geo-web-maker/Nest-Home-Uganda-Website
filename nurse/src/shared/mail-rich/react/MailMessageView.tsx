@@ -1,5 +1,5 @@
 /* GENERATED from shared/mail-rich. Edit there, then run: node scripts/sync-mail-rich.mjs */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MailAttachment, MailMessageView as Message } from '../core/types';
 import { AttachmentList } from './AttachmentList';
 import { useMailUi } from './MailUiKit';
@@ -25,6 +25,16 @@ export function MailMessageView({
   const [formatted, setFormatted] = useState(Boolean(message.body_html || message.quoted_html));
   const [remoteImagesEnabled, setRemoteImagesEnabled] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const close = (event: Event) => { if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false); };
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', escape);
+    return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', escape); };
+  }, [menuOpen]);
   const notes = message.render_notes ?? {};
   const hasRichBody = Boolean(message.body_html);
   const showImagesStrip = Boolean(message.has_remote_images && showRemoteImages && !remoteImagesEnabled);
@@ -36,25 +46,27 @@ export function MailMessageView({
           {showImagesStrip ? (
             <div className="mr-strip" role="status">
               <span>{labels.remoteImagesBlocked}</span>
-              <kit.Button variant="quiet" onClick={() => { setRemoteImagesEnabled(true); showRemoteImages?.(message); }}>{labels.showImages}</kit.Button>
+              <button type="button" className="mr-link-button" onClick={() => { setRemoteImagesEnabled(true); showRemoteImages?.(message); }}>{labels.showImages}</button>
             </div>
           ) : <span />}
           {hasMore ? (
-            <details className="mr-more">
-              <summary aria-label={labels.moreOptions} title={labels.moreOptions}><span aria-hidden="true">⋯</span></summary>
-              <div className="mr-more-panel">
-                {hasRichBody ? (
-                  <div className="mr-message-toggle" role="group" aria-label={labels.formatted}>
-                    <kit.ToolbarButton label={labels.formatted} pressed={formatted} onClick={() => setFormatted(true)}>{labels.formatted}</kit.ToolbarButton>
-                    <kit.ToolbarButton label={labels.plainText} pressed={!formatted} onClick={() => setFormatted(false)}>{labels.plainText}</kit.ToolbarButton>
-                  </div>
-                ) : null}
-                {notes.signed ? <p className="mr-more-note">{labels.signedMessage}</p> : null}
-                {message.can_download_original && onDownloadOriginal ? (
-                  <kit.Button variant="quiet" onClick={onDownloadOriginal}>{labels.downloadOriginal}</kit.Button>
-                ) : null}
-              </div>
-            </details>
+            <div className="mr-more" ref={menuRef}>
+              <button type="button" className="mr-more-trigger" aria-haspopup="menu" aria-expanded={menuOpen} aria-label={labels.moreOptions} title={labels.moreOptions} onClick={() => setMenuOpen((open) => !open)}><span aria-hidden="true">⋯</span></button>
+              {menuOpen ? (
+                <ul className="mr-menu" role="menu" aria-label={labels.moreOptions}>
+                  {hasRichBody ? (
+                    <>
+                      <li role="none"><button type="button" role="menuitemradio" aria-checked={formatted} onClick={() => { setFormatted(true); setMenuOpen(false); }}><span className="mr-menu-check" aria-hidden="true">{formatted ? '✓' : ''}</span>{labels.formatted}</button></li>
+                      <li role="none"><button type="button" role="menuitemradio" aria-checked={!formatted} onClick={() => { setFormatted(false); setMenuOpen(false); }}><span className="mr-menu-check" aria-hidden="true">{!formatted ? '✓' : ''}</span>{labels.plainText}</button></li>
+                    </>
+                  ) : null}
+                  {message.can_download_original && onDownloadOriginal ? (
+                    <li role="none" className={hasRichBody ? 'mr-menu-sep' : undefined}><button type="button" role="menuitem" onClick={() => { onDownloadOriginal(); setMenuOpen(false); }}><span className="mr-menu-check" aria-hidden="true" />{labels.downloadOriginal}</button></li>
+                  ) : null}
+                  {notes.signed ? <li role="none" className="mr-menu-note">{labels.signedMessage}</li> : null}
+                </ul>
+              ) : null}
+            </div>
           ) : null}
         </div>
       ) : null}

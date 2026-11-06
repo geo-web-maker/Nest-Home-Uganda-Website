@@ -23,7 +23,9 @@ describe('nurse set-password screen', () => {
     vi.stubGlobal('fetch', fetchMock);
     show('?token=t&purpose=invite');
     fill('short', 'short');
-    expect(screen.getByRole('alert').textContent).toMatch(/at least 12/);
+    expect(screen.getByRole('alert').textContent).toMatch(/at least 8/);
+    fill('password123', 'password123');
+    expect(screen.getByRole('alert').textContent).toMatch(/too common/);
     fill('a-long-enough-pass', 'a-different-pass');
     expect(screen.getByRole('alert').textContent).toMatch(/do not match/);
     expect(fetchMock).not.toHaveBeenCalled();

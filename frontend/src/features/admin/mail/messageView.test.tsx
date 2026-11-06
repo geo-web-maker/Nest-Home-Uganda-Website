@@ -19,12 +19,26 @@ describe('message view layout', () => {
     expect(screen.queryByText(/unsafe or unsupported/i)).toBeNull();
   });
 
-  it('keeps the original download and view toggle inside the More menu', () => {
+  it('keeps view options and the original download in a closable More list', () => {
     show(message());
-    const more = screen.getByRole('group', { name: 'Formatted' }).closest('details');
-    expect(more).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Download original message' }).closest('details')).toBe(more);
-    expect(more?.hasAttribute('open')).toBe(false);
+    expect(screen.queryByRole('menu')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'More options' }));
+    expect(screen.getByRole('menu')).toBeTruthy();
+    expect(screen.getByRole('menuitemradio', { name: 'Formatted' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('menuitem', { name: 'Download original message' })).toBeTruthy();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('closes after choosing a view, and when tapping outside', () => {
+    show(message());
+    fireEvent.click(screen.getByRole('button', { name: 'More options' }));
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Plain text' }));
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.getByText('plain')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'More options' }));
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('menu')).toBeNull();
   });
 
   it('shows images as a one-line strip that disappears after Show images', () => {

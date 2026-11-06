@@ -997,3 +997,6 @@ html, body { overflow-x: clip; max-width: 100%; }
 .mail-undo-bar { position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: .5rem; max-width: calc(100vw - 1.5rem); padding: .5rem .75rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surf); color: var(--ink); box-shadow: 0 8px 28px color-mix(in srgb, var(--forest) 25%, transparent); }
 @media (min-width: 820px) { .mail-undo-bar { bottom: 1.5rem; } }
 .set-password-link { display: inline-block; margin-top: .5rem; font-weight: 600; }
+.password-strength { margin: .25rem 0 .5rem; font-weight: 600; color: var(--mut); }
+.password-strength[data-level="weak"], .password-strength[data-level="short"] { color: #a33a2a; }
+.password-strength[data-level="strong"] { color: #2f6b45; }

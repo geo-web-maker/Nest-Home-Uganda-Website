@@ -46,3 +46,7 @@
 .forgot small {
   color: var(--mut);
 }
+
+.strength { margin: -.25rem 0 .25rem; font-size: .9rem; font-weight: 600; color: var(--mut); }
+.strength[data-level='weak'], .strength[data-level='short'] { color: #a33a2a; }
+.strength[data-level='strong'] { color: #2f6b45; }
