@@ -8,6 +8,7 @@ import { Pagination } from '../../../components/admin/Pagination';
 import { Field } from '../../../components/ui/Field';
 import { Button } from '../../../components/ui/Button';
 import { apiClient } from '../../../lib/api/client';
+import { TotpGate } from '../../../components/security/TotpGate';
 import type { ActivityItem, ActivityPage } from './types';
 import styles from './ActivityPage.module.css';
 const dateFormat = new Intl.DateTimeFormat('en-GB', {
@@ -15,7 +16,7 @@ const dateFormat = new Intl.DateTimeFormat('en-GB', {
   timeStyle: 'short',
   timeZone: 'Africa/Kampala',
 });
-export function ActivityPage() {
+function ActivityPageContent() {
   const { t } = useTranslation('admin');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -111,4 +112,8 @@ export function ActivityPage() {
       )}
     </>
   );
+}
+
+export function ActivityPage() {
+  return <TotpGate><ActivityPageContent /></TotpGate>;
 }

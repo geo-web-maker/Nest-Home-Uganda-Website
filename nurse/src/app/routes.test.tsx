@@ -13,6 +13,7 @@ const views: NurseRouteViews = {
   profile: <h2>Profile view</h2>,
   sync: <h2>Sync view</h2>,
   mail: <h2>Mail view</h2>,
+  audit: <h2>Audit view</h2>,
   visit: (id) => <h2>Visit {id}</h2>,
   activeVisit: (id) => <h2>Active {id}</h2>,
 };
@@ -38,6 +39,11 @@ describe('nurse route table', () => {
 
     renderRoute('/timesheets');
     expect(screen.getByRole('heading', { name: 'Timesheets view' })).toBeTruthy();
+  });
+
+  it('routes the signed-in nurse activity history', () => {
+    renderRoute('/audit');
+    expect(screen.getByRole('heading', { name: 'Audit view' })).toBeTruthy();
   });
 
   it('routes an active visit separately and protects authenticated routes', () => {

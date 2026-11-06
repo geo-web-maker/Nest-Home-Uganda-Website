@@ -9,7 +9,7 @@ Values are owner-supplied at deployment time. Never commit secrets or production
 | `MONGODB_URI` | Existing primary MongoDB connection string. |
 | `MONGODB_DB` | Existing primary database name. |
 | `SECRET_KEY` | JWT signing secret. |
-| `VITE_API_URL` | API origin used by frontends and native apps at build time. |
+| `VITE_API_URL` | Backend base URL used by the Admin, Nurse and native builds. For Multi-Site Hosting, use `https://<hoster-domain>/nest` (no trailing slash), because the clients append `/api/v1`. |
 | `VITE_SITE_URL` | Public site origin (canonical and og:url). Set to the new domain; no domain is hardcoded. |
 | `FRONTEND_URL` | Public site origin used by the backend for links in emails and SMS. Set to the new domain. |
 | `SITE_REBUILD_HOOK_URL` | Optional Cloudflare Pages or Vercel deploy hook URL. The backend POSTs to it after an admin edits public content so the pre-rendered pages are rebuilt. Secret; empty disables it. |
@@ -18,6 +18,7 @@ Values are owner-supplied at deployment time. Never commit secrets or production
 | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET_PUBLIC`, `S3_BUCKET_PRIVATE`, `S3_KEY`, `S3_SECRET` | Existing S3-compatible object storage. |
 | `S3_BUCKET_MAIL` | Dedicated private R2 bucket for mail attachments and raw inbound messages. |
 | `NEST_PG_URL` | Required Neon Postgres pooled URL for the mail data plane; keep `sslmode=require`. |
+| `MAIL_MIGRATIONS_REQUIRED` | When `true`, a configured mail database must connect and apply pending SQL migrations before the API starts; recommended for production deployments with mail enabled. Defaults to `false`. |
 | `NEST_MAIL_SECRET_KEY` | Required encryption key for secrets stored in `mail_settings`; environment-only and never commit it. |
 | `NEST_MAIL_DOMAIN` | Optional bootstrap fallback for the mail root domain; saved settings take precedence. |
 | `NEST_MAIL_PROVIDER` | Optional bootstrap fallback for `console`, `resend` or `brevo` (default `console`). |

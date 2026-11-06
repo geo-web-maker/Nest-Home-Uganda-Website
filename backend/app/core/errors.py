@@ -75,10 +75,12 @@ class RateLimited(AppError):
         )
 
 
-def error_body(code: str, message: str, fields: dict[str, str] | None = None) -> dict:
+def error_body(code: str, message: str, fields: dict[str, str] | None = None, request_id: str | None = None) -> dict:
     body: dict = {"code": code, "message": message}
     if fields:
         body["fields"] = fields
+    if request_id:
+        body["request_id"] = request_id
     return {"error": body}
 
 
@@ -89,34 +91,49 @@ def _field_name(loc: tuple) -> str:
 
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
-    async def _app_error(_: Request, exc: AppError) -> JSONResponse:
+    async def _app_error(request: Request, exc: AppError) -> JSONResponse:
         return JSONResponse(
-            error_body(exc.code, exc.message, exc.fields),
+            error_body(exc.code, exc.message, exc.fields, getattr(request.state, "request_id", None)),
             status_code=exc.status_code,
             headers=exc.headers,
         )
 
     @app.exception_handler(RequestValidationError)
-    async def _validation(_: Request, exc: RequestValidationError) -> JSONResponse:
+    async def _validation(request: Request, exc: RequestValidationError) -> JSONResponse:
         fields: dict[str, str] = {}
         for err in exc.errors():
             fields.setdefault(_field_name(tuple(err["loc"])), str(err["msg"]))
         return JSONResponse(
-            error_body("validation_error", "Please check the highlighted fields.", fields),
+            error_body("validation_error", "Please check the highlighted fields.", fields, getattr(request.state, "request_id", None)),
             status_code=422,
         )
 
     @app.exception_handler(StarletteHTTPException)
-    async def _http(_: Request, exc: StarletteHTTPException) -> JSONResponse:
-        code = _STATUS_TO_CODE.get(exc.status_code, "server_error")
-        message = "Not found." if exc.status_code == 404 else "Request failed."
+    async def _http(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+        code = _STATUS_TO_CODE.get(exc.status_code, "http_error")
+        # FastAPI route handlers often provide actionable, intentionally public details.
+        # Preserve those instead of replacing every 4xx/5xx with "Request failed".
+        detail = exc.detail
+        message = detail if isinstance(detail, str) and detail.strip() else {
+            400: "The request was rejected. Check the submitted values.",
+            401: "Your session is missing or expired. Sign in again.",
+            403: "Your account is not permitted to perform this action.",
+            404: f"The requested resource was not found: {request.method} {request.url.path}",
+            405: f"The {request.method} method is not supported for this endpoint.",
+            408: "The request timed out before the server completed it.",
+            413: "The uploaded file is larger than the server allows.",
+            415: "The request content type is not supported by this endpoint.",
+            429: "Too many requests. Wait before trying again.",
+        }.get(exc.status_code, f"The server rejected {request.method} {request.url.path} (HTTP {exc.status_code}).")
         return JSONResponse(
-            error_body(code, message), status_code=exc.status_code, headers=exc.headers
+            error_body(code, message, request_id=getattr(request.state, "request_id", None)), status_code=exc.status_code, headers=exc.headers
         )
 
     @app.exception_handler(Exception)
-    async def _unhandled(_: Request, exc: Exception) -> JSONResponse:
-        log.error("unhandled error", exc_info=exc)
-        return JSONResponse(
-            error_body("server_error", "Something went wrong on our side."), status_code=500
-        )
+    async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
+        request_id = getattr(request.state, "request_id", None)
+        log.error("unhandled error request_id=%s on %s %s", request_id, request.method, request.url.path, exc_info=(type(exc), exc, exc.__traceback__))
+        # Never expose exception text/credentials to clients; the request ID joins this
+        # safe response to the full traceback in server logs.
+        body = error_body("server_error", "The server encountered an unexpected error while processing this request.", request_id=request_id)
+        return JSONResponse(body, status_code=500)

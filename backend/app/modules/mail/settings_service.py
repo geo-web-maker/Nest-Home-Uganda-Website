@@ -118,6 +118,8 @@ def _validate(definition: SettingDefinition, value: Any) -> Any:
             f"{definition.key} must be a finite number.",
             {definition.key: "not_finite"},
         )
+    if definition.key in {"mail.smtp_host", "mail.smtp_username"}:
+        value = value.strip()  # a stray leading space makes Brevo reject the login with 535
     if definition.key == "mail.domain":
         value = value.strip().lower()
     if definition.key == "mail.accepted_domains":

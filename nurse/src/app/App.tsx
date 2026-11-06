@@ -42,6 +42,7 @@ import { PhotoSheet, type PhotoType, type ServerVisitPhoto } from '../screens/Ph
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { SyncScreen } from '../screens/SyncScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { AuditScreen } from '../screens/AuditScreen';
 import { TimesheetsScreen } from '../features/timesheets/TimesheetsScreen';
 import { isForcedUpdate } from '../lib/version';
 import { UpdateNotice } from '../features/update/UpdateNotice';
@@ -814,6 +815,7 @@ function NurseWorkspace() {
     timesheets: <TimesheetsScreen online={online} />,
     profile: <ProfileScreen profile={fieldProfile} appVersion={APP_VERSION} versionInfo={versionInfo} remindersEnabled={visitRemindersEnabled} inboxEnabled={inboxEnabled} inbox={inbox} inboxMessage={inboxMessage} visits={visits} busy={busy} onSync={() => void sync()} onEnableReminders={() => void enableReminders()} onDisableReminders={() => void disableReminders()} onCheckUpdate={() => void checkForUpdate()} onLogout={() => void requestSignOut()} />,
     mail: <MailScreen />,
+    audit: <AuditScreen />,
     sync: <SyncScreen operations={allOperations} photos={localPhotos} userId={currentUserId} online={online} busy={busy} wifiOnly={wifiOnlyUpload} onSync={() => void sync()} onRetry={(id) => void retrySavedOperation(id)} onDiscard={(id) => void discardSavedOperation(id)} onApplyAgain={(operation) => void applySavedOperationAgain(operation)} onRetryPhoto={(id) => void retrySavedPhoto(id)} onUploadPhotoNow={(id) => { void uploadPhotoNow(id); }} onDiscardPhoto={(id) => void discardSavedPhoto(id)} />,
     visit: (visitId: string) => { const visit = selectedVisit(visitId); return visit ? <VisitDetail visit={visit} photosEnabled={photosEnabled} onArrive={(item) => requestVisitAction(item, 'check_in')} onLeave={(item) => requestVisitAction(item, 'check_out')} onNote={openNote} onPhoto={openPhoto} /> : <Card><h2>{copy.generic.visitUnavailable}</h2><p>{copy.generic.visitUnavailableCopy}</p><PillButton type="button" tone="forest" onClick={() => void sync()}>{copy.generic.syncSchedule}</PillButton></Card>; },
     activeVisit: (visitId: string) => { const visit = selectedVisit(visitId); return visit && visit.status === 'in_progress' ? <ActiveVisit visit={visit} onNote={openNote} onPhoto={openPhoto} onLeave={(item) => requestVisitAction(item, 'check_out')} photosEnabled={photosEnabled} /> : <Card><h2>{copy.generic.activeVisitUnavailable}</h2><p>{copy.generic.activeVisitUnavailableCopy}</p><PillButton type="button" tone="forest" onClick={() => void sync()}>{copy.generic.syncSchedule}</PillButton></Card>; },

@@ -4,6 +4,7 @@ from hashlib import sha256
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from beanie import PydanticObjectId
 from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
@@ -828,6 +829,7 @@ async def complete_photo(body: PhotoComplete, principal: Principal = CanUse):
     photo.status = "uploaded"
     await photo.save()
     await AuditLog(
+        user_id=PydanticObjectId(principal.user_id),
         action="care.photo.complete",
         item_type="visit_photo",
         item_id=photo.id,

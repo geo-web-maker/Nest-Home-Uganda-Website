@@ -1,6 +1,6 @@
 export const API_PREFIX = '/api/v1';
 
-type ErrorBody = { error?: { code?: string; message?: string; fields?: Record<string, string> } };
+type ErrorBody = { error?: { code?: string; message?: string; fields?: Record<string, string>; request_id?: string }; detail?: unknown; message?: string };
 
 /** Server error shape is {error: {code, message, fields}} (spec 9.1). Status 0 means the network failed. */
 export class ApiError extends Error {
@@ -9,6 +9,8 @@ export class ApiError extends Error {
     public readonly code: string,
     message: string,
     public readonly fields: Record<string, string> = {},
+    public readonly requestId?: string,
+    public readonly endpoint?: string,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -49,14 +51,22 @@ function buildUrl(baseUrl: string, path: string, params: RequestOptions['params'
   return `${baseUrl}${API_PREFIX}${path}${qs ? `?${qs}` : ''}`;
 }
 
-async function toApiError(response: Response): Promise<ApiError> {
-  const body = (await response.json().catch(() => null)) as ErrorBody | null;
+async function toApiError(response: Response, endpoint: string): Promise<ApiError> {
+  const raw = await response.text().catch(() => '');
+  let body: ErrorBody | null = null;
+  try { body = raw ? JSON.parse(raw) as ErrorBody : null; } catch { /* proxy/plain-text response */ }
   const error = body?.error;
+  const detail = typeof body?.detail === 'string' ? body.detail : undefined;
+  const message = error?.message || body?.message || detail ||
+    (raw && raw.length < 500 ? raw : '') ||
+    `The server returned HTTP ${response.status}${response.statusText ? ` (${response.statusText})` : ''} for ${endpoint}.`;
   return new ApiError(
     response.status,
     error?.code ?? (response.status === 429 ? 'rate_limited' : 'http_error'),
-    error?.message ?? response.statusText ?? 'Request failed',
+    message,
     error?.fields ?? {},
+    error?.request_id ?? response.headers.get('X-Request-ID') ?? undefined,
+    endpoint,
   );
 }
 
@@ -87,8 +97,12 @@ export function createApiClient({
         signal: options.signal,
         body: body === undefined ? undefined : JSON.stringify(body),
       });
-    } catch {
-      throw new ApiError(0, 'network_error', 'Network request failed');
+    } catch (cause) {
+      const reason = cause instanceof Error ? cause.message : String(cause);
+      const endpoint = `${method} ${API_PREFIX}${path}`;
+      throw new ApiError(0, 'network_error',
+        `Could not reach ${endpoint}. No HTTP response was received. Check your internet connection, API base URL, DNS/TLS, and browser CORS configuration. Browser detail: ${reason || 'network request blocked or interrupted'}.`,
+        {}, undefined, endpoint);
     }
 
     const canRetry = response.status === 401 && !isRetry && options.retryOn401 !== false;
@@ -105,7 +119,7 @@ export function createApiClient({
     options: RequestOptions = {},
   ): Promise<T> {
     const response = await send(method, path, body, options, false);
-    if (!response.ok) throw await toApiError(response);
+    if (!response.ok) throw await toApiError(response, `${method} ${API_PREFIX}${path}`);
     if (response.status === 204) return undefined as T;
     return (await response.json()) as T;
   }

@@ -26,6 +26,7 @@ import './care.css';
 import './care-screen.css';
 import { Notice } from '../../../components/admin/Notice';
 import { ButtonGroup } from '../../../components/admin/ButtonGroup';
+import { TotpGate } from '../../../components/security/TotpGate';
 
 type Row = Record<string, any>;
 type ScreenKey =
@@ -112,7 +113,7 @@ const titles: Record<ScreenKey, string> = {
   data: 'Data requests',
   audit: 'Audit history',
 };
-export function CareScreenPage({ screen }: { screen: ScreenKey }) {
+function CareScreenContent({ screen }: { screen: ScreenKey }) {
   const { t } = useTranslation('admin');
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -147,6 +148,10 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
     entityId: '',
     from: '',
     to: '',
+    severity: '',
+    eventType: '',
+    source: '',
+    outcome: '',
     cursor: '',
   });
 
@@ -163,6 +168,10 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
                 item_id: auditFilters.entityId || undefined,
                 from: auditFilters.from || undefined,
                 to: auditFilters.to || undefined,
+                severity: auditFilters.severity || undefined,
+                event_type: auditFilters.eventType || undefined,
+                source: auditFilters.source || undefined,
+                outcome: auditFilters.outcome || undefined,
                 cursor: auditFilters.cursor || undefined,
                 page_size: 25,
               }
@@ -237,11 +246,24 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
       .filter((k) => screen !== 'nurses' || (k !== 'user_id' && k !== 'supervisor_id'))
       .filter((v, i, a) => a.indexOf(v) === i)
       .slice(0, 5);
-    const base = (keys.length ? keys : ['id', 'status', 'name', 'created_at']).map((key) => ({
-      key,
-      header: headerFor(key),
-      cell: (r: Row) => cellText(key, r[key]),
-    }));
+    const base: DataColumn<Row>[] = screen === 'audit'
+      ? (['at', 'severity', 'action', 'message', 'user_name', 'source', 'http_status', 'request_id'] as const).map((key) => ({
+          key,
+          header: headerFor(key),
+          cell: (r: Row) => cellText(key, r[key]),
+        }))
+      : (keys.length ? keys : ['id', 'status', 'name', 'created_at']).map((key) => ({
+          key,
+          header: headerFor(key),
+          cell: (r: Row) => cellText(key, r[key]),
+        }));
+    if (screen === 'audit') {
+      base.push({
+        key: 'details',
+        header: 'Details',
+        cell: (r: Row) => <Button type="button" variant="outline" onClick={() => setSelected(r)}>Inspect</Button>,
+      });
+    }
     if (['nurses', 'clients', 'visits', 'flags', 'photos', 'alerts', 'timesheets', 'sos'].includes(screen))
       base.push({
         key: 'actions',
@@ -827,6 +849,10 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
               value={auditFilters.to}
               onChange={(e) => setAuditFilters({ ...auditFilters, to: e.target.value, cursor: '' })}
             />
+            <Field label="Severity" value={auditFilters.severity} onChange={(e) => setAuditFilters({ ...auditFilters, severity: e.target.value, cursor: '' })} placeholder="info / warning / error / critical" />
+            <Field label="Event type" value={auditFilters.eventType} onChange={(e) => setAuditFilters({ ...auditFilters, eventType: e.target.value, cursor: '' })} placeholder="activity / error / security / system" />
+            <Field label="Source" value={auditFilters.source} onChange={(e) => setAuditFilters({ ...auditFilters, source: e.target.value, cursor: '' })} placeholder="user / api / scheduler / integration" />
+            <Field label="Outcome" value={auditFilters.outcome} onChange={(e) => setAuditFilters({ ...auditFilters, outcome: e.target.value, cursor: '' })} placeholder="success / failure / blocked" />
         </FilterBar>
       );
     if (screen === 'settings')
@@ -999,6 +1025,12 @@ export function CareScreenPage({ screen }: { screen: ScreenKey }) {
   );
 }
 
+export function CareScreenPage({ screen }: { screen: ScreenKey }) {
+  return screen === 'audit'
+    ? <TotpGate><CareScreenContent screen={screen} /></TotpGate>
+    : <CareScreenContent screen={screen} />;
+}
+
 export function CareScreenRouter() {
   const location = useLocation();
   const tail = location.pathname.replace(/^\/admin\/care\/?/, '');
@@ -1011,7 +1043,7 @@ export function CareScreenRouter() {
   if (tail.startsWith('visits/') && tail !== 'visits/')
     return (
       <RequireScopes scopes={CARE_SCREEN_SCOPES.visits}>
-        <VisitReviewPage />
+        <TotpGate><VisitReviewPage /></TotpGate>
       </RequireScopes>
     );
   const screen = (Object.entries(CARE_SCREEN_PATHS).find(

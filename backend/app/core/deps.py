@@ -36,6 +36,7 @@ class Principal:
 
 
 async def get_principal(
+    request: Request,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
 ) -> Principal:
     if credentials is None or credentials.scheme.lower() != "bearer":
@@ -44,7 +45,9 @@ async def get_principal(
         claims = decode_access_token(credentials.credentials)
     except TokenError as exc:
         raise Unauthorised("Your session has expired. Please sign in again.") from exc
-    return Principal(claims.user_id, claims.scopes | frozenset({"mail:use"}), claims.is_superadmin)
+    principal = Principal(claims.user_id, claims.scopes | frozenset({"mail:use"}), claims.is_superadmin)
+    request.state.principal = principal
+    return principal
 
 
 def require_scopes(*required: str) -> Callable[..., Principal]:

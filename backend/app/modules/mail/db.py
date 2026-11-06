@@ -16,7 +16,7 @@ from typing import Any
 from app.core.errors import AppError
 
 log = logging.getLogger("app.mail.db")
-_SOURCE_MIGRATIONS_DIR = Path(__file__).resolve().parents[3] / "mail_migrations"
+_SOURCE_MIGRATIONS_DIR = Path(__file__).resolve().parents[2] / "mail_migrations"
 _MIGRATION_DIR_CANDIDATES = (
     _SOURCE_MIGRATIONS_DIR,
     Path(sys.prefix) / "mail_migrations",

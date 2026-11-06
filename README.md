@@ -18,6 +18,10 @@ cd ../backend && python3 -m venv .venv && . .venv/bin/activate \
   && pip install -r requirements.lock && pip install -e . --no-deps
 ```
 
+## Database deployment
+
+Database migrations run automatically before the backend accepts traffic. See [`docs/AUTO_MIGRATIONS.md`](docs/AUTO_MIGRATIONS.md) for startup behavior, failure policy and manual recovery commands.
+
 ## Everyday commands
 | What | Command (from the folder shown) |
 | --- | --- |
@@ -25,7 +29,7 @@ cd ../backend && python3 -m venv .venv && . .venv/bin/activate \
 | Frontend checks | `frontend`: `npm run lint && npm run typecheck && npm run test && npm run build` |
 | Backend dev server | `backend`: `uvicorn app.main:app --reload` |
 | Backend checks | `backend`: `ruff check . && ruff format --check . && pytest -q` |
-| Create indexes (run on each release) | `backend`: `python -m app.migrate` |
+| Database migrations | Applied automatically by the backend during application startup (MongoDB main/care and configured mail PostgreSQL). `python -m app.migrate` remains available for controlled manual runs. |
 | Seed first superadmin and the 8 services | `backend`: `python -m app.seed` (needs `FIRST_SUPERADMIN_*` in `.env`) |
 | Backend tests that need MongoDB | set `TEST_MONGODB_URI` first, then `pytest -q -rs` (without it they are skipped) |
 | Orientation for a new session | `bash scripts/orient.sh` |

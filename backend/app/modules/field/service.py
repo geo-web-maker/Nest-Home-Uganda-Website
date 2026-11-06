@@ -91,6 +91,17 @@ async def record_event(
         if duplicate:
             return {"status": "rejected", "reason": "idempotency_key_conflict"}
         raise
+    try:
+        from app.modules.audit.service import record_system_event
+        await record_system_event(
+            action=f"nurse.visit.{event_type}",
+            message=f"Visit {event_type.replace('_', ' ')} was recorded.",
+            severity="info", source="user", user_id=nurse_id, outcome="success",
+            event_type="activity", details={"visit_id": visit_id, "verification": verification},
+        )
+    except Exception:
+        import logging
+        logging.getLogger("app.audit").exception("could not audit nurse visit event")
     if event_type == "check_in":
         visit.check_in_at = payload.device_time
         if payload.safety_timer_minutes:
@@ -161,6 +172,17 @@ async def record_note(nurse_id: str, visit_id: str, payload):
         in_range=bool(payload.geo_snap.get("in_range", False)),
     )
     await note.insert()
+    try:
+        from app.modules.audit.service import record_system_event
+        await record_system_event(
+            action="nurse.visit.note_added",
+            message="A visit note was added. Note contents are intentionally excluded from the audit log.",
+            severity="info", source="user", user_id=nurse_id, outcome="success",
+            event_type="activity", details={"visit_id": visit_id},
+        )
+    except Exception:
+        import logging
+        logging.getLogger("app.audit").exception("could not audit nurse visit note")
     return {"status": "accepted", "id": note.id}
 
 

@@ -10,9 +10,7 @@ import { Button } from '../../../components/ui/Button';
 import { Checkbox } from '../../../components/ui/Checkbox';
 import { Field } from '../../../components/ui/Field';
 import { apiClient } from '../../../lib/api/client';
-import { MailSetupCheck } from './MailSetupCheck';
-import { MailInboundTrace } from './MailInboundTrace';
-import { MailSmtpTrace } from './MailSmtpTrace';
+import { MailDiagnosticsSection } from './MailDiagnosticsSection';
 import { coerceSettingValue, displayValue, type MailSetting } from './settings';
 import styles from './MailPage.module.css';
 
@@ -36,11 +34,15 @@ export function MailSettingsPage() {
   const [totpSecret, setTotpSecret] = useState('');
   const [totpCode, setTotpCode] = useState('');
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
-  const [testTo, setTestTo] = useState('');
 
   const settings = useQuery({
     queryKey: ['mail', 'settings'],
     queryFn: () => apiClient.get<{ items: MailSetting[] }>('/mail/settings'),
+    retry: false,
+  });
+  const totpStatus = useQuery({
+    queryKey: ['mail', 'totp-status'],
+    queryFn: () => apiClient.get<{ enabled: boolean; verified: boolean }>('/mail/totp/status'),
     retry: false,
   });
   const usage = useQuery({
@@ -159,12 +161,7 @@ export function MailSettingsPage() {
     },
     onError: () => fail(t('mailSettings.totpError')),
   });
-  const testSend = useMutation({
-    mutationFn: () => apiClient.post<{ sent?: boolean; message?: string; provider?: string }>('/mail/settings/test-send', { to: testTo }),
-    onSuccess: (result) =>
-      ok(result.sent ? t('mailSettings.testSentVia', { provider: result.provider ?? '', to: testTo }) : result.message || t('mailSettings.testQueued')),
-    onError: () => fail(t('mailSettings.testError')),
-  });
+
 
   const saveItem = (item: MailSetting) => {
     const raw = edits[item.key];
@@ -232,9 +229,13 @@ export function MailSettingsPage() {
       {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
 
       <div className={styles.settingsStack}>
-        <MailSetupCheck />
         <section className={styles.panel} aria-label={t('mailSettings.security')}>
           <SectionHeader title={t('mailSettings.security')} />
+          <p className={styles.settingHelp}>
+            {totpStatus.data?.enabled
+              ? (totpStatus.data.verified ? 'Authenticator verified for this session.' : 'Verify a current authenticator code to unlock the email diagnostics suite.')
+              : 'Set up an authenticator before running email diagnostics.'}
+          </p>
           <ButtonGroup spaced>
             <Button variant="outline" onClick={() => enroll.mutate()}>
               {t('mailSettings.enrollTotp')}
@@ -272,6 +273,8 @@ export function MailSettingsPage() {
             </div>
           ) : null}
         </section>
+
+        <MailDiagnosticsSection unlocked={Boolean(totpStatus.data?.enabled && totpStatus.data?.verified)} />
 
         {groups.map((group) => (
           <section className={styles.panel} key={group} aria-label={group}>
@@ -368,18 +371,7 @@ export function MailSettingsPage() {
           ) : null}
         </section>
 
-        <section className={styles.panel} aria-label={t('mailSettings.testSend')}>
-          <SectionHeader title={t('mailSettings.testSend')} />
-          <Field type="email" label={t('mailSettings.recipient')} value={testTo} onChange={(event) => setTestTo(event.target.value)} />
-          <ButtonGroup spaced>
-            <Button disabled={!testTo.includes('@')} onClick={() => testSend.mutate()}>
-              {t('mailSettings.sendTest')}
-            </Button>
-          </ButtonGroup>
-        </section>
 
-        <MailSmtpTrace />
-        <MailInboundTrace />
       </div>
 
       {reprocessConfirming ? (

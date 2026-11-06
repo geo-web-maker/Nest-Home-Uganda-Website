@@ -23,6 +23,20 @@ from app.modules.visits.models import Visit
 
 log = logging.getLogger("app.jobs")
 
+async def _audit_job_failure(job_name: str) -> None:
+    """Record scheduler failures without allowing audit storage to stop other jobs."""
+    try:
+        from app.modules.audit.service import record_system_event
+        await record_system_event(
+            action=f"scheduler.{job_name}.failed",
+            message=f"The scheduled job '{job_name}' failed. Review backend logs using the job name and timestamp.",
+            severity="error", source="scheduler", outcome="failure",
+            details={"job": job_name}, event_type="error",
+        )
+    except Exception:
+        log.exception("could not persist scheduler failure audit event: %s", job_name)
+
+
 
 async def run_reminders() -> None:
     try:
@@ -31,6 +45,7 @@ async def run_reminders() -> None:
             log.info("enquiry reminders sent: %d", count)
     except Exception:
         log.exception("reminder job failed")
+        await _audit_job_failure("run_reminders")
 
 
 async def run_retention(now: datetime | None = None) -> int:
@@ -40,6 +55,7 @@ async def run_retention(now: datetime | None = None) -> int:
         count = await enquiries_repo.anonymise_before(rules.retention_cutoff(now), now)
     except Exception:
         log.exception("retention job failed")
+        await _audit_job_failure("run_retention")
         return 0
     if count:
         log.info("enquiries anonymised: %d", count)
@@ -55,6 +71,7 @@ async def run_photo_orphans(now: datetime | None = None) -> int:
         return await purge_abandoned_photo_uploads(now, get_settings())
     except Exception:
         log.exception("photo orphan cleanup job failed")
+        await _audit_job_failure("run_photo_orphans")
         return 0
 
 
@@ -111,6 +128,7 @@ async def run_care_alerts(now: datetime | None = None) -> int:
                     created += 1
     except Exception:
         log.exception("care alert job failed")
+        await _audit_job_failure("run_care_alerts")
     return created
 
 
@@ -132,6 +150,7 @@ async def run_sos_escalation(now: datetime | None = None) -> int:
             count += 1
     except Exception:
         log.exception("SOS escalation job failed")
+        await _audit_job_failure("run_sos_escalation")
     return count
 
 
@@ -181,6 +200,7 @@ async def run_timesheet_generation(today=None) -> int:
                 created += 1
     except Exception:
         log.exception("timesheet generation job failed")
+        await _audit_job_failure("run_timesheet_generation")
     return created
 
 
@@ -257,6 +277,7 @@ async def run_mail_outbox() -> int:
         return await drain()
     except Exception:
         log.warning("mail outbox job unavailable; details omitted")
+        await _audit_job_failure("run_mail_outbox")
         return 0
 
 
@@ -266,6 +287,7 @@ async def run_mail_scan_queue() -> int:
         return await drain(limit=10)
     except Exception:
         log.warning("mail attachment scan job unavailable; details omitted")
+        await _audit_job_failure("run_mail_scan_queue")
         return 0
 
 
@@ -300,6 +322,7 @@ async def run_mail_housekeeping() -> int:
         return removed
     except Exception:
         log.warning("mail housekeeping job unavailable; details omitted")
+        await _audit_job_failure("run_mail_housekeeping")
         return 0
 
 
@@ -349,6 +372,7 @@ async def run_mail_retention() -> int:
         return purged
     except Exception:
         log.warning("mail retention purge failed; details omitted")
+        await _audit_job_failure("run_mail_retention")
         return 0
 
 
@@ -369,4 +393,5 @@ async def run_mail_quota_check() -> int:
         return sum(1 for row in rows if row['used']>=quota*0.9)
     except Exception:
         log.warning("mail quota check unavailable; details omitted")
+        await _audit_job_failure("run_mail_quota_check")
         return 0

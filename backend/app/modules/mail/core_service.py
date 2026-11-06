@@ -181,7 +181,7 @@ async def _inline_image_data(attachment_id: str, object_key: str) -> bytes:
     return data
 
 
-async def read_message(user_id: str, item_id: str):
+async def read_message(user_id: str, item_id: str, *, include_admin_diagnostics: bool = False):
     await _assert_enabled()
     pool = db.get_pool()
     async with pool.acquire() as conn:
@@ -219,7 +219,7 @@ async def read_message(user_id: str, item_id: str):
             delivery = None
             if row["folder"] == "sent":
                 outbox_row = await conn.fetchrow(
-                    "SELECT id,state,last_error,provider,provider_message_id FROM outbox "
+                    "SELECT id,state,last_error,provider,provider_message_id,attempts,next_attempt_at FROM outbox "
                     "WHERE message_id=$1 ORDER BY created_at DESC LIMIT 1",
                     row["message_id"],
                 )
@@ -229,22 +229,15 @@ async def read_message(user_id: str, item_id: str):
                         "WHERE outbox_id=$1 ORDER BY address,at DESC,id DESC",
                         outbox_row["id"],
                     )
-                    reason_map = {
-                        "attachment integrity check failed": "An attachment could not be verified.",
-                        "recipient_delivery_failed": "The provider reported a delivery failure for one or more recipients.",
-                        "provider failure": "The mail provider could not accept this message.",
-                        "worker lease expired": "The mail worker restarted before completing this message.",
-                    }
-                    raw_reason = str(outbox_row["last_error"] or "")
-                    delivery = {
-                        "state": str(outbox_row["state"]),
-                        "reason": reason_map.get(raw_reason, "Delivery needs attention." if raw_reason else None),
-                        "provider": str(outbox_row["provider"] or ""),
-                        "recipients": [
+                    from app.modules.mail.delivery_detail import build_delivery
+                    delivery = build_delivery(
+                        dict(outbox_row),
+                        [
                             {"address": str(item["address"]), "event": str(item["event"]), "at": item["at"]}
                             for item in event_rows
                         ],
-                    }
+                        include_detail=include_admin_diagnostics,
+                    )
 
     message = dict(row)
     message["delivery"] = delivery
@@ -1422,3 +1415,40 @@ async def suggest_contacts(user_id: str, q: str | None, limit: int | None = None
                 if address not in taken:
                     directory.append({"address": address, "name": r["display_name"] or None, "source": "directory"})
     return {"recent": recent, "directory": directory}
+
+
+async def retry_delivery(user_id: str, item_id: str) -> dict:
+    """Re-queue a deferred/failed/queued outbound message the caller can see in Sent."""
+    from app.core.errors import Forbidden, NotFound
+    await _assert_enabled()
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            row = await conn.fetchrow(
+                "SELECT mm.mailbox_id, mm.message_id, mm.folder FROM mailbox_message mm "
+                "JOIN mailbox_member mem ON mem.mailbox_id=mm.mailbox_id "
+                "WHERE mm.id=$1 AND mem.user_id=$2",
+                item_id, user_id,
+            )
+            if not row or row["folder"] != "sent":
+                raise NotFound("Message not found.")
+            outbox_row = await conn.fetchrow(
+                "SELECT id,state FROM outbox WHERE message_id=$1 ORDER BY created_at DESC LIMIT 1 FOR UPDATE",
+                row["message_id"],
+            )
+            if not outbox_row:
+                raise NotFound("This message has no delivery record.")
+            if outbox_row["state"] not in ("deferred", "failed", "queued"):
+                raise Forbidden("This message is not waiting to be delivered.")
+            await conn.execute(
+                "UPDATE outbox SET state='queued',attempts=0,next_attempt_at=now(),claimed_at=NULL,last_error=NULL "
+                "WHERE id=$1",
+                outbox_row["id"],
+            )
+            await _audit(conn, user_id, "mail.retry_delivery", row["mailbox_id"], row["message_id"])
+    try:
+        from app.modules.mail.outbox import kick
+        kick()
+    except Exception:
+        log.warning("mail retry kick failed; the worker will pick it up")
+    return {"queued": True}

@@ -9,6 +9,7 @@ import { apiClient } from '../../../lib/api/client';
 import { authStore } from '../auth/authStore';
 import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
+import { TotpGate } from '../../../components/security/TotpGate';
 import type { ExportFormat, ExportType, ReportsSummary } from './types';
 import styles from './ReportsPage.module.css';
 export function ReportsPage() {
@@ -129,9 +130,17 @@ export function ReportsPage() {
             if (canExport) void download();
           }}
           actions={
-            <Button type="submit" disabled={!canExport || exporting}>
-              {exporting ? t('reports.downloading') : t('reports.download')}
-            </Button>
+            kind === 'activity' ? (
+              <TotpGate>
+                <Button type="submit" disabled={!canExport || exporting}>
+                  {exporting ? t('reports.downloading') : t('reports.download')}
+                </Button>
+              </TotpGate>
+            ) : (
+              <Button type="submit" disabled={!canExport || exporting}>
+                {exporting ? t('reports.downloading') : t('reports.download')}
+              </Button>
+            )
           }
         >
           <Field

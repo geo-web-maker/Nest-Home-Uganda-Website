@@ -16,6 +16,7 @@ import { Notice } from '../../../components/admin/Notice';
 import { StatusBadge } from '../../../components/ui/Badge';
 import { ButtonGroup } from '../../../components/admin/ButtonGroup';
 import { SectionHeader } from '../../../components/admin/SectionHeader';
+import { TotpGate } from '../../../components/security/TotpGate';
 
 type Row = Record<string, any> & { id?: string };
 type RosterEntry = { name: string; role: string; phone: string; days: string[]; start: string; end: string; override_phone: string; override_until: string };
@@ -109,7 +110,7 @@ export function SOSConsolePage() {
   </div>;
 }
 
-export function SOSHistoryPage() {
+function SOSHistoryPageContent() {
   const { user } = useAuth();
   const canCareRead = hasScopes(user, ['carecfg:read']);
   const canCareWrite = hasScopes(user, ['carecfg:write']);
@@ -326,4 +327,10 @@ function toLocalDateTimeInput(value: unknown): string {
   if (Number.isNaN(date.getTime())) return '';
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+
+/** Recorded SOS history and drill audit records are TOTP-protected. */
+export function SOSHistoryPage() {
+  return <TotpGate><SOSHistoryPageContent /></TotpGate>;
 }

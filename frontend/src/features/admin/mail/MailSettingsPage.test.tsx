@@ -24,6 +24,7 @@ function api(options: { settingsFail?: boolean } = {}) {
       if (options.settingsFail) throw new Error('totp required');
       return { items };
     }
+    if (path === '/mail/totp/status') return { enabled: true, verified: !options.settingsFail };
     if (path === '/mail/usage') return usage;
     throw new Error(`unexpected GET ${path}`);
   });
@@ -33,7 +34,7 @@ function api(options: { settingsFail?: boolean } = {}) {
     if (path === '/mail/backfill/run') return { created: 2, skipped: [{}] };
     if (path === '/mail/totp/enroll') return { secret: 'JBSWY3DPEHPK3PXP' };
     if (path === '/mail/totp/confirm') return { recovery_codes: ['AAAA-1111', 'BBBB-2222'] };
-    if (path === '/mail/settings/test-send') return { sent: false, queued: true, provider: 'console' };
+    if (path === '/mail/settings/test-send') return { sent: false, queued: false, provider: 'console', attachment_included: false, message: 'The console provider records messages but sends nothing externally.' };
     return {};
   });
 }
@@ -133,9 +134,20 @@ describe('MailSettingsPage', () => {
   it('explains the authenticator step and still offers the security panel when settings are locked', async () => {
     api({ settingsFail: true });
     setup();
-    expect(await screen.findByText(/Verify your authenticator code below/)).toBeInTheDocument();
+    expect(await screen.findByText(/Verify a current authenticator code to unlock the email diagnostics suite/)).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Email Diagnostics & Test Suite' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('External test recipient')).toBeNull();
     expect(screen.getByRole('button', { name: 'Set up authenticator' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Limits' })).toBeNull();
+  });
+
+  it('does not mount live diagnostics until the backend confirms an active TOTP session', async () => {
+    api({ settingsFail: true });
+    setup();
+    const suite = await screen.findByRole('region', { name: 'Email Diagnostics & Test Suite' });
+    expect(within(suite).getByText(/verify a current code in the Security section/i)).toBeInTheDocument();
+    expect(within(suite).queryByRole('button', { name: 'Run setup check' })).toBeNull();
+    expect(within(suite).queryByLabelText('External test recipient')).toBeNull();
   });
 
   it('sets up the authenticator: shows the secret, confirms and verifies, then shows recovery codes once', async () => {
@@ -201,29 +213,26 @@ describe('MailSettingsPage', () => {
     expect(screen.getByText('office: 9')).toBeInTheDocument();
   });
 
-  it('keeps Send test off until the address has an @, then reports a console-only send honestly', async () => {
+  it('keeps external send disabled until the recipient is valid, then reports console-only honestly', async () => {
     api();
     const user = userEvent.setup();
     setup();
-    const send = await screen.findByRole('button', { name: 'Send test' });
+    const send = await screen.findByRole('button', { name: 'Send external test' });
     expect(send).toBeDisabled();
-    await user.type(screen.getByLabelText('Test recipient'), 'me@mail.test');
+    await user.type(screen.getByLabelText('External test recipient'), 'me@mail.test');
     await user.click(send);
-    expect(apiClient.post).toHaveBeenCalledWith('/mail/settings/test-send', { to: 'me@mail.test' });
-    expect(await screen.findByText(/no external message was sent/)).toBeInTheDocument();
+    expect(apiClient.post).toHaveBeenCalledWith('/mail/settings/test-send', { to: 'me@mail.test', include_attachment: true });
+    expect(await screen.findByText(/console provider records messages but sends nothing externally/i)).toBeInTheDocument();
   });
 
-  it('puts the setup check first and tells the administrator which provider took the test message', async () => {
+  it('groups setup, external send and transport traces inside the TOTP-protected suite', async () => {
     api();
-    vi.mocked(apiClient.post).mockImplementation(async (path: string) => (path === '/mail/settings/test-send' ? { sent: true, provider: 'resend', provider_message_id: 're_1' } : {}));
-    const user = userEvent.setup();
     setup();
-    const regions = await screen.findAllByRole('region');
-    // regions[0] is the page itself (Mail settings); the setup check is the first panel inside it.
-    expect(regions[1]).toHaveAccessibleName('Setup check');
-    await user.type(screen.getByLabelText('Test recipient'), 'me@mail.test');
-    await user.click(screen.getByRole('button', { name: 'Send test' }));
-    expect(await screen.findByText('Test message accepted by resend. Check the inbox of me@mail.test, including spam.')).toBeInTheDocument();
+    const suite = await screen.findByRole('region', { name: 'Email Diagnostics & Test Suite' });
+    expect(within(suite).getByRole('region', { name: 'Setup check' })).toBeInTheDocument();
+    expect(within(suite).getByRole('region', { name: 'External sending test' })).toBeInTheDocument();
+    expect(within(suite).getByRole('region', { name: 'Full SMTP trace' })).toBeInTheDocument();
+    expect(within(suite).getByRole('region', { name: 'Incoming mail trace' })).toBeInTheDocument();
   });
 
   it('resets the authenticator with a code or recovery code', async () => {

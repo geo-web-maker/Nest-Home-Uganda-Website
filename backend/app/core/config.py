@@ -11,7 +11,7 @@ def _split(value: str) -> list[str]:
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=None, extra="ignore")
+    model_config = SettingsConfigDict(env_prefix="NEST_", env_file=None, extra="ignore")
 
     app_env: str = "development"
     mongodb_uri: str = ""
@@ -38,8 +38,11 @@ class Settings(BaseSettings):
     refresh_token_days: int = 7
     cors_origins: str = ""
     frontend_url: str = ""
+    # Optional. Base URL put in nurse invite and reset emails; empty falls back to frontend_url.
+    nurse_frontend_url: str = ""
     ip_hash_salt: str = ""
     trust_proxy: bool = False
+    trusted_proxy_ips: str = ""  # comma-separated IPs/CIDRs allowed to supply forwarding headers
     cookie_samesite: str = "lax"  # "none" for a cross-site frontend (needs Secure)
     turnstile_secret: str = ""
     sms_provider: str = Field(default="console")  # "console" or "mambosms"
@@ -76,11 +79,12 @@ class Settings(BaseSettings):
 
     # Dedicated Postgres database and bootstrap-only mail settings. Mail values otherwise
     # live in the Postgres mail_settings table.
-    nest_pg_url: str = ""
-    nest_mail_secret_key: str = ""
-    nest_mail_domain: str = ""
-    nest_mail_provider: str = "console"
-    nest_mail_api_key: str = ""
+    nest_pg_url: str = Field("", validation_alias="NEST_PG_URL")
+    mail_migrations_required: bool = False
+    nest_mail_secret_key: str = Field("", validation_alias="NEST_MAIL_SECRET_KEY")
+    nest_mail_domain: str = Field("", validation_alias="NEST_MAIL_DOMAIN")
+    nest_mail_provider: str = Field("console", validation_alias="NEST_MAIL_PROVIDER")
+    nest_mail_api_key: str = Field("", validation_alias="NEST_MAIL_API_KEY")
 
     alert_emails: str = ""
     alert_phones: str = ""

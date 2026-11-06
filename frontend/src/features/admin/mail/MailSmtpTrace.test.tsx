@@ -16,16 +16,17 @@ const renderIt = () =>
     </QueryClientProvider>,
   );
 
-test('shows every step, the unredacted key, the raw conversation and the server IP', async () => {
+test('shows every step, redacted credentials, the SMTP conversation and the server IP', async () => {
   vi.mocked(apiClient.post).mockResolvedValue({
     egress_ip: '203.0.113.9',
     notes: ['Brevo refused this server.'],
     steps: [
-      { step: 'settings', ok: true, password: { value: 'xsmtpsib-secret-key' } },
+      { step: 'settings', ok: true, password: { kind: 'smtp_key', fingerprint: 'ab12cd34', length: 52 } },
       { step: 'auth', ok: false, ms: 120, smtp_code: 535, error_type: 'SMTPAuthenticationError', detail: '5.7.8 Authentication failed' },
     ],
     wire: [
-      { dir: 'client', line: 'AUTH PLAIN AHVzZXIAcGFzcw==', decoded: '\\0user\\0pass' },
+      { dir: 'client', line: 'AUTH [credentials redacted]' },
+      { dir: 'client', line: '[AUTH payload redacted]' },
       { dir: 'server', line: '535 5.7.8 Authentication failed' },
     ],
     versions: { aiosmtplib: '5.1.3' },
@@ -35,8 +36,10 @@ test('shows every step, the unredacted key, the raw conversation and the server 
   await userEvent.click(screen.getByRole('button', { name: 'Run full trace' }));
   expect(await screen.findByText('203.0.113.9')).toBeInTheDocument();
   expect(apiClient.post).toHaveBeenCalledWith('/mail/settings/test-send/trace', { send_to: null, compare_key: 'abc' });
-  expect(screen.getByText(/xsmtpsib-secret-key/)).toBeInTheDocument();
-  expect(screen.getByText(/C: AUTH PLAIN/)).toBeInTheDocument();
+  expect(screen.queryByText(/xsmtpsib-secret-key/)).toBeNull();
+  expect(screen.getByText(/ab12cd34/)).toBeInTheDocument();
+  expect(screen.getByText(/C: AUTH \[credentials redacted\]/)).toBeInTheDocument();
+  expect(screen.getByText(/AUTH data redacted/)).toBeInTheDocument();
   expect(screen.getByText(/S: 535 5\.7\.8/)).toBeInTheDocument();
   expect(screen.getByText('Brevo refused this server.')).toBeInTheDocument();
   expect(screen.getByText('FAIL')).toBeInTheDocument();

@@ -18,7 +18,7 @@ Keep `mail.enabled=false` and `mail.inbound_enabled=false` until a fresh isolate
 
 ## First deployment
 
-1. Deploy the backend with `NEST_PG_URL`, `NEST_MAIL_SECRET_KEY`, and the private mail bucket configured. The backend lifespan creates the schema migration table, takes a transaction-scoped Postgres advisory lock (compatible with a pooled Neon URL), and applies pending `backend/mail_migrations/*.sql` files once.
+1. Deploy the backend with `NEST_PG_URL`, `NEST_MAIL_SECRET_KEY`, and the private mail bucket configured. The backend lifespan creates the schema migration table, takes a transaction-scoped Postgres advisory lock (compatible with a pooled Neon URL), and applies pending `backend/mail_migrations/*.sql` files before the API accepts traffic. Set `MAIL_MIGRATIONS_REQUIRED=true` in production so a configured-but-unavailable mail database or failed SQL migration blocks the new instance from starting instead of silently leaving the mail schema behind.
 2. Confirm `/api/v1/health` remains healthy. The mail database probe is non-blocking and does not cause the primary MongoDB health result to fail while mail is disabled.
 3. Open Admin → Mail settings. Enrol an authenticator app, verify it, review every default, set the root domain, and replace provider, provider-webhook, inbound-webhook and backup secrets only through write-only fields.
 4. Do not enable external sending or inbound routing until the relevant phases, DNS checks and provider webhooks have been completed.

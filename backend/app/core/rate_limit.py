@@ -1,11 +1,11 @@
-"""Fixed-window rate limiter keyed by hashed client IP.
+"""Fixed-window limiter for general API endpoints, keyed by hashed client IP.
 
-State is in process memory. That is correct for one backend instance (the planned
-Render setup). If the backend is ever scaled to several instances, replace
-`InMemoryRateLimiter` with a shared store behind the same two methods.
+General API rate limits are process-local. Sensitive TOTP operations use the
+PostgreSQL-backed limiter in modules.mail.router so limits are shared across workers.
 """
 
 import time
+import ipaddress
 from collections.abc import Callable
 
 from fastapi import Request
@@ -40,12 +40,23 @@ limiter = InMemoryRateLimiter()
 
 
 def client_ip(request: Request) -> str:
-    if get_settings().trust_proxy:
-        forwarded = request.headers.get("x-forwarded-for", "")
-        first = forwarded.split(",")[0].strip()
-        if first:
-            return first
-    return request.client.host if request.client else "unknown"
+    """Use forwarding headers only when the immediate peer is an explicitly trusted proxy."""
+    cfg = get_settings()
+    peer = request.client.host if request.client else "unknown"
+    if cfg.trust_proxy and peer != "unknown":
+        try:
+            peer_ip = ipaddress.ip_address(peer)
+            trusted = [ipaddress.ip_network(item.strip(), strict=False) for item in cfg.trusted_proxy_ips.split(",") if item.strip()]
+            if any(peer_ip in network for network in trusted):
+                forwarded = request.headers.get("cf-connecting-ip") or request.headers.get("x-forwarded-for", "")
+                candidate = forwarded.split(",")[0].strip()
+                try:
+                    return str(ipaddress.ip_address(candidate))
+                except ValueError:
+                    pass
+        except ValueError:
+            pass
+    return peer
 
 
 def rate_limit(name: str, limit: int, window_seconds: int) -> Callable[[Request], None]:

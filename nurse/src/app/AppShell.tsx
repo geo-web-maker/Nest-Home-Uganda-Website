@@ -25,12 +25,14 @@ const NAV = [
   { to: '/history', label: copy.tabs.history, icon: 'hist' },
   { to: '/timesheets', label: copy.tabs.timesheets, icon: 'doc' },
   { to: '/mail', label: copy.mail.title, icon: 'mail' },
+  { to: '/audit', label: 'Activity', icon: 'hist' },
   { to: '/profile', label: copy.tabs.profile, icon: 'user' },
 ] as const;
 
 function navIsCurrent(pathname: string, to: string) {
   if (to === '/') return pathname === '/' || pathname.startsWith('/visit/') || pathname.startsWith('/active/');
   if (to === '/mail') return pathname === '/mail' || pathname.startsWith('/mail/');
+  if (to === '/audit') return pathname === '/audit' || pathname.startsWith('/audit/');
   if (to === '/profile') return pathname === '/profile' || pathname === '/sync';
   return pathname === to || pathname.startsWith(`${to}/`);
 }
