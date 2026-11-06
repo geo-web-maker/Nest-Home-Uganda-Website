@@ -44,8 +44,7 @@ test('nurse mail reads sanitized rich content and queues an offline rich draft f
   await expect(editor).toBeVisible();
   await editor.fill('Saved securely while offline.');
   await sheet.getByRole('button', { name: 'Send' }).click();
-  const confirm = sheet.getByRole('alertdialog', { name: 'Review before sending' });
-  await confirm.getByRole('button', { name: 'Confirm send' }).click();
+  // A single-recipient message without attachments sends straight away; no review popup.
   await expect(page.getByText('Waiting to send', { exact: true })).toBeVisible();
   expect(sent.some((item) => item.path.endsWith('/send'))).toBe(false);
 

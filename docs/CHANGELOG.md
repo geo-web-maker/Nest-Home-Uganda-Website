@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-06 - Mail reply send fix and fewer dialogs
+
+- Reply drafts no longer store the internal message id as `In-Reply-To`; the server resolves it to the parent's Message-ID header, keeps it across autosaves, and the outbound/MIME code drops malformed values.
+- Compose (admin and nurse): draft writes are serialised, send errors close the review popup and show beside Send, closing keeps the draft, and the review popup only appears for Bcc, attachments or more than 3 recipients.
+- Admin dialogs: inline-validated reason prompts, a single Adjust form, no second confirm when cancelling a visit, named confirm buttons, focus kept on autofocused fields.
+- `render.yaml` (both): added missing mail, storage, cookie and first-admin variables.
+- Not run: tests and type-check (dependencies not installed here); only syntax checks and Python compilation.
+
 ## 2026-10-31 - Mail module Phase 1 foundation
 
 - Added a dedicated async Postgres pool for mail (PgBouncer-safe statement cache settings), transaction-locked numbered idempotent migrations, and the complete initial mail schema (mailboxes, members, messages, mailbox copies, attachments, outbox, suppression, counters, settings, audit and TOTP storage).

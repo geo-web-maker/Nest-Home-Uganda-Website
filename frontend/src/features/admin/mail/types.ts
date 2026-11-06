@@ -40,6 +40,7 @@ export type MailAttachment = {
 export type MailDetail = {
   mailbox_message_id: string;
   message_id: string;
+  message_id_header?: string | null;
   from_address: string;
   from_name?: string | null;
   subject: string;

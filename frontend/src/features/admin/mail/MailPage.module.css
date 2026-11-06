@@ -107,7 +107,14 @@
 }
 .composeForm {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.25rem;
+  min-width: 0;
+  max-width: 100%;
+}
+.composeForm > * {
+  min-width: 0;
+  max-width: 100%;
 }
 .mobileBack {
   display: none;
@@ -191,3 +198,7 @@
 .recipientMenu li em { grid-row: 1; grid-column: 2; font-style: normal; font-size: .72rem; opacity: .6; align-self: center; }
 .recipientMenu li[data-active="true"] { background: color-mix(in srgb, var(--gold, #c39a3a) 18%, transparent); }
 .recipientError { margin: 0; color: #b3261e; font-size: .85rem; }
+
+/* Undo-send bar: stays in view above the phone bottom nav while the send is held. */
+.undoBar { position: fixed; z-index: 120; left: 50%; transform: translateX(-50%); bottom: calc(70px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: .5rem; max-width: calc(100vw - 1.5rem); padding: .6rem .8rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surf); color: var(--ink); box-shadow: var(--shadow-2, var(--shadow-1)); }
+@media (min-width: 1040px) { .undoBar { bottom: 1.5rem; } }

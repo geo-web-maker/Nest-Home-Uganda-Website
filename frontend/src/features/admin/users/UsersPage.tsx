@@ -171,7 +171,7 @@ export function UsersPage() {
             variant="outline"
             disabled={!canWrite || remove.isPending || item.id === current?.id}
             onClick={async () => {
-              if (await dialogs.confirm(t('users.confirmDelete', { name: item.name || item.email })))
+              if (await dialogs.confirm(t('users.confirmDelete', { name: item.name || item.email }), { confirmLabel: 'Delete' }))
                 remove.mutate(item.id);
             }}
           >

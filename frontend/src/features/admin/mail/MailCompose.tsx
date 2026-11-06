@@ -26,6 +26,8 @@ interface Props {
   seed: ComposeSeed;
   onClose: () => void;
   onDone: (outcome: 'sent' | 'saved' | 'deleted') => void;
+  /** The draft is saved and ready; the page holds it briefly so the person can undo before it is sent. */
+  onSendLater: (pending: { draftId: string; mailboxId: string; seed: ComposeSeed }) => void;
 }
 
 function escapeHtml(value: string): string {
@@ -48,7 +50,7 @@ function asMailAttachment(upload: NonNullable<ComposeSeed['attachments']>[number
 }
 
 /** Shared rich composer. Drafts are autosaved server-side; uploads, quote data and send guards share one draft id. */
-export function MailCompose({ mailboxId, seed, onClose, onDone }: Props) {
+export function MailCompose({ mailboxId, seed, onClose, onDone, onSendLater }: Props) {
   const { t } = useTranslation('admin');
   const uploadClient = useMemo(() => ({ post: <T,>(path: string, body: unknown) => apiClient.post<T>(path, body) }), []);
   const uploader = useAttachmentUploader(uploadClient);
@@ -68,10 +70,9 @@ export function MailCompose({ mailboxId, seed, onClose, onDone }: Props) {
   const [uploads, setUploads] = useState<Upload[]>((seed.attachments ?? []).map((file) => asMailAttachment(file)));
   const [busy, setBusy] = useState<'' | 'send' | 'save' | 'delete' | 'attach'>('');
   const [error, setError] = useState('');
-  const [sendConfirm, setSendConfirm] = useState(false);
-  const [plainConfirm, setPlainConfirm] = useState(false);
   const [editorNotice, setEditorNotice] = useState('');
   const picker = useRef<HTMLInputElement>(null);
+  const errorBox = useRef<HTMLDivElement>(null);
   const initialSnapshot = useRef(JSON.stringify({ to: seed.to.join(', '), cc: seed.cc.join(', '), bcc: seed.bcc.join(', '), subject: seed.subject, body: initialFormat === 'plain' ? seed.body : '', bodyHtml: initialFormat === 'html' ? (seed.bodyHtml || plainToHtml(seed.body)) : '', bodyFormat: initialFormat, quotedHtml: seed.quotedHtml ?? null, removeQuote: false, attachments: (seed.attachments ?? []).map(asMailAttachment) }));
   const [closeConfirm, setCloseConfirm] = useState(false);
 
@@ -84,7 +85,6 @@ export function MailCompose({ mailboxId, seed, onClose, onDone }: Props) {
   const canSend = toList.length > 0 && bad.length === 0 && subject.trim() !== '' && (hasBody || Boolean(seed.quote || quoteHtml)) && busy === '' && !uploader.busy;
 
   const dirty = JSON.stringify({ to, cc, bcc, subject, body: format === 'plain' ? body : '', bodyHtml: format === 'html' ? bodyHtml : '', bodyFormat: format, quotedHtml: quoteHtml, removeQuote, attachments: uploads }) !== initialSnapshot.current;
-  const requestClose = () => { if (dirty) setCloseConfirm(true); else onClose(); };
 
   useEffect(() => {
     if (!dirty) return;
@@ -120,7 +120,16 @@ export function MailCompose({ mailboxId, seed, onClose, onDone }: Props) {
     if (created.attachments?.length) setUploads(created.attachments as Upload[]);
   }, [seed.quote?.kind, foldQuoteIntoBody]);
 
-  const ensureDraft = useCallback(async (): Promise<string> => {
+  // Autosave, attach and send all write the same draft. Running them one after another stops a
+  // quick Send from creating a second copy of the reply while the first autosave is still in flight.
+  const writeQueue = useRef<Promise<unknown>>(Promise.resolve());
+  const serial = useCallback(<T,>(work: () => Promise<T>): Promise<T> => {
+    const next = writeQueue.current.then(work, work);
+    writeQueue.current = next.catch(() => undefined);
+    return next;
+  }, []);
+
+  const ensureDraft = useCallback((): Promise<string> => serial(async () => {
     const activeDraftId = draftIdRef.current;
     if (activeDraftId) {
       await apiClient.put(`/mail/drafts/${activeDraftId}`, { ...payload, quote: undefined });
@@ -131,9 +140,9 @@ export function MailCompose({ mailboxId, seed, onClose, onDone }: Props) {
     setDraftId(created.id);
     adoptCreated(created);
     return created.id;
-  }, [payload, adoptCreated]);
+  }), [payload, adoptCreated, serial]);
 
-  const autosave = useCallback(async (value: typeof payload) => {
+  const autosave = useCallback((value: typeof payload) => serial(async () => {
     if (busy === 'send' || busy === 'delete') return;
     if (!value.subject.trim() && !value.body_text.trim() && !value.to.length && !value.cc.length && !value.bcc.length && !seed.quote) return;
     const activeDraftId = draftIdRef.current;
@@ -144,24 +153,44 @@ export function MailCompose({ mailboxId, seed, onClose, onDone }: Props) {
       setDraftId(created.id);
       adoptCreated(created);
     }
-  }, [busy, seed.quote, adoptCreated]);
+  }), [busy, seed.quote, adoptCreated, serial]);
   const autosaveStatus = useDraftAutosave(payload, autosave, 1000);
 
   async function run(kind: 'send' | 'save' | 'delete' | 'attach', work: () => Promise<void>) {
     setBusy(kind);
     setError('');
     try { await work(); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : kind === 'send' ? t('mail.sendError') : t('mail.actionError')); }
+    catch (cause) {
+      setError(cause instanceof Error && cause.message ? cause.message : kind === 'send' ? t('mail.sendError') : t('mail.actionError'));
+      setCloseConfirm(false);
+    }
     finally { setBusy(''); }
   }
 
   const send = () => run('send', async () => {
     const id = await ensureDraft();
-    await apiClient.post(`/mail/drafts/${id}/send`, { mailbox_id: mailboxId });
-    setSendConfirm(false);
-    onDone('sent');
+    onSendLater({
+      draftId: id,
+      mailboxId,
+      seed: {
+        draftId: id, to: toList, cc: ccList, bcc: bccList, subject, body, bodyHtml: format === 'html' ? bodyHtml : undefined, bodyFormat: format,
+        quotedHtml: removeQuote ? null : quoteHtml, inReplyTo: seed.inReplyTo,
+        attachments: uploads.map((file) => ({ id: file.id, filename: file.filename, size: file.size_bytes, content_type: file.content_type, scan_state: file.scan_state, blocked_reason: file.blocked_reason, disposition: file.disposition, content_id: file.content_id })),
+      },
+    });
   });
   const save = () => run('save', async () => { await ensureDraft(); onDone('saved'); });
+  useEffect(() => { if (error) errorBox.current?.scrollIntoView?.({ block: 'nearest' }); }, [error]);
+  const hasContent = Boolean(subject.trim() || hasBody || toList.length || ccList.length || bccList.length || uploads.length);
+  // Closing keeps the draft instead of asking: autosave already stores it, so only a failed
+  // autosave or an address that cannot be saved needs the person to decide.
+  const requestClose = () => {
+    if (!dirty || !hasContent) { onClose(); return; }
+    if (autosaveStatus === 'error' || bad.length > 0) { setCloseConfirm(true); return; }
+    void save();
+  };
+  // One click sends, like any mail app. Recipients, subject and attachments are visible in the form itself.
+  const requestSend = () => { void send(); };
   const discard = () => run('delete', async () => {
     if (draftIdRef.current) await apiClient.delete(`/mail/drafts/${draftIdRef.current}`);
     onDone('deleted');
@@ -194,20 +223,23 @@ export function MailCompose({ mailboxId, seed, onClose, onDone }: Props) {
     setUploads((current) => current.filter((upload) => upload.id !== attachment.id));
   });
 
-  const showPlainModeConfirmation = () => setPlainConfirm(true);
-  const confirmPlainMode = () => {
-    setBody(htmlToText(bodyHtml));
+  // Switching to plain text never asks: the rich version is kept, and switching back restores it
+  // as long as the plain text was not edited in between.
+  const richBackup = useRef<{ html: string; text: string } | null>(null);
+  const showPlainModeConfirmation = () => {
+    const text = htmlToText(bodyHtml);
+    richBackup.current = { html: bodyHtml, text };
+    setBody(text);
     setFormat('plain');
-    setPlainConfirm(false);
   };
   const switchToRich = () => {
-    setBodyHtml(plainToHtml(body));
+    const backup = richBackup.current;
+    setBodyHtml(backup && backup.text === body ? backup.html : plainToHtml(body));
     setFormat('html');
   };
 
   return <AdminMailUiProvider><Modal id="mail-compose-title" title={t('mail.compose')} onClose={requestClose} closeLabel={t('mail.close')}>
     <div className={styles.composeForm}>
-      {error ? <Notice tone="error" role="alert">{error}</Notice> : null}
       {editorNotice ? <Notice tone="info">{editorNotice}</Notice> : null}
       <RecipientInput label={t('mail.to')} value={to} onChange={setTo} placeholder={t('mail.toHint')} error={recipientError} exclude={[...ccList, ...bccList]} />
       {showCc ? <>
@@ -229,22 +261,13 @@ export function MailCompose({ mailboxId, seed, onClose, onDone }: Props) {
       {uploads.length ? <AttachmentList attachments={uploads} onRemove={(attachment) => void removeUpload(attachment)} actionLabel={t('mail.remove')} /> : null}
       <p className={styles.hint}>{t('mail.externalWarning')}</p>
       <p className="mr-autosave-status" role="status">{autosaveStatus === 'saving' ? 'Saving draft…' : autosaveStatus === 'error' ? 'Draft autosave failed; save manually.' : draftId ? 'Draft saved' : 'Draft changes will be saved automatically'}</p>
+      {error ? <div ref={errorBox}><Notice tone="error" role="alert">{error}</Notice></div> : null}
       <ButtonGroup spaced>
-        <Button disabled={!canSend} onClick={() => setSendConfirm(true)}>{t('mail.send')}</Button>
+        <Button disabled={!canSend} onClick={requestSend}>{busy === 'send' ? t('mail.sending') : t('mail.send')}</Button>
         <Button variant="outline" disabled={busy !== '' || bad.length > 0} onClick={() => void save()}>{t('mail.saveDraft')}</Button>
         <Button variant="outline" disabled={busy !== ''} onClick={() => void discard()}>{t('mail.deleteDraft')}</Button>
       </ButtonGroup>
       {closeConfirm ? <ConfirmPopup labelledBy="mail-close-confirm-title" onDismiss={() => setCloseConfirm(false)}><h3 id="mail-close-confirm-title">Save your changes?</h3><p>Your draft has changed since it was opened.</p><ButtonGroup spaced><Button disabled={busy !== ''} onClick={() => void save()}>Save draft and close</Button><Button variant="outline" disabled={busy !== ''} onClick={() => void discard()}>Discard changes</Button><Button variant="outline" onClick={() => setCloseConfirm(false)}>Keep editing</Button></ButtonGroup></ConfirmPopup> : null}
-      {sendConfirm ? <ConfirmPopup labelledBy="mail-send-confirm-title" onDismiss={() => { if (busy === '') setSendConfirm(false); }}>
-        <h3 id="mail-send-confirm-title">Review before sending</h3>
-        <dl><dt>To</dt><dd>{toList.join(', ') || '—'}</dd><dt>Cc</dt><dd>{ccList.join(', ') || '—'}</dd><dt>Bcc</dt><dd>{bccList.length ? `${bccList.join(', ')} (hidden from other recipients)` : '—'}</dd><dt>Subject</dt><dd>{subject || '—'}</dd><dt>Attachments</dt><dd>{uploads.length ? uploads.map((file) => file.filename).join(', ') : 'None'}</dd></dl>
-        <p>Check the recipients and attachments. Sending cannot be undone.</p>
-        <ButtonGroup spaced><Button disabled={!canSend} onClick={() => void send()}>{busy === 'send' ? t('mail.sending') : 'Confirm send'}</Button><Button variant="outline" disabled={busy !== ''} onClick={() => setSendConfirm(false)}>Go back</Button></ButtonGroup>
-      </ConfirmPopup> : null}
-      {plainConfirm ? <ConfirmPopup labelledBy="mail-plain-confirm-title" onDismiss={() => setPlainConfirm(false)}>
-        <h3 id="mail-plain-confirm-title">Switch to plain text?</h3><p>Formatting, tables and links will be converted to plain text. This cannot be undone in the current editor session.</p>
-        <ButtonGroup spaced><Button onClick={confirmPlainMode}>Switch to plain text</Button><Button variant="outline" onClick={() => setPlainConfirm(false)}>Keep rich text</Button></ButtonGroup>
-      </ConfirmPopup> : null}
     </div>
   </Modal></AdminMailUiProvider>;
 }

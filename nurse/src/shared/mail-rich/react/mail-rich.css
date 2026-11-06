@@ -72,3 +72,18 @@
 .mr-colour-tool[data-variant="highlight"] .mr-colour-glyph { padding: 0 .25rem; border-radius: .2rem; background: var(--swatch); color: #202124; }
 .mr-colour-tool[data-variant="highlight"] .mr-colour-glyph::after { display: none; }
 .mr-colour-tool input[type="color"] { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+
+/* Mobile fit: nothing in the editor may be wider than the screen. */
+.mr-editor { grid-template-columns: minmax(0, 1fr); max-width: 100%; }
+.mr-editor > * { min-width: 0; max-width: 100%; }
+.mr-editor-toolbar { box-sizing: border-box; max-width: 100%; }
+.mr-editor-content { box-sizing: border-box; max-width: 100%; overflow-x: auto; }
+.mr-editor-content table { display: block; overflow-x: auto; width: max-content; min-width: 100%; max-width: 100%; }
+.mr-quoted, .mr-paper { max-width: 100%; overflow-x: auto; }
+.mr-quoted table, .mr-paper table { display: block; overflow-x: auto; }
+.mr-composer-mode, .mr-upload-actions { min-width: 0; }
+.mr-send-confirm { box-sizing: border-box; max-width: 100%; }
+@media (max-width: 560px) {
+  .mr-editor-toolbar .mr-editor-tool, .mr-colour-tool { min-width: 2.25rem; width: 2.25rem; height: 2.25rem; min-height: 2.25rem; }
+  .mr-editor-size select { max-width: 8.5rem; }
+}

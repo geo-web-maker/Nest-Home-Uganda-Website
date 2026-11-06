@@ -283,7 +283,7 @@ export function CareWorkspace() {
   }
 
   async function resolveReviewFlag(flagId: string) {
-    const reason = await dialogs.prompt('Resolution note (at least 3 characters)');
+    const reason = await dialogs.prompt('Resolution note', '', { minLength: 3, multiline: true, confirmLabel: 'Resolve' });
     if (!reason || reason.trim().length < 3) return;
     setBusy(true);
     setError('');
@@ -361,6 +361,7 @@ export function CareWorkspace() {
     if (
       !await dialogs.confirm(
         'Anonymise this client and delete associated photo assets? This action cannot be undone.',
+        { confirmLabel: 'Anonymise client' },
       )
     )
       return;
@@ -592,7 +593,7 @@ export function CareWorkspace() {
                           <Button variant="outline"
                             type="button"
                             onClick={async () => {
-                              const reason = await dialogs.prompt('Reason for cancelling this visit');
+                              const reason = await dialogs.prompt('Reason for cancelling this visit', '', { minLength: 3, multiline: true, confirmLabel: 'Cancel visit' });
                               if (reason?.trim())
                                 void runRowAction(
                                   `/admin/care/visits/${encodeURIComponent(String(item.id ?? ''))}/cancel`,
@@ -619,7 +620,7 @@ export function CareWorkspace() {
                             type="button"
                             onClick={async () => {
                               const id = String(item.id ?? '');
-                              const reason = await dialogs.prompt('Reason for hiding this photo');
+                              const reason = await dialogs.prompt('Reason for hiding this photo', '', { minLength: 3, multiline: true, confirmLabel: 'Hide photo' });
                               if (reason?.trim())
                                 void runRowAction(
                                   `/admin/care/photos/${encodeURIComponent(id)}/hide`,
@@ -645,7 +646,7 @@ export function CareWorkspace() {
                           <Button variant="outline"
                             type="button"
                             onClick={async () => {
-                              const note = await dialogs.prompt('Resolution note');
+                              const note = await dialogs.prompt('Resolution note', '', { minLength: 3, multiline: true, confirmLabel: 'Resolve' });
                               if (note?.trim())
                                 void runRowAction(
                                   `/admin/care/alerts/${encodeURIComponent(String(item.id ?? ''))}/resolve`,
@@ -672,7 +673,7 @@ export function CareWorkspace() {
                           <Button variant="outline"
                             type="button"
                             onClick={async () => {
-                              const note = await dialogs.prompt('Reason for sending back');
+                              const note = await dialogs.prompt('Reason for sending back', '', { minLength: 3, multiline: true, confirmLabel: 'Send back' });
                               if (note?.trim())
                                 void runRowAction(
                                   `/admin/care/timesheets/${encodeURIComponent(String(item.id ?? ''))}/send-back`,

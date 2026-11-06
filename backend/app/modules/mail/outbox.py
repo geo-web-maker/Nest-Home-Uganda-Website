@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import asyncio
 import hashlib
 import logging
@@ -264,8 +265,9 @@ async def drain(limit: int = 20) -> int:
             from_address = f"{row['local_part']}@{domain}" if row["local_part"] else ""
             headers = {"X-Mailin-custom": str(row["id"])}
             stable_message_id = str(row["message_id_header"] or f"<{row['id']}@{domain or 'nest.local'}>")
-            if row["in_reply_to"]:
-                headers["In-Reply-To"] = str(row["in_reply_to"])
+            reply_value = str(row["in_reply_to"] or "").strip()
+            if re.match(r"^<[^<>\s@]+@[^<>\s@]+>$", reply_value):
+                headers["In-Reply-To"] = reply_value
             if row["references_header"]:
                 headers["References"] = str(row["references_header"])
             elif row["message_id_header"]:

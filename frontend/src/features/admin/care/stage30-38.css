@@ -59,7 +59,7 @@
 @media (max-width: 560px) { .stage-date-navigation { width: 100%; } .stage-week-grid { grid-template-columns: repeat(7, minmax(8rem, 1fr)); } }
 @media (max-width: 840px) {
   .stage-summary-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .stage-grid, .stage-detail-grid, .stage-settings-grid { grid-template-columns: 1fr; }
+  .stage-grid, .stage-detail-grid, .stage-settings-grid, .stage-form-columns { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 560px) {
   .stage-summary-strip { gap: .5rem; }

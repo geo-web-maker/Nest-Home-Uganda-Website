@@ -16,6 +16,8 @@ services:
         value: "true"
       - key: TRUST_PROXY
         value: "true"
+      - key: COOKIE_SAMESITE
+        value: none            # the admin and nurse apps are on other origins; requires HTTPS
       - key: MONGODB_URI
         sync: false
       - key: MONGODB_DB
@@ -49,6 +51,8 @@ services:
       - key: NEST_PG_URL
         sync: false
       - key: NEST_MAIL_SECRET_KEY
+        sync: false
+      - key: NEST_MAIL_DOMAIN
         sync: false
       - key: S3_KEY
         sync: false

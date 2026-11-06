@@ -46,6 +46,11 @@ describe('buildSeed', () => {
     expect(seed.body).toBe('');
   });
 
+  it('threads on the real Message-ID header, not the internal row id, when the message has one', () => {
+    const seed = buildSeed('reply', { ...source, message_id_header: '<orig@mail.test>' }, ctx);
+    expect(seed.inReplyTo).toBe('<orig@mail.test>');
+  });
+
   it('does not stack Re: prefixes', () => {
     expect(buildSeed('reply', { ...source, subject: 're: Rota' }, ctx).subject).toBe('re: Rota');
   });
