@@ -118,7 +118,7 @@ export function MailScreen() {
         state: 'draft', savedAt: new Date().toISOString(),
       }).then(() => reloadDrafts()).catch(() => setProblem(copy.mail.draftStoreError));
     }, 750);
-    return () => window.clearTimeout(handle);
+  return () => window.clearTimeout(handle);
   }, [composer, ownerId, reloadDrafts]);
 
 
@@ -185,6 +185,18 @@ export function MailScreen() {
     try {
       await apiRequest(`/mail/messages/${message.mailbox_message_id}`, { method: 'PATCH', body: JSON.stringify(changes) });
       if (leaves) setSelectedId('');
+      await refresh();
+    } catch {
+      setError(copy.mail.actionError);
+    }
+  };
+
+  const reportSpam = async (message: CachedMessage) => {
+    if (!navigator.onLine) { setNotice(copy.mail.offlineAction); return; }
+    try {
+      await apiRequest(`/mail/messages/${message.mailbox_message_id}/report-spam`, { method: 'POST' });
+      setSelectedId('');
+      setNotice(copy.mail.spamReported);
       await refresh();
     } catch {
       setError(copy.mail.actionError);
@@ -405,6 +417,15 @@ export function MailScreen() {
     </select>
   </div>;
 
+  const inRestoreFolder = folder === 'trash' || folder === 'spam';
+  const messageActions = selected ? [
+    { key: 'forward', label: copy.mail.forward, onSelect: () => startForward(false), disabled: !online },
+    { key: 'forward-eml', label: copy.mail.forwardAsAttachment, onSelect: () => startForward(true), disabled: !online },
+    { key: 'star', label: selected.is_starred ? copy.mail.unstar : copy.mail.star, onSelect: () => void change(selected, { is_starred: !selected.is_starred }), disabled: !online },
+    { key: 'unread', label: copy.mail.markUnread, onSelect: () => void change(selected, { is_read: false }, true), disabled: !online },
+    { key: 'trash', label: inRestoreFolder ? copy.mail.restore : copy.mail.trash, onSelect: () => void change(selected, { folder: inRestoreFolder ? 'inbox' : 'trash' }, true), disabled: !online },
+    ...(selected.origin === 'inbound' && folder !== 'spam' ? [{ key: 'spam', label: copy.mail.reportSpam, onSelect: () => void reportSpam(selected), disabled: !online }] : []),
+  ] : [];
   return <section className="screen mail-screen" aria-labelledby="mail-heading">
     <header className="screen-heading">
       <div><p className="eyebrow">{copy.mail.eyebrow}</p><h2 id="mail-heading">{copy.mail.title}</h2></div>
@@ -436,16 +457,23 @@ export function MailScreen() {
         <PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={() => setSelectedId('')}>{copy.mail.backToList}</PillButton>
         <PillButton type="button" tone="forest" size="sm" showArrow={false} onClick={startReply} disabled={!online}>{copy.mail.reply}</PillButton>
         <PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={startReplyAll} disabled={!online}>{copy.mail.replyAll}</PillButton>
-        <PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={() => startForward(false)} disabled={!online}>{copy.mail.forward}</PillButton>
-        <PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={() => startForward(true)} disabled={!online}>{copy.mail.forwardAsAttachment}</PillButton>
-        <PillButton type="button" tone="ghost" size="sm" showArrow={false} disabled={!online} onClick={() => void change(selected, { is_starred: !selected.is_starred })}>{selected.is_starred ? copy.mail.unstar : copy.mail.star}</PillButton>
-        <PillButton type="button" tone="ghost" size="sm" showArrow={false} disabled={!online} onClick={() => void change(selected, { is_read: false }, true)}>{copy.mail.markUnread}</PillButton>
-        <PillButton type="button" tone="ghost" size="sm" showArrow={false} disabled={!online} onClick={() => void change(selected, { folder: folder === 'trash' || folder === 'spam' ? 'inbox' : 'trash' }, true)}>{folder === 'trash' || folder === 'spam' ? copy.mail.restore : copy.mail.trash}</PillButton>
       </div>
       <h3>{selected.subject || copy.mail.noSubject}</h3>
-      {selected.origin === 'inbound' && <Banner tone="warn">{copy.mail.externalBanner}</Banner>}
-      <p className="mail-meta">{copy.mail.from}: {selected.from_name ? `${selected.from_name} <${selected.from_address}>` : selected.from_address}</p>
-      <p className="mail-meta">{new Date(selected.received_at).toLocaleString()}</p>
+      <details className="mail-sender">
+        <summary>
+          <span className="mail-avatar" aria-hidden="true">{(selected.from_name || selected.from_address || '?').trim().charAt(0).toUpperCase()}</span>
+          <span className="mail-sender-text">
+            <strong>{selected.from_name || selected.from_address}{selected.origin === 'inbound' && <em className="mail-external">{copy.mail.externalChip}</em>}</strong>
+            <small>{new Date(selected.received_at).toLocaleString([], { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</small>
+          </span>
+        </summary>
+        <div className="mail-sender-details">
+          <p>{copy.mail.from}: {selected.from_name ? `${selected.from_name} <${selected.from_address}>` : selected.from_address}</p>
+          {detail && (['to', 'cc'] as const).map((kind) => { const list = detail.recipients.filter((recipient) => recipient.kind === kind); return list.length ? <p key={kind}>{copy.mail[kind]}: {list.map((recipient) => recipient.address).join(', ')}</p> : null; })}
+          <p>{new Date(selected.received_at).toLocaleString()}</p>
+          {selected.origin === 'inbound' && <p className="mail-external-note">{copy.mail.externalBanner}</p>}
+        </div>
+      </details>
       {!detail ? <p role="status">{copy.mail.loading}</p> : <NurseMailUiProvider><MailMessageView message={{
         mailbox_message_id: selected.mailbox_message_id,
         message_id: selected.message_id,
@@ -468,7 +496,7 @@ export function MailScreen() {
         render_notes: detail.render_notes ?? {}, has_remote_images: Boolean(detail.has_remote_images),
         can_download_original: Boolean(detail.can_download_original), delivery: detail.delivery ?? null,
       }} onDownload={(attachment) => void download(attachment.id)} onDownloadOriginal={() => void downloadOriginal()}
-        onExternalLink={(url) => setExternalLink(url)} showRemoteImages={() => undefined} onRetryDelivery={retryDelivery} /></NurseMailUiProvider>}
+        onExternalLink={(url) => setExternalLink(url)} showRemoteImages={() => undefined} onRetryDelivery={retryDelivery} actions={messageActions} /></NurseMailUiProvider>}
     </Card> : <>
       <div className="mail-folders" role="group" aria-label={copy.mail.folder}>
         {FOLDERS.map((name) => <PillButton key={name} type="button" tone={folder === name ? 'forest' : 'ghost'} size="sm" showArrow={false} aria-pressed={folder === name} onClick={() => { setFolder(name); setSelectedId(''); }}>{copy.mail.folders[name]}</PillButton>)}

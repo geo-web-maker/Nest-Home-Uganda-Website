@@ -11,6 +11,7 @@ export function MailMessageView({
   onExternalLink,
   showRemoteImages,
   onRetryDelivery,
+  actions,
 }: {
   message: Message;
   onDownload: (attachment: MailAttachment) => void;
@@ -19,6 +20,8 @@ export function MailMessageView({
   showRemoteImages?: (message: Message) => void;
   /** Re-queues a deferred or failed send; the host calls the API and refreshes the message. */
   onRetryDelivery?: () => Promise<void> | void;
+  /** Extra rows for the More menu, such as Forward, Star or Move to trash. */
+  actions?: { key: string; label: string; onSelect: () => void; disabled?: boolean }[];
 }) {
   const { kit, labels } = useMailUi();
   const [formatted, setFormatted] = useState(Boolean(message.body_html || message.quoted_html));
@@ -37,7 +40,8 @@ export function MailMessageView({
   const notes = message.render_notes ?? {};
   const hasRichBody = Boolean(message.body_html);
   const showImagesStrip = Boolean(message.has_remote_images && showRemoteImages && !remoteImagesEnabled);
-  const hasMore = hasRichBody || Boolean(notes.signed) || Boolean(message.can_download_original && onDownloadOriginal);
+  const menuActions = actions ?? [];
+  const hasMore = menuActions.length > 0 || hasRichBody || Boolean(notes.signed) || Boolean(message.can_download_original && onDownloadOriginal);
   return (
     <article className="mr-message">
       {showImagesStrip || hasMore ? (
@@ -53,14 +57,17 @@ export function MailMessageView({
               <button type="button" className="mr-more-trigger" aria-haspopup="menu" aria-expanded={menuOpen} aria-label={labels.moreOptions} title={labels.moreOptions} onClick={() => setMenuOpen((open) => !open)}><span aria-hidden="true">⋯</span></button>
               {menuOpen ? (
                 <ul className="mr-menu" role="menu" aria-label={labels.moreOptions}>
+                  {menuActions.map((action) => (
+                    <li role="none" key={action.key}><button type="button" role="menuitem" disabled={action.disabled} onClick={() => { setMenuOpen(false); action.onSelect(); }}><span className="mr-menu-check" aria-hidden="true" />{action.label}</button></li>
+                  ))}
                   {hasRichBody ? (
                     <>
-                      <li role="none"><button type="button" role="menuitemradio" aria-checked={formatted} onClick={() => { setFormatted(true); setMenuOpen(false); }}><span className="mr-menu-check" aria-hidden="true">{formatted ? '✓' : ''}</span>{labels.formatted}</button></li>
+                      <li role="none" className={menuActions.length ? 'mr-menu-sep' : undefined}><button type="button" role="menuitemradio" aria-checked={formatted} onClick={() => { setFormatted(true); setMenuOpen(false); }}><span className="mr-menu-check" aria-hidden="true">{formatted ? '✓' : ''}</span>{labels.formatted}</button></li>
                       <li role="none"><button type="button" role="menuitemradio" aria-checked={!formatted} onClick={() => { setFormatted(false); setMenuOpen(false); }}><span className="mr-menu-check" aria-hidden="true">{!formatted ? '✓' : ''}</span>{labels.plainText}</button></li>
                     </>
                   ) : null}
                   {message.can_download_original && onDownloadOriginal ? (
-                    <li role="none" className={hasRichBody ? 'mr-menu-sep' : undefined}><button type="button" role="menuitem" onClick={() => { onDownloadOriginal(); setMenuOpen(false); }}><span className="mr-menu-check" aria-hidden="true" />{labels.downloadOriginal}</button></li>
+                    <li role="none" className={hasRichBody || menuActions.length ? 'mr-menu-sep' : undefined}><button type="button" role="menuitem" onClick={() => { onDownloadOriginal(); setMenuOpen(false); }}><span className="mr-menu-check" aria-hidden="true" />{labels.downloadOriginal}</button></li>
                   ) : null}
                   {notes.signed ? <li role="none" className="mr-menu-note">{labels.signedMessage}</li> : null}
                 </ul>

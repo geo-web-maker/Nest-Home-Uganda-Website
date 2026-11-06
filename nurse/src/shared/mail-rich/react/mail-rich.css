@@ -14,7 +14,8 @@
 .mr-menu { position: absolute; inset-inline-end: 0; top: calc(100% + 4px); z-index: 20; min-width: 230px; max-width: calc(100vw - 2rem); margin: 0; padding: 6px; list-style: none; border: 1px solid var(--mr-line, #ddd); border-radius: 14px; background: var(--surf, Canvas); color: var(--mr-fg); box-shadow: 0 10px 28px rgba(0,0,0,.16); }
 .mr-menu li { margin: 0; }
 .mr-menu button { width: 100%; display: flex; align-items: center; gap: 8px; padding: 11px 12px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: .95rem; color: inherit; text-align: start; cursor: pointer; }
-.mr-menu button:hover, .mr-menu button:focus-visible { background: color-mix(in srgb, currentColor 8%, transparent); }
+.mr-menu button:disabled { opacity: .45; cursor: default; }
+.mr-menu button:hover:not(:disabled), .mr-menu button:focus-visible:not(:disabled) { background: color-mix(in srgb, currentColor 8%, transparent); }
 .mr-menu-check { width: 1.1em; flex: none; font-weight: 700; }
 .mr-menu-sep { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--mr-line, #ddd); }
 .mr-menu-note { padding: 8px 12px; font-size: .85rem; color: var(--mr-muted, #666); }

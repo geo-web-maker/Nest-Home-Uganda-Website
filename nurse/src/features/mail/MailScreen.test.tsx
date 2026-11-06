@@ -90,11 +90,22 @@ describe('nurse MailScreen', () => {
     render(<MailScreen />);
     fireEvent.click(await screen.findByRole('button', { name: /Rota change/ }));
     await screen.findByText('rota.pdf');
-    fireEvent.click(button('Star'));
+    fireEvent.click(button('More options'));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Star' }));
     await waitFor(() => expect(calls().some(([p, i]) => p === '/mail/messages/m1' && i?.method === 'PATCH' && i.body === '{"is_starred":true}')).toBe(true));
-    fireEvent.click(button('Move to trash'));
+    fireEvent.click(button('More options'));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Move to trash' }));
     await waitFor(() => expect(calls().some(([p, i]) => p === '/mail/messages/m1' && i?.body === '{"folder":"trash"}')).toBe(true));
     expect(await screen.findByRole('group', { name: 'Mail folder' })).toBeInTheDocument();
+  });
+
+  it('reports an external message as spam through the report-spam route', async () => {
+    render(<MailScreen />);
+    fireEvent.click(await screen.findByRole('button', { name: /Rota change/ }));
+    await screen.findByText('rota.pdf');
+    fireEvent.click(button('More options'));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Report spam' }));
+    await waitFor(() => expect(calls().some(([p, i]) => p === '/mail/messages/m1/report-spam' && i?.method === 'POST')).toBe(true));
   });
 
   it('replies with recipient, subject and thread link filled in, and sends through one server draft', async () => {
@@ -211,7 +222,8 @@ describe('nurse MailScreen', () => {
     act(() => { window.dispatchEvent(new Event('offline')); });
     expect(await screen.findByText(/Offline — showing saved messages/)).toBeInTheDocument();
     expect(button('Reply')).toBeDisabled();
-    expect(button('Star')).toBeDisabled();
+    fireEvent.click(button('More options'));
+    expect(screen.getByRole('menuitem', { name: 'Star' })).toBeDisabled();
   });
 
   it('says what to do when there is no mailbox', async () => {
