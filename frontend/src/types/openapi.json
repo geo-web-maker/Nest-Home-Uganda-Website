@@ -9498,6 +9498,65 @@
       }
     },
     "/api/v1/admin/agreements/{agreement_id}": {
+      "delete": {
+        "operationId": "admin_delete_voided_api_v1_admin_agreements__agreement_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Delete Voided",
+        "tags": [
+          "admin-agreements"
+        ]
+      },
       "get": {
         "operationId": "admin_get_api_v1_admin_agreements__agreement_id__get",
         "parameters": [
