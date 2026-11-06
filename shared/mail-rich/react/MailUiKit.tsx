@@ -26,6 +26,11 @@ export type MailLabels = {
   deferred: string;
   sent: string;
   failed: string;
+  retryNow: string;
+  retrying: string;
+  deliveryError: string;
+  attemptsLabel: string;
+  nextTry: string;
   messageFormatting: string;
   bold: string;
   italic: string;

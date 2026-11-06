@@ -213,7 +213,7 @@ export function DataRetentionPage() {
   const readiness = useQuery({ queryKey: ['admin', 'retention-readiness'], queryFn: () => apiClient.get<{ items: { id: string; label: string; status: string; detail?: string }[] }>('/admin/care/readiness'), retry: false });
   const keys = ['retention.coordinates_months', 'retention.photos_months', 'retention.sos_months', 'retention.requests_months'];
   const rows = (settings.data?.items ?? []).filter((item) => keys.includes(item.id));
-  return <section className={styles.page}><PageHeader title="Data and retention" />
+  return <section className={styles.page}><PageHeader title="Data and retention" subtitle="Current retention settings, go-live evidence, and data-subject request entry point." />
     {(settings.isPending || readiness.isPending) ? <p role="status">Loading retention and readiness evidence…</p> : null}
     {(settings.isError || readiness.isError) ? <div role="alert"><p>Some retention evidence could not be loaded. No retention job or deletion success is inferred from settings alone.</p><Button variant="outline" onClick={() => { void settings.refetch(); void readiness.refetch(); }}>Retry</Button></div> : null}
     {settings.data ? <div className={styles.card}><DataTable

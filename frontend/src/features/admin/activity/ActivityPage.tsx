@@ -47,7 +47,7 @@ export function ActivityPage() {
   ];
   return (
     <>
-      <PageHeader title={t('nav.activity')} />
+      <PageHeader title={t('nav.activity')} subtitle={t('activity.subtitle')} />
       <FilterBar
         label={t('activity.filtersLabel')}
         onSubmit={() => setPage(1)}

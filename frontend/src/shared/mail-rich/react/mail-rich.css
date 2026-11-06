@@ -1,10 +1,9 @@
 /* GENERATED from shared/mail-rich. Edit there, then run: node scripts/sync-mail-rich.mjs */
-.mr-message { --mr-fg: var(--ink, #1a1a1a); --mr-line: var(--line, #ddd); --mr-muted: var(--mut, #666); color: var(--mr-fg); }
+.mr-message { color: var(--mr-fg, #1a1a1a); }
 .mr-paper { color: #1a1a1a; background: #fff; color-scheme: light; overflow-wrap: anywhere; padding: var(--mr-gap, 12px); border: 1px solid var(--mr-line, #ddd); border-radius: var(--mr-radius, 8px); }
 .mr-paper img { max-width: 100%; height: auto; }
 .mr-paper table { max-width: 100%; border-collapse: collapse; }
-/* Email HTML is written for a light page and carries its own colours, so quoted mail sits on the same light surface as the message body, in light and dark app themes. */
-.mr-quoted { color: #1a1a1a; background: #fff; color-scheme: light; margin-top: var(--mr-gap, 12px); border-left: 3px solid var(--mr-line, #ddd); padding: var(--mr-gap, 12px); border-radius: var(--mr-radius, 8px); overflow-wrap: anywhere; }
+.mr-quoted { margin-top: var(--mr-gap, 12px); border-left: 3px solid var(--mr-line, #ddd); padding-left: var(--mr-gap, 12px); }
 .mr-plain-body { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
 .mr-message-toggle { display: flex; gap: var(--mr-gap, 12px); margin-block: var(--mr-gap, 12px); }
 .mr-section-title { font-size: 1rem; }
@@ -113,3 +112,6 @@
 /* Keep toolbar icons readable whatever global button colours apply. */
 .mr-editor-toolbar .mr-editor-tool { color: var(--ink, inherit); }
 .mr-composer-mode > button, .mr-upload-actions > button { flex: 0 1 auto; max-width: 100%; }
+.mr-delivery-error { overflow-wrap: anywhere; }
+.mr-delivery-error code { white-space: pre-wrap; font-size: .85em; }
+.mr-delivery-meta { font-size: .85em; opacity: .8; }

@@ -231,7 +231,7 @@ export function SettingsPage() {
     ].includes(key);
   return (
     <>
-      <PageHeader title={t('nav.settings')} />
+      <PageHeader title={t('nav.settings')} subtitle={t('settings.subtitle')} />
       <FilterTabs
         label={t('settings.tabsLabel')}
         value={activeTab}

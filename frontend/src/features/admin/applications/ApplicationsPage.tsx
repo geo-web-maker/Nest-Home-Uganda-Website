@@ -70,7 +70,7 @@ export function ApplicationsPage() {
   ];
   return (
     <>
-      <PageHeader title={t('nav.applications')} />
+      <PageHeader title={t('nav.applications')} subtitle={t('applications.subtitle')} />
       <FilterTabs
         label={t('applications.stageFilter')}
         value={stage}

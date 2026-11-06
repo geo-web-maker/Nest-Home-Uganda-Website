@@ -52,7 +52,7 @@ export type MailMessageView = {
   render_notes: RenderNotes;
   has_remote_images: boolean;
   can_download_original: boolean;
-  delivery?: { state: string; reason?: string | null; provider?: string; recipients: { address: string; event: string; at?: string | null }[] } | null;
+  delivery?: MailDelivery | null;
 };
 
 export type DraftPayload = {
@@ -84,3 +84,15 @@ export type DraftResponse = {
   quoted_html?: string | null;
   attachments: MailAttachment[];
 };
+
+export interface MailDelivery {
+  state: string;
+  reason?: string | null;
+  /** Provider or worker error text, already stripped of keys/tokens by the server. */
+  detail?: string | null;
+  attempts?: number;
+  next_attempt_at?: string | null;
+  can_retry?: boolean;
+  provider?: string;
+  recipients: { address: string; event: string; at?: string | null }[];
+}

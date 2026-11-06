@@ -241,6 +241,7 @@ export function ContentPage() {
     <>
       <PageHeader
         title={t('nav.content')}
+        subtitle={t('content.subtitle')}
         actions={
           canWrite && tab !== 'media' ? (
             <Button

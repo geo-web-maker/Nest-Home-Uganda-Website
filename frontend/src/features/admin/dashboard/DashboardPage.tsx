@@ -32,6 +32,7 @@ export function DashboardPage() {
     <>
       <PageHeader
         title={t('nav.dashboard')}
+        subtitle={t('dashboard.subtitle')}
         actions={<Button href="/admin/enquiries">{t('dashboard.viewEnquiries')}</Button>}
       />
       {data.isError ? (

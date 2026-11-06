@@ -354,13 +354,8 @@ async def _threading_header(conn: Any, value: Any) -> str | None:
     if direct:
         return direct
     try:
-        # Compare as uuid so the primary-key index is used (id::text forced a full scan).
-        message_uuid = uuid.UUID(text)
-    except ValueError:
-        return None
-    try:
         header = await conn.fetchval(
-            "SELECT message_id_header FROM message WHERE id=$1 LIMIT 1", message_uuid
+            "SELECT message_id_header FROM message WHERE id::text=$1::text LIMIT 1", text
         )
     except Exception:
         return None
@@ -953,22 +948,11 @@ async def send_draft(user_id: str, draft_id: str, mailbox_id: str):
                 try:
                     async with conn.transaction():
                         target = str(draft["in_reply_to"]).strip()
-                        # The draft already remembers which message it answers. Primary-key lookup:
-                        # no search, and it does not depend on header text matching.
-                        source_id = draft["quote_source_message_id"]
-                        if source_id:
-                            parent = await conn.fetchrow(
-                                "SELECT id,thread_id,message_id_header,references_header FROM message "
-                                "WHERE id=$1 LIMIT 1",
-                                source_id,
-                            )
-                        if not parent:
-                            # Fallback for drafts without a stored source; served by message_header_idx.
-                            parent = await conn.fetchrow(
-                                "SELECT id,thread_id,message_id_header,references_header FROM message "
-                                "WHERE message_id_header=$1 LIMIT 1",
-                                target,
-                            )
+                        parent = await conn.fetchrow(
+                            "SELECT id,thread_id,message_id_header,references_header FROM message "
+                            "WHERE message_id_header=$1 LIMIT 1",
+                            target,
+                        )
                         if not parent:
                             try:
                                 parent_uuid = uuid.UUID(target)
