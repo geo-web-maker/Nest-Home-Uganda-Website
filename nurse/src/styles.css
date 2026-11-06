@@ -1000,3 +1000,14 @@ html, body { overflow-x: clip; max-width: 100%; }
 .password-strength { margin: .25rem 0 .5rem; font-weight: 600; color: var(--mut); }
 .password-strength[data-level="weak"], .password-strength[data-level="short"] { color: #a33a2a; }
 .password-strength[data-level="strong"] { color: #2f6b45; }
+.mail-sender { margin: .25rem 0 .6rem; }
+.mail-sender > summary { list-style: none; display: flex; align-items: center; gap: .65rem; cursor: pointer; }
+.mail-sender > summary::-webkit-details-marker { display: none; }
+.mail-avatar { flex: none; width: 2.4rem; height: 2.4rem; display: grid; place-items: center; border-radius: 999px; background: var(--gold); color: var(--on-gold); font-weight: 700; }
+.mail-sender-text { display: grid; min-width: 0; }
+.mail-sender-text strong { overflow-wrap: anywhere; }
+.mail-sender-text small { color: var(--mut); }
+.mail-external { margin-inline-start: .5rem; padding: .05rem .5rem; border: 1px solid var(--line); border-radius: 999px; font-size: .72rem; font-style: normal; font-weight: 600; color: var(--mut); vertical-align: middle; }
+.mail-sender-details { margin-top: .5rem; padding-inline-start: 3.05rem; font-size: .85rem; color: var(--mut); overflow-wrap: anywhere; }
+.mail-sender-details p { margin: .15rem 0; }
+.mail-external-note { margin-top: .4rem; }
