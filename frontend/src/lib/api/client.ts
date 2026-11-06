@@ -36,6 +36,7 @@ export type ApiClientOptions = {
 
 export type ApiClient = {
   get<T>(path: string, options?: RequestOptions): Promise<T>;
+  getBlob(path: string, options?: RequestOptions): Promise<Blob>;
   post<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T>;
   patch<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T>;
   put<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T>;
@@ -112,6 +113,12 @@ export function createApiClient({
     return response;
   }
 
+  async function requestBlob(path: string, options: RequestOptions = {}): Promise<Blob> {
+    const response = await send('GET', path, undefined, options, false);
+    if (!response.ok) throw await toApiError(response, `GET ${API_PREFIX}${path}`);
+    return response.blob();
+  }
+
   async function request<T>(
     method: string,
     path: string,
@@ -126,6 +133,7 @@ export function createApiClient({
 
   return {
     get: (path, options) => request('GET', path, undefined, options),
+    getBlob: (path, options) => requestBlob(path, options),
     post: (path, body, options) => request('POST', path, body, options),
     patch: (path, body, options) => request('PATCH', path, body, options),
     put: (path, body, options) => request('PUT', path, body, options),

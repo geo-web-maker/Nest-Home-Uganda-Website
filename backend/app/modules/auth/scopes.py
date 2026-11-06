@@ -62,6 +62,11 @@ SCOPES: tuple[Scope, ...] = (
     Scope("mail:archive:read", "Mail", "Read closed mailboxes in the audited archive"),
     Scope("mail:settings:manage", "Mail", "Manage mail settings, backfill and usage"),
     Scope("mail:audit:read", "Mail", "View the mail audit log"),
+    Scope("agreements:read", "Agreements", "View online client agreements and their timelines"),
+    Scope("agreements:write", "Agreements", "Create, edit, send and reissue client agreements"),
+    Scope("agreements:sign", "Agreements", "Countersign agreements on behalf of Bloomwell"),
+    Scope("agreements:void", "Agreements", "Void an agreement after authenticator verification"),
+    Scope("agreements:templates", "Agreements", "Manage agreement wording and email/SMS templates"),
 )
 
 ALL_SCOPE_IDS: frozenset[str] = frozenset(s.id for s in SCOPES)
@@ -111,6 +116,7 @@ SCOPE_PRESETS: dict[str, frozenset[str]] = {
             "timesheets:read",
             "timesheets:write",
             "care-reports:read",
+            "agreements:read",
         }
     ),
     "admin": frozenset(
@@ -133,6 +139,10 @@ SCOPE_PRESETS: dict[str, frozenset[str]] = {
             "timesheets:write",
             "care-reports:read",
             "care-reports:export",
+            "agreements:read",
+            "agreements:write",
+            "agreements:void",
+            "agreements:templates",
         }
     ),
     "executive": frozenset(

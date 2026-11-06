@@ -40,6 +40,7 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { path: '/admin/care/schedule', labelKey: 'schedule', scopes: ['visits:read'], icon: 'calendar', group: 'careOperations' },
   { path: '/admin/care/flags', labelKey: 'flags', scopes: ['flags:read'], icon: 'flag', group: 'careOperations' },
   { path: '/admin/care/team', labelKey: 'team', scopes: ['visits:read'], icon: 'users', group: 'careOperations' },
+  { path: '/admin/agreements', labelKey: 'agreements', scopes: ['agreements:read'], icon: 'agreement', group: 'careOperations' },
   // Monitoring
   { path: '/admin/care/dashboard', labelKey: 'liveDashboard', scopes: ['dashboard:view'], icon: 'dashboard', group: 'monitoring' },
   { path: '/admin/care/executive', labelKey: 'executiveCharts', scopes: ['dashboard:view'], icon: 'chart', group: 'monitoring' },

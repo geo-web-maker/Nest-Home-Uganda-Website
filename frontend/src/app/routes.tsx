@@ -13,6 +13,7 @@ import { serviceDetailRoute } from '../features/public/services/serviceDetailRou
 import { teamRoute } from '../features/public/team';
 import { PublicLayout } from './PublicLayout';
 import { Root } from './Root';
+import { AgreementPublicPage } from '../features/public/agreements/AgreementPublicPage';
 
 // Dev-only. Vite replaces import.meta.env.DEV with false in production builds,
 // so the lazy import below is dropped and the page is never built or pre-rendered.
@@ -45,6 +46,9 @@ export const routes: RouteRecord[] = [
           { path: '*', Component: NotFoundPage },
         ],
       },
+      // Public agreement flow is separate from the marketing layout and contains private client data.
+      { path: 'agreement/:token', Component: AgreementPublicPage },
+      { path: 'agreement/:token/review', Component: AgreementPublicPage },
       // Admin: lazy, so the public bundle does not grow. `admin/*` is a splat, so it is not pre-rendered.
       { path: 'admin/*', lazy: () => import('../features/admin/AdminApp') },
       ...devRoutes,

@@ -95,6 +95,9 @@ def test_read_and_write_split(method: str, path: str) -> None:
             ":approve",
             ":export",
             ":use",
+            ":sign",
+            ":void",
+            ":templates",
         )
         assert any(s.endswith(write_capabilities) for s in required)
 

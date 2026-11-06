@@ -204,6 +204,17 @@ async def run_timesheet_generation(today=None) -> int:
     return created
 
 
+async def run_agreement_sweep() -> int:
+    """Run unsigned-agreement expiry and reminder delivery."""
+    try:
+        from app.modules.agreements.service import sweep_agreements
+        return await sweep_agreements()
+    except Exception:
+        log.exception("agreement lifecycle job failed")
+        await _audit_job_failure("run_agreement_sweep")
+        return 0
+
+
 def build_scheduler() -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler(timezone=get_settings().tz)
     scheduler.add_job(
@@ -268,6 +279,7 @@ def build_scheduler() -> AsyncIOScheduler:
     scheduler.add_job(run_mail_housekeeping, "cron", hour=0, minute=5, id="mail_housekeeping", max_instances=1, coalesce=True)
     scheduler.add_job(run_mail_retention, "cron", hour=0, minute=25, id="mail_retention_purge", max_instances=1, coalesce=True)
     scheduler.add_job(run_mail_quota_check, "interval", hours=1, id="mail_quota_check", max_instances=1, coalesce=True)
+    scheduler.add_job(run_agreement_sweep, "interval", minutes=5, id="agreement_lifecycle", max_instances=1, coalesce=True)
     return scheduler
 
 

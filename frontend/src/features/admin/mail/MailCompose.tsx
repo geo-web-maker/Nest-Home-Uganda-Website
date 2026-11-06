@@ -54,6 +54,7 @@ export function MailCompose({ mailboxId, seed, onClose, onDone, onSendLater }: P
   const { t } = useTranslation('admin');
   const uploadClient = useMemo(() => ({ post: <T,>(path: string, body: unknown) => apiClient.post<T>(path, body) }), []);
   const uploader = useAttachmentUploader(uploadClient);
+  const [uploadingName, setUploadingName] = useState('');
   const [to, setTo] = useState(seed.to.join(', '));
   const [cc, setCc] = useState(seed.cc.join(', '));
   const [bcc, setBcc] = useState(seed.bcc.join(', '));
@@ -197,6 +198,8 @@ export function MailCompose({ mailboxId, seed, onClose, onDone, onSendLater }: P
   });
 
   const attachOne = async (file: File, disposition: 'attachment' | 'inline' = 'attachment'): Promise<string | null> => {
+    setUploadingName(file.name);
+    try {
     const id = await ensureDraft();
     const result = await uploader.upload(mailboxId, file, id, { disposition });
     const next: Upload = {
@@ -206,6 +209,9 @@ export function MailCompose({ mailboxId, seed, onClose, onDone, onSendLater }: P
     };
     setUploads((current) => [...current.filter((item) => item.id !== result.id), next]);
     return result.content_id ? `cid:${result.content_id}` : null;
+    } finally {
+      setUploadingName('');
+    }
   };
 
   const pasteImage = async (file: File) => attachOne(file, 'inline');
@@ -256,7 +262,7 @@ export function MailCompose({ mailboxId, seed, onClose, onDone, onSendLater }: P
       </Suspense> : <Field kind="textarea" label={t('mail.message')} rows={10} value={body} onChange={(event) => setBody(event.target.value)} />}
       <div className="mr-upload-actions">
         <input ref={picker} type="file" multiple hidden aria-label={t('mail.attach')} onChange={(event) => attach(event.target.files)} />
-        <Button variant="outline" size="compact" disabled={busy !== '' || uploader.busy} onClick={() => picker.current?.click()}>{busy === 'attach' ? t('mail.attaching') : t('mail.attach')}</Button>
+        <Button variant="outline" size="compact" disabled={busy !== '' || uploader.busy} onClick={() => picker.current?.click()}>{busy === 'attach' ? (uploadingName ? t('mail.attaching', { name: uploadingName.length > 28 ? `${uploadingName.slice(0, 25)}…` : uploadingName }) : t('mail.working')) : t('mail.attach')}</Button>
       </div>
       {uploads.length ? <AttachmentList attachments={uploads} onRemove={(attachment) => void removeUpload(attachment)} actionLabel={t('mail.remove')} /> : null}
       <p className={styles.hint}>{t('mail.externalWarning')}</p>

@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     trusted_proxy_ips: str = ""  # comma-separated IPs/CIDRs allowed to supply forwarding headers
     cookie_samesite: str = "lax"  # "none" for a cross-site frontend (needs Secure)
     turnstile_secret: str = ""
+    turnstile_site_key: str = ""
     sms_provider: str = Field(default="console")  # "console" or "mambosms"
     mambosms_base_url: str = "https://api-mongolia.mambosms.com/v1"
     mambosms_api_key: str = ""
