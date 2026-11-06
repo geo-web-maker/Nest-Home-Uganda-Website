@@ -30,7 +30,9 @@ public_router = APIRouter(prefix="/public/agreements", tags=["public-agreements"
 CanRead = Annotated[Principal, Depends(require_scopes("agreements:read"))]
 CanWrite = Annotated[Principal, Depends(require_scopes("agreements:write"))]
 CanTemplates = Annotated[Principal, Depends(require_scopes("agreements:templates"))]
-CanAgreementWorkflowTest = Annotated[Principal, Depends(require_scopes("agreements:templates", "agreements:sign"))]
+CanNotifications = Annotated[Principal, Depends(require_scopes("agreements:notifications"))]
+CanDiagnostics = Annotated[Principal, Depends(require_scopes("agreements:diagnostics"))]
+CanAgreementWorkflowTest = Annotated[Principal, Depends(require_scopes("agreements:diagnostics", "agreements:sign"))]
 
 
 class InPersonStart(BaseModel):
@@ -112,7 +114,7 @@ async def admin_create(body: AgreementCreate, principal: CanWrite, request: Requ
 
 
 @admin_router.post("/diagnostics/run")
-async def admin_diagnostics_run(principal: CanTemplates, response: Response,
+async def admin_diagnostics_run(principal: CanDiagnostics, response: Response,
                                 mail_totp: str | None = Cookie(default=None)):
     """Run passive readiness checks. No client message is sent."""
     await assert_totp_session(principal, mail_totp)
@@ -132,7 +134,7 @@ async def admin_diagnostics_workflow(principal: CanAgreementWorkflowTest, respon
 
 
 @admin_router.post("/diagnostics/delivery-test/{channel}")
-async def admin_diagnostics_delivery(channel: Literal["email", "sms"], principal: CanTemplates,
+async def admin_diagnostics_delivery(channel: Literal["email", "sms"], principal: CanDiagnostics,
                                      response: Response,
                                      mail_totp: str | None = Cookie(default=None)):
     """Send one clearly labelled test to the authenticated staff member only."""
@@ -246,6 +248,17 @@ async def admin_template_draft(body: TemplateDraft, principal: CanTemplates):
             "template_hash": template.template_hash, "published": False}
 
 
+@admin_router.post("/template/seed")
+async def admin_template_seed(principal: CanTemplates, request: Request,
+                              mail_totp: str | None = Cookie(default=None)):
+    """Install the source-PDF wording. Idempotent: publishes v1 on an empty database,
+    otherwise saves an unpublished draft. Never changes a published version."""
+    await assert_totp_session(principal, mail_totp)
+    from app.modules.agreements.seed import seed_source_template
+    created = await seed_source_template()
+    return {"created": created, "message": "Source template installed." if created else "The source template is already present."}
+
+
 @admin_router.post("/template/{version}/publish")
 async def admin_template_publish(version: int, principal: CanTemplates,
                                  request: Request, mail_totp: str | None = Cookie(default=None)):
@@ -256,7 +269,7 @@ async def admin_template_publish(version: int, principal: CanTemplates,
 
 
 @admin_router.get("/message-templates/{stage_key}/{channel}")
-async def admin_message_template(stage_key: str, channel: Literal["email", "sms"], _: CanTemplates):
+async def admin_message_template(stage_key: str, channel: Literal["email", "sms"], _: CanNotifications):
     template, version, is_default = await messages.get_template(stage_key, channel)
     return {"stage_key": stage_key, "channel": channel, **template.__dict__,
             "version": version, "is_default": is_default}

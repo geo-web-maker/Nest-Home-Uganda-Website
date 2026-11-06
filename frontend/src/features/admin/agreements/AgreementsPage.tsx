@@ -72,9 +72,11 @@ export function AgreementsPage() {
   const hasInk = useRef(false);
   const canWrite = Boolean(user?.is_superadmin || user?.scopes.includes('agreements:write'));
   const canManageTemplates = Boolean(user?.is_superadmin || user?.scopes.includes('agreements:templates'));
+  const canDiagnose = Boolean(user?.is_superadmin || user?.scopes.includes('agreements:diagnostics'));
+  const canViewNotifications = Boolean(user?.is_superadmin || user?.scopes.includes('agreements:notifications') || user?.scopes.includes('agreements:templates'));
   const canSign = Boolean(user?.is_superadmin || user?.scopes.includes('agreements:sign'));
   const canVoid = Boolean(user?.is_superadmin || user?.scopes.includes('agreements:void'));
-  const visibleTabs = tabs.filter((entry) => !['messages', 'template'].includes(entry.id) || canManageTemplates);
+  const visibleTabs = tabs.filter((entry) => entry.id === 'messages' ? canViewNotifications : entry.id === 'template' ? canManageTemplates : true);
 
   const loadList = useCallback(async () => {
     try {
@@ -372,7 +374,7 @@ export function AgreementsPage() {
           </>}
         </section>
       </div>
-      {canManageTemplates && <AgreementDiagnostics canRunWorkflow={canSign} />}
+      {canDiagnose && <AgreementDiagnostics canRunWorkflow={canSign} canSeedTemplate={canManageTemplates} />}
     </div>
   );
 }
