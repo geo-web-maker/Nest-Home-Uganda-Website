@@ -7,6 +7,8 @@ import { apiClient, ApiError } from '../../../lib/api/client';
 import { useAuth } from '../auth/useAuth';
 import styles from './AgreementsPage.module.css';
 import { AgreementDiagnostics } from './AgreementDiagnostics';
+import { AgreementFieldInput } from '../../agreements/AgreementFieldInput';
+import { OWNER_LABEL, SCHEDULE_SECTIONS, fieldLabel, fieldMeta, isBlank, type FieldSection, type ScheduleTab } from '../../agreements/fieldMeta';
 
 type Owner = 'staff' | 'clinical' | 'client' | 'either';
 type AgreementField = { value: unknown; owner: Owner; revision: number; entered_by_staff: boolean };
@@ -37,7 +39,11 @@ const tabs = [
 ] as const;
 type Tab = typeof tabs[number]['id'];
 
-function label(path: string): string { return path.split('.').at(-1)?.replaceAll('_', ' ') ?? path; }
+function label(path: string): string { return fieldLabel(path); }
+function isScheduleTab(value: string): value is ScheduleTab { return value === 'parties' || value === 'schedule_a' || value === 'schedule_b' || value === 'schedule_c'; }
+function outstanding(fields: Record<string, AgreementField>, paths: string[]): string[] {
+  return paths.filter((path) => { const field = fields[path]; return Boolean(field) && (field.owner === 'staff' || field.owner === 'clinical') && isBlank(field.value); });
+}
 function valueText(value: unknown): string {
   if (value === null || value === undefined) return '';
   return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
@@ -332,25 +338,75 @@ export function AgreementsPage() {
         <section className={styles.editorPanel} aria-label="Agreement editor">
           {!selected || !detail ? <div className={styles.empty}><h2>Select an agreement</h2><p>Open an item from the list or create a new agreement.</p></div> : <>
             <div className={styles.editorHeading}><div><h2>{detail.reference}</h2><p>{detail.client_name || 'Client details pending'} · {detail.status.replaceAll('_', ' ')}</p></div><StatusBadge status={statusTone(detail.status)}>{detail.status.replaceAll('_', ' ')}</StatusBadge></div>
-            <nav className={styles.tabs} aria-label="Agreement sections">{visibleTabs.map((entry) => <button type="button" key={entry.id} aria-current={tab === entry.id ? 'page' : undefined} onClick={() => { setTab(entry.id); if (entry.id === 'messages') void loadMessage(messageStage, messageChannel); if (entry.id === 'template') void openTemplate(); }}>{entry.label}</button>)}</nav>
-            {(['parties','schedule_a','schedule_b','schedule_c'] as const).includes(tab as 'parties'|'schedule_a'|'schedule_b'|'schedule_c') && (
-              <div className={styles.fields}>
-                {displayedFields.map(([path, field]) => {
-                  const local = drafts[path] ?? valueText(field.value);
-                  const canClinical = user?.is_superadmin || detail.assigned_nurse_id === user?.id;
-                  const readOnly = !canWrite || field.owner === 'client' || (field.owner === 'clinical' && !canClinical);
-                  const conflict = conflicts[path];
-                  return <div className={styles.field} key={path}>
-                    <label htmlFor={`agreement-${path}`}><span>{label(path)}</span><small>Owner: {field.owner}{field.entered_by_staff ? ' · entered by staff' : ''} · Revision {field.revision}</small></label>
-                    <textarea id={`agreement-${path}`} rows={2} value={local} readOnly={readOnly} onChange={(e) => setDrafts((old) => ({ ...old, [path]: e.target.value }))} />
-                    {field.owner === 'either' && !readOnly && <label className={styles.check}><input type="checkbox" checked={enteredStaff[path] ?? field.entered_by_staff} onChange={(e) => setEnteredStaff((old) => ({ ...old, [path]: e.target.checked }))} /> Entered by staff on client's behalf</label>}
-                    {!readOnly && <Button size="compact" variant="outline" onClick={() => void saveField(path)} disabled={busy || local === valueText(field.value)}>Save field</Button>}
-                    {conflict && <div className={styles.conflict}><p><strong>Another saver updated this field.</strong><br />Current saved value: {conflict.remote || '—'}<br />Your unsaved value: {conflict.local || '—'}</p><Button size="compact" onClick={() => void saveField(path, { value: conflict.local, revision: conflict.revision })} disabled={busy}>Keep my value</Button><Button size="compact" variant="outline" onClick={() => { setDrafts((old) => ({ ...old, [path]: conflict.remote })); setConflicts((old) => { const next = { ...old }; delete next[path]; return next; }); }}>Use saved value</Button></div>}
-                  </div>;
+            <nav className={styles.tabs} aria-label="Agreement sections">{visibleTabs.map((entry) => <button type="button" key={entry.id} aria-current={tab === entry.id ? 'page' : undefined} onClick={() => { setTab(entry.id); if (entry.id === 'messages') void loadMessage(messageStage, messageChannel); if (entry.id === 'template') void openTemplate(); }}>{entry.label}{isScheduleTab(entry.id) && (() => { const count = outstanding(detail.fields, Object.keys(detail.fields).filter((path) => path.startsWith(entry.id === 'parties' ? 'client.' : `${entry.id}.`) || (entry.id === 'parties' && path.startsWith('patient.')))).length; return count ? <span className={styles.tabBadge} aria-label={`${count} to complete`}>{count}</span> : null; })()}</button>)}</nav>
+            {isScheduleTab(tab) && (() => {
+              const config = SCHEDULE_SECTIONS[tab];
+              const known = new Set(config.sections.flatMap((section) => section.paths));
+              const leftovers = displayedFields.map(([path]) => path).filter((path) => !known.has(path));
+              const sections: FieldSection[] = leftovers.length ? [...config.sections, { id: 'other', title: 'Other fields', paths: leftovers }] : config.sections;
+              const currencyField = detail.fields['schedule_b.currency'];
+              const currency = (drafts['schedule_b.currency'] ?? valueText(currencyField?.value)) || 'UGX';
+              const needed = outstanding(detail.fields, sections.flatMap((section) => section.paths));
+              const renderField = (path: string) => {
+                const field = detail.fields[path];
+                if (!field) return null;
+                const meta = fieldMeta(path);
+                const local = drafts[path] ?? valueText(field.value);
+                const canClinical = user?.is_superadmin || detail.assigned_nurse_id === user?.id;
+                const readOnly = !canWrite || field.owner === 'client' || (field.owner === 'clinical' && !canClinical);
+                const conflict = conflicts[path];
+                const blank = isBlank(field.value);
+                const staffNeeds = blank && (field.owner === 'staff' || field.owner === 'clinical');
+                return <div className={`${styles.field} ${meta.kind === 'long' ? styles.wide : ''}`} key={path}>
+                  <label htmlFor={`agreement-${path}`}>
+                    <span>{meta.label}{meta.required && <abbr title="Required before sending" className={styles.req}> *</abbr>}</span>
+                    <span className={`${styles.pill} ${styles[`owner_${field.owner}`]}`}>{OWNER_LABEL[field.owner] ?? field.owner}</span>
+                  </label>
+                  {meta.help && <p className={styles.fieldHelp}>{meta.help}</p>}
+                  <AgreementFieldInput path={path} id={`agreement-${path}`} value={local} readOnly={readOnly} currency={currency}
+                    allowNA={field.owner !== 'client'} onChange={(value) => setDrafts((old) => ({ ...old, [path]: value }))} />
+                  <div className={styles.fieldFoot}>
+                    <span className={blank ? (staffNeeds ? styles.statusNeeded : styles.statusWaiting) : styles.statusDone}>
+                      {!blank ? '✓ Saved' : staffNeeds ? 'Needed before sending' : field.owner === 'client' ? 'Waiting for client' : 'Optional'}
+                      {field.entered_by_staff ? ' · entered by staff' : ''} · rev {field.revision}
+                    </span>
+                    {!readOnly && <Button size="compact" variant="outline" onClick={() => void saveField(path)} disabled={busy || local === valueText(field.value)}>Save</Button>}
+                  </div>
+                  {field.owner === 'either' && !readOnly && <label className={styles.check}><input type="checkbox" checked={enteredStaff[path] ?? field.entered_by_staff} onChange={(e) => setEnteredStaff((old) => ({ ...old, [path]: e.target.checked }))} /> Entered by staff on client's behalf</label>}
+                  {conflict && <div className={styles.conflict}><p><strong>Another saver updated this field.</strong><br />Current saved value: {conflict.remote || '—'}<br />Your unsaved value: {conflict.local || '—'}</p><Button size="compact" onClick={() => void saveField(path, { value: conflict.local, revision: conflict.revision })} disabled={busy}>Keep my value</Button><Button size="compact" variant="outline" onClick={() => { setDrafts((old) => ({ ...old, [path]: conflict.remote })); setConflicts((old) => { const next = { ...old }; delete next[path]; return next; }); }}>Use saved value</Button></div>}
+                </div>;
+              };
+              const computed = detail.schedule_b_computed ?? {};
+              const money = (key: string) => typeof computed[key] === 'number' ? Number(computed[key]).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—';
+              return <div className={styles.schedule}>
+                <div className={styles.guide}>
+                  <h3>{config.title}</h3>
+                  <p>{config.intro}</p>
+                  {(needed.length > 0 || tab === 'schedule_a' || tab === 'schedule_b') && <p className={needed.length ? styles.guideNeeded : styles.guideDone}>{needed.length ? `${needed.length} staff field${needed.length === 1 ? '' : 's'} still to complete or mark N/A before sending.` : '✓ Everything staff need to enter here is complete.'}</p>}
+                </div>
+                {sections.map((section) => {
+                  const paths = section.paths.filter((path) => detail.fields[path]);
+                  if (!paths.length) return null;
+                  const done = paths.filter((path) => !isBlank(detail.fields[path].value)).length;
+                  return <section className={styles.sectionCard} key={section.id} aria-label={section.title}>
+                    <header className={styles.sectionHead}><h4>{section.title}</h4><span className={styles.count}>{done} of {paths.length} filled</span></header>
+                    {section.hint && <p className={styles.fieldHelp}>{section.hint}</p>}
+                    <div className={styles.fields}>{paths.map(renderField)}</div>
+                  </section>;
                 })}
-                {tab === 'schedule_b' && <div className={styles.feeBox}><strong>Live fee calculation</strong><pre>{JSON.stringify(detail.schedule_b_computed, null, 2)}</pre><small>The UGX 50,000 booking fee is additional to the service fees and excluded from the 50/50 advance/balance calculation, as required by clauses 8.2 and 8.4. USD service fees remain separate; no exchange rate is assumed.</small></div>}
-              </div>
-            )}
+                {tab === 'schedule_b' && <div className={styles.feeBox}>
+                  <strong>Live fee calculation</strong>
+                  <dl className={styles.feeTable}>
+                    <div><dt>Booking fee (non-refundable, additional)</dt><dd>UGX {money('booking_fee')}</dd></div>
+                    <div><dt>Total service fees</dt><dd>{String(computed.currency ?? currency)} {money('total_service_fees')}</dd></div>
+                    <div><dt>Advance (50%)</dt><dd>{String(computed.currency ?? currency)} {money('advance')}</dd></div>
+                    <div><dt>Balance (50%)</dt><dd>{String(computed.currency ?? currency)} {money('balance')}</dd></div>
+                    {computed.total_payable_if_ugx !== null && computed.total_payable_if_ugx !== undefined && <div className={styles.feeTotal}><dt>Total payable (UGX)</dt><dd>UGX {money('total_payable_if_ugx')}</dd></div>}
+                  </dl>
+                  <small>Updates when you save the currency or total fee. The UGX 50,000 booking fee is additional to the service fees and excluded from the 50/50 split (clauses 8.2 and 8.4). USD fees stay separate; no exchange rate is assumed.</small>
+                </div>}
+              </div>;
+            })()}
             {tab === 'preview' && <PreviewPanel id={detail.id} />}
             {tab === 'timeline' && <ol className={styles.timeline}>{detail.events.map((event, index) => <li key={`${event.type}-${event.at}-${index}`}><strong>{event.type.replaceAll('_', ' ')}</strong><time>{new Date(event.at).toLocaleString()}</time><small>{event.actor}</small><pre>{JSON.stringify(event.detail, null, 2)}</pre></li>)}</ol>}
             {tab === 'send' && <div className={styles.sendPanel}>

@@ -47,3 +47,35 @@
 
 .messagePreview { margin-top: 1rem; padding: 1rem; border: 1px solid var(--border, #d7ded9); border-radius: 0.75rem; }
 .messagePreview iframe { display: block; width: 100%; min-height: 560px; border: 0; background: #f2f5f2; }
+
+/* Schedule guidance and grouped fields */
+.schedule { display: grid; gap: 16px; }
+.guide { display: grid; gap: 6px; padding: 14px 16px; border-radius: 12px; background: var(--subtle, #f5f7f5); border-left: 4px solid var(--brand, #245d4a); }
+.guide h3 { margin: 0; font-size: 17px; }
+.guide p { margin: 0; color: var(--muted, #53635a); font-size: 14px; line-height: 1.5; }
+.guide .guideNeeded { color: var(--warning-text, #7a4b00); font-weight: 700; }
+.guide .guideDone { color: var(--brand, #245d4a); font-weight: 700; }
+.sectionCard { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--border, #dce3de); border-radius: 12px; }
+.sectionHead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--border, #e6ebe7); padding-bottom: 8px; }
+.sectionHead h4 { margin: 0; font-size: 15px; }
+.count { color: var(--muted, #53635a); font-size: 12px; white-space: nowrap; }
+.wide { grid-column: 1 / -1; }
+.req { color: var(--danger, #a02a1d); text-decoration: none; }
+.pill { flex: 0 0 auto; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: none; background: var(--subtle, #eef2ef); color: var(--muted, #3b4a41); }
+.owner_clinical { background: #e3f0ff; color: #12437a; }
+.owner_staff { background: #e6f4ea; color: #1b5e33; }
+.owner_client { background: #fff1d6; color: #7a4b00; }
+.owner_either { background: #efe7fb; color: #4b2a85; }
+.fieldHelp { margin: 0; color: var(--muted, #53635a); font-size: 12px; line-height: 1.45; }
+.fieldFoot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fieldFoot small, .fieldFoot span { font-size: 11px; }
+.statusDone { color: var(--brand, #245d4a); }
+.statusNeeded { color: var(--warning-text, #7a4b00); font-weight: 700; }
+.statusWaiting { color: var(--muted, #53635a); }
+.tabBadge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 6px; padding: 0 5px; border-radius: 999px; background: var(--warning, #c77700); color: #fff; font-size: 11px; font-weight: 700; }
+.feeTable { display: grid; gap: 6px; margin: 8px 0; }
+.feeTable div { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px dashed var(--border, #d4ddd6); }
+.feeTable dt { margin: 0; }
+.feeTable dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.feeTable .feeTotal { border-bottom: 0; border-top: 2px solid var(--border, #cbd5ce); padding-top: 10px; font-size: 16px; }
+@media (max-width: 640px) { .fields { grid-template-columns: minmax(0, 1fr); } .fieldFoot { flex-wrap: wrap; } }

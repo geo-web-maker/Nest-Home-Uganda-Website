@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { apiRequest } from '../lib/api/client';
 import { AuditScreen } from './AuditScreen';
