@@ -26,7 +26,7 @@ const session = (n: number) => ({
 
 function mockClient() {
   const post = vi.fn();
-  const client = { get: vi.fn(), post, patch: vi.fn(), put: vi.fn(), delete: vi.fn() } satisfies ApiClient;
+  const client = { get: vi.fn(), post, patch: vi.fn(), put: vi.fn(), delete: vi.fn(), getBlob: vi.fn() } satisfies ApiClient;
   return { client, post };
 }
 

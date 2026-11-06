@@ -6,7 +6,7 @@ import { apiClient } from '../../../lib/api/client';
 import { MailPage } from './MailPage';
 
 vi.mock('../../../lib/api/client', () => ({
-  apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), put: vi.fn(), delete: vi.fn() },
+  apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), put: vi.fn(), delete: vi.fn(), getBlob: vi.fn() },
 }));
 
 const box = { id: 'b1', address: 'amina@mail.test', display_name: 'Amina', unread_count: 1 };
