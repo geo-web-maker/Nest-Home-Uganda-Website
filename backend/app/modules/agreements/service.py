@@ -7,7 +7,6 @@ import logging
 import secrets
 from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
-from zoneinfo import ZoneInfo
 from typing import Any, Literal
 
 import httpx
@@ -39,22 +38,6 @@ from app.modules.notifications.service import send_sms
 log = logging.getLogger("app.agreements")
 COMPANY = "Bloomwell Home Care Uganda Limited"
 OPEN_STATUSES = {"draft", "sent", "client_in_progress", "client_signed", "changes_requested"}
-LOCAL_TZ = ZoneInfo("Africa/Kampala")
-
-
-def local_expiry_date(moment: datetime | None) -> str:
-    """Expiry as a Kampala calendar date, e.g. "21 Nov 2026".
-
-    Stored times are UTC; taking .date() of the UTC value shows the wrong day for anything sent
-    between 00:00 and 03:00 Kampala time."""
-    if moment is None:
-        return ""
-    if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=UTC)
-    local = moment.astimezone(LOCAL_TZ)
-    return f"{local.day} {local:%b %Y}"
-
-
 OTP_TTL = timedelta(minutes=10)
 OTP_LOCK = timedelta(minutes=15)
 SESSION_TTL = 60 * 60
@@ -357,25 +340,12 @@ def agreement_detail(doc: Agreement) -> dict[str, Any]:
     }
 
 
-def _record_message_failure(doc: Agreement, stage: str, channel: str, reason: str) -> None:
-    _event(doc, "message_failed", "system", {"stage": stage, "channel": channel, "reason": reason})
-
-
-def _failure_reasons(doc: Agreement, since: int) -> dict[str, str]:
-    """Why each channel failed in the events recorded after index `since`."""
-    out: dict[str, str] = {}
-    for e in doc.events[since:]:
-        if e.type == "message_failed" and e.detail.get("channel"):
-            out[str(e.detail["channel"])] = str(e.detail.get("reason") or "The provider did not accept the message.")
-    return out
-
-
 async def _send_message(doc: Agreement, stage: str, channel: Literal["email", "sms"], *, link: str = "",
                         code: str = "", expires_days: int = 14, reason: str = "", recipient: str | None = None) -> bool:
     template, version, _ = await messages.get_template(stage, channel)
     variables = messages.message_variables(
         doc, link=link, code=code, expires_days=expires_days,
-        expires_date=local_expiry_date(doc.expires_at),
+        expires_date=doc.expires_at.date().isoformat() if doc.expires_at else "",
         reason=reason,
     )
     text_template = template.body
@@ -384,7 +354,6 @@ async def _send_message(doc: Agreement, stage: str, channel: Literal["email", "s
         "subject": template.subject, "preheader": template.preheader,
         "body": template.body, "button": template.button, "footer_note": template.footer_note,
     })
-    fail_reason = ""
     capture = _DIAGNOSTIC_CAPTURE.get()
     if capture is not None:
         if channel == "sms":
@@ -401,12 +370,10 @@ async def _send_message(doc: Agreement, stage: str, channel: Literal["email", "s
         to = recipient or (doc.fields.get(rules.field_key("client.phone")).value if doc.fields.get(rules.field_key("client.phone")) else None)
         phone = normalise_e164(str(to or ""))
         if not phone or not is_mobile(phone):
-            _record_message_failure(doc, stage, channel, "The agreement has no valid mobile number.")
             return False
         ready, _reason = await _channel_delivery_readiness("sms", phone)
         if not ready:
             ok = False
-            fail_reason = _reason
         else:
             try:
                 messages.validate_rendered_sms(rendered)
@@ -423,23 +390,18 @@ async def _send_message(doc: Agreement, stage: str, channel: Literal["email", "s
     else:
         to = recipient or (doc.fields.get(rules.field_key("client.email")).value if doc.fields.get(rules.field_key("client.email")) else None)
         if not isinstance(to, str) or "@" not in to:
-            _record_message_failure(doc, stage, channel, "The agreement has no valid email address.")
             return False
         subject, body_html, plain = messages.render_email(stage, template, variables)
         ready, _reason = await _channel_delivery_readiness("email", to)
         if not ready:
             ok = False
-            fail_reason = _reason
         else:
             result = await get_email_provider().send([to], subject, body_html, plain)
             # SystemMailOutboxAdapter intentionally falls back to a console log on
             # infrastructure errors. That is not delivery and must count as failure.
             ok = bool(result.ok and getattr(result, "provider_message_id", None) != "console")
-            if not ok:
-                fail_reason = "The mail service did not accept the message (it fell back to the console log). Check Mail settings, the Postgres mail database and the outbox."
     _event(doc, "message_sent" if ok else "message_failed", "system", {
         "stage": stage, "channel": channel, "template_version": version,
-        "reason": None if ok else (fail_reason or "The provider did not accept the message."),
         "recipient_hint": mask(str(to)) if channel == "sms" and to else ("email" if to else None),
     })
     await doc.save()
@@ -469,7 +431,6 @@ async def send(doc: Agreement, principal: Principal, body: SendAgreement, ip: st
     doc.status = "sent"
     _event(doc, "send_attempted", principal.user_id, {"channels": body.channels, "expires_days": body.expires_days}, ip)
     await doc.save()
-    events_before = len(doc.events)
     link = messages.public_link(raw_token)
     results = {}
     message_stage = "amendment_sent" if doc.parent_agreement_id else "agreement_sent"
@@ -494,7 +455,7 @@ async def send(doc: Agreement, principal: Principal, body: SendAgreement, ip: st
     await doc.save()
     await audit.record(principal, "agreement.sent", "agreement", str(doc.id), doc.reference,
                        after={"status": doc.status, "channels": body.channels, "delivery": results}, ip_hash=ip)
-    return {"agreement": agreement_detail(doc), "delivery": results, "reasons": _failure_reasons(doc, events_before)}
+    return {"agreement": agreement_detail(doc), "delivery": results}
 
 
 async def patch_fields(doc: Agreement, changes: list[FieldPatch], *, actor: str,
@@ -1316,7 +1277,6 @@ async def reissue_link(doc: Agreement, principal: Principal, channels: Literal["
     doc.channel_preference = channels
     _event(doc, "link_reissued", principal.user_id, {"channels": channels}, ip)
     await doc.save()
-    events_before = len(doc.events)
     link = messages.public_link(token)
     results: dict[str, bool] = {}
     message_stage = "amendment_sent" if doc.parent_agreement_id else "agreement_sent"
@@ -1339,7 +1299,7 @@ async def reissue_link(doc: Agreement, principal: Principal, channels: Literal["
     await doc.save()
     await audit.record(principal, "agreement.link_reissued", "agreement", str(doc.id), doc.reference,
                        after={"status": doc.status, "channels": channels, "delivery": results}, ip_hash=ip)
-    return {"agreement": agreement_detail(doc), "delivery": results, "reasons": _failure_reasons(doc, events_before)}
+    return {"agreement": agreement_detail(doc), "delivery": results}
 
 
 async def amend(doc: Agreement, principal: Principal, clause: str, ip: str | None = None) -> Agreement:

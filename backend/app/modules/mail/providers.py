@@ -397,6 +397,13 @@ class SystemMailOutboxAdapter(MailProvider):
                         to,
                         idempotency_key or f"system:{message_id}",
                     )
+                    # File a Sent copy so members of the shared no-reply mailbox can see it.
+                    await conn.execute(
+                        "INSERT INTO mailbox_message(mailbox_id,message_id,folder,is_read) "
+                        "VALUES($1,$2,'sent',true) ON CONFLICT DO NOTHING",
+                        box["id"],
+                        message_id,
+                    )
             from app.modules.mail.outbox import kick
 
             kick()

@@ -107,7 +107,18 @@ async def test_list_shared_groups_members_and_hides_no_reply_filter_in_sql(monke
             ],
         }
     ]
-    assert "local_part<>'no-reply'" in inspect.getsource(router.list_shared)
+    # no-reply is now listed (first) so staff can assign view/send access to it.
+    assert "local_part<>'no-reply'" not in inspect.getsource(router.list_shared)
+    assert "(local_part='no-reply') DESC" in inspect.getsource(router.list_shared)
+
+
+def test_no_reply_gets_a_sent_copy_and_never_receives_inbound_mail():
+    from app.modules.mail import inbound, providers
+
+    adapter_source = inspect.getsource(providers.SystemMailOutboxAdapter.send)
+    assert "VALUES($1,$2,'sent',true)" in adapter_source
+    inbound_source = inspect.getsource(inbound.ingest)
+    assert "receive_blocked" in inbound_source
 
 
 def test_totp_reset_route_requires_a_proven_code_and_clears_the_cookie():

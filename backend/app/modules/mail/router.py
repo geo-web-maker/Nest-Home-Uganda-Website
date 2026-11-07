@@ -379,7 +379,7 @@ async def list_shared(principal: Principal = Depends(require_scopes("mail:shared
     domain=str(await get_value('mail.domain') or '')
     pool=mail_db.get_pool()
     async with pool.acquire() as conn:
-        boxes=await conn.fetch("SELECT id,local_part,display_name FROM mailbox WHERE kind='shared' AND state='open' AND local_part<>'no-reply' ORDER BY local_part")
+        boxes=await conn.fetch("SELECT id,local_part,display_name FROM mailbox WHERE kind='shared' AND state='open' ORDER BY (local_part='no-reply') DESC, local_part")
         members=await conn.fetch("SELECT mailbox_id,user_id,role FROM mailbox_member WHERE mailbox_id=ANY($1::uuid[]) ORDER BY added_at",[b['id'] for b in boxes]) if boxes else []
     try:
         users=await mailbox_admin._users_by_id([str(m['user_id']) for m in members])
