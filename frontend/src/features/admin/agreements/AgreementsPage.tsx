@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Notice } from '../../../components/admin/Notice';
 import { Button } from '../../../components/ui/Button';
@@ -484,7 +484,7 @@ export function AgreementsPage() {
             {tab === 'preview' && <PreviewPanel id={detail.id} />}
             {tab === 'timeline' && <Timeline events={detail.events} />}
             {tab === 'send' && <div className={styles.sendPanel}>
-              {canWrite && <><h3>Send agreement for review</h3><p>Messages contain a secure link only. No patient name, care details or fees are sent by email or SMS.</p><fieldset><legend>Send via (tick one or more)</legend><label><input type="checkbox" checked={pick.email} onChange={(e) => setPick({ ...pick, email: e.target.checked })} /> Email</label>{' '}<label><input type="checkbox" checked={pick.sms} onChange={(e) => setPick({ ...pick, sms: e.target.checked })} /> SMS</label>{noChannel && <p role="alert">Tick at least one way to send.</p>}</fieldset><p>Link expiry: 14 days. Reminders: 48 hours and day 5. Expiry warning: 48 hours before expiry.</p><Button onClick={() => void send()} disabled={busy || noChannel || !['draft','changes_requested','expired'].includes(detail.status)}>Validate and send</Button>{['sent','client_in_progress'].includes(detail.status) && <><p>Client did not get it? Resend sends the same link again by the channel selected above. Nothing earlier stops working.</p><Button variant="outline" onClick={() => void performResend(detail.id, channels)} disabled={busy || noChannel}>Resend link</Button><LinkPanel id={detail.id} link={detail.link} onChanged={() => void loadDetail(detail.id)} /></>}</>}
+              {canWrite && <><h3>Send agreement for review</h3><p>Messages contain a secure link only. No patient name, care details or fees are sent by email or SMS.</p><fieldset><legend>Send via (tick one or more)</legend><label><input type="checkbox" checked={pick.email} onChange={(e) => setPick({ ...pick, email: e.target.checked })} /> Email</label>{' '}<label><input type="checkbox" checked={pick.sms} onChange={(e) => setPick({ ...pick, sms: e.target.checked })} /> SMS</label>{noChannel && <p role="alert">Tick at least one way to send.</p>}</fieldset><p>Link expiry: 14 days. Reminders: 48 hours and day 5. Expiry warning: 48 hours before expiry.</p><Button onClick={() => void send()} disabled={busy || noChannel || !['draft','changes_requested','expired'].includes(detail.status)}>Validate and send</Button>{['sent','client_in_progress'].includes(detail.status) && <><p>Client did not get it? Resend sends the same link again by the channel selected above. Nothing earlier stops working.</p><LinkPanel id={detail.id} link={detail.link} onChanged={() => void loadDetail(detail.id)} resend={<Button variant="outline" onClick={() => void performResend(detail.id, channels)} disabled={busy || noChannel}>Resend link</Button>} /></>}</>}
               {canSign && detail.status === 'client_signed' && <section className={styles.countersign}><h3>Bloomwell countersignature</h3><p>By countersigning, the system seals the agreement and stores its PDF in private storage.</p><Field label="Authorised signatory name" value={bloomwellName} onChange={(e) => setBloomwellName(e.target.value)} /><SignatureMethodPicker method={signMethod} onMethod={(next) => { setSignMethod(next); setError(''); }} biometricAvailable={biometricAvailable} mode="staff" password={signPassword} onPassword={setSignPassword} confirm="" onConfirm={() => undefined}
                 drawPanel={<canvas ref={signatureCanvas} className={styles.signaturePad} width={800} height={160} aria-label="Bloomwell countersignature area" onPointerDown={beginSignature} onPointerMove={moveSignature} onPointerUp={() => { drawing.current = false; }} onPointerCancel={() => { drawing.current = false; }} />} /><ButtonGroup>{signMethod === 'drawn' && <Button variant="outline" onClick={clearSignature}>Clear signature</Button>}<Button onClick={() => void countersign()} disabled={busy}>Countersign and seal</Button></ButtonGroup></section>}
               {canVoid && DELETABLE_STATUSES.has(detail.status) && <><ButtonGroup><Button variant="outline" className={styles.danger} onClick={() => void performDelete(detail.id, detail.reference)} disabled={busy}>Delete agreement</Button></ButtonGroup><p className={styles.hint}>Deleting removes this agreement permanently. Sent or signed agreements must be voided first; completed agreements cannot be deleted.</p></>}
@@ -522,7 +522,7 @@ function PreviewPanel({ id }: { id: string }) {
   return <div className={styles.preview}><iframe title="Rendered client agreement preview" srcDoc={html} sandbox="" /></div>;
 }
 
-function LinkPanel({ id, link, onChanged }: { id: string; link?: LinkInfo; onChanged: () => void }) {
+function LinkPanel({ id, link, onChanged, resend }: { id: string; link?: LinkInfo; onChanged: () => void; resend?: ReactNode }) {
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const copy = async () => {
@@ -546,12 +546,18 @@ function LinkPanel({ id, link, onChanged }: { id: string; link?: LinkInfo; onCha
     } catch (cause) { setMsg(cause instanceof Error ? cause.message : 'Could not replace the link.'); }
     finally { setBusy(false); }
   };
-  return <div>
+  return <div className={styles.linkPanel}>
     <h3>Client link</h3>
-    <p>Link ID: <strong>{link?.link_id ?? 'none'}</strong>{link?.state === 'legacy' ? ' (older long link)' : ''}{link?.expires_at ? ` · expires ${new Date(link.expires_at).toLocaleDateString()}` : ''}. If the client reports a problem, ask for the code on their screen: its middle part should match this ID.</p>
-    <Button variant="outline" onClick={() => void copy()} disabled={busy}>Copy link</Button>{' '}
-    <Button variant="outline" onClick={() => void replaceAll()} disabled={busy}>Withdraw all links and create a new one</Button>
-    {msg && <p role="status">{msg}</p>}
+    <p>Link ID: <strong>{link?.link_id ?? 'none'}</strong>{link?.state === 'legacy' ? ' (older long link)' : ''}{link?.expires_at ? ` · expires ${new Date(link.expires_at).toLocaleDateString()}` : ''}</p>
+    <p className={styles.linkHint}>If the client reports a problem, ask for the code on their screen. Its middle part should match this ID.</p>
+    {msg && <p role="status" className={styles.linkMsg}>{msg}</p>}
+    <div className={styles.linkActions}>
+      <Button variant="outline" onClick={() => void copy()} disabled={busy}>Copy link</Button>
+      {resend}
+    </div>
+    <div className={styles.linkActions}>
+      <Button variant="outline" className={styles.danger} onClick={() => void replaceAll()} disabled={busy}>Withdraw all links and create a new one</Button>
+    </div>
   </div>;
 }
 function describeEvent(event: AgreementDetail['events'][number]): { title: string; summary?: string; tone: string } {

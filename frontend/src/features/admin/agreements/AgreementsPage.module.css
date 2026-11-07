@@ -108,3 +108,10 @@
 
 .rowMain.rowMain { display: grid; width: 100%; justify-items: start; gap: 4px; height: auto; min-height: 0; padding: 4px; border: 0; border-radius: 8px; background: transparent; color: inherit; font-weight: inherit; text-align: left; white-space: normal; }
 .templateEditor textarea { font-family: ui-monospace, monospace; font-size: 12px; }
+
+.linkPanel { display: grid; gap: 10px; margin-top: 14px; padding-top: 16px; border-top: 1px solid var(--line, #dce3de); }
+.linkPanel h3, .linkPanel p { margin: 0; }
+.linkHint { color: var(--mut, #53635a); font-size: 13px; }
+.linkMsg { background: var(--mint, #f5f7f5); border-radius: 8px; padding: 8px 10px; }
+.linkActions { display: flex; flex-wrap: wrap; gap: 10px; }
+.linkActions > * { flex: 1 1 180px; }
