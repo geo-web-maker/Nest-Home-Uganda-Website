@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.modules.agreements.models import Agreement
-from app.modules.agreements import rules
+from app.modules.agreements import blocks as block_renderer, credentials, rules
 
 
 def _format_value(value: Any) -> str:
@@ -19,10 +19,34 @@ def _format_value(value: Any) -> str:
     return str(value)
 
 
-def render_agreement_html(agreement: Agreement, clauses: dict[str, str], *, signed: bool = False,
+def _signature_card(signature: Any, signature_images: dict[str, bytes] | None) -> str:
+    """One signature block, shared by the legacy and structured renderers.
+
+    Drawn/thumbprint signatures embed their PNG. Password/biometric signatures have no
+    image (image_key is None) and instead show a stamp naming the verification method.
+    """
+    image_markup = ""
+    image = (signature_images or {}).get(signature.image_key) if signature.image_key else None
+    if image:
+        encoded = base64.b64encode(image).decode("ascii")
+        image_markup = f'<img class="signature" alt="Signature" src="data:image/png;base64,{encoded}">'
+    elif signature.method in {"password", "biometric"}:
+        credential = str(signature.verification.get("credential_id", ""))[:12]
+        detail = f" · credential {html.escape(credential)}…" if credential else ""
+        image_markup = (f'<div class="verified-stamp">Electronically signed — '
+                        f'{html.escape(credentials.public_label(signature.method, signature.verification.get('type')))}{detail}</div>')
+    return (f'<div class="sig"><strong>{html.escape(signature.role.title())}</strong>{image_markup}'
+            f'<div>{html.escape(signature.name)}</div><small>{signature.signed_at.isoformat()}</small></div>')
+
+
+def render_agreement_html(agreement: Agreement, clauses: dict[str, str], *, blocks: list[dict[str, Any]] | None = None,
+                          signed: bool = False,
                           certificate: dict[str, Any] | None = None,
                           signature_images: dict[str, bytes] | None = None) -> str:
     """Render the same source wording and completed field values for web and PDF."""
+    if blocks:
+        return _render_blocks(agreement, blocks, signed=signed, certificate=certificate,
+                              signature_images=signature_images)
     intro = clauses.get("Agreement introduction", "")
     party_paths = [p for p in agreement.fields if rules.field_path(p).startswith(("client.", "patient."))]
     party_details_html = ""
@@ -34,17 +58,7 @@ def render_agreement_html(agreement: Agreement, clauses: dict[str, str], *, sign
             items.append(f'<tr><th>{html.escape(label)}</th><td>{html.escape(_format_value(field.value))}</td></tr>')
         party_details_html = f'<section class="party-details"><h3>Completed party details</h3><table>{"".join(items)}</table></section>'
 
-    signatures = []
-    for signature in agreement.signatures:
-        image_markup = ""
-        image = (signature_images or {}).get(signature.image_key)
-        if image:
-            encoded = base64.b64encode(image).decode("ascii")
-            image_markup = f'<img class="signature" alt="Signature" src="data:image/png;base64,{encoded}">'
-        signatures.append(
-            f'<div class="sig"><strong>{html.escape(signature.role.title())}</strong>{image_markup}'
-            f'<div>{html.escape(signature.name)}</div><small>{signature.signed_at.isoformat()}</small></div>'
-        )
+    signatures = [_signature_card(signature, signature_images) for signature in agreement.signatures]
     signature_html = (
         f'<div class="signature-list"><h3>Captured signatures</h3>{"".join(signatures)}</div>'
         if signatures else '<div class="signature-list"><h3>Agreement signatures</h3><p>Signatures will be captured by the secure signing process.</p></div>'
@@ -126,7 +140,7 @@ def render_agreement_html(agreement: Agreement, clauses: dict[str, str], *, sign
     return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bloomwell care agreement {html.escape(agreement.reference)}</title><style>
 @page{{size:letter;margin:18mm 16mm 20mm;@bottom-left{{content:"Bloomwell Home Care · {html.escape(agreement.reference)}";font:9pt Arial;color:#5b6b60}}@bottom-right{{content:"Page " counter(page) " of " counter(pages);font:9pt Arial;color:#5b6b60}}}}
-*{{box-sizing:border-box}}body{{font-family:Arial,Helvetica,sans-serif;color:#123524;font-size:10.5pt;line-height:1.5;margin:0}}header{{border-bottom:2px solid #C79A3B;box-shadow:0 5px 0 #123524;padding:0 0 16px;margin-bottom:26px}}.brand{{font-family:Georgia,'Times New Roman',serif;font-size:19pt;font-weight:700;color:#123524;letter-spacing:.02em}}.ref{{font-size:9pt;color:#9a7420;letter-spacing:.14em;font-weight:700}}h1{{font-family:Georgia,'Times New Roman',serif;font-size:18pt;color:#123524}}h2{{font-family:Georgia,'Times New Roman',serif;font-size:13pt;color:#123524;margin:20px 0 8px;padding-bottom:3px;border-bottom:1px solid #E9DDB8}}h3{{font-size:11pt;color:#2F6B4A;margin:12px 0 5px}}p{{white-space:pre-wrap}}.clause{{break-inside:avoid}}.party-details{{margin:10px 0 18px;padding:10px;border:1px solid #CBD8C6;border-top:3px solid #C79A3B;border-radius:4px}}.schedule,.certificate{{break-before:page}}table{{width:100%;border-collapse:collapse}}th,td{{padding:7px 9px;border-bottom:1px solid #CBD8C6;text-align:left;vertical-align:top}}th{{width:34%;color:#2F6B4A;background:#F3F8F1}}.sig{{display:inline-block;width:46%;vertical-align:top;margin:12px 2% 10px 0;min-height:100px;border-bottom:1px solid #6c7a72;padding:8px}}.signature{{display:block;max-width:220px;max-height:70px;object-fit:contain}}.signature-list{{margin-top:20px;border-top:2px solid #C79A3B;padding-top:12px}}.banner{{background:#F4EBCB;color:#123524;border-left:4px solid #C79A3B;padding:12px;margin:0 0 16px;font-weight:bold}}.certificate{{break-before:page}}.intro{{color:#5b6b60;font-size:9.5pt;margin-top:4px}}.agreement-meta{{display:flex;gap:24px;margin-top:10px;font-size:9.5pt}}
+*{{box-sizing:border-box}}body{{font-family:Arial,Helvetica,sans-serif;color:#123524;font-size:10.5pt;line-height:1.5;margin:0}}header{{border-bottom:2px solid #C79A3B;box-shadow:0 5px 0 #123524;padding:0 0 16px;margin-bottom:26px}}.brand{{font-family:Georgia,'Times New Roman',serif;font-size:19pt;font-weight:700;color:#123524;letter-spacing:.02em}}.ref{{font-size:9pt;color:#9a7420;letter-spacing:.14em;font-weight:700}}h1{{font-family:Georgia,'Times New Roman',serif;font-size:18pt;color:#123524}}h2{{font-family:Georgia,'Times New Roman',serif;font-size:13pt;color:#123524;margin:20px 0 8px;padding-bottom:3px;border-bottom:1px solid #E9DDB8}}h3{{font-size:11pt;color:#2F6B4A;margin:12px 0 5px}}p{{white-space:pre-wrap}}.clause{{break-inside:avoid}}.party-details{{margin:10px 0 18px;padding:10px;border:1px solid #CBD8C6;border-top:3px solid #C79A3B;border-radius:4px}}.schedule,.certificate{{break-before:page}}table{{width:100%;border-collapse:collapse}}th,td{{padding:7px 9px;border-bottom:1px solid #CBD8C6;text-align:left;vertical-align:top}}th{{width:34%;color:#2F6B4A;background:#F3F8F1}}.sig{{display:inline-block;width:46%;vertical-align:top;margin:12px 2% 10px 0;min-height:100px;border-bottom:1px solid #6c7a72;padding:8px}}.signature{{display:block;max-width:220px;max-height:70px;object-fit:contain}}.verified-stamp{{border:1px solid #2F6B4A;background:#F3F8F1;color:#123524;padding:8px 10px;margin:6px 0;font-size:9pt;font-weight:bold;border-radius:4px}}.signature-list{{margin-top:20px;border-top:2px solid #C79A3B;padding-top:12px}}.banner{{background:#F4EBCB;color:#123524;border-left:4px solid #C79A3B;padding:12px;margin:0 0 16px;font-weight:bold}}.certificate{{break-before:page}}.intro{{color:#5b6b60;font-size:9.5pt;margin-top:4px}}.agreement-meta{{display:flex;gap:24px;margin-top:10px;font-size:9.5pt}}
 @media screen{{body{{max-width:850px;margin:24px auto;padding:24px;background:#fff}}}}@media print{{.no-print{{display:none}}}}
 </style></head><body><header><div class="brand">BLOOMWELL HOME CARE UGANDA LIMITED</div><div class="ref">CLIENT HOME NURSING SERVICE AGREEMENT · UNDER THE NEST MAMA PROGRAM</div><div class="intro">{html.escape(intro)}</div><div class="agreement-meta"><span>Agreement Reference: <strong>{html.escape(agreement.reference)}</strong></span><span>Date: <strong>{html.escape(agreement_date)}</strong></span></div></header>
 {'<div class="banner">SIGNED AGREEMENT</div>' if signed else ''}{variation_html}{''.join(clause_html)}{''.join(schedule_html)}{certificate_html}</body></html>'''
@@ -153,8 +167,48 @@ def make_certificate(agreement: Agreement, content_hash: str) -> dict[str, Any]:
         },
         "client_signed_at": next((s.signed_at.isoformat() for s in agreement.signatures if s.role in {"client", "representative"}), None),
         "countersigned_at": next((s.signed_at.isoformat() for s in agreement.signatures if s.role == "bloomwell"), None),
-        "verification_method": "email_or_sms_otp_and_signature_capture",
+        "verification_method": "email_or_sms_otp_and_" + "_and_".join(sorted({s.method for s in agreement.signatures}) or ["signature_capture"]),
+        "signature_methods": {s.role: s.method for s in agreement.signatures},
         "ip_hash_prefix": next((s.ip_hash[:12] for s in agreement.signatures if s.ip_hash), None),
         "content_hash": content_hash,
         "sealed_at": datetime.now(UTC).isoformat(),
     }
+
+
+def _money(currency: Any, amount: Any) -> str:
+    try:
+        return f"{currency or 'UGX'} {float(amount):,.0f}"
+    except (TypeError, ValueError):
+        return ""
+
+
+def _render_blocks(agreement: Agreement, blocks: list[dict[str, Any]], *, signed: bool,
+                   certificate: dict[str, Any] | None,
+                   signature_images: dict[str, bytes] | None) -> str:
+    """Structured template path: typed values fill the original blanks, tick boxes and table cells."""
+    values = {rules.field_path(key): field.value for key, field in agreement.fields.items()}
+    computed = agreement.schedule_b_computed or {}
+    currency = computed.get("currency", "UGX")
+    created = agreement.created_at or datetime.now(UTC)
+    meta = {
+        "@reference": agreement.reference,
+        "@date": created.strftime("%d %b %Y"),
+        "@advance": _money(currency, computed["advance"]) if computed.get("advance") else "",
+        "@balance": _money(currency, computed["balance"]) if computed.get("balance") else "",
+    }
+    banner = ""
+    if agreement.variation_clause:
+        banner += (f'<div class="banner">AMENDMENT — This agreement varies clause {html.escape(agreement.variation_clause)}. '
+                   'The original completed agreement remains in effect except for the change expressly approved in this amendment.</div>')
+    if signed:
+        banner += '<div class="banner">SIGNED AGREEMENT</div>'
+    extra = ""
+    if agreement.signatures:
+        cards = [_signature_card(signature, signature_images) for signature in agreement.signatures]
+        extra += f'<section class="after"><h2>Captured signatures</h2>{"".join(cards)}</section>'
+    if certificate:
+        rows = "".join(f'<tr><th>{html.escape(str(k).replace("_", " ").title())}</th><td>{html.escape(_format_value(v))}</td></tr>'
+                       for k, v in certificate.items())
+        extra += f'<section class="after"><h2>Certificate of completion</h2><table>{rows}</table></section>'
+    return block_renderer.document_html(blocks, values, meta, title=f"Bloomwell care agreement {agreement.reference}",
+                                        banner=banner, extra=extra)

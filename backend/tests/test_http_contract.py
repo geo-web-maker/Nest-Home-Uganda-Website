@@ -89,4 +89,9 @@ async def test_openapi_has_no_role_words() -> None:
         if name.lower().startswith("team"):
             body.get("properties", {}).pop("role", None)
             body["required"] = [f for f in body.get("required", []) if f != "role"]
+        if name in {"SignAgreement", "CountersignAgreement"}:
+            # The signer's role (client, representative, witness, interpreter) is a party to the
+            # agreement, not an access role: access is still decided by scopes only.
+            body.get("properties", {}).pop("role", None)
+            body["required"] = [f for f in body.get("required", []) if f != "role"]
     assert "role" not in str(spec).lower().replace("rolling", "")

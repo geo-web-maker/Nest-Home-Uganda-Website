@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class AgreementCreate(BaseModel):
@@ -51,20 +51,44 @@ class RequestChange(BaseModel):
     reason: str = Field(min_length=5, max_length=2000)
 
 
-class SignAgreement(BaseModel):
+SignMethod = Literal["drawn", "thumbprint", "password", "biometric"]
+
+
+class _SignatureEvidence(BaseModel):
+    """Shared shape: an image for drawn/thumbprint, or a credential for password/biometric."""
     model_config = ConfigDict(extra="forbid")
     name: str = Field(min_length=2, max_length=160)
+    method: SignMethod = "drawn"
+    signature_base64: str | None = Field(default=None, min_length=100, max_length=1_500_000)
+    password: str | None = Field(default=None, min_length=8, max_length=200)
+    passkey: dict[str, Any] | None = None  # WebAuthn registration response (JSON form)
+    challenge_token: str | None = Field(default=None, max_length=300)
+
+    @model_validator(mode="after")
+    def evidence_matches_method(self):
+        has_image, has_pw, has_key = (self.signature_base64 is not None, self.password is not None,
+                                      self.passkey is not None)
+        expected = {"drawn": (True, False, False), "thumbprint": (True, False, False),
+                    "password": (False, True, False), "biometric": (False, False, True)}[self.method]
+        if (has_image, has_pw, has_key) != expected:
+            raise ValueError(f"The '{self.method}' signature method needs its own evidence and nothing else")
+        if self.method == "biometric" and not self.challenge_token:
+            raise ValueError("A biometric signature needs the challenge issued for this document")
+        return self
+
+
+class SignAgreement(_SignatureEvidence):
     role: Literal["client", "representative", "witness", "interpreter"] = "client"
-    method: Literal["drawn", "thumbprint"] = "drawn"
-    signature_base64: str = Field(min_length=100, max_length=1_500_000)
     expected_content_hash: str = Field(min_length=64, max_length=64)
 
 
-class CountersignAgreement(BaseModel):
+class CountersignAgreement(_SignatureEvidence):
+    pass
+
+
+class PasskeyOptionsRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str = Field(min_length=2, max_length=160)
-    method: Literal["drawn", "thumbprint"] = "drawn"
-    signature_base64: str = Field(min_length=100, max_length=1_500_000)
 
 
 class VoidAgreement(BaseModel):

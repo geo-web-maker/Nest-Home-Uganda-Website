@@ -1,3 +1,4 @@
+import inspect
 """BUILDER_INSTRUCTIONS 12.6 tests 1 and 2, generated from the registered routes.
 
 A new admin endpoint without a scope fails here. These tests need no database:
@@ -98,6 +99,7 @@ def test_read_and_write_split(method: str, path: str) -> None:
             ":sign",
             ":void",
             ":templates",
+            ":diagnostics",
         )
         assert any(s.endswith(write_capabilities) for s in required)
 
@@ -154,11 +156,20 @@ async def test_exact_scopes_and_superadmin_pass_authorisation(
         scoped_status = response.status_code
     else:
         scoped_status = await call(client, method, path, scoped_headers)
+    # Some handlers also demand an authenticator (TOTP) session cookie, which a bare token cannot
+    # carry, so they answer 403 (or 422 first when a body is required). For them the check is that
+    # authentication itself succeeded; scope rejection is covered by the unrelated-scope and
+    # read-scope-cannot-write tests, and the TOTP check by test_audit_totp_guard.
+    totp_guarded = "totp" in inspect.getsource(route_for(method, path).endpoint).lower()
+    superadmin_status = await call(client, method, path, auth(make_token([], superadmin=True)))
     if path in SUPERADMIN_ONLY_PATHS:
         assert scoped_status == 403, "a non-superadmin must not publish or list releases"
+    elif totp_guarded:
+        assert scoped_status != 401 and superadmin_status != 401
+        return
     else:
         assert scoped_status not in (401, 403)
-    assert await call(client, method, path, auth(make_token([], superadmin=True))) not in (401, 403)
+    assert superadmin_status not in (401, 403)
 
 
 def test_signed_photo_stream_is_the_only_admin_path_without_a_scope_dependency() -> None:

@@ -50,6 +50,12 @@ FIELD_OWNERS: dict[str, str] = {
     "schedule_c.verified_contact": "client", "schedule_c.information_permitted": "client",
     "schedule_c.authorized_people_scope": "client", "schedule_c.other_channel_details": "client",
     "schedule_c.bloomwell_verification_by": "staff", "schedule_c.consent_obtained_by": "staff",
+    # Added with template v2 so every fillable blank in the agreement has a field.
+    "schedule_a.client_contact": "either", "schedule_a.allergies": "clinical",
+    "schedule_a.client_supplies": "clinical", "schedule_a.required_caregiver_presence": "clinical",
+    "schedule_a.clinical_lead_contact": "clinical",
+    "schedule_b.assessment_fee_basis": "staff", "schedule_b.bloomwell_signatory": "staff",
+    "schedule_c.witness_name_contact": "either",
 }
 
 
@@ -199,5 +205,25 @@ def validate_patch(path: str, owner: str, actor: str, entered_by_staff: bool) ->
         raise PermissionError("Only an 'either' field may be entered by staff on behalf of a client")
 
 
-def template_hash(clauses: dict[str, str]) -> str:
+def template_hash(clauses: dict[str, str], blocks: list[dict[str, Any]] | None = None) -> str:
+    """Hash of the wording. A block template hashes clauses and layout together so neither can change silently."""
+    if blocks:
+        return hashlib.sha256(canonical_json({"clauses": clauses, "blocks": blocks})).hexdigest()
     return hashlib.sha256(canonical_json(clauses)).hexdigest()
+
+
+# Agreements that were never sent, or are already closed, can be deleted outright.
+DELETABLE_STATUSES = frozenset({"draft", "changes_requested", "expired", "voided"})
+
+
+def deletion_block_reason(status: str) -> str | None:
+    """Why an agreement in this status cannot be deleted yet, or None when it can."""
+    if status in DELETABLE_STATUSES:
+        return None
+    if status == "completed":
+        return "A completed agreement is a signed legal record and cannot be deleted. Create an amendment instead."
+    if status in {"sent", "client_in_progress"}:
+        return "This agreement is with the client. Void it first so the client is told and the link is closed, then delete it."
+    if status == "client_signed":
+        return "The client has already signed. Void it first if it must be removed, then delete it."
+    return "This agreement cannot be deleted in its current status."

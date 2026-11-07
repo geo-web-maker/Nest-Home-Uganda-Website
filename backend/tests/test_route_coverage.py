@@ -41,6 +41,7 @@ PUBLIC_WRITES: frozenset[tuple[str, str]] = frozenset(
         ("PATCH", "/api/v1/public/agreements/session/fields"),
         ("POST", "/api/v1/public/agreements/session/request-change"),
         ("POST", "/api/v1/public/agreements/session/sign"),
+        ("POST", "/api/v1/public/agreements/session/sign/passkey-options"),
         ("POST", "/api/v1/auth/login"),
         ("POST", "/api/v1/auth/refresh"),
         ("POST", "/api/v1/auth/logout"),

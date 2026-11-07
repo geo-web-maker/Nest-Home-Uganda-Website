@@ -15,7 +15,9 @@ AgreementStatus = Literal[
     "changes_requested", "expired", "voided",
 ]
 SignatureRole = Literal["client", "representative", "witness", "interpreter", "bloomwell"]
-SignatureMethod = Literal["drawn", "thumbprint"]
+SignatureMethod = Literal["drawn", "thumbprint", "password", "biometric"]
+# Methods that capture a PNG; the others store verification evidence instead.
+IMAGE_SIGNATURE_METHODS = frozenset({"drawn", "thumbprint"})
 
 
 def utcnow() -> datetime:
@@ -43,7 +45,9 @@ class AgreementSignature(BaseModel):
     role: SignatureRole
     name: str = Field(min_length=1, max_length=160)
     method: SignatureMethod
-    image_key: str
+    image_key: str | None = None
+    # Evidence for non-image methods (passkey credential id, passphrase hash, ...).
+    verification: dict[str, Any] = Field(default_factory=dict)
     signed_at: datetime = Field(default_factory=utcnow)
     content_hash: str
     ip_hash: str | None = None
@@ -113,6 +117,8 @@ class AgreementOtp(TimestampedDocument):
 class AgreementTemplate(TimestampedDocument):
     version: int
     clauses: dict[str, str] = Field(default_factory=dict)
+    # Structured layout (tables, tick boxes, blanks bound to fields). None = legacy clause-only template.
+    blocks: list[dict[str, Any]] | None = None
     template_hash: str
     published_at: datetime | None = None
     published_by: PydanticObjectId | None = None

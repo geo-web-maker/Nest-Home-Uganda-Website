@@ -17,18 +17,20 @@ from app.core.config import get_settings
 from app.core.deps import Principal
 from app.core.errors import Conflict, Forbidden, NotFound, ValidationFailed
 from app.core.phone import is_mobile, mask, normalise_e164
-from app.core.security import hash_ip
+from app.core.rate_limit import limiter
+from app.core.security import hash_ip, verify_password
 from app.core.storage import Bucket, get_storage
-from app.modules.agreements import messages, render, rules
+from app.modules.agreements import credentials, messages, render, rules
 from app.modules.agreements import repository
 from app.modules.agreements.models import (
     Agreement, AgreementEvent, AgreementField, AgreementMessageTemplate,
-    AgreementOtp, AgreementSignature, AgreementTemplate,
+    AgreementOtp, AgreementSignature, AgreementTemplate, IMAGE_SIGNATURE_METHODS,
 )
 from app.modules.agreements.schemas import (
     AgreementCreate, FieldPatch, MessageTemplatePatch, SendAgreement, TemplateDraft,
 )
 from app.modules.audit import service as audit
+from app.modules.auth.models import User
 from app.modules.notifications.config import load_config
 from app.modules.notifications.providers import get_email_provider, get_sms_provider
 from app.modules.notifications.service import send_sms
@@ -303,7 +305,7 @@ def agreement_detail(doc: Agreement) -> dict[str, Any]:
         "fields": {rules.field_path(key): value.model_dump(mode="json") for key, value in doc.fields.items()},
         "schedule_b_computed": doc.schedule_b_computed,
         "events": [event.model_dump(mode="json") for event in doc.events],
-        "signatures": [sig.model_dump(mode="json", exclude={"image_key"}) for sig in doc.signatures],
+        "signatures": [sig.model_dump(mode="json", exclude={"image_key", "verification"}) for sig in doc.signatures],
         "sealed": {"sealed_at": doc.sealed.get("sealed_at"), "pdf_sha256": doc.sealed.get("pdf_sha256")},
     }
 
@@ -766,11 +768,12 @@ async def public_view(doc: Agreement, *, signed: bool = False) -> dict[str, Any]
         "status": doc.status,
         "template_version": doc.template_version,
         "clauses": template.clauses,
+        "document_html": render.render_agreement_html(doc, template.clauses, blocks=template.blocks, signed=signed) if template.blocks else None,
         "fields": {rules.field_path(key): value.model_dump(mode="json") for key, value in doc.fields.items()},
         "schedule_b_computed": doc.schedule_b_computed,
         "variation_clause": doc.variation_clause,
         "parent_agreement_id": str(doc.parent_agreement_id) if doc.parent_agreement_id else None,
-        "signatures": [sig.model_dump(mode="json", exclude={"image_key", "ip_hash", "user_agent"}) for sig in doc.signatures] if signed else [],
+        "signatures": [sig.model_dump(mode="json", exclude={"image_key", "ip_hash", "user_agent", "verification"}) for sig in doc.signatures] if signed else [],
         "content_hash": rules.canonical_hash(doc.fields, doc.template_version, doc.template_hash),
         "signed": signed,
         "certificate": doc.sealed.get("certificate_json") if signed else None,
@@ -812,14 +815,31 @@ def _decode_signature(signature_base64: str) -> bytes:
     return data
 
 
-async def _store_signature(doc: Agreement, role: str, name: str, method: str, signature_base64: str,
+def _credential_evidence(doc: Agreement, method: str, content_hash: str, challenge_role: str, *,
+                         password: str | None, passkey: dict | None, challenge_token: str | None) -> dict[str, Any]:
+    """Evidence for the non-image methods. Image methods carry their proof in the PNG."""
+    if method == "password":
+        return credentials.passphrase_evidence(password or "", str(doc.id), content_hash)
+    if method == "biometric":
+        return credentials.verify_passkey(str(doc.id), content_hash, challenge_role,
+                                          challenge_token or "", passkey or {})
+    return {}
+
+
+async def _store_signature(doc: Agreement, role: str, name: str, method: str, signature_base64: str | None,
                            content_hash: str, *, ip: str | None, user_agent: str | None,
-                           otp_verified_at: datetime | None = None, staff_user_id: str | None = None) -> AgreementSignature:
-    data = _decode_signature(signature_base64)
-    key = f"agreements/{doc.reference}/signatures/{role}-{secrets.token_hex(12)}.png"
-    await get_storage().put(Bucket.PRIVATE, key, data, "image/png")
+                           otp_verified_at: datetime | None = None, staff_user_id: str | None = None,
+                           verification: dict[str, Any] | None = None) -> AgreementSignature:
+    key: str | None = None
+    if method in IMAGE_SIGNATURE_METHODS:
+        if signature_base64 is None:
+            raise ValidationFailed("A signature image is required for this method", {"signature_base64": "required"})
+        data = _decode_signature(signature_base64)
+        key = f"agreements/{doc.reference}/signatures/{role}-{secrets.token_hex(12)}.png"
+        await get_storage().put(Bucket.PRIVATE, key, data, "image/png")
     return AgreementSignature(
-        role=role, name=name, method=method, image_key=key, content_hash=content_hash,
+        role=role, name=name, method=method, image_key=key, verification=verification or {},
+        content_hash=content_hash,
         ip_hash=hash_ip(ip or "unknown"), user_agent=(user_agent or "")[:400] or None,
         otp_verified_at=otp_verified_at, staff_device_user_id=staff_user_id,
     )
@@ -834,8 +854,8 @@ async def client_sign(doc: Agreement, body, ip: str | None, user_agent: str | No
     current_hash = rules.canonical_hash(doc.fields, doc.template_version, doc.template_hash)
     if not hmac.compare_digest(current_hash, body.expected_content_hash):
         raise Conflict("The agreement changed since you reviewed it. Reload and review the latest version before signing.")
-    if body.method not in {"drawn", "thumbprint"}:
-        raise ValidationFailed("A drawn signature or thumbprint is required", {"method": "invalid"})
+    if body.method not in {"drawn", "thumbprint", "password", "biometric"}:
+        raise ValidationFailed("Choose a valid signing method", {"method": "invalid"})
     missing_consent = rules.missing_signing_consent(doc.fields)
     if missing_consent:
         raise ValidationFailed(
@@ -855,9 +875,11 @@ async def client_sign(doc: Agreement, body, ip: str | None, user_agent: str | No
                                        AgreementOtp.used_at != None).sort("-used_at").limit(1).to_list()  # noqa: E711
     if not otp_rows:
         raise Forbidden("Verify your contact details before signing")
+    evidence = _credential_evidence(doc, body.method, current_hash, "client", password=body.password,
+                                    passkey=body.passkey, challenge_token=body.challenge_token)
     sig = await _store_signature(doc, body.role, body.name, body.method, body.signature_base64,
                                  current_hash, ip=ip, user_agent=user_agent,
-                                 otp_verified_at=otp_rows[0].used_at)
+                                 otp_verified_at=otp_rows[0].used_at, verification=evidence)
     doc.signatures.append(sig)
     doc.status = "client_signed"
     doc.token_hash = None
@@ -882,15 +904,31 @@ async def client_sign(doc: Agreement, body, ip: str | None, user_agent: str | No
     return current_hash
 
 
+async def client_passkey_options(doc: Agreement, name: str) -> dict[str, Any]:
+    """Challenge for the client's device biometric, bound to the current content hash."""
+    if doc.status not in {"sent", "client_in_progress"}:
+        raise Conflict("This agreement is not ready for a client signature")
+    content_hash = rules.canonical_hash(doc.fields, doc.template_version, doc.template_hash)
+    return credentials.issue_passkey_options(str(doc.id), content_hash, "client", name)
+
+
+async def staff_passkey_options(doc: Agreement, principal: Principal, name: str) -> dict[str, Any]:
+    if doc.status != "client_signed":
+        raise Conflict("Only a client-signed agreement can be countersigned")
+    content_hash = rules.canonical_hash(doc.fields, doc.template_version, doc.template_hash)
+    return credentials.issue_passkey_options(str(doc.id), content_hash, "bloomwell", name)
+
+
 async def _seal(doc: Agreement, content_hash: str) -> None:
     template = await AgreementTemplate.find_one(AgreementTemplate.version == doc.template_version)
     if template is None:
         raise Conflict("The published agreement text is unavailable")
     signature_images = {}
     for sig in doc.signatures:
-        signature_images[sig.image_key] = await get_storage().get(Bucket.PRIVATE, sig.image_key)
+        if sig.image_key:
+            signature_images[sig.image_key] = await get_storage().get(Bucket.PRIVATE, sig.image_key)
     certificate = render.make_certificate(doc, content_hash)
-    html_doc = render.render_agreement_html(doc, template.clauses, signed=True,
+    html_doc = render.render_agreement_html(doc, template.clauses, blocks=template.blocks, signed=True,
                                             certificate=certificate, signature_images=signature_images)
     pdf_bytes = render.render_pdf(html_doc)
     pdf_hash = hashlib.sha256(pdf_bytes).hexdigest()
@@ -907,7 +945,9 @@ async def _seal(doc: Agreement, content_hash: str) -> None:
 
 
 async def countersign(doc: Agreement, principal: Principal, name: str, method: str,
-                      signature_base64: str, ip: str | None, user_agent: str | None) -> dict[str, Any]:
+                      signature_base64: str | None, ip: str | None, user_agent: str | None, *,
+                      password: str | None = None, passkey: dict | None = None,
+                      challenge_token: str | None = None) -> dict[str, Any]:
     if doc.status != "client_signed":
         raise Conflict("Only a client-signed agreement can be countersigned")
     template = await AgreementTemplate.find_one(AgreementTemplate.version == doc.template_version)
@@ -922,9 +962,21 @@ async def countersign(doc: Agreement, principal: Principal, name: str, method: s
         if not hmac.compare_digest(existing_bloomwell.content_hash, content_hash):
             raise Conflict("The stored Bloomwell signature does not match the agreement content")
     else:
+        if method == "password":
+            # Staff re-enter their own account password; never trust a client-side flag.
+            wait = limiter.hit(f"agreement-countersign-pw:{principal.user_id}", 5, 900)
+            if wait:
+                raise Conflict(f"Too many password attempts. Try again in {wait} seconds.")
+            user = await User.get(PydanticObjectId(principal.user_id))
+            if user is None or not user.is_active or not verify_password(password or "", user.password_hash):
+                raise Forbidden("Your account password is incorrect")
+            evidence = {"type": "account_password", "verified_user_id": principal.user_id}
+        else:
+            evidence = _credential_evidence(doc, method, content_hash, "bloomwell", password=None,
+                                            passkey=passkey, challenge_token=challenge_token)
         sig = await _store_signature(doc, "bloomwell", name, method, signature_base64,
                                      content_hash, ip=ip, user_agent=user_agent,
-                                     staff_user_id=principal.user_id)
+                                     staff_user_id=principal.user_id, verification=evidence)
         doc.signatures.append(sig)
     doc.session_version += 1
     doc.token_hash = None
@@ -980,19 +1032,31 @@ async def void(doc: Agreement, principal: Principal, reason: str, ip: str | None
                        after={"status": "voided", "reason": reason}, ip_hash=ip)
 
 
-async def delete_voided(doc: Agreement, principal: Principal, ip: str | None) -> None:
-    """Permanently remove a voided agreement. Only voided ones; the audit log keeps a record."""
-    if doc.status != "voided":
-        raise Conflict("Only a voided agreement can be deleted. Void it first.")
-    for sig in doc.signatures:
+async def delete_agreement(doc: Agreement, principal: Principal, ip: str | None) -> None:
+    """Permanently remove an agreement that was never sent or is already closed.
+
+    Sent or signed agreements must be voided first (that notifies the client and closes the
+    link); completed agreements are legal records and are never deleted. The audit log keeps
+    a record of every deletion.
+    """
+    blocked = rules.deletion_block_reason(doc.status)
+    if blocked:
+        raise Conflict(blocked)
+    if await Agreement.find(Agreement.parent_agreement_id == doc.id).count():
+        raise Conflict("This agreement has amendments. Delete the amendments first.")
+    keys = [sig.image_key for sig in doc.signatures if sig.image_key]
+    if doc.sealed.get("pdf_key"):
+        keys.append(doc.sealed["pdf_key"])
+    for key in keys:
         try:
-            await get_storage().delete(Bucket.PRIVATE, sig.image_key)
+            await get_storage().delete(Bucket.PRIVATE, key)
         except Exception:  # best effort: never block the delete on storage
-            log.warning("could not remove signature image for %s", doc.reference)
-    reference, agreement_id = doc.reference, str(doc.id)
+            log.warning("could not remove stored file for %s", doc.reference)
+    reference, agreement_id, status, void_reason = doc.reference, str(doc.id), doc.status, doc.void_reason
+    await AgreementOtp.find(AgreementOtp.agreement_id == doc.id).delete()
     await doc.delete()
     await audit.record(principal, "agreement.deleted", "agreement", agreement_id, reference,
-                       before={"status": "voided", "reason": doc.void_reason}, ip_hash=ip)
+                       before={"status": status, "reason": void_reason}, ip_hash=ip)
 
 
 async def save_template_draft(body: TemplateDraft, principal: Principal) -> AgreementTemplate:
@@ -1028,7 +1092,7 @@ async def publish_template(version: int, principal: Principal, ip: str | None) -
             "The complete clauses 1.0–15.0 and Schedules A, B and C are required before publishing.",
             {"clauses": str(exc)},
         ) from exc
-    template.template_hash = rules.template_hash(template.clauses)
+    template.template_hash = rules.template_hash(template.clauses, template.blocks)
     template.is_published = True
     template.published_at = datetime.now(UTC)
     template.published_by = _oid(principal.user_id)
@@ -1086,7 +1150,7 @@ async def preview_agreement(doc: Agreement) -> str:
     template = await AgreementTemplate.find_one(AgreementTemplate.version == doc.template_version)
     if template is None:
         return "<p>Agreement wording has not been loaded.</p>"
-    return render.render_agreement_html(doc, template.clauses)
+    return render.render_agreement_html(doc, template.clauses, blocks=template.blocks)
 
 
 async def sweep_agreements(now: datetime | None = None) -> int:

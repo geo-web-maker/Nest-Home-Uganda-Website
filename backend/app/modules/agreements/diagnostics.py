@@ -75,7 +75,7 @@ async def run_readiness_checks() -> list[Check]:
     else:
         try:
             rules.validate_template_sections(template.clauses)
-            calculated = rules.template_hash(template.clauses)
+            calculated = rules.template_hash(template.clauses, template.blocks)
             if calculated != template.template_hash:
                 raise ValueError("stored template hash does not match its text")
             if "info@bhcug.com" not in template.clauses.get("1.1", "") or "info@bhcug.com" not in template.clauses.get("14.1", ""):
@@ -541,7 +541,7 @@ async def run_workflow_simulation(principal: Any) -> list[Check]:
                 stored = await Agreement.get(cleanup_doc.id)
                 if stored:
                     storage = get_storage()
-                    keys = {signature.image_key for signature in stored.signatures}
+                    keys = {signature.image_key for signature in stored.signatures if signature.image_key}
                     if stored.sealed.get("pdf_key"):
                         keys.add(stored.sealed["pdf_key"])
                     for key in keys:

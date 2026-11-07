@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 
 from app.modules.agreements import messages, rules
 from app.modules.agreements.models import AgreementTemplate
+from app.modules.agreements.source_blocks import SOURCE_BLOCKS
 from app.modules.agreements.source_template import SOURCE_CLAUSES, SOURCE_FILE
 
 
@@ -25,7 +26,7 @@ async def seed_source_template() -> int:
     because a new source document has arrived.
     """
     rules.validate_template_sections(SOURCE_CLAUSES)
-    expected_hash = rules.template_hash(SOURCE_CLAUSES)
+    expected_hash = rules.template_hash(SOURCE_CLAUSES, SOURCE_BLOCKS)
 
     existing = await AgreementTemplate.find_one(AgreementTemplate.template_hash == expected_hash)
     if existing is not None:
@@ -42,6 +43,7 @@ async def seed_source_template() -> int:
         draft = AgreementTemplate(
             version=version,
             clauses=dict(SOURCE_CLAUSES),
+            blocks=list(SOURCE_BLOCKS),
             template_hash=expected_hash,
             source_file=SOURCE_FILE,
             is_published=active is None,
@@ -54,6 +56,7 @@ async def seed_source_template() -> int:
         if draft.is_published:
             raise RuntimeError("Refusing to modify an already-published agreement template.")
         draft.clauses = dict(SOURCE_CLAUSES)
+        draft.blocks = list(SOURCE_BLOCKS)
         draft.template_hash = expected_hash
         draft.source_file = SOURCE_FILE
         draft.is_published = active is None

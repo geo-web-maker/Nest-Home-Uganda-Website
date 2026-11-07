@@ -308,8 +308,8 @@ export interface paths {
         get: operations["admin_get_api_v1_admin_agreements__agreement_id__get"];
         put?: never;
         post?: never;
-        /** Admin Delete Voided */
-        delete: operations["admin_delete_voided_api_v1_admin_agreements__agreement_id__delete"];
+        /** Admin Delete Agreement */
+        delete: operations["admin_delete_agreement_api_v1_admin_agreements__agreement_id__delete"];
         options?: never;
         head?: never;
         /** Admin Patch */
@@ -344,6 +344,23 @@ export interface paths {
         put?: never;
         /** Admin Countersign */
         post: operations["admin_countersign_api_v1_admin_agreements__agreement_id__countersign_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/agreements/{agreement_id}/countersign/passkey-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Countersign Passkey Options */
+        post: operations["admin_countersign_passkey_options_api_v1_admin_agreements__agreement_id__countersign_passkey_options_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4076,6 +4093,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/agreements/session/sign/passkey-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Public Sign Passkey Options */
+        post: operations["public_sign_passkey_options_api_v1_public_agreements_session_sign_passkey_options_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/agreements/session/signed": {
         parameters: {
             query?: never;
@@ -5174,16 +5208,24 @@ export interface components {
         };
         /** CountersignAgreement */
         CountersignAgreement: {
+            /** Challenge Token */
+            challenge_token?: string | null;
             /**
              * Method
              * @default drawn
              * @enum {string}
              */
-            method: "drawn" | "thumbprint";
+            method: "drawn" | "thumbprint" | "password" | "biometric";
             /** Name */
             name: string;
+            /** Passkey */
+            passkey?: {
+                [key: string]: unknown;
+            } | null;
+            /** Password */
+            password?: string | null;
             /** Signature Base64 */
-            signature_base64: string;
+            signature_base64?: string | null;
         };
         /** CvLink */
         CvLink: {
@@ -6398,6 +6440,11 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** PasskeyOptionsRequest */
+        PasskeyOptionsRequest: {
+            /** Name */
+            name: string;
+        };
         /**
          * PasswordChangeRequiredResponse
          * @description Returned instead of a session when the caller signed in with a temporary password.
@@ -7136,6 +7183,8 @@ export interface components {
         };
         /** SignAgreement */
         SignAgreement: {
+            /** Challenge Token */
+            challenge_token?: string | null;
             /** Expected Content Hash */
             expected_content_hash: string;
             /**
@@ -7143,9 +7192,15 @@ export interface components {
              * @default drawn
              * @enum {string}
              */
-            method: "drawn" | "thumbprint";
+            method: "drawn" | "thumbprint" | "password" | "biometric";
             /** Name */
             name: string;
+            /** Passkey */
+            passkey?: {
+                [key: string]: unknown;
+            } | null;
+            /** Password */
+            password?: string | null;
             /**
              * Role
              * @default client
@@ -7153,7 +7208,7 @@ export interface components {
              */
             role: "client" | "representative" | "witness" | "interpreter";
             /** Signature Base64 */
-            signature_base64: string;
+            signature_base64?: string | null;
         };
         /** SignatureBody */
         SignatureBody: {
@@ -8195,7 +8250,7 @@ export interface operations {
             };
         };
     };
-    admin_delete_voided_api_v1_admin_agreements__agreement_id__delete: {
+    admin_delete_agreement_api_v1_admin_agreements__agreement_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -8310,6 +8365,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CountersignAgreement"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_countersign_passkey_options_api_v1_admin_agreements__agreement_id__countersign_passkey_options_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agreement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeyOptionsRequest"];
             };
         };
         responses: {
@@ -16827,6 +16917,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SignAgreement"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_sign_passkey_options_api_v1_public_agreements_session_sign_passkey_options_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                agreement_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeyOptionsRequest"];
             };
         };
         responses: {

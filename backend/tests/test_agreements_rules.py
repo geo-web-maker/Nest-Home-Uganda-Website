@@ -196,9 +196,10 @@ def test_published_source_template_contains_complete_pdf_text_and_only_two_email
     assert "0787499988" in SOURCE_CLAUSES["Agreement introduction"]
     assert "+256787499988" in SOURCE_CLAUSES["14.1"]
     assert "is additional to, and is not included in calculating" in SOURCE_CLAUSES["8.4"]
-    assert "Illiterates Protection Act" in SOURCE_CLAUSES["Schedule C"]
+    # the source text is hard-wrapped, so compare with whitespace collapsed
+    assert "Illiterates Protection Act" in " ".join(SOURCE_CLAUSES["Schedule C"].split())
     assert all(f"{major}.{minor}" in SOURCE_CLAUSES
-               for major, counts in ((1, range(1, 6)), (2, range(1, 4)), (3, range(1, 4)),
+               for major, counts in ((1, range(1, 6)), (2, range(1, 4)), (3, range(1, 3)),  # the source PDF ends clause 3 at 3.2,
                                      (4, range(1, 3)), (5, range(1, 4)), (6, range(1, 5)),
                                      (7, range(1, 5)), (8, range(1, 9)), (9, range(1, 5)),
                                      (10, range(1, 5)), (11, range(1, 4)), (12, range(1, 6)),
