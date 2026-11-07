@@ -17,7 +17,8 @@ export class ClientErrorBoundary extends React.Component<Props, State> {
       <h1>Something went wrong</h1>
       <p>This screen could not be displayed. The technical error has been reported to the support diagnostics centre.</p>
       <p>Reference: <strong>{this.state.incidentId}</strong></p>
-      <Button onClick={() => window.location.reload()}>Reload the application</Button>
+      <Button onClick={() => window.location.reload()}>Reload the application</Button>{' '}
+      <Button href="/" variant="outline">Back to home</Button>
     </section>;
   }
 }

@@ -24,3 +24,14 @@
     min-height: 48dvh;
   }
 }
+
+.body {
+  max-width: 36rem;
+  color: var(--ink);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

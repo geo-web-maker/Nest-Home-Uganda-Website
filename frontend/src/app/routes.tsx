@@ -13,6 +13,7 @@ import { serviceDetailRoute } from '../features/public/services/serviceDetailRou
 import { teamRoute } from '../features/public/team';
 import { PublicLayout } from './PublicLayout';
 import { Root } from './Root';
+import { RouteErrorPage } from './RouteErrorPage';
 import { AgreementPublicPage } from '../features/public/agreements/AgreementPublicPage';
 
 // Dev-only. Vite replaces import.meta.env.DEV with false in production builds,
@@ -25,6 +26,7 @@ export const routes: RouteRecord[] = [
   {
     path: '/',
     Component: Root,
+    ErrorBoundary: RouteErrorPage,
     entry: 'src/app/routes.tsx',
     children: [
       {

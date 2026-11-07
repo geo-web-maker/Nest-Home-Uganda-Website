@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useParams } from 'react-router-dom';
-import { apiClient } from '../../../lib/api/client';
+import { ApiError, apiClient } from '../../../lib/api/client';
 import { createPasskey, passkeysSupported, type PasskeyCreationOptions } from '../../../lib/webauthn';
 import { AgreementFieldInput } from '../../agreements/AgreementFieldInput';
 import { SCHEDULE_SECTIONS, fieldLabel as metaLabel, fieldMeta } from '../../agreements/fieldMeta';
@@ -42,6 +42,7 @@ export function AgreementPublicPage() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [notice, setNotice] = useState('');
   const [changeRequested, setChangeRequested] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
@@ -72,7 +73,7 @@ export function AgreementPublicPage() {
       setChannel(result.available_channels.sms ? 'sms' : 'email');
       try { await loadReview(result.purpose); } catch { /* No valid OTP session yet. */ }
     }).catch((cause: unknown) => {
-      if (active) setError(cause instanceof Error ? cause.message : 'This agreement link is no longer available.');
+      if (active) { setLoadError(cause); setError(cause instanceof Error ? cause.message : 'This agreement link is no longer available.'); }
     });
     return () => { active = false; };
   }, [token, loadReview]);
@@ -222,7 +223,21 @@ export function AgreementPublicPage() {
     finally { setBusy(false); }
   };
 
-  if (error && !pre) return <main className={styles.page}><section className={styles.card}><h1>Agreement link unavailable</h1><p>{error}</p><p>Call Bloomwell on <a href="tel:0787499988">0787499988</a> for help.</p></section></main>;
+  if (error && !pre) {
+    const unreachable = !(loadError instanceof ApiError);
+    const expired = /expired/i.test(error);
+    return <main className={styles.page}><section className={styles.card} role="alert">
+      <h1>{unreachable ? 'We could not open your agreement' : expired ? 'This agreement link has expired' : 'Agreement link unavailable'}</h1>
+      {unreachable
+        ? <p>We could not reach Bloomwell just now. Check your internet connection and try again.</p>
+        : <>
+          <p>{expired ? 'For your security, agreement links stop working after 14 days.' : 'This link is no longer active.'} Nothing has been signed.</p>
+          <p>If we sent you a newer message about this agreement, please open the <strong>most recent</strong> email or SMS instead. Older links stop working whenever a new one is sent.</p>
+        </>}
+      {unreachable && <p><button type="button" onClick={() => window.location.reload()}>Try again</button></p>}
+      <p>Need a new link? Call Bloomwell on <a href="tel:0787499988">0787499988</a> or email <a href="mailto:info@bhcug.com">info@bhcug.com</a> and we will send one. <a href="/">Go to the Bloomwell home page</a>.</p>
+    </section></main>;
+  }
 
   return <main className={styles.page}>
     <header className={styles.brand}><span className={styles.brandMark}>B</span><div><strong>Bloomwell Home Care</strong><small>Client care agreement</small></div></header>
