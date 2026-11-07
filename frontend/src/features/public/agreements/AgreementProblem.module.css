@@ -1,0 +1,40 @@
+.page { min-height: 100vh; padding: 24px 14px 40px; font-family: Figtree, Arial, sans-serif; color: var(--ink); background: radial-gradient(900px 340px at 50% -80px, color-mix(in srgb, var(--straw) 70%, transparent), transparent), var(--bg); }
+.brand { width: min(100%, 520px); margin: 0 auto 18px; display: flex; align-items: center; gap: 11px; }
+.brand strong, .brand small { display: block; }
+.brand strong { font-family: var(--serif); font-size: 17px; letter-spacing: -.01em; }
+.brand small { margin-top: 3px; color: var(--mut); font-size: 12px; }
+.mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: var(--forest); box-shadow: 0 0 0 2px var(--surf), 0 0 0 3.5px var(--gold); }
+
+.card { position: relative; overflow: hidden; width: min(100%, 520px); margin: 0 auto; padding: clamp(24px, 6vw, 36px); background: var(--surf); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-1), 0 18px 48px color-mix(in srgb, var(--forest) 8%, transparent); }
+.card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: linear-gradient(90deg, var(--leaf), var(--gold) 55%, var(--straw)); }
+
+.badge { display: grid; place-items: center; width: 60px; height: 60px; margin-bottom: 18px; border-radius: 50%; background: var(--mint); color: var(--leaf); }
+.card[data-tone='link'] .badge { background: color-mix(in srgb, var(--gold) 20%, var(--surf)); color: color-mix(in srgb, var(--gold) 55%, var(--forest)); }
+.card[data-tone='fault'] .badge { background: color-mix(in srgb, var(--danger) 12%, var(--surf)); color: var(--danger); }
+
+.card h1 { margin: 0 0 10px; font-family: var(--serif); font-size: clamp(25px, 6vw, 31px); line-height: 1.15; letter-spacing: -.01em; color: var(--forest); text-wrap: balance; }
+.lead { margin: 0 0 8px; font-size: 16.5px; line-height: 1.6; }
+.more { margin: 0 0 8px; color: var(--mut); font-size: 14.5px; line-height: 1.6; }
+.offline { margin: 12px 0 0; padding: 10px 12px; border-radius: 9px; background: color-mix(in srgb, var(--danger) 10%, var(--surf)); color: var(--danger); font-size: 14px; line-height: 1.45; }
+.tips { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 14.5px; }
+.tips li { position: relative; padding-left: 22px; line-height: 1.45; }
+.tips li::before { content: ""; position: absolute; left: 3px; top: .55em; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+
+.primary { display: block; width: 100%; margin-top: 22px; min-height: 52px; padding: 13px 18px; border: 0; border-radius: 12px; background: var(--leaf); color: var(--on-leaf); font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+.primary:hover { background: var(--forest); }
+.primary:focus-visible, .action:focus-visible, .ref button:focus-visible, .small a:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+.help { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+.help p { margin: 0 0 12px; font-size: 14.5px; color: var(--mut); }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.action { display: grid; place-items: center; min-height: 48px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surf); color: var(--leaf); font-weight: 700; font-size: 15px; text-decoration: none; text-align: center; }
+.action:hover { background: var(--mint); }
+
+.ref { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 18px; padding: 10px 12px; border-radius: 10px; background: var(--mint); font-size: 13px; color: var(--mut); }
+.ref span { min-width: 0; overflow-wrap: anywhere; }
+.ref code { display: block; margin-top: 2px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; color: var(--ink); letter-spacing: .02em; }
+.ref button { flex: none; min-height: 36px; padding: 6px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surf); color: var(--leaf); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.small { margin: 12px 0 0; color: var(--mut); font-size: 12.5px; line-height: 1.5; }
+.small a { color: var(--leaf); }
+
+@media (max-width: 360px) { .actions { grid-template-columns: 1fr; } }

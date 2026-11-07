@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPoi
 import { useParams } from 'react-router-dom';
 import { apiClient } from '../../../lib/api/client';
 import { LogoMark } from '../../../components/brand/Logo';
+import { AgreementProblem } from './AgreementProblem';
 import { describeLinkFailure, loadWithRetry } from './linkFailure';
 import { createPasskey, passkeysSupported, type PasskeyCreationOptions } from '../../../lib/webauthn';
 import { AgreementFieldInput } from '../../agreements/AgreementFieldInput';
@@ -227,12 +228,7 @@ export function AgreementPublicPage() {
 
   if (error && !pre) {
     const failure = describeLinkFailure(loadError);
-    return <main className={styles.page}><section className={styles.card} role="alert">
-      <h1>{failure.title}</h1>
-      {failure.lines.map((line) => <p key={line}>{line}</p>)}
-      {failure.retry && <p><button type="button" onClick={() => window.location.reload()}>Try again</button></p>}
-      <p>Need help? Call Bloomwell on <a href="tel:0787499988">0787499988</a> or email <a href="mailto:info@bhcug.com">info@bhcug.com</a> and we will help. Please quote this reference: <strong>{failure.ref}</strong>. <a href="/">Go to the Bloomwell home page</a>.</p>
-    </section></main>;
+    return <AgreementProblem failure={failure} />;
   }
 
   return <main className={styles.page}>
