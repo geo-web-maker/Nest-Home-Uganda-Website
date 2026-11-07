@@ -50,6 +50,17 @@ const tabs = [
 type Tab = typeof tabs[number]['id'];
 
 function label(path: string): string { return fieldLabel(path); }
+
+/** The server names every field that blocked a send (ApiError.fields); list them so staff know what to fill in. */
+function missingFieldsMessage(cause: unknown, fallback: string): string {
+  if (!(cause instanceof Error)) return fallback;
+  const paths = cause instanceof ApiError ? Object.keys(cause.fields) : [];
+  if (paths.length === 0) return cause.message;
+  const names = paths.map((path) => (path === 'client.phone or client.email' ? 'Client phone or email' : label(path)));
+  const shown = names.slice(0, 6).join(', ');
+  const more = names.length > 6 ? ` and ${names.length - 6} more` : '';
+  return `${cause.message} Missing: ${shown}${more}.`;
+}
 function isScheduleTab(value: string): value is ScheduleTab { return value === 'parties' || value === 'schedule_a' || value === 'schedule_b' || value === 'schedule_c'; }
 function outstanding(fields: Record<string, AgreementField>, paths: string[]): string[] {
   return paths.filter((path) => { const field = fields[path]; return field !== undefined && (field.owner === 'staff' || field.owner === 'clinical') && isBlank(field.value); });
@@ -156,7 +167,7 @@ export function AgreementsPage() {
       const result = await apiClient.post<{ delivery: Record<string, boolean> }>(`/admin/agreements/${detail.id}/send`, { channels, expires_days: 14 });
       await loadDetail(detail.id); await loadList();
       setNotice(`Agreement sent. Delivery: ${Object.entries(result.delivery).map(([k, v]) => `${k} ${v ? 'sent' : 'failed'}`).join(', ') || 'none requested'}.`);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'The agreement could not be sent.'); }
+    } catch (cause) { setError(missingFieldsMessage(cause, 'The agreement could not be sent.')); }
     finally { setBusy(false); }
   };
 
