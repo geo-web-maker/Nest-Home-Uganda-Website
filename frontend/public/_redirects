@@ -1,3 +1,4 @@
 /admin /admin-shell 200
 /admin/* /admin-shell 200
 /agreement/* /agreement-shell 200
+/a/* /agreement-shell 200

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useParams } from 'react-router-dom';
-import { ApiError, apiClient } from '../../../lib/api/client';
+import { apiClient } from '../../../lib/api/client';
+import { describeLinkFailure } from './linkFailure';
 import { createPasskey, passkeysSupported, type PasskeyCreationOptions } from '../../../lib/webauthn';
 import { AgreementFieldInput } from '../../agreements/AgreementFieldInput';
 import { SCHEDULE_SECTIONS, fieldLabel as metaLabel, fieldMeta } from '../../agreements/fieldMeta';
@@ -16,7 +17,7 @@ type PublicAgreement = {
   signatures?: Array<{ role: string; name: string; method: string; signed_at: string }>;
   certificate?: Record<string, unknown> | null;
 };
-type PreOtp = { company: string; message: string; phone_hint?: string | null; email_hint?: string | null; available_channels: { sms: boolean; email: boolean }; purpose: 'sign' | 'view' };
+type PreOtp = { link_id?: string; release?: string; company: string; message: string; phone_hint?: string | null; email_hint?: string | null; available_channels: { sms: boolean; email: boolean }; purpose: 'sign' | 'view' };
 type OtpSent = { message: string; destination_hint: string };
 type TurnstileApi = {
   render: (container: HTMLElement, options: {
@@ -73,7 +74,7 @@ export function AgreementPublicPage() {
       setChannel(result.available_channels.sms ? 'sms' : 'email');
       try { await loadReview(result.purpose); } catch { /* No valid OTP session yet. */ }
     }).catch((cause: unknown) => {
-      if (active) { setLoadError(cause); setError(cause instanceof Error ? cause.message : 'This agreement link is no longer available.'); }
+      if (active) { setLoadError(cause); setError(cause instanceof Error ? cause.message : 'This agreement link could not be opened.'); }
     });
     return () => { active = false; };
   }, [token, loadReview]);
@@ -224,18 +225,12 @@ export function AgreementPublicPage() {
   };
 
   if (error && !pre) {
-    const unreachable = !(loadError instanceof ApiError);
-    const expired = /expired/i.test(error);
+    const failure = describeLinkFailure(loadError);
     return <main className={styles.page}><section className={styles.card} role="alert">
-      <h1>{unreachable ? 'We could not open your agreement' : expired ? 'This agreement link has expired' : 'Agreement link unavailable'}</h1>
-      {unreachable
-        ? <p>We could not reach Bloomwell just now. Check your internet connection and try again.</p>
-        : <>
-          <p>{expired ? 'For your security, agreement links stop working after 14 days.' : 'This link is no longer active.'} Nothing has been signed.</p>
-          <p>If we sent you a newer message about this agreement, please open the <strong>most recent</strong> email or SMS instead. Older links stop working whenever a new one is sent.</p>
-        </>}
-      {unreachable && <p><button type="button" onClick={() => window.location.reload()}>Try again</button></p>}
-      <p>Need a new link? Call Bloomwell on <a href="tel:0787499988">0787499988</a> or email <a href="mailto:info@bhcug.com">info@bhcug.com</a> and we will send one. <a href="/">Go to the Bloomwell home page</a>.</p>
+      <h1>{failure.title}</h1>
+      {failure.lines.map((line) => <p key={line}>{line}</p>)}
+      {failure.retry && <p><button type="button" onClick={() => window.location.reload()}>Try again</button></p>}
+      <p>Need help? Call Bloomwell on <a href="tel:0787499988">0787499988</a> or email <a href="mailto:info@bhcug.com">info@bhcug.com</a> and we will help. Please quote this reference: <strong>{failure.ref}</strong>. <a href="/">Go to the Bloomwell home page</a>.</p>
     </section></main>;
   }
 

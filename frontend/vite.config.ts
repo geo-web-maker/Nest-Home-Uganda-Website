@@ -4,6 +4,8 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
+  // Short id of this build, shown in the client support reference to spot a cached old copy.
+  define: { __BUILD_ID__: JSON.stringify(Date.now().toString(36).slice(-4)) },
   ssgOptions: { dirStyle: 'nested' },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
