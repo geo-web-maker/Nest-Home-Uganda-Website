@@ -51,6 +51,18 @@ type Tab = typeof tabs[number]['id'];
 
 function label(path: string): string { return fieldLabel(path); }
 
+/** Only the editable parts of a message template; the server rejects the extra keys a loaded template carries (version, is_default…). */
+function editableMessage(message: TemplateMessage) {
+  return { subject: message.subject, preheader: message.preheader, body: message.body, button: message.button, footer_note: message.footer_note };
+}
+
+/** The server's message plus the fields it rejected, so "check the highlighted fields" says which. */
+function errorWithFields(cause: unknown, fallback: string): string {
+  if (!(cause instanceof Error)) return fallback;
+  const detail = cause instanceof ApiError ? Object.entries(cause.fields).map(([name, why]) => `${name}: ${why}`).join('; ') : '';
+  return detail ? `${cause.message} (${detail})` : cause.message;
+}
+
 /** The server names every field that blocked a send (ApiError.fields); list them so staff know what to fill in. */
 function missingFieldsMessage(cause: unknown, fallback: string): string {
   if (!(cause instanceof Error)) return fallback;
@@ -183,9 +195,9 @@ export function AgreementsPage() {
     if (!message) return;
     setBusy(true); setError('');
     try {
-      await apiClient.put(`/admin/agreements/message-templates/${messageStage}/${messageChannel}`, message);
+      await apiClient.put(`/admin/agreements/message-templates/${messageStage}/${messageChannel}`, editableMessage(message));
       await loadMessage(messageStage, messageChannel); setMessagePreview(null); setNotice('Message template saved and audited.');
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not save this message.'); }
+    } catch (cause) { setError(errorWithFields(cause, 'Could not save this message.')); }
     finally { setBusy(false); }
   };
 
@@ -193,9 +205,9 @@ export function AgreementsPage() {
     if (!message) return;
     setBusy(true); setError('');
     try {
-      const result = await apiClient.post<MessagePreview>(`/admin/agreements/message-templates/${messageStage}/${messageChannel}/preview`, message);
+      const result = await apiClient.post<MessagePreview>(`/admin/agreements/message-templates/${messageStage}/${messageChannel}/preview`, editableMessage(message));
       setMessagePreview(result);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not preview this message.'); }
+    } catch (cause) { setError(errorWithFields(cause, 'Could not preview this message.')); }
     finally { setBusy(false); }
   };
 
