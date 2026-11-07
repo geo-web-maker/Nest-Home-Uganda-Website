@@ -53,7 +53,7 @@ export function MailInboundTrace() {
         <Button disabled={run.isPending} onClick={() => run.mutate()}>{run.isPending ? 'Running…' : 'Run incoming trace'}</Button>
         {trace ? <Button variant="outline" onClick={copy}>{copied ? 'Copied' : 'Copy everything'}</Button> : null}
       </ButtonGroup>
-      {error ? <Notice tone="error">{error}</Notice> : null}
+      {error ? <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice> : null}
       {trace ? (
         <>
           {trace.notes.map((note) => <Notice key={note} tone="info">{note}</Notice>)}

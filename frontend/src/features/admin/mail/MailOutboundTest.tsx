@@ -52,7 +52,7 @@ export function MailOutboundTest() {
       <Button disabled={!validEmail || send.isPending} onClick={() => send.mutate()}>
         {send.isPending ? 'Submitting test…' : 'Send external test'}
       </Button>
-      {error ? <Notice tone="error">{error}</Notice> : null}
+      {error ? <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice> : null}
       {result ? (
         <Notice tone={result.sent ? 'success' : 'info'}>
           {result.message || (result.sent ? `Accepted by ${result.provider || 'the provider'}. Check ${result.recipient || recipient}, including spam.` : 'No external message was sent.')}

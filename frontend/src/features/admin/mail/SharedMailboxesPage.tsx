@@ -141,7 +141,7 @@ export function SharedMailboxesPage() {
           </Button>
         </Notice>
       ) : null}
-      {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
+      {message ? <Notice tone={message.tone} floating onDismiss={() => setMessage(null)}>{message.text}</Notice> : null}
       <div className={styles.settingsStack}>
         {shared.isError ? (
           <section className={styles.panel} aria-label={t('mailShared.verifyTitle')}>

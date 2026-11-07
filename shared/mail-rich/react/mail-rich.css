@@ -134,9 +134,9 @@
 .mr-delivery-meta { font-size: .85em; opacity: .8; }
 
 /* Message action bar: one row on every screen, 44px targets. Uses the app's own tokens with fallbacks. */
-.mr-bar { display: flex; align-items: center; gap: 4px; min-width: 0; padding-bottom: 8px; border-bottom: 1px solid var(--mr-line, #ddd); color: var(--mr-fg, inherit); }
+.mr-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; min-width: 0; padding-bottom: 8px; border-bottom: 1px solid var(--mr-line, #ddd); color: var(--mr-fg, inherit); }
 .mr-bar-spacer { flex: 1 1 0; min-width: 0; }
-.mr-bar-icon, .mr-bar-text, .mr-bar-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 44px; min-height: 44px; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+.mr-bar-icon, .mr-bar-text, .mr-bar-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; white-space: nowrap; min-width: 44px; min-height: 44px; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
 .mr-bar-icon:hover:not(:disabled), .mr-bar-text:hover:not(:disabled) { background: color-mix(in srgb, currentColor 8%, transparent); }
 .mr-bar-icon[aria-pressed="true"] { color: var(--gold, #c39a3a); }
 .mr-bar button:focus-visible { outline: 2px solid var(--gold, #c39a3a); outline-offset: 2px; }

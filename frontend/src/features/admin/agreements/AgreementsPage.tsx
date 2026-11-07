@@ -340,8 +340,8 @@ export function AgreementsPage() {
     <div className={styles.page}>
       <PageHeader title="Agreements" subtitle="Online client agreements · Bloomwell Home Care Uganda Limited"
         actions={canWrite ? <Button onClick={create} disabled={busy}>New agreement</Button> : undefined} />
-      {error && <Notice tone="error">{error}</Notice>}
-      {notice && <Notice tone="success">{notice}</Notice>}
+      {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}
+      {notice && <Notice tone="success" floating onDismiss={() => setNotice('')}>{notice}</Notice>}
       <div className={styles.layout}>
         <section className={styles.listPanel} aria-label="Agreement list">
           <FilterBar label="Agreement filters">

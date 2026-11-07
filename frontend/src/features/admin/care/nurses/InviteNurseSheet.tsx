@@ -55,7 +55,7 @@ export function InviteNurseSheet({ onClose, onCreated }: { onClose: () => void; 
     <CareSheet title="Invite nurse" onClose={onClose}>
       <form className="care-form invite-nurse-form" onSubmit={submit}>
         <p>Enter the nurse's contact details and assign an active supervisor before sending an invitation.</p>
-        {error && <Notice tone="error">{error}</Notice>}
+        {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}
         <Field label="Full name" value={name} onChange={(event) => setName(event.target.value)} required requiredLabel="required" minLength={2} maxLength={80} autoComplete="name" />
         <Field label="Email address" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required requiredLabel="required" autoComplete="email" />
         <Field label="Phone number" type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required requiredLabel="required" minLength={9} maxLength={24} autoComplete="tel" />

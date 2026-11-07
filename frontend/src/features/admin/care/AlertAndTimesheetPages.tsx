@@ -62,7 +62,7 @@ export function AlertsPage() {
     <PageHeader title="Alerts" subtitle="Review care-operation signals. An acknowledgement is not the same as resolution." actions={<Button variant="outline" onClick={() => void load()}>Refresh</Button>} />
     <div className="stage-summary-strip"><div><strong>{rows.length}</strong><span>{human(status)} alerts</span></div><div><strong>{counts.critical}</strong><span>Critical in this view</span></div><div><strong>{counts.missed}</strong><span>Missed check-ins</span></div><div><strong>{rows.filter((row) => row.acknowledged_at).length}</strong><span>With acknowledgement time</span></div></div>
     <FilterTabs label="Alert status" value={status} onChange={setStatus} tabs={['open', 'acknowledged', 'resolved'].map((value) => ({ value, label: human(value) }))} />
-    {error && <Notice tone="error">{error}</Notice>}{notice && <Notice>{notice}</Notice>}
+    {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}{notice && <Notice floating onDismiss={() => setNotice('')}>{notice}</Notice>}
     {loading ? <p aria-busy="true">Loading alerts…</p> : rows.length === 0 ? <section className="stage-panel"><p>No {status} alerts.</p></section> : <section className="stage-panel"><DataTable
     columns={[
       { key: 'alert', header: 'Alert', cell: (row) => <button className="stage-text-action" type="button" onClick={() => setDetail(row)}><strong>{human(row.type)}</strong><small>{String(row.message ?? row.id)}</small></button> },
@@ -133,7 +133,7 @@ export function TimesheetsPage() {
   return <div className="stage-page">
     <PageHeader title="Timesheets" subtitle="Review submitted periods and record decisions. Approved periods are locked." actions={<Button variant="outline" onClick={() => void load()}>Refresh</Button>} />
     <FilterBar label="Filter timesheets"><Field label="Status" kind="select" value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All periods</option><option value="draft">Draft</option><option value="submitted">Submitted</option><option value="approved">Approved</option><option value="sent_back">Sent back</option></Field><Field label="Nurse ID" value={nurseId} onChange={(event) => setNurseId(event.target.value)} placeholder="Filter by nurse" /></FilterBar>
-    {error && <Notice tone="error">{error}</Notice>}{notice && <Notice>{notice}</Notice>}
+    {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}{notice && <Notice floating onDismiss={() => setNotice('')}>{notice}</Notice>}
     {rows.length === 0 ? <section className="stage-panel"><p>No timesheets match this filter.</p></section> : <section className="stage-panel"><DataTable
     columns={[
       { key: 'nurse', header: 'Nurse', cell: (row) => String(row.nurse_name ?? row.nurse_id) },
