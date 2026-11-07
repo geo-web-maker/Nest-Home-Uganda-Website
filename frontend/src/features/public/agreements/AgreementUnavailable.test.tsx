@@ -21,7 +21,7 @@ describe('agreement link problem screens', () => {
     renderPage();
     expect(await screen.findByRole('heading', { name: 'This agreement link has expired' })).toBeInTheDocument();
     expect(screen.getByText(/^L5-9F2A1C-/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '0787499988' })).toHaveAttribute('href', 'tel:0787499988');
+    expect(screen.getByRole('link', { name: /0787499988/ })).toHaveAttribute('href', 'tel:0787499988');
   });
 
   it('tells a link that never existed apart from a mistyped one', async () => {

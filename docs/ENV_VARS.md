@@ -9,7 +9,7 @@ Values are owner-supplied at deployment time. Never commit secrets or production
 | `MONGODB_URI` | Existing primary MongoDB connection string. |
 | `MONGODB_DB` | Existing primary database name. |
 | `SECRET_KEY` | JWT signing secret. |
-| `VITE_API_URL` | Backend base URL used by the Admin, Nurse and native builds. For Multi-Site Hosting, use `https://<hoster-domain>/nest` (no trailing slash), because the clients append `/api/v1`. |
+| `VITE_API_URL` | Leave EMPTY for the public website: Cloudflare proxies `/api/*` (see docs/CLOUDFLARE_API_PROXY.md). Backend base URL used by the Admin, Nurse and native builds. For Multi-Site Hosting, use `https://<hoster-domain>/nest` (no trailing slash), because the clients append `/api/v1`. |
 | `VITE_SITE_URL` | Public site origin (canonical and og:url). Set to the new domain; no domain is hardcoded. |
 | `FRONTEND_URL` | Public site origin used by the backend for links in emails and SMS. Set to the new domain. |
 | `SITE_REBUILD_HOOK_URL` | Optional Cloudflare Pages or Vercel deploy hook URL. The backend POSTs to it after an admin edits public content so the pre-rendered pages are rebuilt. Secret; empty disables it. |
