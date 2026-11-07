@@ -34,6 +34,22 @@ declare global { interface Window { turnstile?: TurnstileApi } }
 function fieldLabel(path: string): string { return metaLabel(path); }
 function toText(value: unknown): string { return value === null || value === undefined ? '' : typeof value === 'string' ? value : JSON.stringify(value, null, 2); }
 
+type SaveState = 'saving' | 'saved' | 'error';
+
+/** Per-field save indicator shown beside each field the client can edit. */
+function SaveStatus({ state, dirty, onRetry }: { state?: SaveState; dirty: boolean; onRetry: () => void }) {
+  const shown = state ?? (dirty ? 'unsaved' : 'idle');
+  return (
+    <span className={styles.saveState} data-state={shown} aria-live="polite">
+      {shown === 'saving' && 'Saving…'}
+      {shown === 'saved' && '✓ Saved'}
+      {shown === 'unsaved' && 'Unsaved changes'}
+      {shown === 'error' && <>Not saved. <button type="button" onClick={onRetry}>Retry</button></>}
+      {shown === 'idle' && 'Your field'}
+    </span>
+  );
+}
+
 export function AgreementPublicPage() {
   const { token = '' } = useParams();
   const [pre, setPre] = useState<PreOtp | null>(null);
@@ -59,11 +75,17 @@ export function AgreementPublicPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [saveState, setSaveState] = useState<Record<string, SaveState>>({});
+  const viewRef = useRef<PublicAgreement | null>(null);
+  const draftsRef = useRef<Record<string, string>>({});
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
+  draftsRef.current = drafts;
   useEffect(() => { let live = true; void passkeysSupported().then((ok) => { if (live) setBiometricAvailable(ok); }); return () => { live = false; }; }, []);
 
   const loadReview = useCallback(async (purpose: 'sign' | 'view') => {
     const endpoint = purpose === 'view' ? '/public/agreements/session/signed' : '/public/agreements/session';
     const result = await apiClient.get<PublicAgreement>(endpoint);
+    viewRef.current = result;
     setView(result);
     setDrafts(Object.fromEntries(Object.entries(result.fields).map(([path, field]) => [path, toText(field.value)])));
     setStep(purpose === 'view' ? 'signed' : 'review');
@@ -138,29 +160,87 @@ export function AgreementPublicPage() {
     finally { setBusy(false); }
   };
 
-  const saveField = async (path: string, override?: string) => {
-    if (!view) return;
-    const field = view.fields[path];
-    if (!field || !['client', 'either'].includes(field.owner)) return;
-    const value = override ?? drafts[path] ?? '';
-    if (value === toText(field.value)) return;
-    setBusy(true); setError('');
-    try {
-      const updated = await apiClient.patch<PublicAgreement>('/public/agreements/session/fields', {
-        changes: [{ path, value, expected_revision: field.revision, entered_by_staff: false }],
-      });
-      setView(updated);
-      setDrafts((old) => ({ ...old, [path]: value }));
-      setNotice(`${fieldLabel(path)} saved.`);
-    } catch (cause) {
-      if (cause instanceof Error && 'status' in cause && (cause as { status: number }).status === 409) {
-        try {
-          await loadReview('sign');
-          setError(`${fieldLabel(path)} was updated by someone else. The latest saved version is now displayed; review it before making another change.`);
-        } catch { setError('This review session expired. Verify again to continue.'); }
-      } else setError(cause instanceof Error ? cause.message : 'This field could not be saved.');
-    } finally { setBusy(false); }
+  /** Editable fields whose typed value differs from what the server holds. */
+  const dirtyChanges = () => {
+    const current = viewRef.current;
+    if (!current) return [];
+    return Object.entries(draftsRef.current).flatMap(([path, value]) => {
+      const field = current.fields[path];
+      if (!field || !['client', 'either'].includes(field.owner) || value === toText(field.value)) return [];
+      return [{ path, value, expected_revision: field.revision, entered_by_staff: false }];
+    });
   };
+
+  const markSaves = (paths: string[], state: SaveState | null) => setSaveState((old) => {
+    const next = { ...old };
+    for (const path of paths) { if (state) next[path] = state; else delete next[path]; }
+    return next;
+  });
+
+  /** Saves every unsaved edit in one request, one save at a time. Resolves to the latest agreement, or null if a save failed. */
+  const flushDrafts = useCallback((): Promise<PublicAgreement | null> => {
+    const run = async (): Promise<PublicAgreement | null> => {
+      const changes = dirtyChanges();
+      if (!changes.length) return viewRef.current;
+      const paths = changes.map((change) => change.path);
+      markSaves(paths, 'saving');
+      try {
+        const updated = await apiClient.patch<PublicAgreement>('/public/agreements/session/fields', { changes });
+        viewRef.current = updated;
+        setView(updated);
+        setError('');
+        markSaves(paths, 'saved');
+        window.setTimeout(() => setSaveState((old) => {
+          const next = { ...old };
+          for (const path of paths) if (next[path] === 'saved') delete next[path];
+          return next;
+        }), 3000);
+        return updated;
+      } catch (cause) {
+        if (cause instanceof Error && 'status' in cause && (cause as { status: number }).status === 409) {
+          markSaves(paths, null);
+          try {
+            await loadReview('sign');
+            setError('Someone updated this agreement while you were editing. The latest saved version is now shown; please review it and re-enter any change.');
+          } catch { setError('This review session expired. Verify again to continue.'); }
+        } else {
+          markSaves(paths, 'error');
+          setError(cause instanceof Error ? cause.message : 'Some changes could not be saved.');
+        }
+        return null;
+      }
+    };
+    const next = saveQueue.current.then(run, run);
+    saveQueue.current = next;
+    return next;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadReview]);
+
+  /** Called when the client leaves a field: save straight away. */
+  const saveField = (path: string, value: string) => {
+    draftsRef.current = { ...draftsRef.current, [path]: value };
+    void flushDrafts();
+  };
+
+  // Autosave shortly after typing stops, so nothing relies on the client leaving the field.
+  useEffect(() => {
+    if (step !== 'review') return undefined;
+    const timer = window.setTimeout(() => { if (dirtyChanges().length) void flushDrafts(); }, 1200);
+    return () => window.clearTimeout(timer);
+    // dirtyChanges reads refs only, so it is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drafts, step, flushDrafts]);
+
+  // Warn before the page is closed with unsaved or in-flight changes.
+  useEffect(() => {
+    if (step !== 'review') return undefined;
+    const warn = (event: BeforeUnloadEvent) => {
+      if (dirtyChanges().length || Object.values(saveState).includes('saving')) event.preventDefault();
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, saveState]);
 
   const pointerPosition = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -207,9 +287,11 @@ export function AgreementPublicPage() {
     if (problem) { setError(problem); return; }
     setBusy(true); setError(''); setNotice('');
     try {
+      const fresh = await flushDrafts(); // save anything still unsaved, and sign the version the server now holds
+      if (!fresh) { setError((prev) => prev || 'Some of your answers could not be saved. Please check the marked fields and try again.'); return; }
       const evidence = await collectEvidence();
       const result = await apiClient.post<{ signed: boolean }>('/public/agreements/session/sign', {
-        name: name.trim(), role: 'client', expected_content_hash: view.content_hash, ...evidence,
+        name: name.trim(), role: 'client', expected_content_hash: fresh.content_hash, ...evidence,
       });
       if (result.signed) { setStep('signed'); setNotice('Your signature has been received. Bloomwell will countersign and send confirmation.'); }
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Your signature could not be recorded.'); }
@@ -282,7 +364,7 @@ export function AgreementPublicPage() {
                   const editable = field.owner === 'client' || field.owner === 'either';
                   const meta = fieldMeta(path);
                   return <div className={styles.formField} key={path}>
-                    <label htmlFor={`client-${path}`}><span>{meta.label}{meta.required && <abbr title="Required"> *</abbr>}</span><small>{editable ? 'Your field' : 'Completed by Bloomwell'}</small></label>
+                    <label htmlFor={`client-${path}`}><span>{meta.label}{meta.required && <abbr title="Required"> *</abbr>}</span><small>{editable ? <SaveStatus state={saveState[path]} dirty={(drafts[path] ?? toText(field.value)) !== toText(field.value)} onRetry={() => void flushDrafts()} /> : 'Completed by Bloomwell'}</small></label>
                     {meta.help && <small>{meta.help}</small>}
                     <AgreementFieldInput path={path} id={`client-${path}`} value={drafts[path] ?? toText(field.value)} readOnly={!editable} currency={currency}
                       onChange={(value) => setDrafts((old) => ({ ...old, [path]: value }))} onCommit={(value) => void saveField(path, value)} />

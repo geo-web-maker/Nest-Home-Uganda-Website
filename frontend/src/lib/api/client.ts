@@ -128,7 +128,12 @@ export function createApiClient({
     const response = await send(method, path, body, options, false);
     if (!response.ok) throw await toApiError(response, `${method} ${API_PREFIX}${path}`);
     if (response.status === 204) return undefined as T;
-    return (await response.json()) as T;
+    try {
+      return (await response.json()) as T;
+    } catch {
+      // A 2xx that is not JSON is almost always a web page (the site's own shell or a proxy/CDN page), not the API.
+      throw new ApiError(response.status, 'invalid_response', 'The reply was not from the Bloomwell API.', {}, undefined, `${method} ${API_PREFIX}${path}`);
+    }
   }
 
   return {

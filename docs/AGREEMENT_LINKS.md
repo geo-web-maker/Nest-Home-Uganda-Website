@@ -27,6 +27,8 @@ Format: `CODE-LINKID-WEB.API`, for example `L3-9F2A1C-k3j2.7c3d`.
 | N2 | Rate limited (too many requests from that device) |
 | N3 | Server error (the second part is the request id) |
 | N4 | Reply was not understood (usually a stale cached page, or a proxy page) |
+| N6 | Request refused (HTTP 401/403): a Cloudflare/WAF challenge, bot rule or proxy block. The `h403` at the end is the status |
+| N7 | Status 2xx but the body was a web page, not JSON: `/api/*` is not reaching the Worker/backend (check run_worker_first, BACKEND_URL, route) |
 | N5 | Server answered 404 with no link reason (an old backend, or the wrong host) |
 
 * **LINKID** is a fingerprint of the link. It matches the Link ID shown in admin. Two devices showing different IDs

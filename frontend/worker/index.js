@@ -37,6 +37,11 @@ async function proxy(request, env, url) {
   const target = `${base.origin}${mountPrefix}${url.pathname}${url.search}`;
 
   const headers = new Headers(request.headers);
+  // The browser's Host (bhcug.com) must not travel to the backend: its Cloudflare edge answers
+  // "Direct IP access not allowed" (error 1003) when Host and the address being called disagree.
+  // Dropping it makes fetch() send the backend's own hostname. cf-* headers belong to this request only.
+  headers.delete('host');
+  for (const name of [...headers.keys()]) if (name.startsWith('cf-') && name !== 'cf-connecting-ip') headers.delete(name);
   const clientIp = request.headers.get('cf-connecting-ip');
   if (clientIp) { headers.set('x-forwarded-for', clientIp); headers.set('x-real-ip', clientIp); headers.set('cf-connecting-ip', clientIp); }
   headers.set('x-forwarded-host', url.host);

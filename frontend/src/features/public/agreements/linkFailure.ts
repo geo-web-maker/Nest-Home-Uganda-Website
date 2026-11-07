@@ -68,10 +68,20 @@ export function describeLinkFailure(cause: unknown): LinkFailure {
         lines: ['Your link is fine. Please try again in a moment.'],
         ref: supportRef('N3', cause.requestId?.slice(0, 6).toUpperCase(), undefined) };
     }
+    if (cause.code === 'invalid_response') {
+      return { kind: 'unexpected', title: 'We could not open your agreement', retry: true,
+        lines: ['The website received a reply that was not from Bloomwell\u2019s server. Your link is fine. Please try again, and if it still fails contact us with the reference below.'],
+        ref: supportRef('N7', undefined, `h${cause.status}`) };
+    }
+    if (cause.status === 401 || cause.status === 403) {
+      return { kind: 'unexpected', title: 'Your connection was blocked', retry: true,
+        lines: ['Something between your device and Bloomwell refused the request. Your link is fine. Try another connection (Wi-Fi or mobile data), turn off any VPN or content blocker, and try again.'],
+        ref: supportRef('N6', undefined, `h${cause.status}`) };
+    }
     // An error that does not carry a link reason: usually an old server version or a stale cached copy.
     return { kind: 'unexpected', title: 'We could not open your agreement', retry: true,
       lines: ['This page may be out of date. Please reload it. If it still fails, contact us with the reference below.'],
-      ref: supportRef(cause.status === 404 ? 'N5' : 'N4', undefined, undefined) };
+      ref: supportRef(cause.status === 404 ? 'N5' : 'N4', undefined, `h${cause.status}`) };
   }
   return { kind: 'unexpected', title: 'We could not open your agreement', retry: true,
     lines: ['The page received an unexpected reply. Please reload it. If it still fails, contact us with the reference below.'],
