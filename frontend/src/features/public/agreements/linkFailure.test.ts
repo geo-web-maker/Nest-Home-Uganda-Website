@@ -2,7 +2,7 @@ import { ApiError } from '../../../lib/api/client';
 import { describeLinkFailure } from './linkFailure';
 
 const linkError = (state: string, ref: string) =>
-  new ApiError(state === 'expired' ? 410 : 404, `link_${state}`, 'server text', { state, ref, link_id: ref.split('-')[1], release: 'abc1234' });
+  new ApiError(state === 'expired' ? 410 : 404, `link_${state}`, 'server text', { state, ref, link_id: ref.split('-')[1] ?? '', release: 'abc1234' });
 
 describe('describeLinkFailure', () => {
   it('gives each link problem its own title and support ref', () => {
