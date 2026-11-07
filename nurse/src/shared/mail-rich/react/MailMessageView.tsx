@@ -1,5 +1,6 @@
 /* GENERATED from shared/mail-rich. Edit there, then run: node scripts/sync-mail-rich.mjs */
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { MailAttachment, MailMessageView as Message } from '../core/types';
 import { AttachmentList } from './AttachmentList';
 import { useMailUi } from './MailUiKit';
@@ -13,6 +14,7 @@ export function MailMessageView({
   showRemoteImages,
   onRetryDelivery,
   actions,
+  moreSlot,
 }: {
   message: Message;
   onDownload: (attachment: MailAttachment) => void;
@@ -23,6 +25,8 @@ export function MailMessageView({
   onRetryDelivery?: () => Promise<void> | void;
   /** Extra rows for the More menu, such as Forward, Star or Move to trash. */
   actions?: { key: string; label: string; onSelect: () => void; disabled?: boolean }[];
+  /** Element inside the host's action bar (see MessageActionBar `onMoreSlot`). When set, the More menu renders there, on the same row as the other actions. */
+  moreSlot?: HTMLElement | null;
 }) {
   const { kit, labels } = useMailUi();
   const [formatted, setFormatted] = useState(Boolean(message.body_html || message.quoted_html));
@@ -43,9 +47,32 @@ export function MailMessageView({
   const showImagesStrip = Boolean(message.has_remote_images && showRemoteImages && !remoteImagesEnabled);
   const menuActions = actions ?? [];
   const hasMore = menuActions.length > 0 || hasRichBody || Boolean(notes.signed) || Boolean(message.can_download_original && onDownloadOriginal);
+  const moreMenu = (
+    <div className="mr-more" ref={menuRef}>
+      <button type="button" className="mr-more-trigger" aria-haspopup="menu" aria-expanded={menuOpen} aria-label={labels.moreOptions} title={labels.moreOptions} onClick={() => setMenuOpen((open) => !open)}><span aria-hidden="true">⋯</span></button>
+      {menuOpen ? (
+        <ul className="mr-menu" role="menu" aria-label={labels.moreOptions}>
+          {menuActions.map((action) => (
+            <li role="none" key={action.key}><button type="button" role="menuitem" disabled={action.disabled} onClick={() => { setMenuOpen(false); action.onSelect(); }}><span className="mr-menu-check" aria-hidden="true" />{action.label}</button></li>
+          ))}
+          {hasRichBody ? (
+            <>
+              <li role="none" className={menuActions.length ? 'mr-menu-sep' : undefined}><button type="button" role="menuitemradio" aria-checked={formatted} onClick={() => { setFormatted(true); setMenuOpen(false); }}><span className="mr-menu-check" aria-hidden="true">{formatted ? '✓' : ''}</span>{labels.formatted}</button></li>
+              <li role="none"><button type="button" role="menuitemradio" aria-checked={!formatted} onClick={() => { setFormatted(false); setMenuOpen(false); }}><span className="mr-menu-check" aria-hidden="true">{!formatted ? '✓' : ''}</span>{labels.plainText}</button></li>
+            </>
+          ) : null}
+          {message.can_download_original && onDownloadOriginal ? (
+            <li role="none" className={hasRichBody || menuActions.length ? 'mr-menu-sep' : undefined}><button type="button" role="menuitem" onClick={() => { onDownloadOriginal(); setMenuOpen(false); }}><span className="mr-menu-check" aria-hidden="true" />{labels.downloadOriginal}</button></li>
+          ) : null}
+          {notes.signed ? <li role="none" className="mr-menu-note">{labels.signedMessage}</li> : null}
+        </ul>
+      ) : null}
+    </div>
+  );
   return (
     <article className="mr-message">
-      {showImagesStrip || hasMore ? (
+      {hasMore && moreSlot ? createPortal(moreMenu, moreSlot) : null}
+      {showImagesStrip || (hasMore && !moreSlot) ? (
         <div className="mr-message-bar">
           {showImagesStrip ? (
             <div className="mr-strip" role="status">
@@ -53,28 +80,7 @@ export function MailMessageView({
               <button type="button" className="mr-link-button" onClick={() => { setRemoteImagesEnabled(true); showRemoteImages?.(message); }}>{labels.showImages}</button>
             </div>
           ) : <span />}
-          {hasMore ? (
-            <div className="mr-more" ref={menuRef}>
-              <button type="button" className="mr-more-trigger" aria-haspopup="menu" aria-expanded={menuOpen} aria-label={labels.moreOptions} title={labels.moreOptions} onClick={() => setMenuOpen((open) => !open)}><span aria-hidden="true">⋯</span></button>
-              {menuOpen ? (
-                <ul className="mr-menu" role="menu" aria-label={labels.moreOptions}>
-                  {menuActions.map((action) => (
-                    <li role="none" key={action.key}><button type="button" role="menuitem" disabled={action.disabled} onClick={() => { setMenuOpen(false); action.onSelect(); }}><span className="mr-menu-check" aria-hidden="true" />{action.label}</button></li>
-                  ))}
-                  {hasRichBody ? (
-                    <>
-                      <li role="none" className={menuActions.length ? 'mr-menu-sep' : undefined}><button type="button" role="menuitemradio" aria-checked={formatted} onClick={() => { setFormatted(true); setMenuOpen(false); }}><span className="mr-menu-check" aria-hidden="true">{formatted ? '✓' : ''}</span>{labels.formatted}</button></li>
-                      <li role="none"><button type="button" role="menuitemradio" aria-checked={!formatted} onClick={() => { setFormatted(false); setMenuOpen(false); }}><span className="mr-menu-check" aria-hidden="true">{!formatted ? '✓' : ''}</span>{labels.plainText}</button></li>
-                    </>
-                  ) : null}
-                  {message.can_download_original && onDownloadOriginal ? (
-                    <li role="none" className={hasRichBody || menuActions.length ? 'mr-menu-sep' : undefined}><button type="button" role="menuitem" onClick={() => { onDownloadOriginal(); setMenuOpen(false); }}><span className="mr-menu-check" aria-hidden="true" />{labels.downloadOriginal}</button></li>
-                  ) : null}
-                  {notes.signed ? <li role="none" className="mr-menu-note">{labels.signedMessage}</li> : null}
-                </ul>
-              ) : null}
-            </div>
-          ) : null}
+          {hasMore && !moreSlot ? moreMenu : null}
         </div>
       ) : null}
       {formatted && message.body_html ? (

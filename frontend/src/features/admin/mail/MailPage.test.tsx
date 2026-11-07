@@ -129,12 +129,28 @@ describe('MailPage', () => {
     expect(within(reader()).queryByRole('button', { name: 'Move to trash' })).toBeNull();
   });
 
+  it('keeps rare actions under one More menu and closes it on Escape', async () => {
+    api();
+    const user = userEvent.setup();
+    setup();
+    await user.click(await screen.findByRole('button', { name: /Rota change/ }));
+    expect(within(reader()).queryByRole('menuitem')).toBeNull();
+    await user.click(await within(reader()).findByRole('button', { name: 'More options' }));
+    expect(within(reader()).getByRole('menuitem', { name: 'Forward as attachment (.eml)' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(within(reader()).queryByRole('menuitem')).toBeNull();
+    await user.click(within(reader()).getByRole('button', { name: 'More options' }));
+    await user.click(within(reader()).getByRole('menuitem', { name: 'Mark unread' }));
+    expect(apiClient.patch).toHaveBeenCalledWith('/mail/messages/m1', { is_read: false });
+  });
+
   it('reports spam with the report-spam endpoint for external mail', async () => {
     api();
     const user = userEvent.setup();
     setup();
     await user.click(await screen.findByRole('button', { name: /Rota change/ }));
-    await user.click(await within(reader()).findByRole('button', { name: 'Report spam' }));
+    await user.click(await within(reader()).findByRole('button', { name: 'More options' }));
+    await user.click(await within(reader()).findByRole('menuitem', { name: 'Report spam' }));
     expect(apiClient.post).toHaveBeenCalledWith('/mail/messages/m1/report-spam');
   });
 

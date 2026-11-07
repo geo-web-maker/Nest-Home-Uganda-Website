@@ -10,6 +10,7 @@ import { MailRow } from './MailRow';
 import { MailComposeSheet, type ComposeState } from './MailComposeSheet';
 import { invalidAddresses, parseAddresses, replySubject } from './mailAddresses';
 import { MailMessageView } from '../../shared/mail-rich/react/MailMessageView';
+import { MessageActionBar } from '../../shared/mail-rich/react/MessageActionBar';
 import type { MailDelivery, MailMessageView as SharedMailMessage } from '../../shared/mail-rich/core/types';
 import { useAttachmentUploader } from '../../shared/mail-rich/react/useAttachmentUploader';
 import { NurseMailUiProvider } from './mailUiKit';
@@ -44,6 +45,7 @@ export function MailScreen() {
   const [folder, setFolder] = useState<Folder>('inbox');
   const [messages, setMessages] = useState<CachedMessage[]>([]);
   const [selectedId, setSelectedId] = useState('');
+  const [moreSlot, setMoreSlot] = useState<HTMLElement | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [drafts, setDrafts] = useState<MailDraft[]>([]);
   const [composer, setComposer] = useState<ComposeState | null>(null);
@@ -418,12 +420,10 @@ export function MailScreen() {
   </div>;
 
   const inRestoreFolder = folder === 'trash' || folder === 'spam';
+  // Reply, Reply all, Forward, Star and Trash sit in the action bar; only the rarer ones live in More options.
   const messageActions = selected ? [
-    { key: 'forward', label: copy.mail.forward, onSelect: () => startForward(false), disabled: !online },
     { key: 'forward-eml', label: copy.mail.forwardAsAttachment, onSelect: () => startForward(true), disabled: !online },
-    { key: 'star', label: selected.is_starred ? copy.mail.unstar : copy.mail.star, onSelect: () => void change(selected, { is_starred: !selected.is_starred }), disabled: !online },
     { key: 'unread', label: copy.mail.markUnread, onSelect: () => void change(selected, { is_read: false }, true), disabled: !online },
-    { key: 'trash', label: inRestoreFolder ? copy.mail.restore : copy.mail.trash, onSelect: () => void change(selected, { folder: inRestoreFolder ? 'inbox' : 'trash' }, true), disabled: !online },
     ...(selected.origin === 'inbound' && folder !== 'spam' ? [{ key: 'spam', label: copy.mail.reportSpam, onSelect: () => void reportSpam(selected), disabled: !online }] : []),
   ] : [];
   return <section className="screen mail-screen" aria-labelledby="mail-heading">
@@ -453,11 +453,20 @@ export function MailScreen() {
     </Card>}
 
     {selected ? <Card>
-      <div className="mail-actions">
-        <PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={() => setSelectedId('')}>{copy.mail.backToList}</PillButton>
-        <PillButton type="button" tone="forest" size="sm" showArrow={false} onClick={startReply} disabled={!online}>{copy.mail.reply}</PillButton>
-        <PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={startReplyAll} disabled={!online}>{copy.mail.replyAll}</PillButton>
-      </div>
+      <MessageActionBar
+        labels={{ actions: copy.mail.messageActions, back: copy.mail.backToList, reply: copy.mail.reply, replyAll: copy.mail.replyAll, forward: copy.mail.forward, star: copy.mail.star, unstar: copy.mail.unstar, trash: copy.mail.trash, restore: copy.mail.restore, editDraft: copy.mail.editDraft }}
+        starred={Boolean(selected.is_starred)}
+        restorable={inRestoreFolder}
+        disabled={!online}
+        onBack={() => setSelectedId('')}
+        onReply={startReply}
+        onReplyAll={startReplyAll}
+        onForward={() => startForward(false)}
+        onStar={() => void change(selected, { is_starred: !selected.is_starred })}
+        onTrash={() => void change(selected, { folder: 'trash' }, true)}
+        onRestore={() => void change(selected, { folder: 'inbox' }, true)}
+        onMoreSlot={setMoreSlot}
+      />
       <h3>{selected.subject || copy.mail.noSubject}</h3>
       <details className="mail-sender">
         <summary>
@@ -496,7 +505,7 @@ export function MailScreen() {
         render_notes: detail.render_notes ?? {}, has_remote_images: Boolean(detail.has_remote_images),
         can_download_original: Boolean(detail.can_download_original), delivery: detail.delivery ?? null,
       }} onDownload={(attachment) => void download(attachment.id)} onDownloadOriginal={() => void downloadOriginal()}
-        onExternalLink={(url) => setExternalLink(url)} showRemoteImages={() => undefined} onRetryDelivery={retryDelivery} actions={messageActions} /></NurseMailUiProvider>}
+        onExternalLink={(url) => setExternalLink(url)} showRemoteImages={() => undefined} onRetryDelivery={retryDelivery} actions={messageActions} moreSlot={moreSlot} /></NurseMailUiProvider>}
     </Card> : <>
       <div className="mail-folders" role="group" aria-label={copy.mail.folder}>
         {FOLDERS.map((name) => <PillButton key={name} type="button" tone={folder === name ? 'forest' : 'ghost'} size="sm" showArrow={false} aria-pressed={folder === name} onClick={() => { setFolder(name); setSelectedId(''); }}>{copy.mail.folders[name]}</PillButton>)}
