@@ -394,18 +394,10 @@ async def public_session(response: Response, agreement_session: str | None = Coo
     return result
 
 
-@public_router.get("/{token}", dependencies=[Depends(_token_rate_limit("agreement_pre_otp", 40, 900))])
+@public_router.get("/{token}", dependencies=[Depends(_token_rate_limit("agreement_pre_otp", 120, 900))])
 async def public_pre_otp(token: str, response: Response):
-    digest = service._token_hash(token)
-    doc = await Agreement.find_one(Agreement.token_hash == digest)
-    purpose = "sign"
-    if doc is None:
-        doc = await Agreement.find_one(Agreement.view_token_hash == digest)
-        purpose = "view"
-    if doc is None:
-        raise NotFound("This agreement link is no longer active")
-    if purpose == "sign" and (not doc.token_expires_at or doc.token_expires_at <= datetime.now(UTC)):
-        raise NotFound("This agreement link has expired")
+    resolved = await service.resolve_link(token)
+    doc, purpose = resolved.doc, resolved.purpose
     phone_field = doc.fields.get(rules.field_key("client.phone"))
     email_field = doc.fields.get(rules.field_key("client.email"))
     phone = phone_field.value if phone_field else ""
@@ -417,7 +409,19 @@ async def public_pre_otp(token: str, response: Response):
             "phone_hint": (str(phone)[:4] + "***" + str(phone)[-3:]) if phone else None,
             "email_hint": (str(email).split("@", 1)[0][:1] + "***@" + str(email).split("@", 1)[-1]) if email else None,
             "available_channels": {"sms": sms_ready, "email": email_ready},
-            "purpose": purpose}
+            "purpose": purpose, "corrected": resolved.corrected, "link_id": resolved.link_id, "release": service._release()}
+
+
+@admin_router.get("/{agreement_id}/link")
+async def admin_get_link(agreement_id: str, principal: CanWrite, request: Request):
+    doc = await service.get_agreement(agreement_id)
+    return await service.get_link(doc, principal, hash_ip(client_ip(request)))
+
+
+@admin_router.post("/{agreement_id}/link/revoke")
+async def admin_revoke_links(agreement_id: str, principal: CanWrite, request: Request):
+    doc = await service.get_agreement(agreement_id)
+    return await service.revoke_links(doc, principal, hash_ip(client_ip(request)))
 
 
 @public_router.post("/{token}/otp/request", dependencies=[Depends(_token_rate_limit("agreement_otp", 5, 900))])

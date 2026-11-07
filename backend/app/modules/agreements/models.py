@@ -41,6 +41,14 @@ class AgreementEvent(BaseModel):
     ip_hash: str | None = None
 
 
+class LinkTomb(BaseModel):
+    """A link hash that is no longer the live link, and why."""
+    hash: str
+    reason: Literal["superseded", "expired", "signed", "revoked", "closed"]
+    purpose: Literal["sign", "view"] = "sign"
+    at: datetime = Field(default_factory=utcnow)
+
+
 class AgreementSignature(BaseModel):
     role: SignatureRole
     name: str = Field(min_length=1, max_length=160)
@@ -69,6 +77,8 @@ class Agreement(TimestampedDocument):
     schedule_b_computed: dict[str, Any] = Field(default_factory=dict)
     token_hash: str | None = None
     view_token_hash: str | None = None
+    link_generation: int = 0
+    link_history: list[LinkTomb] = Field(default_factory=list)
     token_issued_at: datetime | None = None
     token_expires_at: datetime | None = None
     session_version: int = 0
@@ -89,6 +99,7 @@ class Agreement(TimestampedDocument):
             IndexModel([("reference", ASCENDING)], unique=True, name="uq_agreement_reference"),
             IndexModel([("token_hash", ASCENDING)], name="ix_agreement_token"),
             IndexModel([("view_token_hash", ASCENDING)], name="ix_agreement_view_token"),
+            IndexModel([("link_history.hash", ASCENDING)], name="ix_agreement_link_history"),
             IndexModel([("status", ASCENDING), ("expires_at", ASCENDING)], name="ix_agreement_expiry"),
             IndexModel([("fields.client__email.value", ASCENDING)], name="ix_agreement_client_email"),
             IndexModel([("fields.client__phone.value", ASCENDING)], name="ix_agreement_client_phone"),

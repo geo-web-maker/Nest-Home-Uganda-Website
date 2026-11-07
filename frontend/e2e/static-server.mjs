@@ -45,7 +45,7 @@ function resolveFile(urlPath) {
   if (extname(clean)) return null;
   if (entry) return join(root, entry);
   // Same as the vercel.json rewrites: /admin/* and /agreement/* get their clean shells, everything else the home page.
-  if (/^[/\\]agreement([/\\]|$)/.test(clean)) return join(root, 'agreement-shell.html');
+  if (/^[/\\](agreement|a)([/\\]|$)/.test(clean)) return join(root, 'agreement-shell.html');
   if (/^[/\\]admin([/\\]|$)/.test(clean)) return join(root, 'admin-shell.html');
   // Unknown address: like Cloudflare (not_found_handling "404-page") answer with 404.html and a 404 status.
   notFound = true;

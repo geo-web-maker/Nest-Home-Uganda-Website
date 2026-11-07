@@ -20,11 +20,11 @@ from app.core.phone import is_mobile, mask, normalise_e164, normalise_phone
 from app.core.rate_limit import limiter
 from app.core.security import hash_ip, verify_password
 from app.core.storage import Bucket, get_storage
-from app.modules.agreements import credentials, messages, render, rules
+from app.modules.agreements import credentials, links, messages, render, rules
 from app.modules.agreements import repository
 from app.modules.agreements.models import (
     Agreement, AgreementEvent, AgreementField, AgreementMessageTemplate,
-    AgreementOtp, AgreementSignature, AgreementTemplate, IMAGE_SIGNATURE_METHODS,
+    AgreementOtp, AgreementSignature, AgreementTemplate, IMAGE_SIGNATURE_METHODS, LinkTomb,
 )
 from app.modules.agreements.schemas import (
     AgreementCreate, FieldPatch, MessageTemplatePatch, SendAgreement, TemplateDraft,
@@ -62,6 +62,101 @@ def _secret() -> bytes:
 
 def _token_hash(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+# ---- Stable public links (see links.py) ---------------------------------------------
+def _release() -> str:
+    import os
+    return (os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("APP_RELEASE") or "dev")[:7]
+
+
+def _retire_hash(doc: Agreement, digest: str | None, reason: str, purpose: str = "sign") -> None:
+    if not digest:
+        return
+    history = [t for t in doc.link_history if t.hash != digest]
+    history.append(LinkTomb(hash=digest, reason=reason, purpose=purpose))  # type: ignore[arg-type]
+    doc.link_history = history[-30:]
+
+
+def clear_link(doc: Agreement, reason: str, *, view: bool = False) -> None:
+    """End the live link(s), remembering why so the client sees the right message."""
+    _retire_hash(doc, doc.token_hash, reason)
+    doc.token_hash = None
+    if view:
+        _retire_hash(doc, doc.view_token_hash, reason, "view")
+        doc.view_token_hash = None
+
+
+def activate_link(doc: Agreement, *, fresh: bool = False) -> str:
+    """Make the agreement's stable link live and return its public URL.
+
+    Re-sends, reminders and staff edits reuse the same link. `fresh=True` (explicit staff
+    action) moves to a new generation; previous links keep working until the agreement
+    closes unless the caller revokes them.
+    """
+    if fresh:
+        doc.link_generation += 1
+    code = links.derive(_secret(), str(doc.id), doc.link_generation, "sign")
+    digest = links.link_hash(code)
+    if doc.token_hash and doc.token_hash != digest:
+        _retire_hash(doc, doc.token_hash, "superseded")
+    doc.link_history = [t for t in doc.link_history if t.hash != digest]
+    doc.token_hash = digest
+    return messages.public_link(code)
+
+
+def link_info(doc: Agreement) -> dict[str, Any]:
+    """Admin-facing facts about the agreement's link. Never includes a secret unless live."""
+    try:
+        code = links.derive(_secret(), str(doc.id), doc.link_generation, "sign")
+    except RuntimeError:  # no strong application secret configured
+        return {"state": "none", "link_id": None, "generation": doc.link_generation, "url": None,
+                "expires_at": None, "earlier_links_still_valid": 0}
+    live = bool(doc.token_hash) and doc.token_hash == links.link_hash(code)
+    legacy = bool(doc.token_hash) and not live
+    return {
+        "state": "live" if live else "legacy" if legacy else "none",
+        "link_id": links.link_id(code) if live else (doc.token_hash or "")[:6].upper() or None,
+        "generation": doc.link_generation,
+        "url": messages.public_link(code) if live else None,
+        "expires_at": doc.token_expires_at.isoformat() if doc.token_expires_at else None,
+        "earlier_links_still_valid": sum(1 for t in doc.link_history if t.reason == "superseded"),
+    }
+
+
+async def get_link(doc: Agreement, principal: Principal, ip: str | None = None) -> dict[str, Any]:
+    """Return the link for copying (WhatsApp etc.) without sending anything."""
+    if doc.status not in {"sent", "client_in_progress"}:
+        raise Conflict("Send the agreement first. A link is available while it is open for the client.")
+    if links.link_hash(links.derive(_secret(), str(doc.id), doc.link_generation, "sign")) != doc.token_hash:
+        activate_link(doc)
+        await doc.save()
+    _event(doc, "link_copied", principal.user_id, {}, ip)
+    await doc.save()
+    return link_info(doc)
+
+
+async def revoke_links(doc: Agreement, principal: Principal, ip: str | None = None) -> dict[str, Any]:
+    """Withdraw every earlier link and issue a new one (not sent automatically)."""
+    if doc.status not in {"sent", "client_in_progress"}:
+        raise Conflict("Only an open agreement has a link to replace")
+    for tomb in doc.link_history:
+        if tomb.reason == "superseded":
+            tomb.reason = "revoked"
+    _retire_hash(doc, doc.token_hash, "revoked")
+    activate_link(doc, fresh=True)
+    doc.session_version += 1
+    _event(doc, "links_revoked", principal.user_id, {"generation": doc.link_generation}, ip)
+    await doc.save()
+    return link_info(doc)
+
+
+async def resolve_link(token: str) -> "links.Resolution":
+    try:
+        secret = _secret()
+    except RuntimeError:
+        secret = None
+    return await links.resolve(token, Agreement, _release(), secret)
 
 
 def _otp_hash(agreement_id: str, purpose: str, code: str) -> str:
@@ -337,6 +432,7 @@ def agreement_detail(doc: Agreement) -> dict[str, Any]:
         "events": [event.model_dump(mode="json") for event in doc.events],
         "signatures": [sig.model_dump(mode="json", exclude={"image_key", "verification"}) for sig in doc.signatures],
         "sealed": {"sealed_at": doc.sealed.get("sealed_at"), "pdf_sha256": doc.sealed.get("pdf_sha256")},
+        "link": link_info(doc),
     }
 
 
@@ -416,12 +512,11 @@ async def send(doc: Agreement, principal: Principal, body: SendAgreement, ip: st
     await _assert_customer_delivery_ready(doc, body.channels)
     if template:
         doc.template_version, doc.template_hash = template.version, template.template_hash
-    raw_token = secrets.token_urlsafe(32)
+    now = datetime.now(UTC)
+    link = activate_link(doc)
     capture = _DIAGNOSTIC_CAPTURE.get()
     if capture is not None:
-        capture["review_token"] = raw_token
-    now = datetime.now(UTC)
-    doc.token_hash = _token_hash(raw_token)
+        capture["review_token"] = link.rsplit("/", 1)[-1]
     doc.session_version += 1
     doc.view_token_hash = None
     doc.token_issued_at = now
@@ -431,7 +526,6 @@ async def send(doc: Agreement, principal: Principal, body: SendAgreement, ip: st
     doc.status = "sent"
     _event(doc, "send_attempted", principal.user_id, {"channels": body.channels, "expires_days": body.expires_days}, ip)
     await doc.save()
-    link = messages.public_link(raw_token)
     results = {}
     message_stage = "amendment_sent" if doc.parent_agreement_id else "agreement_sent"
     if body.channels in {"email", "both"}:
@@ -444,9 +538,9 @@ async def send(doc: Agreement, principal: Principal, body: SendAgreement, ip: st
                {"requested_channels": list(results), "successful_channels": successful})
     else:
         # Do not leave a customer-facing sent state when no selected channel actually
-        # accepted the message. Any token created for this failed attempt is revoked.
+        # accepted the message. The link is withdrawn until the next successful send.
         doc.status = "draft"
-        doc.token_hash = None
+        clear_link(doc, "closed")
         doc.token_issued_at = None
         doc.token_expires_at = None
         doc.expires_at = None
@@ -539,9 +633,8 @@ async def patch_fields(doc: Agreement, changes: list[FieldPatch], *, actor: str,
     was_sent = actor == "staff" and original_status in {"sent", "client_in_progress", "changes_requested"}
     raw_token = None
     if was_sent:
-        # A staff revision invalidates the prior link and issues a fresh link for re-review.
-        raw_token = secrets.token_urlsafe(32)
-        doc.token_hash = _token_hash(raw_token)
+        # A staff revision keeps the same link; the client re-verifies and reviews again.
+        raw_token = activate_link(doc)
         doc.session_version += 1
         doc.token_issued_at = now
         doc.token_expires_at = now + timedelta(days=14)
@@ -561,7 +654,8 @@ async def patch_fields(doc: Agreement, changes: list[FieldPatch], *, actor: str,
         set_values["schedule_b_computed"] = doc.schedule_b_computed
     set_values.update({
         "status": doc.status, "session_version": doc.session_version,
-        "token_hash": doc.token_hash, "token_issued_at": doc.token_issued_at,
+        "token_hash": doc.token_hash, "link_history": [t.model_dump(mode="python") for t in doc.link_history],
+        "link_generation": doc.link_generation, "token_issued_at": doc.token_issued_at,
         "token_expires_at": doc.token_expires_at, "expires_at": doc.expires_at,
         "updated_at": now,
     })
@@ -574,19 +668,19 @@ async def patch_fields(doc: Agreement, changes: list[FieldPatch], *, actor: str,
         raise Conflict("This agreement changed while you were saving. Reload and choose which values to keep.")
     doc.updated_at = now
     if was_sent and raw_token:
-        token = raw_token
+        link_url = raw_token
         delivery: dict[str, bool] = {}
         for channel in ("email", "sms"):
             if channel == "email" and doc.fields.get(rules.field_key("client.email")) and doc.fields[rules.field_key("client.email")].value:
-                delivery[channel] = await _send_message(doc, "staff_revised", "email", link=messages.public_link(token))
+                delivery[channel] = await _send_message(doc, "staff_revised", "email", link=link_url)
             if channel == "sms" and _real_phone(doc):
-                delivery[channel] = await _send_message(doc, "staff_revised", "sms", link=messages.public_link(token))
+                delivery[channel] = await _send_message(doc, "staff_revised", "sms", link=link_url)
         if not any(delivery.values()):
             # A revised agreement cannot remain in `sent` when no current link was
             # actually delivered. The old link remains revoked and the draft awaits
             # a deliberate resend after the channel has been repaired.
             doc.status = "draft"
-            doc.token_hash = None
+            clear_link(doc, "closed")
             doc.token_issued_at = None
             doc.token_expires_at = None
             doc.expires_at = None
@@ -674,18 +768,10 @@ async def _deliver_otp(doc: Agreement, purpose: Literal["sign", "view"], channel
 
 async def request_otp(token: str, purpose: Literal["sign", "view"], body, ip: str | None) -> dict[str, str]:
     await _verify_turnstile(body.turnstile_token)
-    token_digest = _token_hash(token)
-    if purpose == "sign":
-        doc = await Agreement.find_one(Agreement.token_hash == token_digest)
-    else:
-        doc = await Agreement.find_one(Agreement.view_token_hash == token_digest)
-    if doc is None or doc.status in {"voided", "expired", "completed"} and purpose == "sign":
-        raise NotFound("This agreement link is no longer active")
-    if purpose == "view" and doc.status != "completed":
-        raise NotFound("This signed agreement is not available")
-    expiry = doc.token_expires_at if purpose == "sign" else None
-    if purpose == "sign" and (expiry is None or expiry <= datetime.now(UTC)):
-        raise NotFound("This agreement link has expired")
+    resolved = await resolve_link(token)
+    if resolved.purpose != purpose:
+        raise links.LinkError("closed", link_id_value=resolved.link_id, release=_release())
+    doc = resolved.doc
     now = datetime.now(UTC)
     recent = await AgreementOtp.find(AgreementOtp.agreement_id == doc.id,
                                      AgreementOtp.purpose == purpose).sort("-created_at").limit(1).to_list()
@@ -738,13 +824,11 @@ async def request_otp(token: str, purpose: Literal["sign", "view"], body, ip: st
 
 
 async def verify_otp(token: str, purpose: Literal["sign", "view"], code: str, ip: str | None) -> tuple[Agreement, str]:
-    digest = _token_hash(token)
-    doc = await Agreement.find_one(Agreement.token_hash == digest) if purpose == "sign" else await Agreement.find_one(Agreement.view_token_hash == digest)
-    if doc is None:
-        raise NotFound("This agreement link is no longer active")
+    resolved = await resolve_link(token)
+    if resolved.purpose != purpose:
+        raise links.LinkError("closed", link_id_value=resolved.link_id, release=_release())
+    doc = resolved.doc
     now = datetime.now(UTC)
-    if purpose == "sign" and (doc.token_expires_at is None or doc.token_expires_at <= now or doc.status not in {"sent", "client_in_progress"}):
-        raise NotFound("This agreement link has expired")
     rows = await AgreementOtp.find(AgreementOtp.agreement_id == doc.id,
                                   AgreementOtp.purpose == purpose,
                                   AgreementOtp.used_at == None).sort("-created_at").limit(1).to_list()  # noqa: E711
@@ -818,7 +902,7 @@ async def request_change(doc: Agreement, reason: str, ip: str | None) -> None:
         raise Conflict("A change can be requested only while the agreement is open")
     doc.status = "changes_requested"
     doc.session_version += 1
-    doc.token_hash = None
+    clear_link(doc, "closed")
     doc.token_expires_at = None
     _event(doc, "changes_requested", "client", {"reason": reason}, hash_ip(ip or "unknown"))
     await doc.save()
@@ -915,7 +999,7 @@ async def client_sign(doc: Agreement, body, ip: str | None, user_agent: str | No
                                  otp_verified_at=otp_rows[0].used_at, verification=evidence)
     doc.signatures.append(sig)
     doc.status = "client_signed"
-    doc.token_hash = None
+    clear_link(doc, "signed")
     doc.token_expires_at = None
     doc.session_version += 1
     _event(doc, "client_signed", "client", {"role": body.role, "method": body.method, "content_hash": current_hash}, hash_ip(ip or "unknown"))
@@ -1012,17 +1096,17 @@ async def countersign(doc: Agreement, principal: Principal, name: str, method: s
                                      staff_user_id=principal.user_id, verification=evidence)
         doc.signatures.append(sig)
     doc.session_version += 1
-    doc.token_hash = None
+    clear_link(doc, "signed")
     doc.token_expires_at = None
     _event(doc, "bloomwell_countersigned", principal.user_id, {"content_hash": content_hash}, ip)
     await doc.save()
     await _seal(doc, content_hash)
     # The signed-copy token is distinct from the one-use review token.
-    view_token = secrets.token_urlsafe(32)
+    view_token = links.derive(_secret(), str(doc.id), doc.link_generation, "view")
     capture = _DIAGNOSTIC_CAPTURE.get()
     if capture is not None:
         capture["view_token"] = view_token
-    doc.view_token_hash = _token_hash(view_token)
+    doc.view_token_hash = links.link_hash(view_token)
     await doc.save()
     link = messages.public_link(view_token)
     await _send_message(doc, "completed_client", "email", link=link)
@@ -1053,8 +1137,7 @@ async def void(doc: Agreement, principal: Principal, reason: str, ip: str | None
     doc.session_version += 1
     doc.voided_at = datetime.now(UTC)
     doc.void_reason = reason
-    doc.token_hash = None
-    doc.view_token_hash = None
+    clear_link(doc, "revoked", view=True)
     doc.token_expires_at = None
     _event(doc, "voided", principal.user_id, {"reason": reason}, ip)
     await doc.save()
@@ -1196,7 +1279,7 @@ async def sweep_agreements(now: datetime | None = None) -> int:
             expiry = doc.expires_at or doc.token_expires_at
             if expiry and expiry <= now:
                 doc.status = "expired"
-                doc.token_hash = None
+                clear_link(doc, "expired")
                 doc.token_expires_at = None
                 _event(doc, "expired", "scheduler")
                 await doc.save()
@@ -1218,8 +1301,6 @@ async def sweep_agreements(now: datetime | None = None) -> int:
 
             # One new token per sweep, not one per message: otherwise later messages would
             # immediately invalidate the link in earlier messages from the same scheduler run.
-            prior_token_hash = doc.token_hash
-            prior_session_version = doc.session_version
             link = await _issue_reminder_link(doc) if due else ""
             any_delivery = False
             for stage in due:
@@ -1234,10 +1315,6 @@ async def sweep_agreements(now: datetime | None = None) -> int:
                     any_delivery = True
                     _event(doc, "reminder_sent", "scheduler", {"stage": stage})
                     changed += 1
-            if due and not any_delivery:
-                # Retain the prior still-valid client link if every delivery channel failed.
-                doc.token_hash = prior_token_hash
-                doc.session_version = prior_session_version
             await doc.save()
     except Exception:
         log.exception("agreement lifecycle sweep failed")
@@ -1251,14 +1328,12 @@ async def sweep_agreements(now: datetime | None = None) -> int:
 
 
 async def _issue_reminder_link(doc: Agreement) -> str:
-    # Tokens are stored only as hashes. Keep the original expiry; reminders do not extend it.
-    token = secrets.token_urlsafe(32)
-    doc.token_hash = _token_hash(token)
-    doc.session_version += 1
-    # Keep token_issued_at unchanged: reminder cadence is measured from the
-    # original send/reissue, not from each scheduler-created replacement link.
+    # Reminders re-send the SAME stable link: a reminder must never kill the link in the
+    # original message. Expiry is not extended. An old random-token link (issued before
+    # stable links) stays valid and is simply joined by the stable one.
+    link = activate_link(doc)
     await doc.save()
-    return messages.public_link(token)
+    return link
 
 
 async def reissue_link(doc: Agreement, principal: Principal, channels: Literal["email", "sms", "both"],
@@ -1266,9 +1341,8 @@ async def reissue_link(doc: Agreement, principal: Principal, channels: Literal["
     if doc.status not in {"draft", "sent", "client_in_progress", "changes_requested", "expired"}:
         raise Conflict("A link cannot be issued for this agreement")
     await _assert_customer_delivery_ready(doc, channels)
-    token = secrets.token_urlsafe(32)
     now = datetime.now(UTC)
-    doc.token_hash = _token_hash(token)
+    link = activate_link(doc)
     doc.session_version += 1
     doc.token_issued_at = now
     doc.token_expires_at = now + timedelta(days=14)
@@ -1277,7 +1351,6 @@ async def reissue_link(doc: Agreement, principal: Principal, channels: Literal["
     doc.channel_preference = channels
     _event(doc, "link_reissued", principal.user_id, {"channels": channels}, ip)
     await doc.save()
-    link = messages.public_link(token)
     results: dict[str, bool] = {}
     message_stage = "amendment_sent" if doc.parent_agreement_id else "agreement_sent"
     if channels in {"email", "both"}:
@@ -1290,7 +1363,7 @@ async def reissue_link(doc: Agreement, principal: Principal, channels: Literal["
                "system", {"requested_channels": list(results), "successful_channels": successful})
     else:
         doc.status = "draft"
-        doc.token_hash = None
+        clear_link(doc, "closed")
         doc.token_issued_at = None
         doc.token_expires_at = None
         doc.expires_at = None

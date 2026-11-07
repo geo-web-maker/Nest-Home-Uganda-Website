@@ -211,6 +211,12 @@ def validate_link_url(url: str) -> None:
 
 
 def public_link(token: str) -> str:
-    url = f"https://bhcug.com/agreement/{token}"
+    # New stable codes are 16 characters and use the short /a/ form; older random tokens
+    # keep the long /agreement/ form so links already in inboxes still work.
+    if len(token) == 16:
+        grouped = "-".join(token[i:i + 4] for i in range(0, 16, 4))
+        url = f"https://bhcug.com/a/{grouped}"
+    else:
+        url = f"https://bhcug.com/agreement/{token}"
     validate_link_url(url)
     return url

@@ -49,6 +49,7 @@ export const routes: RouteRecord[] = [
         ],
       },
       // Public agreement flow is separate from the marketing layout and contains private client data.
+      { path: 'a/:token', Component: AgreementPublicPage },
       { path: 'agreement/:token', Component: AgreementPublicPage },
       { path: 'agreement/:token/review', Component: AgreementPublicPage },
       // Admin: lazy, so the public bundle does not grow. `admin/*` is a splat, so it is not pre-rendered.

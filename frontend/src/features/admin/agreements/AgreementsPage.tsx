@@ -28,7 +28,9 @@ type AgreementDetail = AgreementRow & {
   template_version: number; template_hash: string; fields: Record<string, AgreementField>;
   schedule_b_computed: Record<string, string | number>; events: Array<{ type: string; at: string; actor: string; detail: Record<string, unknown> }>;
   sealed?: { sealed_at?: string; pdf_sha256?: string };
+  link?: LinkInfo;
 };
+type LinkInfo = { state: 'live' | 'legacy' | 'none'; link_id: string | null; generation: number; url: string | null; expires_at: string | null; earlier_links_still_valid: number };
 type AgreementList = { items: AgreementRow[]; total: number };
 type Preview = { html: string };
 type TemplateMessage = { subject: string; preheader: string; body: string; button: string; footer_note: string; version: number; is_default: boolean };
@@ -98,7 +100,9 @@ export function AgreementsPage() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [enteredStaff, setEnteredStaff] = useState<Record<string, boolean>>({});
   const [conflicts, setConflicts] = useState<Record<string, { local: string; remote: string; revision: number }>>({});
-  const [channels, setChannels] = useState<'email' | 'sms' | 'both'>('both');
+  const [pick, setPick] = useState<{ email: boolean; sms: boolean }>({ email: true, sms: true });
+  const channels = (pick.email && pick.sms ? 'both' : pick.email ? 'email' : pick.sms ? 'sms' : 'both') as 'email' | 'sms' | 'both';
+  const noChannel = !pick.email && !pick.sms;
   const [messageStage, setMessageStage] = useState<MessageStage>('agreement_sent');
   const [messageChannel, setMessageChannel] = useState<'email' | 'sms'>('email');
   const [message, setMessage] = useState<TemplateMessage | null>(null);
@@ -266,7 +270,7 @@ export function AgreementsPage() {
   }), [detail, tab]);
 
   const performResend = async (id: string, via?: 'email' | 'sms' | 'both') => {
-    if (!window.confirm('Issue a new link and send it to the client? The link they already have will stop working.')) return;
+    if (!window.confirm('Send the client their agreement link again? It is the same link, so any earlier message still works.')) return;
     setBusy(true); setError(''); setNotice('');
     try {
       const result = await apiClient.post<{ delivery: Record<string, boolean> }>(
@@ -277,7 +281,7 @@ export function AgreementsPage() {
       if (entries.length > 0 && entries.every(([, ok]) => !ok)) {
         setError(`The new link could not be delivered (${summary}). The agreement is back to draft; check the client's contact details and send it again.`);
       } else {
-        setNotice(`A new agreement link was issued. Delivery: ${summary || 'none requested'}.`);
+        setNotice(`The agreement link was sent again. Delivery: ${summary || 'none requested'}.`);
       }
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not resend the agreement.'); }
     finally { setBusy(false); }
@@ -480,7 +484,7 @@ export function AgreementsPage() {
             {tab === 'preview' && <PreviewPanel id={detail.id} />}
             {tab === 'timeline' && <Timeline events={detail.events} />}
             {tab === 'send' && <div className={styles.sendPanel}>
-              {canWrite && <><h3>Send agreement for review</h3><p>Messages contain a secure link only. No patient name, care details or fees are sent by email or SMS.</p><Field kind="select" label="Send via" value={channels} onChange={(e) => setChannels(e.target.value as typeof channels)}><option value="both">Email and SMS</option><option value="email">Email only</option><option value="sms">SMS only</option></Field><p>Link expiry: 14 days. Reminders: 48 hours and day 5. Expiry warning: 48 hours before expiry.</p><Button onClick={() => void send()} disabled={busy || !['draft','changes_requested','expired'].includes(detail.status)}>Validate and send</Button>{['sent','client_in_progress'].includes(detail.status) && <><p>Client did not get it, or the link is not working? Issue a fresh link via the channel selected above. The previous link stops working.</p><Button variant="outline" onClick={() => void performResend(detail.id, channels)} disabled={busy}>Resend link</Button></>}</>}
+              {canWrite && <><h3>Send agreement for review</h3><p>Messages contain a secure link only. No patient name, care details or fees are sent by email or SMS.</p><fieldset><legend>Send via (tick one or more)</legend><label><input type="checkbox" checked={pick.email} onChange={(e) => setPick({ ...pick, email: e.target.checked })} /> Email</label>{' '}<label><input type="checkbox" checked={pick.sms} onChange={(e) => setPick({ ...pick, sms: e.target.checked })} /> SMS</label>{noChannel && <p role="alert">Tick at least one way to send.</p>}</fieldset><p>Link expiry: 14 days. Reminders: 48 hours and day 5. Expiry warning: 48 hours before expiry.</p><Button onClick={() => void send()} disabled={busy || noChannel || !['draft','changes_requested','expired'].includes(detail.status)}>Validate and send</Button>{['sent','client_in_progress'].includes(detail.status) && <><p>Client did not get it? Resend sends the same link again by the channel selected above. Nothing earlier stops working.</p><Button variant="outline" onClick={() => void performResend(detail.id, channels)} disabled={busy || noChannel}>Resend link</Button><LinkPanel id={detail.id} link={detail.link} onChanged={() => void loadDetail(detail.id)} /></>}</>}
               {canSign && detail.status === 'client_signed' && <section className={styles.countersign}><h3>Bloomwell countersignature</h3><p>By countersigning, the system seals the agreement and stores its PDF in private storage.</p><Field label="Authorised signatory name" value={bloomwellName} onChange={(e) => setBloomwellName(e.target.value)} /><SignatureMethodPicker method={signMethod} onMethod={(next) => { setSignMethod(next); setError(''); }} biometricAvailable={biometricAvailable} mode="staff" password={signPassword} onPassword={setSignPassword} confirm="" onConfirm={() => undefined}
                 drawPanel={<canvas ref={signatureCanvas} className={styles.signaturePad} width={800} height={160} aria-label="Bloomwell countersignature area" onPointerDown={beginSignature} onPointerMove={moveSignature} onPointerUp={() => { drawing.current = false; }} onPointerCancel={() => { drawing.current = false; }} />} /><ButtonGroup>{signMethod === 'drawn' && <Button variant="outline" onClick={clearSignature}>Clear signature</Button>}<Button onClick={() => void countersign()} disabled={busy}>Countersign and seal</Button></ButtonGroup></section>}
               {canVoid && DELETABLE_STATUSES.has(detail.status) && <><ButtonGroup><Button variant="outline" className={styles.danger} onClick={() => void performDelete(detail.id, detail.reference)} disabled={busy}>Delete agreement</Button></ButtonGroup><p className={styles.hint}>Deleting removes this agreement permanently. Sent or signed agreements must be voided first; completed agreements cannot be deleted.</p></>}
@@ -518,6 +522,38 @@ function PreviewPanel({ id }: { id: string }) {
   return <div className={styles.preview}><iframe title="Rendered client agreement preview" srcDoc={html} sandbox="" /></div>;
 }
 
+function LinkPanel({ id, link, onChanged }: { id: string; link?: LinkInfo; onChanged: () => void }) {
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  const copy = async () => {
+    setBusy(true); setMsg('');
+    try {
+      const fresh = await apiClient.get<LinkInfo>(`/admin/agreements/${id}/link`);
+      if (!fresh.url) throw new Error('No link is available yet.');
+      await navigator.clipboard.writeText(fresh.url);
+      setMsg(`Link copied (ID ${fresh.link_id}). Paste it into WhatsApp or anywhere else.`);
+      onChanged();
+    } catch (cause) { setMsg(cause instanceof Error ? cause.message : 'Could not copy the link.'); }
+    finally { setBusy(false); }
+  };
+  const replaceAll = async () => {
+    if (!window.confirm('Withdraw ALL earlier links and create a brand-new one? Anyone using an old link will see "withdrawn". The new link is not sent automatically.')) return;
+    setBusy(true); setMsg('');
+    try {
+      const fresh = await apiClient.post<LinkInfo>(`/admin/agreements/${id}/link/revoke`, {});
+      setMsg(`New link created (ID ${fresh.link_id}). Use Copy link or Resend link to give it to the client.`);
+      onChanged();
+    } catch (cause) { setMsg(cause instanceof Error ? cause.message : 'Could not replace the link.'); }
+    finally { setBusy(false); }
+  };
+  return <div>
+    <h3>Client link</h3>
+    <p>Link ID: <strong>{link?.link_id ?? 'none'}</strong>{link?.state === 'legacy' ? ' (older long link)' : ''}{link?.expires_at ? ` · expires ${new Date(link.expires_at).toLocaleDateString()}` : ''}. If the client reports a problem, ask for the code on their screen: its middle part should match this ID.</p>
+    <Button variant="outline" onClick={() => void copy()} disabled={busy}>Copy link</Button>{' '}
+    <Button variant="outline" onClick={() => void replaceAll()} disabled={busy}>Withdraw all links and create a new one</Button>
+    {msg && <p role="status">{msg}</p>}
+  </div>;
+}
 function describeEvent(event: AgreementDetail['events'][number]): { title: string; summary?: string; tone: string } {
   const d = event.detail ?? {};
   const type = event.type;
@@ -527,7 +563,7 @@ function describeEvent(event: AgreementDetail['events'][number]): { title: strin
     const to = valueText(d.new_value) || 'empty';
     return { title: `${label(path)} updated`, summary: `${from.length > 60 ? `${from.slice(0, 60)}…` : from} → ${to.length > 60 ? `${to.slice(0, 60)}…` : to}${d.overwrote_newer_revision ? ' (replaced a newer edit)' : ''}`, tone: 'edit' };
   }
-  const tone = /sign|complet/.test(type) ? 'done' : /void|expire|delete/.test(type) ? 'closed' : /sent|resend|revised|remind/.test(type) ? 'send' : 'info';
+  const tone = /sign|complet/.test(type) ? 'done' : /void|expire|delete/.test(type) ? 'closed' : /sent|resend|revised|remind|link/.test(type) ? 'send' : 'info';
   const reason = typeof d.reason === 'string' ? d.reason : undefined;
   return { title: type.replaceAll('_', ' ').replace(/^./, (c) => c.toUpperCase()), summary: reason ? `Reason: ${reason}` : undefined, tone };
 }
