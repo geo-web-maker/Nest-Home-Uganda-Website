@@ -14,7 +14,11 @@ export function NotFoundPage() {
         </Head>
         <div className={styles.content}>
           <h1 className={styles.title}>{t('notFound.title')}</h1>
-          <Button href="/">{t('nav.home')}</Button>
+          <p className={styles.body}>{t('notFound.body')}</p>
+          <div className={styles.actions}>
+            <Button href="/">{t('nav.home')}</Button>
+            <Button href="/contact" variant="outline">{t('notFound.contact')}</Button>
+          </div>
         </div>
       </div>
     </section>

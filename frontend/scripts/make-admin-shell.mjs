@@ -19,10 +19,17 @@ if (rootStart === -1 || rootEnd === -1 || rootEnd < rootStart) {
 const SHELLS = [
   ['admin-shell.html', 'Admin | Bloomwell Home Care Uganda'],
   ['agreement-shell.html', 'Your care agreement | Bloomwell Home Care Uganda'],
+  // Served with a 404 status for any unknown address (Cloudflare not_found_handling "404-page", Vercel and
+  // Pages pick up /404.html automatically). The router's catch-all route renders the branded not-found page.
+  ['404.html', 'Page not found | Bloomwell Home Care Uganda'],
 ];
 
+const NOSCRIPT =
+  '<noscript><p style="font-family:system-ui,sans-serif;max-width:36rem;margin:4rem auto;padding:0 1rem">' +
+  'This page needs JavaScript. <a href="/">Go to the Bloomwell Home Care Uganda home page</a>.</p></noscript>';
+
 for (const [file, title] of SHELLS) {
-  const shell = (html.slice(0, rootStart) + '<div id="root"></div>\n' + html.slice(rootEnd))
+  const shell = (html.slice(0, rootStart) + '<div id="root"></div>\n' + NOSCRIPT + html.slice(rootEnd))
     // Home-page title, description and social tags written by react-helmet-async during pre-render.
     .replace(/<title data-rh="true">[\s\S]*?<\/title>/g, '')
     .replace(/<(meta|link|script)\b[^>]*data-rh="true"[^>]*>(<\/script>)?/g, '')

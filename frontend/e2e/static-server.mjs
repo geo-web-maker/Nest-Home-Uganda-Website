@@ -1,5 +1,5 @@
 // Serves ./dist the way static hosting does: /x -> dist/x, then dist/x/index.html, and
-// anything else falls back to dist/index.html (the admin area is client-side routed).
+// unknown paths get dist/404.html with a 404 status (the admin area is client-side routed).
 // `vite preview` does not serve the pre-rendered nested pages, so it cannot be used here.
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -26,7 +26,10 @@ const TYPES = {
   '.txt': 'text/plain',
 };
 
+let notFound = false;
+
 function resolveFile(urlPath) {
+  notFound = false;
   const clean = normalize(decodeURIComponent(urlPath)).replace(/^(\.\.[/\\])+/, '');
   const target = join(root, clean);
   if (!target.startsWith(root)) return null;
@@ -43,7 +46,10 @@ function resolveFile(urlPath) {
   if (entry) return join(root, entry);
   // Same as the vercel.json rewrites: /admin/* and /agreement/* get their clean shells, everything else the home page.
   if (/^[/\\]agreement([/\\]|$)/.test(clean)) return join(root, 'agreement-shell.html');
-  return join(root, /^[/\\]admin([/\\]|$)/.test(clean) ? 'admin-shell.html' : 'index.html');
+  if (/^[/\\]admin([/\\]|$)/.test(clean)) return join(root, 'admin-shell.html');
+  // Unknown address: like Cloudflare (not_found_handling "404-page") answer with 404.html and a 404 status.
+  notFound = true;
+  return join(root, existsSync(join(root, '404.html')) ? '404.html' : 'index.html');
 }
 
 createServer((req, res) => {
@@ -52,6 +58,6 @@ createServer((req, res) => {
     res.writeHead(404, { 'Content-Type': 'text/plain' }).end('Not found');
     return;
   }
-  res.writeHead(200, { 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream' });
+  res.writeHead(notFound ? 404 : 200, { 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream' });
   createReadStream(file).pipe(res);
 }).listen(port, '127.0.0.1', () => console.log(`serving ${root} on http://127.0.0.1:${port}`));
