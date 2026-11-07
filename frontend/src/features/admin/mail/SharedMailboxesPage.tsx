@@ -7,12 +7,12 @@ import { PageHeader } from '../../../components/admin/PageHeader';
 import { SectionHeader } from '../../../components/admin/SectionHeader';
 import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
-import { apiClient } from '../../../lib/api/client';
-import type { AdminUserPage } from '../users/types';
+import { apiClient, ApiError } from '../../../lib/api/client';
 import styles from './MailPage.module.css';
 
 export type SharedRole = 'owner' | 'send_as' | 'read_only';
-export type SharedMember = { user_id: string; role: SharedRole };
+export type SharedMember = { user_id: string; role: SharedRole; name?: string | null; email?: string | null; is_active?: boolean; missing?: boolean };
+export type SharedPerson = { id: string; name: string; email: string };
 export type SharedMailbox = { id: string; local_part: string; address: string; display_name: string; members: SharedMember[] };
 type Message = { tone: 'success' | 'error'; text: string };
 
@@ -30,21 +30,21 @@ export function SharedMailboxesPage() {
 
   const shared = useQuery({
     queryKey: ['mail', 'shared'],
-    queryFn: () => apiClient.get<{ items: SharedMailbox[] }>('/mail/shared'),
+    queryFn: () => apiClient.get<{ items: SharedMailbox[]; assignable_users?: SharedPerson[] }>('/mail/shared'),
     retry: false,
   });
-  const users = useQuery({
-    queryKey: ['mail', 'shared', 'users'],
-    queryFn: () => apiClient.get<AdminUserPage>('/admin/users', { params: { page: 1, page_size: 100 } }),
-    retry: false,
-  });
-  const people = users.data?.items ?? [];
-  const nameOf = (id: string) => {
-    const person = people.find((user) => user.id === id);
-    return person ? `${person.name} (${person.email})` : id;
+  const people = shared.data?.assignable_users ?? [];
+  /** Current name and email come from the server. A user who no longer exists is labelled, never shown as a raw id. */
+  const nameOf = (member: SharedMember) => {
+    if (member.missing || (!member.name && !member.email)) return t('mailShared.removedUser');
+    return member.email ? `${member.name ?? member.email} (${member.email})` : String(member.name);
   };
 
-  const fail = (text: string) => setMessage({ tone: 'error', text });
+  /** Show what the server said (for example "That user no longer exists"), falling back to the generic text. */
+  const fail = (text: string, cause?: unknown) => {
+    const detail = cause instanceof ApiError && cause.status !== 0 && cause.status < 500 && cause.message ? cause.message : '';
+    setMessage({ tone: 'error', text: detail && detail !== text ? `${text} ${detail}` : text });
+  };
   const ok = (text: string) => setMessage({ tone: 'success', text });
   const reload = () => client.invalidateQueries({ queryKey: ['mail', 'shared'] });
 
@@ -55,7 +55,7 @@ export function SharedMailboxesPage() {
       ok(t('mailShared.verified'));
       await reload();
     },
-    onError: () => fail(t('mailShared.verifyError')),
+    onError: (cause) => fail(t('mailShared.verifyError'), cause),
   });
   const create = useMutation({
     mutationFn: () => apiClient.post('/mail/shared', { local_part: localPart.trim().toLowerCase(), display_name: displayName.trim() }),
@@ -65,7 +65,7 @@ export function SharedMailboxesPage() {
       ok(t('mailShared.created'));
       await reload();
     },
-    onError: () => fail(t('mailShared.createError')),
+    onError: (cause) => fail(t('mailShared.createError'), cause),
   });
   const assign = useMutation({
     mutationFn: (input: { mailboxId: string; userId: string; role: SharedRole }) =>
@@ -74,7 +74,10 @@ export function SharedMailboxesPage() {
       ok(t('mailShared.assigned'));
       await reload();
     },
-    onError: () => fail(t('mailShared.assignError')),
+    onError: async (cause) => {
+      fail(t('mailShared.assignError'), cause);
+      await reload(); // the list may be stale (user or mailbox changed); show the current state
+    },
   });
   const unassign = useMutation({
     mutationFn: (input: { mailboxId: string; userId: string }) => apiClient.delete(`/mail/shared/${input.mailboxId}/members/${input.userId}`),
@@ -82,7 +85,10 @@ export function SharedMailboxesPage() {
       ok(t('mailShared.removed'));
       await reload();
     },
-    onError: () => fail(t('mailShared.assignError')),
+    onError: async (cause) => {
+      fail(t('mailShared.assignError'), cause);
+      await reload(); // the list may be stale (user or mailbox changed); show the current state
+    },
   });
   const close = useMutation({
     mutationFn: (mailboxId: string) => apiClient.post(`/mail/shared/${mailboxId}/close`, {}),
@@ -90,8 +96,28 @@ export function SharedMailboxesPage() {
       ok(t('mailShared.closed'));
       await reload();
     },
-    onError: () => fail(t('mailShared.assignError')),
+    onError: async (cause) => {
+      fail(t('mailShared.assignError'), cause);
+      await reload(); // the list may be stale (user or mailbox changed); show the current state
+    },
   });
+
+  const pruneMissing = useMutation({
+    mutationFn: async () => {
+      const stale = (shared.data?.items ?? []).flatMap((box) => box.members.filter((member) => member.missing).map((member) => ({ mailboxId: box.id, userId: member.user_id })));
+      for (const entry of stale) await apiClient.delete(`/mail/shared/${entry.mailboxId}/members/${entry.userId}`);
+      return stale.length;
+    },
+    onSuccess: async () => {
+      ok(t('mailShared.pruned'));
+      await reload();
+    },
+    onError: async (cause) => {
+      fail(t('mailShared.assignError'), cause);
+      await reload();
+    },
+  });
+  const missingCount = (shared.data?.items ?? []).reduce((total, box) => total + box.members.filter((member) => member.missing).length, 0);
 
   const canCreate = localPart.trim().length > 0 && displayName.trim().length > 0 && /^[a-zA-Z0-9.-]+$/.test(localPart.trim());
   const items = shared.data?.items ?? [];
@@ -107,6 +133,14 @@ export function SharedMailboxesPage() {
         }
       />
       {shared.isError ? <Notice tone="info">{t('mailShared.needsTotp')}</Notice> : null}
+      {missingCount > 0 ? (
+        <Notice tone="info">
+          {t('mailShared.missingNotice', { count: missingCount })}{' '}
+          <Button variant="outline" size="compact" disabled={pruneMissing.isPending} onClick={() => pruneMissing.mutate()}>
+            {t('mailShared.pruneMissing')}
+          </Button>
+        </Notice>
+      ) : null}
       {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
       <div className={styles.settingsStack}>
         {shared.isError ? (
@@ -144,12 +178,12 @@ export function SharedMailboxesPage() {
               <ul className={styles.codes}>
                 {box.members.map((member) => (
                   <li key={member.user_id}>
-                    {nameOf(member.user_id)} · {t(`mailShared.role.${member.role}`)}{' '}
+                    {nameOf(member)} · {t(`mailShared.role.${member.role}`)}{' '}
                     <Button
                       variant="outline"
                       size="compact"
                       onClick={() => unassign.mutate({ mailboxId: box.id, userId: member.user_id })}
-                      aria-label={`${t('mailShared.remove')}: ${nameOf(member.user_id)} (${box.address})`}
+                      aria-label={`${t('mailShared.remove')}: ${nameOf(member)} (${box.address})`}
                     >
                       {t('mailShared.remove')}
                     </Button>
@@ -183,7 +217,7 @@ export function SharedMailboxesPage() {
               </Field>
               <ButtonGroup spaced>
                 <Button
-                  disabled={!chosen.user || assign.isPending}
+                  disabled={!chosen.user || assign.isPending || !people.some((user) => user.id === chosen.user)}
                   onClick={() => assign.mutate({ mailboxId: box.id, userId: chosen.user, role: chosen.role })}
                   aria-label={`${t('mailShared.assign')} (${box.address})`}
                 >
