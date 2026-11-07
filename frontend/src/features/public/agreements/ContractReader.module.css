@@ -1,0 +1,20 @@
+.reader { display: grid; gap: 10px; min-width: 0; }
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.seg { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--mint); }
+.seg button { min-height: 40px; padding: 8px 16px; border: 0; border-radius: 9px; background: transparent; color: var(--mut); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.seg button[aria-selected='true'] { background: var(--surf); color: var(--forest); box-shadow: 0 1px 3px color-mix(in srgb, var(--forest) 18%, transparent); }
+.seg button:focus-visible, .toggleAll:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.toggleAll { border: 0; background: transparent; color: var(--leaf); font: inherit; font-size: 14px; font-weight: 700; text-decoration: underline; cursor: pointer; min-height: 40px; }
+
+.panel { min-width: 0; }
+.frame { display: block; width: 100%; height: min(78vh, 920px); border: 1px solid var(--line); border-top: 3px solid var(--gold); border-radius: 9px; background: #fff; }
+.paper { padding: clamp(18px, 4vw, 40px); border: 1px solid var(--line); border-top: 3px solid var(--gold); border-radius: 9px; background: #fff; color: #1b261f; font-family: var(--serif, Georgia, serif); line-height: 1.7; max-height: min(78vh, 920px); overflow: auto; }
+.paper h2 { margin: 0 0 4px; font-size: 24px; text-align: center; color: var(--forest); }
+.paper .ref { margin: 0 0 22px; text-align: center; color: var(--mut); font-family: Figtree, Arial, sans-serif; font-size: 13px; }
+.paper h3 { margin: 22px 0 6px; font-size: 16px; color: var(--forest); }
+.paper p { margin: 0 0 8px; font-size: 15.5px; }
+
+.list { display: grid; gap: 7px; max-height: min(78vh, 920px); overflow: auto; padding-right: 2px; }
+.list details { border: 1px solid var(--line); border-radius: 9px; padding: 12px; background: var(--surf); }
+.list summary { font-weight: 700; cursor: pointer; }
+.list details p { margin: 8px 0 0; line-height: 1.6; }
