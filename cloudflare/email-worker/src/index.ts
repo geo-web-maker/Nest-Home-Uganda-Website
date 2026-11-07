@@ -14,6 +14,11 @@ async function signature(secret: string, timestamp: string, body: string): Promi
 
 export default {
   async email(message: ForwardableEmailMessage, env: Env, _ctx: ExecutionContext): Promise<void> {
+    // no-reply is a send-only system address: refuse before storing or forwarding anything.
+    if (message.to.split('@')[0].toLowerCase() === 'no-reply') {
+      message.setReject('This address does not accept replies.');
+      return;
+    }
     const id = crypto.randomUUID();
     const now = new Date();
     const key = `mail/inbound/${now.getUTCFullYear()}/${String(now.getUTCMonth()+1).padStart(2,'0')}/${id}.eml`;
