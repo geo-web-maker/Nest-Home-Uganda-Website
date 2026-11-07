@@ -99,7 +99,7 @@ export function MailboxAdminSection({ unlocked }: { unlocked: boolean }) {
         <Notice tone="info">Verify a current authenticator code in the Security section above to manage mailboxes. The server enforces this for every request.</Notice>
       ) : (
         <>
-          {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
+          {message ? <Notice tone={message.tone} floating onDismiss={() => setMessage(null)}>{message.text}</Notice> : null}
           {list.isError ? <Notice tone="error">{errorText(list.error)}</Notice> : null}
           <div className={styles.filters}>
             <Field label="Search addresses or owners" value={filter} onChange={(event) => setFilter(event.target.value)} />

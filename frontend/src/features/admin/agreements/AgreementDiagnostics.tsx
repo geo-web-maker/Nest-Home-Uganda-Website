@@ -126,8 +126,8 @@ export function AgreementDiagnostics({ canRunWorkflow, canSeedTemplate = false }
         </div>
       </div>
 
-      {error && <Notice tone="error">{error}</Notice>}
-      {seedMessage && <Notice tone="success">{seedMessage}</Notice>}
+      {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}
+      {seedMessage && <Notice tone="success" floating onDismiss={() => setSeedMessage('')}>{seedMessage}</Notice>}
       {canSeedTemplate && readiness?.checks.some((item) => item.id === 'agreement_template' && item.status === 'fail') && (
         <div className={styles.selfTests}>
           <h3>Install agreement wording</h3>

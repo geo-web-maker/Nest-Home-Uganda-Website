@@ -227,7 +227,7 @@ export function MailSettingsPage() {
         }
       />
       {settings.isError ? <Notice tone="info">{t('mailSettings.needsTotp')}</Notice> : null}
-      {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
+      {message ? <Notice tone={message.tone} floating onDismiss={() => setMessage(null)}>{message.text}</Notice> : null}
 
       <div className={styles.settingsStack}>
         <section className={styles.panel} aria-label={t('mailSettings.security')}>

@@ -35,7 +35,7 @@ export function NotificationLogPage() {
   return <div className="stage-page">
     <PageHeader title="Notification delivery log" subtitle="A bounded, privacy-conscious view of the latest SMS attempts. Message bodies and provider credentials are not shown." actions={<Button variant="outline" onClick={() => void load()} disabled={loading}>Refresh</Button>} />
     <div className="stage-callout"><strong>Status definition</strong><p>“Accepted by provider” means the provider accepted the send request. It does not prove delivery to the handset. The configured MamboSMS integration does not expose delivery receipts in this app.</p></div>
-    {error && <Notice tone="error">{error}</Notice>}
+    {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}
     <section className="stage-panel"><SectionHeader title="Recent attempts" note={<>{loading ? 'Loading…' : `${rows.length} attempt records (maximum 100)`}</>} />
       {rows.length === 0 && !loading ? <p className="stage-empty">No notification attempts have been recorded for the current log window.</p> : <DataTable
     columns={[
@@ -134,7 +134,7 @@ export function SmsSettingsPage() {
 
   return <div className="stage-page">
     <PageHeader title="SMS provider & limits" subtitle="Deployment-managed provider selection, editable message controls, test destination, and provider-reported usage information." actions={<Button variant="outline" onClick={() => void load()} disabled={loading || saving}>Refresh</Button>} />
-    {error && <Notice tone="error">{error}</Notice>}{notice && <Notice>{notice}</Notice>}
+    {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}{notice && <Notice floating onDismiss={() => setNotice('')}>{notice}</Notice>}
     {loading ? <section className="stage-panel"><p>Loading SMS configuration…</p></section> : <>
       <div className="stage-summary-strip"><div><strong>{snapshot?.provider === 'mambosms' ? 'MamboSMS' : 'Console'}</strong><span>Provider from deployment config</span></div><div><strong>{snapshot?.provider === 'mambosms' ? 'Provider-backed' : 'Dry-run'}</strong><span>Send behavior</span></div><div><strong>{snapshot?.delivery_receipts_supported ? 'Supported' : 'Not supported'}</strong><span>Delivery receipts</span></div><div><strong>{snapshot?.monthly_cap ?? '—'}</strong><span>Configured monthly cap</span></div></div>
       <div className="stage-callout"><strong>Credential and delivery safety</strong><p>The provider and API credentials are configured on the server. This screen never displays or persists secrets. MamboSMS may return a cost with a successful send, but this integration does not provide delivery reports; “accepted” is not the same as “delivered”. The test-message action is restricted to the configured test destination and never creates an SOS case.</p></div>

@@ -48,7 +48,7 @@ export function CreateNurseSheet({ onClose, onCreated }: { onClose: () => void; 
     <CareSheet title="Create nurse with password" onClose={onClose}>
       <form className="care-form invite-nurse-form" onSubmit={submit}>
         <p>Super administrators only. The account is active straight away and no invitation is sent. Share the password with the nurse yourself.</p>
-        {error && <Notice tone="error">{error}</Notice>}
+        {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}
         <Field label="Full name" value={name} onChange={(event) => setName(event.target.value)} required requiredLabel="required" minLength={2} maxLength={80} autoComplete="off" />
         <Field label="Email address" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required requiredLabel="required" autoComplete="off" />
         <Field label="Phone number" type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required requiredLabel="required" minLength={9} maxLength={24} autoComplete="off" />

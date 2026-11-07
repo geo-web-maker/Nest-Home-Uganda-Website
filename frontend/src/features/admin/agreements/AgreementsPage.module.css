@@ -13,7 +13,7 @@
 .editorHeading p { margin: 5px 0 12px; color: var(--mut, #53635a); }
 .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .field { display: grid; align-content: start; gap: 7px; border: 1px solid var(--line, #e0e6e1); border-radius: 10px; padding: 11px; min-width: 0; }
-.field > label:first-child { display: flex; justify-content: space-between; gap: 8px; text-transform: capitalize; }
+.field > label:first-child { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; text-transform: capitalize; }
 .field small { color: var(--mut, #53635a); font-size: 11px; text-align: right; }
 .field textarea { resize: vertical; min-height: 64px; }
 .field textarea[readonly] { background: var(--mint, #f5f7f5); }
@@ -51,7 +51,7 @@
 .count { color: var(--mut, #53635a); font-size: 12px; white-space: nowrap; }
 .wide { grid-column: 1 / -1; }
 .req { color: var(--danger, #a02a1d); text-decoration: none; }
-.pill { flex: 0 0 auto; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: none; background: var(--mint, #eef2ef); color: var(--mut, #3b4a41); }
+.pill { flex: 0 0 auto; align-self: flex-start; white-space: nowrap; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: none; background: var(--mint, #eef2ef); color: var(--mut, #3b4a41); }
 .owner_clinical { background: #e3f0ff; color: #12437a; }
 .owner_staff { background: #e6f4ea; color: #1b5e33; }
 .owner_client { background: #fff1d6; color: #7a4b00; }

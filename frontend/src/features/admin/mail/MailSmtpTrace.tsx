@@ -74,7 +74,7 @@ export function MailSmtpTrace() {
           </Button>
         ) : null}
       </ButtonGroup>
-      {error ? <Notice tone="error">{error}</Notice> : null}
+      {error ? <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice> : null}
       {trace ? (
         <>
           {trace.egress_ip ? <p className={styles.settingHelp}>This server reaches the internet as <code>{trace.egress_ip}</code>. Brevo's Authorized IPs must allow it if blocking is on.</p> : null}

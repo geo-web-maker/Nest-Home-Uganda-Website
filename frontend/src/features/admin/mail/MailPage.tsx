@@ -355,7 +355,7 @@ export function MailPage() {
       {push.error ? <Notice tone="error">{push.error}</Notice> : null}
       {loadFailed ? <Notice tone="error">{t('mail.error')}</Notice> : null}
       {noMailbox ? <Notice tone="info">{t('mail.noMailbox')}</Notice> : null}
-      {notice ? <Notice tone={notice.tone}>{notice.text}</Notice> : null}
+      {notice ? <Notice tone={notice.tone} floating onDismiss={() => setNotice(null)}>{notice.text}</Notice> : null}
 
       <div className={styles.toolbar}>
         {mailboxes.length > 1 ? (
