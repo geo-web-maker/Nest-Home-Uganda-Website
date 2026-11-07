@@ -82,6 +82,8 @@ function valueText(value: unknown): string {
   return typeof value === 'string' ? value : JSON.stringify(value, null, 2);
 }
 
+type DeliveryResult = { delivery: Record<string, boolean>; reasons?: Record<string, string> };
+
 export function AgreementsPage() {
   const { user } = useAuth();
   const [rows, setRows] = useState<AgreementRow[]>([]);
@@ -176,9 +178,9 @@ export function AgreementsPage() {
     if (!detail) return;
     setBusy(true); setError('');
     try {
-      const result = await apiClient.post<{ delivery: Record<string, boolean> }>(`/admin/agreements/${detail.id}/send`, { channels, expires_days: 14 });
+      const result = await apiClient.post<DeliveryResult>(`/admin/agreements/${detail.id}/send`, { channels, expires_days: 14 });
       await loadDetail(detail.id); await loadList();
-      setNotice(`Agreement sent. Delivery: ${Object.entries(result.delivery).map(([k, v]) => `${k} ${v ? 'sent' : 'failed'}`).join(', ') || 'none requested'}.`);
+      reportDelivery(result, 'Agreement');
     } catch (cause) { setError(missingFieldsMessage(cause, 'The agreement could not be sent.')); }
     finally { setBusy(false); }
   };
@@ -265,20 +267,28 @@ export function AgreementsPage() {
     return path.startsWith(`${tab}.`);
   }), [detail, tab]);
 
+  /** "Queued" is the most the app can confirm: the mail worker and provider deliver afterwards. */
+  const reportDelivery = (result: DeliveryResult, subject: string) => {
+    const entries = Object.entries(result.delivery ?? {});
+    const reasons = Object.entries(result.reasons ?? {}).map(([k, v]) => `${k}: ${v}`).join(' ');
+    const summary = entries.map(([k, v]) => `${k} ${v ? 'queued' : 'failed'}`).join(', ');
+    if (entries.length > 0 && entries.every(([, ok]) => !ok)) {
+      setError(`${subject} could not be delivered (${summary}). The agreement is back to draft. ${reasons}`.trim());
+    } else if (entries.some(([, ok]) => !ok)) {
+      setNotice(`${subject} was issued but one channel failed (${summary}). ${reasons} Check the agreement timeline and Mail > Outbox to confirm delivery.`.trim());
+    } else {
+      setNotice(`${subject} was issued. Delivery: ${summary || 'none requested'}. "Queued" means handed to the mail service; confirm arrival in Mail > Outbox if the client does not receive it.`);
+    }
+  };
+
   const performResend = async (id: string, via?: 'email' | 'sms' | 'both') => {
     if (!window.confirm('Issue a new link and send it to the client? The link they already have will stop working.')) return;
     setBusy(true); setError(''); setNotice('');
     try {
-      const result = await apiClient.post<{ delivery: Record<string, boolean> }>(
+      const result = await apiClient.post<DeliveryResult>(
         via ? `/admin/agreements/${id}/reissue-link?channels=${via}` : `/admin/agreements/${id}/resend`, {});
       await loadList(); if (selected === id) await loadDetail(id);
-      const entries = Object.entries(result.delivery ?? {});
-      const summary = entries.map(([k, v]) => `${k} ${v ? 'sent' : 'failed'}`).join(', ');
-      if (entries.length > 0 && entries.every(([, ok]) => !ok)) {
-        setError(`The new link could not be delivered (${summary}). The agreement is back to draft; check the client's contact details and send it again.`);
-      } else {
-        setNotice(`A new agreement link was issued. Delivery: ${summary || 'none requested'}.`);
-      }
+      reportDelivery(result, 'A new agreement link');
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not resend the agreement.'); }
     finally { setBusy(false); }
   };
