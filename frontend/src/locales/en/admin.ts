@@ -86,6 +86,7 @@ export const adminEn = {
     restore: 'Move to inbox',
     reportSpam: 'Report spam',
     markUnread: 'Mark unread',
+    actions: 'Message actions',
     reply: 'Reply',
     replyAll: 'Reply all',
     forward: 'Forward',

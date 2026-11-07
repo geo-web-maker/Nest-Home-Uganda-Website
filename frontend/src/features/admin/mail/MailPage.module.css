@@ -31,7 +31,11 @@
 }
 .list .row {
   display: grid;
-  justify-items: start;
+  /* The shared Button centres its content; without these the grid column shrinks to the text and floats in the middle. */
+  grid-template-columns: minmax(0, 1fr);
+  justify-content: stretch;
+  justify-items: stretch;
+  align-content: center;
   gap: 0.15rem;
   width: 100%;
   text-align: left;
@@ -116,9 +120,6 @@
   min-width: 0;
   max-width: 100%;
 }
-.mobileBack {
-  display: none;
-}
 .settingsStack {
   display: grid;
   gap: 1rem;
@@ -171,9 +172,6 @@
   }
 }
 @media (max-width: 699px) {
-  .mobileBack {
-    display: inline-flex;
-  }
   .layout[data-has-selection='true'] .listPanel {
     display: none;
   }

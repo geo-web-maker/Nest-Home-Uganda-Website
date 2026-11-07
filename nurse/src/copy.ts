@@ -323,7 +323,7 @@ export const copy = {
     reportSpam: 'Report spam',
     spamReported: 'Reported as spam and moved to the Spam folder.',
     externalChip: 'External',
-    moreActions: 'More',
+    moreActions: 'More', messageActions: 'Message actions',
     externalBanner: 'This message came from an external address. Use care with links and attachments.',
     externalWarning: 'Do not send client details to outside addresses.', send: 'Send', sending: 'Sending…', saveDraft: 'Save draft on this device',
     reply: 'Reply', replyAll: 'Reply all', forward: 'Forward', forwardAsAttachment: 'Forward as attachment (.eml)', star: 'Star', unstar: 'Remove star', trash: 'Move to trash', restore: 'Move to inbox', markUnread: 'Mark unread',

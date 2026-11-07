@@ -132,3 +132,27 @@
 .mr-delivery-error { overflow-wrap: anywhere; }
 .mr-delivery-error code { white-space: pre-wrap; font-size: .85em; }
 .mr-delivery-meta { font-size: .85em; opacity: .8; }
+
+/* Message action bar: one row on every screen, 44px targets. Uses the app's own tokens with fallbacks. */
+.mr-bar { display: flex; align-items: center; gap: 4px; min-width: 0; padding-bottom: 8px; border-bottom: 1px solid var(--mr-line, #ddd); color: var(--mr-fg, inherit); }
+.mr-bar-spacer { flex: 1 1 0; min-width: 0; }
+.mr-bar-icon, .mr-bar-text, .mr-bar-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 44px; min-height: 44px; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+.mr-bar-icon:hover:not(:disabled), .mr-bar-text:hover:not(:disabled) { background: color-mix(in srgb, currentColor 8%, transparent); }
+.mr-bar-icon[aria-pressed="true"] { color: var(--gold, #c39a3a); }
+.mr-bar button:focus-visible { outline: 2px solid var(--gold, #c39a3a); outline-offset: 2px; }
+.mr-bar button:disabled { opacity: .45; cursor: default; }
+.mr-bar-primary { padding: 0 16px; background: var(--gold, #c39a3a); color: var(--on-gold, #1a1a1a); }
+.mr-bar-primary:hover:not(:disabled) { filter: brightness(.95); }
+.mr-bar-text { padding: 0 10px; }
+.mr-bar-label { display: none; }
+.mr-bar-back { margin-inline-end: 4px; }
+@media (min-width: 700px) {
+  /* A wide pane: show the words. The message list sits beside the message, so the back arrow goes away. */
+  .mr-bar-label { display: inline; }
+  .mr-bar-text { padding: 0 14px; }
+  .mr-bar-back { display: none; }
+}
+.mr-bar-more { display: flex; align-items: center; }
+.mr-bar-more .mr-more { position: relative; }
+.mr-bar-more .mr-more-trigger { width: 44px; height: 44px; color: inherit; }
+.mr-bar-more .mr-more-trigger:hover { background: color-mix(in srgb, currentColor 8%, transparent); }

@@ -18,6 +18,7 @@ import { useMailPush } from './useMailPush';
 import { buildSeed, type SeedKind } from './recipients';
 import { FOLDERS, type ComposeSeed, type Folder, type MailDetail, type MailItem, type Mailbox } from './types';
 import { MailMessageView } from '../../../shared/mail-rich/react/MailMessageView';
+import { MessageActionBar } from '../../../shared/mail-rich/react/MessageActionBar';
 import type { MailMessageView as SharedMailMessage } from '../../../shared/mail-rich/core/types';
 import { AdminMailUiProvider } from './mailUiKit';
 import '../../../shared/mail-rich/react/mail-rich.css';
@@ -38,6 +39,7 @@ export function MailPage() {
   const [mailboxChoice, setMailboxChoice] = useState('');
   const [folder, setFolder] = useState<Folder>('inbox');
   const [query, setQuery] = useState('');
+  const [moreSlot, setMoreSlot] = useState<HTMLElement | null>(null);
   const [selectedId, setSelectedId] = useState('');
   const [seed, setSeed] = useState<ComposeSeed | null>(null);
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
@@ -163,6 +165,17 @@ export function MailPage() {
       quote: { kind: quoteKind, source_id: shown.mailbox_message_id, include_attachments: true },
     });
   };
+  const forwardAsAttachment = () => {
+    if (!shown || !mailbox) return;
+    const seed = buildSeed('forward', shown, {
+      me: mailbox.address,
+      date: new Date(selected?.received_at ?? Date.now()).toLocaleString(),
+      wroteOn: (who, date) => t('mail.wroteOn', { who, date }),
+      forwardedHeader: t('mail.forwardedHeader'),
+    });
+    compose({ ...seed, quote: { kind: 'forward_attachment', source_id: shown.mailbox_message_id } });
+  };
+
   const editDraft = () => {
     if (!shown) return;
     const pickAddresses = (kind: 'to' | 'cc' | 'bcc') =>
@@ -411,68 +424,21 @@ export function MailPage() {
           {selectedId && detail.isError ? <Notice tone="error">{t('mail.error')}</Notice> : null}
           {shown ? (
             <div className={styles.reader}>
-              <ButtonGroup size="compact">
-                <Button variant="outline" className={styles.mobileBack} onClick={() => setSelectedId('')}>
-                  {t('mail.backToList')}
-                </Button>
-                {folder === 'drafts' ? (
-                  <Button onClick={editDraft}>{t('mail.compose')}</Button>
-                ) : (
-                  <>
-                    <Button onClick={() => seedFor('reply')}>{t('mail.reply')}</Button>
-                    <Button variant="outline" onClick={() => seedFor('replyAll')}>
-                      {t('mail.replyAll')}
-                    </Button>
-                    <Button variant="outline" onClick={() => seedFor('forward')}>
-                      {t('mail.forward')}
-                    </Button>
-                    <Button variant="outline" onClick={() => {
-                      if (!shown || !mailbox) return;
-                      const seed = buildSeed('forward', shown, {
-                        me: mailbox.address,
-                        date: new Date(selected?.received_at ?? Date.now()).toLocaleString(),
-                        wroteOn: (who, date) => t('mail.wroteOn', { who, date }),
-                        forwardedHeader: t('mail.forwardedHeader'),
-                      });
-                      compose({ ...seed, quote: { kind: 'forward_attachment', source_id: shown.mailbox_message_id } });
-                    }}>
-                      {t('mail.forwardAsAttachment')}
-                    </Button>
-                  </>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => change.mutate({ id: selectedId, changes: { is_starred: !shown.is_starred } })}
-                >
-                  {shown.is_starred ? t('mail.unstar') : t('mail.star')}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => change.mutate({ id: selectedId, changes: { is_read: false }, leaves: true })}
-                >
-                  {t('mail.markUnread')}
-                </Button>
-                {inTrash ? (
-                  <Button
-                    variant="outline"
-                    onClick={() => change.mutate({ id: selectedId, changes: { folder: 'inbox' }, leaves: true })}
-                  >
-                    {t('mail.restore')}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    onClick={() => change.mutate({ id: selectedId, changes: { folder: 'trash' }, leaves: true })}
-                  >
-                    {t('mail.trash')}
-                  </Button>
-                )}
-                {shown.origin === 'inbound' && folder !== 'spam' ? (
-                  <Button variant="outline" onClick={() => spam.mutate(selectedId)}>
-                    {t('mail.reportSpam')}
-                  </Button>
-                ) : null}
-              </ButtonGroup>
+              <MessageActionBar
+                labels={{ actions: t('mail.actions'), back: t('mail.backToList'), reply: t('mail.reply'), replyAll: t('mail.replyAll'), forward: t('mail.forward'), star: t('mail.star'), unstar: t('mail.unstar'), trash: t('mail.trash'), restore: t('mail.restore'), editDraft: t('mail.compose') }}
+                isDraft={folder === 'drafts'}
+                starred={Boolean(shown.is_starred)}
+                restorable={inTrash}
+                onBack={() => setSelectedId('')}
+                onEditDraft={editDraft}
+                onReply={() => seedFor('reply')}
+                onReplyAll={() => seedFor('replyAll')}
+                onForward={() => seedFor('forward')}
+                onStar={() => change.mutate({ id: selectedId, changes: { is_starred: !shown.is_starred } })}
+                onTrash={() => change.mutate({ id: selectedId, changes: { folder: 'trash' }, leaves: true })}
+                onRestore={() => change.mutate({ id: selectedId, changes: { folder: 'inbox' }, leaves: true })}
+                onMoreSlot={setMoreSlot}
+              />
               <h2>{shown.subject || t('mail.noSubject')}</h2>
               {shown.origin === 'inbound' ? <Notice tone="info" role={null}>{t('mail.externalBanner')}</Notice> : null}
               <p className={styles.meta}>
@@ -498,8 +464,14 @@ export function MailPage() {
                 onDownload={(attachment) => void download(attachment.id)}
                 onDownloadOriginal={() => void downloadOriginal()}
                 onExternalLink={openExternalLink}
+                actions={[
+                  ...(folder === 'drafts' ? [] : [{ key: 'forward-eml', label: t('mail.forwardAsAttachment'), onSelect: forwardAsAttachment }]),
+                  { key: 'unread', label: t('mail.markUnread'), onSelect: () => change.mutate({ id: selectedId, changes: { is_read: false }, leaves: true }) },
+                  ...(shown.origin === 'inbound' && folder !== 'spam' ? [{ key: 'spam', label: t('mail.reportSpam'), onSelect: () => spam.mutate(selectedId) }] : []),
+                ]}
                 showRemoteImages={() => undefined}
                 onRetryDelivery={retryDelivery}
+                moreSlot={moreSlot}
               /></AdminMailUiProvider> : null}
             </div>
           ) : null}

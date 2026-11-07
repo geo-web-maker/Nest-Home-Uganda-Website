@@ -1,3 +1,4 @@
+/* GENERATED from shared/mail-rich. Edit there, then run: node scripts/sync-mail-rich.mjs */
 import { useCallback, useState } from 'react';
 
 type UploadReservation = {
