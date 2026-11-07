@@ -28,7 +28,7 @@ export const FIELD_META: Record<string, FieldMeta> = {
   'client.name': { label: 'Client full name', kind: 'text', help: 'The person who signs and is responsible for the agreement.', placeholder: 'As on their national ID' },
   'client.title': { label: 'Title', kind: 'text', suggestions: ['Mr', 'Mrs', 'Ms', 'Miss', 'Dr', 'Prof', 'Rev'] },
   'client.address': long('Client address', 'Postal or physical address for notices.'),
-  'client.phone': { label: 'Client phone', kind: 'phone', help: 'Uganda mobile, for example 0771 234 567.' },
+  'client.phone': { label: 'Client phone', kind: 'phone', help: 'Pick the country code, then the number. SMS only reaches Ugandan mobiles; others are reached by email.' },
   'client.email': { label: 'Client email', kind: 'email', help: 'The signed copy and notices are sent here.' },
   'client.relationship_to_patient': { label: 'Relationship to patient', kind: 'text', suggestions: ['Self', 'Spouse', 'Parent', 'Child', 'Sibling', 'Guardian', 'Employer', 'Other relative'] },
   'patient.full_name': { label: 'Patient full name', kind: 'text', placeholder: 'The person receiving care' },
@@ -120,7 +120,7 @@ export const FIELD_META: Record<string, FieldMeta> = {
   'schedule_c.authorized_people_scope': long('Other people who may receive information', 'Names and what they may be told.'),
   'schedule_c.communication_channel': { label: 'Preferred contact channel', kind: 'select', na: false, options: ['Phone call', 'SMS', 'WhatsApp', 'Email', 'Other (give details)'] },
   'schedule_c.other_channel_details': text('Other channel details', 'Only if you chose Other.'),
-  'schedule_c.verified_contact': { label: 'Verified contact', kind: 'phone', na: false, help: 'The number or address Bloomwell confirmed with the client.' },
+  'schedule_c.verified_contact': { label: 'Verified contact', kind: 'text', na: false, help: 'The number or address Bloomwell confirmed with the client.' },
   'schedule_c.bloomwell_verification_by': text('Verified by (Bloomwell)', 'Name of the staff member who verified identity.'),
   'schedule_c.consent_obtained_by': text('Consent obtained by (Bloomwell)'),
 };
