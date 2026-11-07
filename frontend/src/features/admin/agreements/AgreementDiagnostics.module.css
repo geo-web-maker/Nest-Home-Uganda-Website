@@ -12,6 +12,6 @@
 .selfTests h3, .result h3 { margin: 0; font-size: 1rem; }
 .result { display: grid; gap: 0.6rem; border-top: 1px solid var(--border, #dce3de); padding-top: 0.8rem; }
 .checks { display: grid; gap: 0.5rem; list-style: none; margin: 0; padding: 0; }
-.check { display: grid; grid-template-columns: 4.4rem minmax(0, 1fr); align-items: start; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border, #edf0ed); }
-.check strong { display: block; text-transform: capitalize; }
-.check p { margin: 0.2rem 0 0; color: var(--muted, #53635a); font-size: 0.88rem; overflow-wrap: anywhere; }
+.checkItem { display: grid; grid-template-columns: 4.4rem minmax(0, 1fr); align-items: start; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border, #edf0ed); }
+.checkItem strong { display: block; text-transform: capitalize; }
+.checkItem p { margin: 0.2rem 0 0; color: var(--muted, #53635a); font-size: 0.88rem; overflow-wrap: anywhere; }

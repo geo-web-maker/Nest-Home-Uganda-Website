@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { apiClient } from '../../../lib/api/client';
+import { createPasskey, passkeysSupported, type PasskeyCreationOptions } from '../../../lib/webauthn';
 import { AgreementFieldInput } from '../../agreements/AgreementFieldInput';
 import { SCHEDULE_SECTIONS, fieldLabel as metaLabel, fieldMeta } from '../../agreements/fieldMeta';
+import { SignatureMethodPicker, credentialProblem, signatureMethodLabel, type SignatureChoice } from '../../agreements/SignatureMethodPicker';
 import styles from './AgreementPublicPage.module.css';
 
 type AgreementField = { value: unknown; owner: 'staff' | 'clinical' | 'client' | 'either'; revision: number; entered_by_staff: boolean };
 type PublicAgreement = {
   company: string; reference: string; status: string; template_version: number;
-  clauses: Record<string, string>; fields: Record<string, AgreementField>;
+  clauses: Record<string, string>; document_html?: string | null; fields: Record<string, AgreementField>;
   schedule_b_computed: Record<string, string | number>; content_hash: string;
   signed: boolean; variation_clause?: string | null; parent_reference?: string | null;
   signatures?: Array<{ role: string; name: string; method: string; signed_at: string }>;
@@ -48,6 +50,11 @@ export function AgreementPublicPage() {
   const signatureCanvas = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const hasInk = useRef(false);
+  const [method, setMethod] = useState<SignatureChoice>('drawn');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  useEffect(() => { let live = true; void passkeysSupported().then((ok) => { if (live) setBiometricAvailable(ok); }); return () => { live = false; }; }, []);
 
   const loadReview = useCallback(async (purpose: 'sign' | 'view') => {
     const endpoint = purpose === 'view' ? '/public/agreements/session/signed' : '/public/agreements/session';
@@ -178,20 +185,30 @@ export function AgreementPublicPage() {
     hasInk.current = false;
   };
 
-  const sign = async () => {
-    if (!view || !signatureCanvas.current || !hasInk.current || name.trim().length < 2) {
-      setError('Enter your name and draw your signature in the box before submitting.'); return;
+  const collectEvidence = async (): Promise<Record<string, unknown>> => {
+    if (method === 'password') return { method: 'password', password };
+    if (method === 'biometric') {
+      const challenge = await apiClient.post<{ options: PasskeyCreationOptions; challenge_token: string }>(
+        '/public/agreements/session/sign/passkey-options', { name: name.trim() });
+      return { method: 'biometric', passkey: await createPasskey(challenge.options), challenge_token: challenge.challenge_token };
     }
+    return { method: 'drawn', signature_base64: signatureCanvas.current?.toDataURL('image/png') };
+  };
+
+  const sign = async () => {
+    if (!view || name.trim().length < 2) { setError('Enter your full name before submitting.'); return; }
+    if (method === 'drawn' && (!signatureCanvas.current || !hasInk.current)) { setError('Draw your signature in the box before submitting.'); return; }
+    const problem = credentialProblem(method, 'client', password, confirmPassword);
+    if (problem) { setError(problem); return; }
     setBusy(true); setError(''); setNotice('');
     try {
-      const signature_base64 = signatureCanvas.current.toDataURL('image/png');
+      const evidence = await collectEvidence();
       const result = await apiClient.post<{ signed: boolean }>('/public/agreements/session/sign', {
-        name: name.trim(), role: 'client', method: 'drawn', signature_base64,
-        expected_content_hash: view.content_hash,
+        name: name.trim(), role: 'client', expected_content_hash: view.content_hash, ...evidence,
       });
       if (result.signed) { setStep('signed'); setNotice('Your signature has been received. Bloomwell will countersign and send confirmation.'); }
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Your signature could not be recorded.'); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setPassword(''); setConfirmPassword(''); }
   };
 
   const requestChange = async () => {
@@ -230,7 +247,7 @@ export function AgreementPublicPage() {
       {step === 'review' && view && <div className={styles.review}>
         <div className={styles.progress}><span>Review and complete each section</span><span>Template version {view.template_version}</span></div>
         {view.variation_clause && <div className={styles.notice}>AMENDMENT — This agreement varies clause {view.variation_clause}. The original agreement remains in effect except for the change expressly approved here.</div>}
-        <div className={styles.clauses}>{Object.entries(view.clauses).map(([number, text]) => <details key={number}><summary>Clause {number}</summary><div>{text.split('\n').map((line, i) => line ? <p key={`${number}-${i}`}>{line}</p> : null)}</div></details>)}</div>
+        {view.document_html ? <iframe className={styles.document} title="Agreement document" srcDoc={view.document_html} sandbox="" /> : <div className={styles.clauses}>{Object.entries(view.clauses).map(([number, text]) => <details key={number}><summary>Clause {number}</summary><div>{text.split('\n').map((line, i) => line ? <p key={`${number}-${i}`}>{line}</p> : null)}</div></details>)}</div>}
         <h2>Agreement details and schedules</h2>
         <p>Fields marked read-only have been completed by Bloomwell staff. You can edit fields marked as client or shared.</p>
         {(() => {
@@ -270,15 +287,22 @@ export function AgreementPublicPage() {
         <h2>Sign your agreement</h2>
         <p>By signing, you confirm that you have reviewed the agreement and the information shown above. Your signature is bound to this exact version.</p>
         <label>Your full name<input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" /></label>
-        <label>Draw your signature below</label>
-        <canvas ref={signatureCanvas} className={styles.signature} width={800} height={180} aria-label="Signature drawing area" onPointerDown={beginStroke} onPointerMove={drawStroke} onPointerUp={endStroke} onPointerCancel={endStroke} />
-        <div className={styles.signatureActions}><button type="button" className={styles.secondary} onClick={clearSignature}>Clear signature</button><button type="button" className={styles.primary} onClick={() => void sign()} disabled={busy}>Submit my signature</button></div>
+        <SignatureMethodPicker method={method} onMethod={(next) => { setMethod(next); setError(''); }} biometricAvailable={biometricAvailable}
+          mode="client" password={password} onPassword={setPassword} confirm={confirmPassword} onConfirm={setConfirmPassword}
+          drawPanel={<>
+            <label>Draw your signature below</label>
+            <canvas ref={signatureCanvas} className={styles.signature} width={800} height={180} aria-label="Signature drawing area" onPointerDown={beginStroke} onPointerMove={drawStroke} onPointerUp={endStroke} onPointerCancel={endStroke} />
+          </>} />
+        <div className={styles.signatureActions}>
+          {method === 'drawn' && <button type="button" className={styles.secondary} onClick={clearSignature}>Clear signature</button>}
+          <button type="button" className={styles.primary} onClick={() => void sign()} disabled={busy}>{method === 'biometric' ? 'Sign with fingerprint / face' : method === 'password' ? 'Sign with my passphrase' : 'Submit my signature'}</button>
+        </div>
         <button type="button" className={styles.linkButton} onClick={() => void requestChange()} disabled={busy}>Request a change instead</button>
-        <p className={styles.security}>A typed name alone is not accepted as a signature. You may draw your signature using your finger, stylus or mouse.</p>
+        <p className={styles.security}>A typed name alone is not accepted as a signature. Sign by drawing with your finger, stylus or mouse, by confirming with your phone's fingerprint or face, or with a passphrase you choose.</p>
       </div>}
 
       {step === 'signed' && <div className={styles.done}>
-        {pre?.purpose === 'view' && view ? <><div className={styles.signedBanner}>SIGNED AGREEMENT · {view.reference}</div>{view.variation_clause && <div className={styles.notice}>AMENDMENT — This agreement varies clause {view.variation_clause}{view.parent_reference ? ` of agreement ${view.parent_reference}` : ''}.</div>}<h2>Agreement clauses</h2>{Object.entries(view.clauses).map(([number, text]) => <details key={number}><summary>Clause {number}</summary><div>{text.split('\n').map((line, i) => line ? <p key={`${number}-${i}`}>{line}</p> : null)}</div></details>)}<h2>Parties and schedules</h2>{Object.entries(view.fields).map(([path, field]) => <div className={styles.formField} key={path}><label><span>{fieldLabel(path)}</span><small>{path.startsWith('schedule_a.') ? 'Schedule A' : path.startsWith('schedule_b.') ? 'Schedule B' : path.startsWith('schedule_c.') ? 'Schedule C' : 'Parties'}</small></label><p>{toText(field.value) || '—'}</p></div>)}<div className={styles.fees}><h3>Fee summary</h3>{Object.entries(view.schedule_b_computed).map(([key, value]) => <p key={key}><span>{key.replaceAll('_', ' ')}</span><strong>{String(value)}</strong></p>)}</div><h2>Signatures</h2>{(view.signatures ?? []).map((sig, index) => <div className={styles.formField} key={`${sig.role}-${index}`}><strong>{sig.role.replaceAll('_', ' ')}</strong><p>{sig.name}</p><small>{sig.method} · {new Date(sig.signed_at).toLocaleString()}</small></div>)}{view.certificate && <section className={styles.certificate}><h2>Certificate of completion</h2>{Object.entries(view.certificate).map(([key, value]) => <p key={key}><strong>{key.replaceAll('_', ' ')}:</strong> {typeof value === 'object' ? JSON.stringify(value) : String(value)}</p>)}</section>}<button type="button" className={styles.primary} onClick={() => window.print()}>Print signed agreement</button></> : changeRequested ? <><div className={styles.successMark}>✓</div><h2>Your change request was sent</h2><p>The agreement link is paused. Bloomwell staff will review your request and send an updated link if needed.</p></> : <><div className={styles.successMark}>✓</div><h2>Your signature has been received</h2><p>Bloomwell will countersign the agreement and send you a confirmation. When it is complete, you can verify again to view the signed agreement online.</p></>}
+        {pre?.purpose === 'view' && view ? <><div className={styles.signedBanner}>SIGNED AGREEMENT · {view.reference}</div>{view.variation_clause && <div className={styles.notice}>AMENDMENT — This agreement varies clause {view.variation_clause}{view.parent_reference ? ` of agreement ${view.parent_reference}` : ''}.</div>}{view.document_html ? <iframe className={styles.document} title="Signed agreement" srcDoc={view.document_html} sandbox="" /> : <><h2>Agreement clauses</h2>{Object.entries(view.clauses).map(([number, text]) => <details key={number}><summary>Clause {number}</summary><div>{text.split('\n').map((line, i) => line ? <p key={`${number}-${i}`}>{line}</p> : null)}</div></details>)}<h2>Parties and schedules</h2>{Object.entries(view.fields).map(([path, field]) => <div className={styles.formField} key={path}><label><span>{fieldLabel(path)}</span><small>{path.startsWith('schedule_a.') ? 'Schedule A' : path.startsWith('schedule_b.') ? 'Schedule B' : path.startsWith('schedule_c.') ? 'Schedule C' : 'Parties'}</small></label><p>{toText(field.value) || '—'}</p></div>)}</>}<div className={styles.fees}><h3>Fee summary</h3>{Object.entries(view.schedule_b_computed).map(([key, value]) => <p key={key}><span>{key.replaceAll('_', ' ')}</span><strong>{String(value)}</strong></p>)}</div><h2>Signatures</h2>{(view.signatures ?? []).map((sig, index) => <div className={styles.formField} key={`${sig.role}-${index}`}><strong>{sig.role.replaceAll('_', ' ')}</strong><p>{sig.name}</p><small>{signatureMethodLabel(sig.method, sig.role)} · {new Date(sig.signed_at).toLocaleString()}</small></div>)}{view.certificate && <section className={styles.certificate}><h2>Certificate of completion</h2>{Object.entries(view.certificate).map(([key, value]) => <p key={key}><strong>{key.replaceAll('_', ' ')}:</strong> {typeof value === 'object' ? JSON.stringify(value) : String(value)}</p>)}</section>}<button type="button" className={styles.primary} onClick={() => window.print()}>Print signed agreement</button></> : changeRequested ? <><div className={styles.successMark}>✓</div><h2>Your change request was sent</h2><p>The agreement link is paused. Bloomwell staff will review your request and send an updated link if needed.</p></> : <><div className={styles.successMark}>✓</div><h2>Your signature has been received</h2><p>Bloomwell will countersign the agreement and send you a confirmation. When it is complete, you can verify again to view the signed agreement online.</p></>}
       </div>}
     </section>
     <footer className={styles.footer}>Questions? Call <a href="tel:0787499988">0787499988</a> or email <a href="mailto:info@bhcug.com">info@bhcug.com</a>. Your agreement remains private.</footer>

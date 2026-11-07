@@ -9,7 +9,11 @@ import pytest
 os.environ.setdefault("APP_ENV", "development")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-that-is-long-enough-0123456789")
 os.environ.setdefault("IP_HASH_SALT", "test-salt")
+# Settings are read with the NEST_ prefix, so mirror the dummy values there too.
+for _key in ("APP_ENV", "SECRET_KEY", "IP_HASH_SALT"):
+    os.environ.setdefault(f"NEST_{_key}", os.environ[_key])
 os.environ.pop("MONGODB_URI", None)  # the app must not auto-connect in tests
+os.environ.pop("NEST_MONGODB_URI", None)
 
 from app.core import db  # noqa: E402
 from app.core.rate_limit import limiter  # noqa: E402

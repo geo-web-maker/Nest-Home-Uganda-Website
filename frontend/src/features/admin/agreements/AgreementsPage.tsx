@@ -2,12 +2,19 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type Point
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Notice } from '../../../components/admin/Notice';
 import { Button } from '../../../components/ui/Button';
+import { ButtonGroup } from '../../../components/admin/ButtonGroup';
+import { FilterBar } from '../../../components/admin/FilterBar';
+import { FilterTabs } from '../../../components/admin/FilterTabs';
+import { Field } from '../../../components/ui/Field';
+import { Checkbox } from '../../../components/ui/Checkbox';
 import { StatusBadge } from '../../../components/ui/Badge';
 import { apiClient, ApiError } from '../../../lib/api/client';
+import { createPasskey, passkeysSupported, type PasskeyCreationOptions } from '../../../lib/webauthn';
 import { useAuth } from '../auth/useAuth';
 import styles from './AgreementsPage.module.css';
 import { AgreementDiagnostics } from './AgreementDiagnostics';
 import { AgreementFieldInput } from '../../agreements/AgreementFieldInput';
+import { SignatureMethodPicker, credentialProblem, type SignatureChoice } from '../../agreements/SignatureMethodPicker';
 import { OWNER_LABEL, SCHEDULE_SECTIONS, fieldLabel, fieldMeta, isBlank, type FieldSection, type ScheduleTab } from '../../agreements/fieldMeta';
 
 type Owner = 'staff' | 'clinical' | 'client' | 'either';
@@ -28,6 +35,9 @@ type TemplateMessage = { subject: string; preheader: string; body: string; butto
 type AgreementTemplateVersion = { version: number; published: boolean; template_hash: string; published_at?: string | null; source_file?: string | null };
 type MessagePreview = { subject?: string; html?: string; text?: string; body?: string; characters?: number; segments?: number; gsm7?: boolean };
 type MessageStage = 'agreement_sent' | 'otp_sign' | 'otp_view' | 'reminder_1' | 'reminder_2' | 'expiring_soon' | 'expired' | 'changes_requested' | 'staff_revised' | 'client_signed_client' | 'client_signed_staff' | 'completed_client' | 'voided' | 'amendment_sent' | 'payment_due';
+
+// Mirrors the server rule (the server enforces it): never sent, or already closed.
+const DELETABLE_STATUSES = new Set(['draft', 'changes_requested', 'expired', 'voided']);
 
 const stages: MessageStage[] = ['agreement_sent', 'otp_sign', 'otp_view', 'reminder_1', 'reminder_2', 'expiring_soon', 'expired', 'changes_requested', 'staff_revised', 'client_signed_client', 'client_signed_staff', 'completed_client', 'voided', 'amendment_sent', 'payment_due'];
 const smsStages = new Set<MessageStage>(['agreement_sent', 'otp_sign', 'otp_view', 'reminder_1', 'reminder_2', 'expiring_soon', 'staff_revised', 'client_signed_client', 'completed_client', 'voided', 'amendment_sent', 'payment_due']);
@@ -76,6 +86,10 @@ export function AgreementsPage() {
   const signatureCanvas = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const hasInk = useRef(false);
+  const [signMethod, setSignMethod] = useState<SignatureChoice>('drawn');
+  const [signPassword, setSignPassword] = useState('');
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  useEffect(() => { let live = true; void passkeysSupported().then((ok) => { if (live) setBiometricAvailable(ok); }); return () => { live = false; }; }, []);
   const canWrite = Boolean(user?.is_superadmin || user?.scopes.includes('agreements:write'));
   const canManageTemplates = Boolean(user?.is_superadmin || user?.scopes.includes('agreements:templates'));
   const canDiagnose = Boolean(user?.is_superadmin || user?.scopes.includes('agreements:diagnostics'));
@@ -235,7 +249,7 @@ export function AgreementsPage() {
     finally { setBusy(false); }
   };
   const performDelete = async (id: string, reference: string) => {
-    if (!window.confirm(`Permanently delete voided agreement ${reference}? This cannot be undone.`)) return;
+    if (!window.confirm(`Permanently delete agreement ${reference}? This removes it and any stored files, and cannot be undone.`)) return;
     setBusy(true); setError('');
     try { await apiClient.delete(`/admin/agreements/${id}`); if (selected === id) { setSelected(''); setDetail(null); } await loadList(); setNotice(`${reference} deleted.`); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not delete the agreement.'); }
@@ -276,18 +290,27 @@ export function AgreementsPage() {
     if (canvas) canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
     hasInk.current = false;
   };
-  const countersign = async () => {
-    if (!detail || !signatureCanvas.current || !hasInk.current || bloomwellName.trim().length < 2) {
-      setError('Enter the authorised signatory name and draw the countersignature.'); return;
+  const collectCountersignEvidence = async (agreementId: string): Promise<Record<string, unknown>> => {
+    if (signMethod === 'password') return { method: 'password', password: signPassword };
+    if (signMethod === 'biometric') {
+      const challenge = await apiClient.post<{ options: PasskeyCreationOptions; challenge_token: string }>(
+        `/admin/agreements/${agreementId}/countersign/passkey-options`, { name: bloomwellName.trim() });
+      return { method: 'biometric', passkey: await createPasskey(challenge.options), challenge_token: challenge.challenge_token };
     }
+    return { method: 'drawn', signature_base64: signatureCanvas.current?.toDataURL('image/png') };
+  };
+  const countersign = async () => {
+    if (!detail || bloomwellName.trim().length < 2) { setError('Enter the authorised signatory name.'); return; }
+    if (signMethod === 'drawn' && (!signatureCanvas.current || !hasInk.current)) { setError('Draw the countersignature.'); return; }
+    const problem = credentialProblem(signMethod, 'staff', signPassword, '');
+    if (problem) { setError(problem); return; }
     setBusy(true); setError('');
     try {
-      await apiClient.post(`/admin/agreements/${detail.id}/countersign`, {
-        name: bloomwellName.trim(), method: 'drawn', signature_base64: signatureCanvas.current.toDataURL('image/png'),
-      });
+      const evidence = await collectCountersignEvidence(detail.id);
+      await apiClient.post(`/admin/agreements/${detail.id}/countersign`, { name: bloomwellName.trim(), ...evidence });
       await loadDetail(detail.id); await loadList(); setNotice('Agreement countersigned and sealed.'); clearSignature();
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not countersign this agreement.'); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setSignPassword(''); }
   };
   const openSealedPdf = async () => {
     if (!detail) return;
@@ -321,18 +344,24 @@ export function AgreementsPage() {
       {notice && <Notice tone="success">{notice}</Notice>}
       <div className={styles.layout}>
         <section className={styles.listPanel} aria-label="Agreement list">
-          <div className={styles.filters}>
-            {canWrite && <><label>Enquiry ID for next agreement (optional)<input value={sourceEnquiryId} onChange={(e) => setSourceEnquiryId(e.target.value)} placeholder="Paste enquiry ID" /></label><label>Assigned clinical nurse user ID (optional)<input value={assignedNurseId} onChange={(e) => setAssignedNurseId(e.target.value)} placeholder="Paste staff user ID" /></label></>}
-            <label>Search<input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Reference or client" /></label>
-            <label>Status<select value={status} onChange={(e) => setStatus(e.target.value)}><option value="">All statuses</option>{['draft','sent','client_in_progress','client_signed','completed','changes_requested','expired','voided'].map((s) => <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>)}</select></label>
-          </div>
+          <FilterBar label="Agreement filters">
+            {canWrite && <>
+              <Field label="Enquiry ID for next agreement (optional)" value={sourceEnquiryId} onChange={(e) => setSourceEnquiryId(e.target.value)} placeholder="Paste enquiry ID" />
+              <Field label="Assigned clinical nurse user ID (optional)" value={assignedNurseId} onChange={(e) => setAssignedNurseId(e.target.value)} placeholder="Paste staff user ID" />
+            </>}
+            <Field label="Search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Reference or client" />
+            <Field kind="select" label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="">All statuses</option>
+              {['draft','sent','client_in_progress','client_signed','completed','changes_requested','expired','voided'].map((s) => <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>)}
+            </Field>
+          </FilterBar>
           {rows.length === 0 ? <div className={styles.empty}><h2>No agreements yet</h2><p>Create an agreement from a client enquiry, review the staff-only care and fee sections, then send a secure link. Clients complete and sign in their browser.</p>{canWrite && <Button onClick={create} variant="outline">Create first agreement</Button>}</div> : (
             <ul className={styles.rows}>{rows.map((row) => <li key={row.id} className={selected === row.id ? styles.selected : ''}>
-              <button type="button" className={styles.rowMain} onClick={() => { setSelected(row.id); setTab('parties'); }}>
+              <Button type="button" variant="outline" size="compact" className={styles.rowMain} onClick={() => { setSelected(row.id); setTab('parties'); }}>
                 <strong>{row.reference}</strong><span>{row.client_name || 'Client not named'}</span><small>{row.patient_name ? `Patient: ${row.patient_name}` : 'Patient details pending'}</small>
                 <StatusBadge status={statusTone(row.status)}>{row.status.replaceAll('_', ' ')}</StatusBadge>
-              </button>
-              {(canWrite || canVoid) && <div className={styles.rowActions}>{canWrite && <button type="button" onClick={() => void performResend(row.id)} disabled={busy || !['draft','sent','client_in_progress','changes_requested','expired'].includes(row.status)}>Resend</button>}{canVoid && <button type="button" onClick={() => void performVoid(row.id)} disabled={busy || row.status === 'completed' || row.status === 'voided'}>Void</button>}{canVoid && row.status === 'voided' && <button type="button" className={styles.danger} onClick={() => void performDelete(row.id, row.reference)} disabled={busy}>Delete</button>}</div>}
+              </Button>
+              {(canWrite || canVoid) && <ButtonGroup size="compact" align="end">{canWrite && <Button variant="outline" onClick={() => void performResend(row.id)} disabled={busy || !['draft','sent','client_in_progress','changes_requested','expired'].includes(row.status)}>Resend</Button>}{canVoid && <Button variant="outline" onClick={() => void performVoid(row.id)} disabled={busy || row.status === 'completed' || row.status === 'voided'}>Void</Button>}{canVoid && DELETABLE_STATUSES.has(row.status) && <Button variant="outline" className={styles.danger} onClick={() => void performDelete(row.id, row.reference)} disabled={busy}>Delete</Button>}</ButtonGroup>}
             </li>)}</ul>
           )}
         </section>
@@ -340,7 +369,12 @@ export function AgreementsPage() {
         <section className={styles.editorPanel} aria-label="Agreement editor">
           {!selected || !detail ? <div className={styles.empty}><h2>Select an agreement</h2><p>Open an item from the list or create a new agreement.</p></div> : <>
             <div className={styles.editorHeading}><div><h2>{detail.reference}</h2><p>{detail.client_name || 'Client details pending'} · {detail.status.replaceAll('_', ' ')}</p></div><StatusBadge status={statusTone(detail.status)}>{detail.status.replaceAll('_', ' ')}</StatusBadge></div>
-            <nav className={styles.tabs} aria-label="Agreement sections">{visibleTabs.map((entry) => <button type="button" key={entry.id} aria-current={tab === entry.id ? 'page' : undefined} onClick={() => { setTab(entry.id); if (entry.id === 'messages') void loadMessage(messageStage, messageChannel); if (entry.id === 'template') void openTemplate(); }}>{entry.label}{isScheduleTab(entry.id) && (() => { const count = outstanding(detail.fields, Object.keys(detail.fields).filter((path) => path.startsWith(entry.id === 'parties' ? 'client.' : `${entry.id}.`) || (entry.id === 'parties' && path.startsWith('patient.')))).length; return count ? <span className={styles.tabBadge} aria-label={`${count} to complete`}>{count}</span> : null; })()}</button>)}</nav>
+            <FilterTabs label="Agreement sections" value={tab}
+              tabs={visibleTabs.map((entry) => {
+                const count = isScheduleTab(entry.id) ? outstanding(detail.fields, Object.keys(detail.fields).filter((path) => path.startsWith(entry.id === 'parties' ? 'client.' : `${entry.id}.`) || (entry.id === 'parties' && path.startsWith('patient.')))).length : 0;
+                return { value: entry.id, label: count ? `${entry.label} (${count})` : entry.label };
+              })}
+              onChange={(value) => { setTab(value as typeof tab); if (value === 'messages') void loadMessage(messageStage, messageChannel); if (value === 'template') void openTemplate(); }} />
             {isScheduleTab(tab) && (() => {
               const config = SCHEDULE_SECTIONS[tab];
               const known = new Set(config.sections.flatMap((section) => section.paths));
@@ -374,7 +408,7 @@ export function AgreementsPage() {
                     </span>
                     {!readOnly && <Button size="compact" variant="outline" onClick={() => void saveField(path)} disabled={busy || local === valueText(field.value)}>Save</Button>}
                   </div>
-                  {field.owner === 'either' && !readOnly && <label className={styles.check}><input type="checkbox" checked={enteredStaff[path] ?? field.entered_by_staff} onChange={(e) => setEnteredStaff((old) => ({ ...old, [path]: e.target.checked }))} /> Entered by staff on client's behalf</label>}
+                  {field.owner === 'either' && !readOnly && <Checkbox label="Entered by staff on client's behalf" checked={enteredStaff[path] ?? field.entered_by_staff} onChange={(e) => setEnteredStaff((old) => ({ ...old, [path]: e.target.checked }))} />}
                   {conflict && <div className={styles.conflict}><p><strong>Another saver updated this field.</strong><br />Current saved value: {conflict.remote || '—'}<br />Your unsaved value: {conflict.local || '—'}</p><Button size="compact" onClick={() => void saveField(path, { value: conflict.local, revision: conflict.revision })} disabled={busy}>Keep my value</Button><Button size="compact" variant="outline" onClick={() => { setDrafts((old) => ({ ...old, [path]: conflict.remote })); setConflicts((old) => { const next = { ...old }; delete next[path]; return next; }); }}>Use saved value</Button></div>}
                 </div>;
               };
@@ -412,22 +446,27 @@ export function AgreementsPage() {
             {tab === 'preview' && <PreviewPanel id={detail.id} />}
             {tab === 'timeline' && <Timeline events={detail.events} />}
             {tab === 'send' && <div className={styles.sendPanel}>
-              {canWrite && <><h3>Send agreement for review</h3><p>Messages contain a secure link only. No patient name, care details or fees are sent by email or SMS.</p><label>Send via<select value={channels} onChange={(e) => setChannels(e.target.value as typeof channels)}><option value="both">Email and SMS</option><option value="email">Email only</option><option value="sms">SMS only</option></select></label><p>Link expiry: 14 days. Reminders: 48 hours and day 5. Expiry warning: 48 hours before expiry.</p><Button onClick={() => void send()} disabled={busy || !['draft','changes_requested','expired'].includes(detail.status)}>Validate and send</Button></>}
-              {canSign && detail.status === 'client_signed' && <section className={styles.countersign}><h3>Bloomwell countersignature</h3><p>By countersigning, the system seals the agreement and stores its PDF in private storage.</p><label>Authorised signatory name<input value={bloomwellName} onChange={(e) => setBloomwellName(e.target.value)} /></label><canvas ref={signatureCanvas} className={styles.signaturePad} width={800} height={160} aria-label="Bloomwell countersignature area" onPointerDown={beginSignature} onPointerMove={moveSignature} onPointerUp={() => { drawing.current = false; }} onPointerCancel={() => { drawing.current = false; }} /><div className={styles.actions}><Button variant="outline" onClick={clearSignature}>Clear signature</Button><Button onClick={() => void countersign()} disabled={busy}>Countersign and seal</Button></div></section>}
-              {canWrite && detail.status === 'completed' && <div className={styles.actions}><Button variant="outline" onClick={() => void createAmendment()} disabled={busy}>Create amendment</Button><Button variant="outline" onClick={() => void openSealedPdf()} disabled={busy}>Download internal sealed PDF</Button></div>}
+              {canWrite && <><h3>Send agreement for review</h3><p>Messages contain a secure link only. No patient name, care details or fees are sent by email or SMS.</p><Field kind="select" label="Send via" value={channels} onChange={(e) => setChannels(e.target.value as typeof channels)}><option value="both">Email and SMS</option><option value="email">Email only</option><option value="sms">SMS only</option></Field><p>Link expiry: 14 days. Reminders: 48 hours and day 5. Expiry warning: 48 hours before expiry.</p><Button onClick={() => void send()} disabled={busy || !['draft','changes_requested','expired'].includes(detail.status)}>Validate and send</Button></>}
+              {canSign && detail.status === 'client_signed' && <section className={styles.countersign}><h3>Bloomwell countersignature</h3><p>By countersigning, the system seals the agreement and stores its PDF in private storage.</p><Field label="Authorised signatory name" value={bloomwellName} onChange={(e) => setBloomwellName(e.target.value)} /><SignatureMethodPicker method={signMethod} onMethod={(next) => { setSignMethod(next); setError(''); }} biometricAvailable={biometricAvailable} mode="staff" password={signPassword} onPassword={setSignPassword} confirm="" onConfirm={() => undefined}
+                drawPanel={<canvas ref={signatureCanvas} className={styles.signaturePad} width={800} height={160} aria-label="Bloomwell countersignature area" onPointerDown={beginSignature} onPointerMove={moveSignature} onPointerUp={() => { drawing.current = false; }} onPointerCancel={() => { drawing.current = false; }} />} /><ButtonGroup>{signMethod === 'drawn' && <Button variant="outline" onClick={clearSignature}>Clear signature</Button>}<Button onClick={() => void countersign()} disabled={busy}>Countersign and seal</Button></ButtonGroup></section>}
+              {canVoid && DELETABLE_STATUSES.has(detail.status) && <><ButtonGroup><Button variant="outline" className={styles.danger} onClick={() => void performDelete(detail.id, detail.reference)} disabled={busy}>Delete agreement</Button></ButtonGroup><p className={styles.hint}>Deleting removes this agreement permanently. Sent or signed agreements must be voided first; completed agreements cannot be deleted.</p></>}
+              {canWrite && detail.status === 'completed' && <ButtonGroup><Button variant="outline" onClick={() => void createAmendment()} disabled={busy}>Create amendment</Button><Button variant="outline" onClick={() => void openSealedPdf()} disabled={busy}>Download internal sealed PDF</Button></ButtonGroup>}
             </div>}
             {tab === 'messages' && <div className={styles.messagePanel}>
-              <h3>Message templates</h3><div className={styles.filters}><label>Stage<select value={messageStage} onChange={(e) => { const next = e.target.value as MessageStage; void loadMessage(next, smsStages.has(next) ? messageChannel : 'email'); }}>{stages.map((s) => <option key={s} value={s}>{s}</option>)}</select></label><label>Channel<select value={messageChannel} onChange={(e) => void loadMessage(messageStage, e.target.value as 'email'|'sms')}><option value="email">Email</option><option value="sms" disabled={!smsStages.has(messageStage)}>SMS</option></select></label></div>
-              {message && <><p>{message.is_default ? 'Using code default' : `Custom version ${message.version}`}</p>{messageChannel === 'email' && <label>Subject<input value={message.subject} onChange={(e) => setMessage({ ...message, subject: e.target.value })} /></label>}<label>Preheader<input value={message.preheader} onChange={(e) => setMessage({ ...message, preheader: e.target.value })} /></label><label>Message body<textarea rows={7} value={message.body} onChange={(e) => setMessage({ ...message, body: e.target.value })} /></label>{messageChannel === 'email' && <><label>Button label<input value={message.button} onChange={(e) => setMessage({ ...message, button: e.target.value })} /></label><label>Footer note<textarea rows={2} value={message.footer_note} onChange={(e) => setMessage({ ...message, footer_note: e.target.value })} /></label></>}<p>{messageChannel === 'sms' ? `${message.body.length} characters · ${message.body.length <= 160 ? 1 : message.body.length <= 306 ? 2 : 'over limit'} segments` : 'Email links are inserted by the shared branded layout.'}</p><div className={styles.actions}><Button onClick={() => void saveMessage()} disabled={busy}>Save message</Button><Button variant="outline" onClick={() => void previewMessage()} disabled={busy}>Preview</Button><Button variant="outline" onClick={() => void testSendMessage()} disabled={busy}>Send test to me</Button><Button variant="outline" onClick={() => void apiClient.post(`/admin/agreements/message-templates/${messageStage}/${messageChannel}/reset`, {}).then(() => loadMessage(messageStage, messageChannel))} disabled={busy}>Reset to default</Button></div>{messagePreview && <section className={styles.messagePreview}><h4>{messagePreview.subject ?? 'SMS preview'}</h4>{messagePreview.html ? <iframe title="Email message preview" srcDoc={messagePreview.html} sandbox="" /> : <p>{messagePreview.body}</p>}{messagePreview.gsm7 === false && <Notice tone="info">The rendered message contains characters outside GSM-7.</Notice>}{messagePreview.segments !== undefined && <small>{messagePreview.characters} characters · {messagePreview.segments} GSM-7 segment(s)</small>}</section>}</>}
+              <h3>Message templates</h3><FilterBar label="Message template">
+                <Field kind="select" label="Stage" value={messageStage} onChange={(e) => { const next = e.target.value as MessageStage; void loadMessage(next, smsStages.has(next) ? messageChannel : 'email'); }}>{stages.map((s) => <option key={s} value={s}>{s}</option>)}</Field>
+                <Field kind="select" label="Channel" value={messageChannel} onChange={(e) => void loadMessage(messageStage, e.target.value as 'email'|'sms')}><option value="email">Email</option><option value="sms" disabled={!smsStages.has(messageStage)}>SMS</option></Field>
+              </FilterBar>
+              {message && <><p>{message.is_default ? 'Using code default' : `Custom version ${message.version}`}</p>{messageChannel === 'email' && <Field label="Subject" value={message.subject} onChange={(e) => setMessage({ ...message, subject: e.target.value })} />}<Field label="Preheader" value={message.preheader} onChange={(e) => setMessage({ ...message, preheader: e.target.value })} /><Field kind="textarea" label="Message body" rows={7} value={message.body} onChange={(e) => setMessage({ ...message, body: e.target.value })} />{messageChannel === 'email' && <><Field label="Button label" value={message.button} onChange={(e) => setMessage({ ...message, button: e.target.value })} /><Field kind="textarea" label="Footer note" rows={2} value={message.footer_note} onChange={(e) => setMessage({ ...message, footer_note: e.target.value })} /></>}<p>{messageChannel === 'sms' ? `${message.body.length} characters · ${message.body.length <= 160 ? 1 : message.body.length <= 306 ? 2 : 'over limit'} segments` : 'Email links are inserted by the shared branded layout.'}</p><ButtonGroup><Button onClick={() => void saveMessage()} disabled={busy}>Save message</Button><Button variant="outline" onClick={() => void previewMessage()} disabled={busy}>Preview</Button><Button variant="outline" onClick={() => void testSendMessage()} disabled={busy}>Send test to me</Button><Button variant="outline" onClick={() => void apiClient.post(`/admin/agreements/message-templates/${messageStage}/${messageChannel}/reset`, {}).then(() => loadMessage(messageStage, messageChannel))} disabled={busy}>Reset to default</Button></ButtonGroup>{messagePreview && <section className={styles.messagePreview}><h4>{messagePreview.subject ?? 'SMS preview'}</h4>{messagePreview.html ? <iframe title="Email message preview" srcDoc={messagePreview.html} sandbox="" /> : <p>{messagePreview.body}</p>}{messagePreview.gsm7 === false && <Notice tone="info">The rendered message contains characters outside GSM-7.</Notice>}{messagePreview.segments !== undefined && <small>{messagePreview.characters} characters · {messagePreview.segments} GSM-7 segment(s)</small>}</section>}</>}
             </div>}
             {tab === 'template' && <div className={styles.messagePanel}>
               <h3>Agreement clause versions</h3>
-              {templateInfo?.versions?.length ? <label>Load version<select value={templateInfo.version ?? ''} onChange={(e) => void loadTemplateVersion(Number(e.target.value))}>{templateInfo.versions.map((version) => <option key={version.version} value={version.version}>v{version.version} · {version.published ? 'published' : 'draft'}{version.version === templateInfo.published_version ? ' · active' : ''}</option>)}</select></label> : null}
+              {templateInfo?.versions?.length ? <Field kind="select" label="Load version" value={templateInfo.version ?? ''} onChange={(e) => void loadTemplateVersion(Number(e.target.value))}>{templateInfo.versions.map((version) => <option key={version.version} value={version.version}>v{version.version} · {version.published ? 'published' : 'draft'}{version.version === templateInfo.published_version ? ' · active' : ''}</option>)}</Field> : null}
               {templateInfo && <p>Version {templateInfo.version ?? '—'} · {templateInfo.published ? 'published' : 'draft / not published'} · {templateInfo.template_hash ?? 'No template hash'}{templateInfo.source_file ? ` · Source: ${templateInfo.source_file}` : ''}</p>}
               <p>The source PDF is loaded as a versioned clause map. Review the complete wording and schedules against the original signed source before publishing. The two required company email corrections are checked server-side.</p>
-              <textarea className={styles.templateEditor} rows={16} value={templateJson} onChange={(e) => setTemplateJson(e.target.value)} spellCheck={false} />
+              <Field kind="textarea" label="Clause template JSON" className={styles.templateEditor} rows={16} value={templateJson} onChange={(e) => setTemplateJson(e.target.value)} spellCheck={false} />
               <p>Publishing and voiding require the existing authenticator session. Verify your authenticator in Mail settings first; the session cookie is reused here.</p>
-              <div className={styles.actions}><Button onClick={() => void saveTemplateDraft()} disabled={busy}>Save new draft version</Button><Button variant="outline" onClick={() => void publishTemplate()} disabled={busy || !templateInfo?.version || templateInfo.published}>Publish selected version</Button></div>
+              <ButtonGroup><Button onClick={() => void saveTemplateDraft()} disabled={busy}>Save new draft version</Button><Button variant="outline" onClick={() => void publishTemplate()} disabled={busy || !templateInfo?.version || templateInfo.published}>Publish selected version</Button></ButtonGroup>
             </div>}
           </>}
         </section>

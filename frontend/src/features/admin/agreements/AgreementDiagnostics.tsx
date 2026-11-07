@@ -30,7 +30,7 @@ function CheckRows({ checks }: { checks: SetupCheck[] }) {
   return (
     <ul className={styles.checks}>
       {checks.map((item, index) => (
-        <li className={styles.check} key={`${item.id}-${index}`}>
+        <li className={styles.checkItem} key={`${item.id}-${index}`}>
           <Badge tone={tone[item.status]}>{item.status.toUpperCase()}</Badge>
           <div><strong>{item.id.replaceAll('_', ' ')}</strong><p>{item.detail}</p></div>
         </li>

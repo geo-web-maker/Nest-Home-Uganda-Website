@@ -1831,11 +1831,25 @@
       "CountersignAgreement": {
         "additionalProperties": false,
         "properties": {
+          "challenge_token": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Challenge Token"
+          },
           "method": {
             "default": "drawn",
             "enum": [
               "drawn",
-              "thumbprint"
+              "thumbprint",
+              "password",
+              "biometric"
             ],
             "title": "Method",
             "type": "string"
@@ -1846,16 +1860,47 @@
             "title": "Name",
             "type": "string"
           },
+          "passkey": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passkey"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 8,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
+          },
           "signature_base64": {
-            "maxLength": 1500000,
-            "minLength": 100,
-            "title": "Signature Base64",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 1500000,
+                "minLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signature Base64"
           }
         },
         "required": [
-          "name",
-          "signature_base64"
+          "name"
         ],
         "title": "CountersignAgreement",
         "type": "object"
@@ -5286,6 +5331,22 @@
         "title": "Page[TestimonialAdminOut]",
         "type": "object"
       },
+      "PasskeyOptionsRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 160,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "PasskeyOptionsRequest",
+        "type": "object"
+      },
       "PasswordChangeRequiredResponse": {
         "description": "Returned instead of a session when the caller signed in with a temporary password.",
         "properties": {
@@ -7153,6 +7214,18 @@
       "SignAgreement": {
         "additionalProperties": false,
         "properties": {
+          "challenge_token": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Challenge Token"
+          },
           "expected_content_hash": {
             "maxLength": 64,
             "minLength": 64,
@@ -7163,7 +7236,9 @@
             "default": "drawn",
             "enum": [
               "drawn",
-              "thumbprint"
+              "thumbprint",
+              "password",
+              "biometric"
             ],
             "title": "Method",
             "type": "string"
@@ -7173,6 +7248,31 @@
             "minLength": 2,
             "title": "Name",
             "type": "string"
+          },
+          "passkey": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passkey"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 8,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password"
           },
           "role": {
             "default": "client",
@@ -7186,15 +7286,21 @@
             "type": "string"
           },
           "signature_base64": {
-            "maxLength": 1500000,
-            "minLength": 100,
-            "title": "Signature Base64",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 1500000,
+                "minLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signature Base64"
           }
         },
         "required": [
           "name",
-          "signature_base64",
           "expected_content_hash"
         ],
         "title": "SignAgreement",
@@ -9499,7 +9605,7 @@
     },
     "/api/v1/admin/agreements/{agreement_id}": {
       "delete": {
-        "operationId": "admin_delete_voided_api_v1_admin_agreements__agreement_id__delete",
+        "operationId": "admin_delete_agreement_api_v1_admin_agreements__agreement_id__delete",
         "parameters": [
           {
             "in": "path",
@@ -9552,7 +9658,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Admin Delete Voided",
+        "summary": "Admin Delete Agreement",
         "tags": [
           "admin-agreements"
         ]
@@ -9759,6 +9865,61 @@
           }
         ],
         "summary": "Admin Countersign",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/{agreement_id}/countersign/passkey-options": {
+      "post": {
+        "operationId": "admin_countersign_passkey_options_api_v1_admin_agreements__agreement_id__countersign_passkey_options_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyOptionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Countersign Passkey Options",
         "tags": [
           "admin-agreements"
         ]
@@ -23769,6 +23930,63 @@
           }
         },
         "summary": "Public Sign",
+        "tags": [
+          "public-agreements"
+        ]
+      }
+    },
+    "/api/v1/public/agreements/session/sign/passkey-options": {
+      "post": {
+        "operationId": "public_sign_passkey_options_api_v1_public_agreements_session_sign_passkey_options_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "agreement_session",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agreement Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyOptionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Public Sign Passkey Options",
         "tags": [
           "public-agreements"
         ]

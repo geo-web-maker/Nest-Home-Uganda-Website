@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     refresh_token_days: int = 7
     cors_origins: str = ""
     frontend_url: str = ""
+    # WebAuthn (device biometric signing). Empty = derive from frontend_url.
+    webauthn_rp_id: str = ""
+    webauthn_origins: str = ""  # comma-separated; empty = frontend_url
     # Optional. Base URL put in nurse invite and reset emails; empty falls back to frontend_url.
     nurse_frontend_url: str = ""
     ip_hash_salt: str = ""

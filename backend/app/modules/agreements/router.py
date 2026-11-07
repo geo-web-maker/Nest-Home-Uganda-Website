@@ -16,7 +16,7 @@ from app.modules.agreements import diagnostics, messages, rules, service
 from app.modules.agreements.models import Agreement, AgreementTemplate
 from app.modules.agreements.schemas import (
     AgreementCreate, AgreementPatch, AmendmentCreate, CountersignAgreement, MessageTemplatePatch,
-    OtpRequest, OtpVerify, RequestChange, SendAgreement, SignAgreement,
+    OtpRequest, OtpVerify, PasskeyOptionsRequest, RequestChange, SendAgreement, SignAgreement,
     TemplateDraft, VoidAgreement,
 )
 from app.modules.auth.models import User
@@ -190,7 +190,15 @@ async def admin_countersign(agreement_id: str, body: CountersignAgreement, reque
     doc = await service.get_agreement(agreement_id)
     return await service.countersign(doc, principal, body.name, body.method,
                                      body.signature_base64, hash_ip(client_ip(request)),
-                                     request.headers.get("user-agent"))
+                                     request.headers.get("user-agent"), password=body.password,
+                                     passkey=body.passkey, challenge_token=body.challenge_token)
+
+
+@admin_router.post("/{agreement_id}/countersign/passkey-options")
+async def admin_countersign_passkey_options(agreement_id: str, body: PasskeyOptionsRequest,
+                                            principal: Principal = Depends(require_scopes("agreements:sign"))):
+    doc = await service.get_agreement(agreement_id)
+    return await service.staff_passkey_options(doc, principal, body.name)
 
 
 @admin_router.post("/{agreement_id}/void")
@@ -204,12 +212,12 @@ async def admin_void(agreement_id: str, body: VoidAgreement, request: Request,
 
 
 @admin_router.delete("/{agreement_id}")
-async def admin_delete_voided(agreement_id: str, request: Request,
+async def admin_delete_agreement(agreement_id: str, request: Request,
                               principal: Principal = Depends(require_scopes("agreements:void")),
                               mail_totp: str | None = Cookie(default=None)):
     await assert_totp_session(principal, mail_totp)
     doc = await service.get_agreement(agreement_id)
-    await service.delete_voided(doc, principal, hash_ip(client_ip(request)))
+    await service.delete_agreement(doc, principal, hash_ip(client_ip(request)))
     return {"deleted": True}
 
 
@@ -469,6 +477,15 @@ async def public_sign(body: SignAgreement, request: Request, response: Response,
     response.headers["Cache-Control"] = "no-store"
     return {"signed": True, "reference": doc.reference, "content_hash": content_hash,
             "message": "Your signature has been received. Bloomwell will countersign the agreement."}
+
+
+@public_router.post("/session/sign/passkey-options",
+                    dependencies=[Depends(_session_rate_limit("agreement_passkey_options", 10, 900))])
+async def public_sign_passkey_options(body: PasskeyOptionsRequest, response: Response,
+                                      agreement_session: str | None = Cookie(default=None)):
+    doc, _ = await service.session_agreement(agreement_session, "sign")
+    response.headers["Cache-Control"] = "no-store"
+    return await service.client_passkey_options(doc, body.name)
 
 
 @public_router.get("/session/signed", dependencies=[Depends(_session_rate_limit("agreement_signed_view", 30, 900))])

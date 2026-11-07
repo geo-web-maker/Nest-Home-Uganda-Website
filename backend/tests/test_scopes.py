@@ -20,6 +20,8 @@ EXPECTED = {
     "care-reports:read", "care-reports:export",
     "mail:use", "mail:shared:manage", "mail:archive:read",
     "mail:settings:manage", "mail:audit:read",
+    "agreements:read", "agreements:write", "agreements:templates", "agreements:notifications",
+    "agreements:diagnostics", "agreements:sign", "agreements:void",
 }  # fmt: skip
 
 
