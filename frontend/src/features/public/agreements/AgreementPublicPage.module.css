@@ -137,3 +137,11 @@
 @media (min-width: 1280px) {
   .page[data-wide] { --page-w: 1240px; }
 }
+
+/* Per-field save status */
+.saveState { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--mut); }
+.saveState[data-state='saving'] { color: var(--mut); }
+.saveState[data-state='saved'] { color: var(--leaf); }
+.saveState[data-state='unsaved'] { color: color-mix(in srgb, var(--gold) 60%, var(--forest)); }
+.saveState[data-state='error'] { color: var(--danger); }
+.saveState button { border: 0; background: transparent; padding: 0; color: inherit; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
