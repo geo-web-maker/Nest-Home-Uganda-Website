@@ -77,3 +77,63 @@
 
 .brandMark svg { display: block; width: 28px; height: auto; }
 .turnstile { margin: 4px 0 0; }
+
+/* Desktop layout: the card and header share one width (--page-w). The short verification step stays
+   compact; review, signing and the signed view use the full width. */
+.page { --page-w: 760px; }
+.page[data-wide] { --page-w: 1080px; }
+.brand, .card, .footer { width: min(100%, var(--page-w)); }
+
+@media (min-width: 900px) {
+  .page { padding: 40px 32px 56px; }
+  .page:not([data-wide]) { --page-w: 640px; }
+  .card { padding: 44px 56px 52px; }
+  .card h1 { font-size: 36px; }
+  .verify > .primary { justify-self: start; min-width: 240px; }
+
+  .progress { position: sticky; top: 0; z-index: 3; margin: 0 -56px; padding: 12px 56px; background: var(--surf); border-bottom: 1px solid var(--line); font-size: 13px; }
+  .review { gap: 22px; }
+  .review > p { max-width: 70ch; }
+  .clauses { grid-template-columns: 1fr 1fr; gap: 10px 18px; align-items: start; }
+  .document { height: min(82vh, 1100px); }
+
+  .groupHeading { margin: 32px 0 10px; font-size: 20px; }
+  .fieldGroup { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; row-gap: 4px; padding: 20px 24px 12px; }
+  .fieldGroup legend { grid-column: 1 / -1; }
+  .fieldGroup .formField:has(textarea) { grid-column: 1 / -1; }
+  .fieldGroup .formField:last-child:nth-child(even) { grid-column: 1 / -1; } /* legend is child 1, so an odd count of fields would leave a gap */
+
+  .fees { display: grid; grid-template-columns: 1fr 1fr; column-gap: 48px; padding: 22px 26px; }
+  .fees h3 { grid-column: 1 / -1; }
+  .signature { height: 220px; max-width: 720px; }
+  .signatureActions { align-items: center; }
+  .signatureActions .primary { min-width: 260px; }
+  .done, .verify { max-width: 640px; }
+  .footer { margin-top: 24px; }
+}
+
+@media (min-width: 1280px) {
+  .page[data-wide] { --page-w: 1180px; }
+  .clauses { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Two bands. Read band: contract left, details right. Sign band: fee summary left, signature right.
+   Stacked on phones in the order contract, details, fees, sign. */
+.readBand, .signBand { display: grid; gap: 22px; min-width: 0; }
+.contractPane, .detailsPane, .feesPane, .signPane { min-width: 0; display: grid; gap: 14px; align-content: start; }
+.detailsPane > h2, .signPane > h2 { margin: 0; }
+.detailsPane > p, .signPane > p { margin: 0; }
+.signPane { gap: 16px; }
+
+@media (min-width: 1000px) {
+  .readBand { grid-template-columns: minmax(0, 58fr) minmax(0, 42fr); gap: 40px; }
+  .contractPane { position: sticky; top: 72px; align-self: start; }
+  .detailsPane .fieldGroup { grid-template-columns: 1fr; padding: 16px 18px 8px; }
+  .signBand { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; padding-top: 28px; border-top: 1px solid var(--line); align-items: start; }
+  .feesPane .fees { display: block; padding: 22px 26px; }
+  .signature { max-width: 100%; }
+  .signatureActions .primary { min-width: 0; flex: 1 1 220px; }
+}
+@media (min-width: 1280px) {
+  .page[data-wide] { --page-w: 1240px; }
+}

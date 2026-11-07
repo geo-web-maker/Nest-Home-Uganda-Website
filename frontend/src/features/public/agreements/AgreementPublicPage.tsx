@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { apiClient } from '../../../lib/api/client';
 import { LogoMark } from '../../../components/brand/Logo';
 import { AgreementProblem } from './AgreementProblem';
+import { ContractReader } from './ContractReader';
 import { describeLinkFailure, loadWithRetry } from './linkFailure';
 import { createPasskey, passkeysSupported, type PasskeyCreationOptions } from '../../../lib/webauthn';
 import { AgreementFieldInput } from '../../agreements/AgreementFieldInput';
@@ -231,7 +232,7 @@ export function AgreementPublicPage() {
     return <AgreementProblem failure={failure} />;
   }
 
-  return <main className={styles.page}>
+  return <main className={styles.page} data-wide={step === 'verify' ? undefined : 'true'}>
     <header className={styles.brand}><span className={styles.brandMark}><LogoMark variant="site" /></span><div><strong>Bloomwell Home Care</strong><small>Client care agreement</small></div></header>
     <section className={styles.card}>
       <p className={styles.eyebrow}>BLOOMWELL HOME CARE UGANDA LIMITED</p>
@@ -254,7 +255,9 @@ export function AgreementPublicPage() {
       {step === 'review' && view && <div className={styles.review}>
         <div className={styles.progress}><span>Review and complete each section</span><span>Template version {view.template_version}</span></div>
         {view.variation_clause && <div className={styles.notice}>AMENDMENT — This agreement varies clause {view.variation_clause}. The original agreement remains in effect except for the change expressly approved here.</div>}
-        {view.document_html ? <iframe className={styles.document} title="Agreement document" srcDoc={view.document_html} sandbox="" /> : <div className={styles.clauses}>{Object.entries(view.clauses).map(([number, text]) => <details key={number}><summary>Clause {number}</summary><div>{text.split('\n').map((line, i) => line ? <p key={`${number}-${i}`}>{line}</p> : null)}</div></details>)}</div>}
+        <div className={styles.readBand}>
+          <section className={styles.contractPane}><ContractReader clauses={view.clauses} documentHtml={view.document_html} reference={view.reference} /></section>
+          <section className={styles.detailsPane}>
         <h2>Agreement details and schedules</h2>
         <p>Fields marked read-only have been completed by Bloomwell staff. You can edit fields marked as client or shared.</p>
         {(() => {
@@ -290,7 +293,13 @@ export function AgreementPublicPage() {
             </div>;
           });
         })()}
+          </section>
+        </div>
+        <div className={styles.signBand}>
+          <section className={styles.feesPane}>
         <div className={styles.fees}><h3>Schedule B fee summary</h3>{Object.entries(view.schedule_b_computed).map(([key, value]) => <p key={key}><span>{key.replaceAll('_', ' ')}</span><strong>{typeof value === 'number' ? value.toLocaleString('en-US', { maximumFractionDigits: 2 }) : String(value)}</strong></p>)}</div>
+          </section>
+          <section className={styles.signPane}>
         <h2>Sign your agreement</h2>
         <p>By signing, you confirm that you have reviewed the agreement and the information shown above. Your signature is bound to this exact version.</p>
         <label>Your full name<input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" /></label>
@@ -306,6 +315,8 @@ export function AgreementPublicPage() {
         </div>
         <button type="button" className={styles.linkButton} onClick={() => void requestChange()} disabled={busy}>Request a change instead</button>
         <p className={styles.security}>A typed name alone is not accepted as a signature. Sign by drawing with your finger, stylus or mouse, by confirming with your phone's fingerprint or face, or with a passphrase you choose.</p>
+          </section>
+        </div>
       </div>}
 
       {step === 'signed' && <div className={styles.done}>
