@@ -16,13 +16,13 @@ const people = [
 ];
 const amina = { user_id: 'u1', role: 'owner', name: 'Amina', email: 'amina@bhcug.com', is_active: true, missing: false };
 const ghost = { user_id: '6aedd653155add4646050cb6', role: 'send_as', name: null, email: null, is_active: false, missing: true };
-const boxes = [{ id: 'b1', local_part: 'info', address: 'info@bhcug.com', display_name: 'Info desk', members: [amina] }];
+const box = { id: 'b1', local_part: 'info', address: 'info@bhcug.com', display_name: 'Info desk', members: [amina] };
 
 function api(options: { sharedFail?: boolean; members?: unknown[] } = {}) {
   vi.mocked(apiClient.get).mockImplementation(async (path: string) => {
     if (path === '/mail/shared') {
       if (options.sharedFail) throw new Error('totp required');
-      return { items: [{ ...boxes[0], members: options.members ?? boxes[0].members }], assignable_users: people };
+      return { items: [{ ...box, members: options.members ?? box.members }], assignable_users: people };
     }
     throw new Error(`unexpected GET ${path}`);
   });
