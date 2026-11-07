@@ -74,3 +74,6 @@
 @media (prefers-reduced-motion: reduce) { .primary { transition: none; } }
 
 .document { width: 100%; height: min(78vh, 920px); border: 1px solid var(--line); border-top: 3px solid var(--gold, #C79A3B); border-radius: 9px; background: #fff; }
+
+.brandMark svg { display: block; width: 28px; height: auto; }
+.turnstile { margin: 4px 0 0; }

@@ -10025,96 +10025,6 @@
         ]
       }
     },
-    "/api/v1/admin/agreements/{agreement_id}/link": {
-      "get": {
-        "operationId": "admin_get_link_api_v1_admin_agreements__agreement_id__link_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "agreement_id",
-            "required": true,
-            "schema": {
-              "title": "Agreement Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Admin Get Link",
-        "tags": [
-          "admin-agreements"
-        ]
-      }
-    },
-    "/api/v1/admin/agreements/{agreement_id}/link/revoke": {
-      "post": {
-        "operationId": "admin_revoke_links_api_v1_admin_agreements__agreement_id__link_revoke_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "agreement_id",
-            "required": true,
-            "schema": {
-              "title": "Agreement Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Admin Revoke Links",
-        "tags": [
-          "admin-agreements"
-        ]
-      }
-    },
     "/api/v1/admin/agreements/{agreement_id}/preview": {
       "get": {
         "operationId": "admin_preview_api_v1_admin_agreements__agreement_id__preview_get",
@@ -23033,7 +22943,7 @@
     },
     "/api/v1/mail/shared": {
       "get": {
-        "description": "Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.\n\nMembers carry the person's current name and email, and `missing: true` when that user no\nlonger exists, so the screen never shows a bare id it cannot act on.",
+        "description": "Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.",
         "operationId": "list_shared_api_v1_mail_shared_get",
         "parameters": [
           {

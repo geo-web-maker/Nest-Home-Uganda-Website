@@ -55,8 +55,8 @@ export function describeLinkFailure(cause: unknown): LinkFailure {
     }
     if (cause.status === 0) {
       return { kind: 'network', title: 'We could not open your agreement', retry: true,
-        lines: ['We could not reach Bloomwell just now. Check your internet connection and try again.'],
-        ref: supportRef('N1', undefined, undefined) };
+        lines: ['We could not reach Bloomwell just now. Your link is fine. Check your internet connection, switch between Wi-Fi and mobile data, and try again.'],
+        ref: supportRef('N1', undefined, apiHost()) };
     }
     if (cause.status === 429) {
       return { kind: 'busy', title: 'Too many attempts', retry: true,
@@ -76,4 +76,20 @@ export function describeLinkFailure(cause: unknown): LinkFailure {
   return { kind: 'unexpected', title: 'We could not open your agreement', retry: true,
     lines: ['The page received an unexpected reply. Please reload it. If it still fails, contact us with the reference below.'],
     ref: supportRef('N4', undefined, undefined) };
+}
+
+function apiHost(): string {
+  const base = String(import.meta.env.VITE_API_URL ?? '');
+  try { return base ? new URL(base).hostname.split('.')[0]!.slice(0, 8) : 'same'; } catch { return '?'; }
+}
+
+/** Retry a load that failed only because the network did not answer (sleeping server, weak signal). */
+export async function loadWithRetry<T>(load: () => Promise<T>, delaysMs: number[] = [1500, 4000]): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    try { return await load(); } catch (cause) {
+      const delay = delaysMs[attempt];
+      if (!(cause instanceof ApiError) || cause.status !== 0 || delay === undefined) throw cause;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
 }

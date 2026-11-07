@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { apiClient } from '../../../lib/api/client';
-import { describeLinkFailure } from './linkFailure';
+import { LogoMark } from '../../../components/brand/Logo';
+import { describeLinkFailure, loadWithRetry } from './linkFailure';
 import { createPasskey, passkeysSupported, type PasskeyCreationOptions } from '../../../lib/webauthn';
 import { AgreementFieldInput } from '../../agreements/AgreementFieldInput';
 import { SCHEDULE_SECTIONS, fieldLabel as metaLabel, fieldMeta } from '../../agreements/fieldMeta';
@@ -68,7 +69,7 @@ export function AgreementPublicPage() {
 
   useEffect(() => {
     let active = true;
-    void apiClient.get<PreOtp>(`/public/agreements/${encodeURIComponent(token)}`).then(async (result) => {
+    void loadWithRetry(() => apiClient.get<PreOtp>(`/public/agreements/${encodeURIComponent(token)}`)).then(async (result) => {
       if (!active) return;
       setPre(result);
       setChannel(result.available_channels.sms ? 'sms' : 'email');
@@ -235,7 +236,7 @@ export function AgreementPublicPage() {
   }
 
   return <main className={styles.page}>
-    <header className={styles.brand}><span className={styles.brandMark}>B</span><div><strong>Bloomwell Home Care</strong><small>Client care agreement</small></div></header>
+    <header className={styles.brand}><span className={styles.brandMark}><LogoMark variant="site" /></span><div><strong>Bloomwell Home Care</strong><small>Client care agreement</small></div></header>
     <section className={styles.card}>
       <p className={styles.eyebrow}>BLOOMWELL HOME CARE UGANDA LIMITED</p>
       <h1>{step === 'verify' ? (pre?.purpose === 'view' ? 'View your signed agreement' : 'Review your care agreement') : step === 'review' ? 'Your care agreement' : pre?.purpose === 'view' ? 'Signed agreement' : 'Thank you'}</h1>
