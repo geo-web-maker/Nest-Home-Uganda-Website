@@ -265,10 +265,21 @@ export function AgreementsPage() {
     return path.startsWith(`${tab}.`);
   }), [detail, tab]);
 
-  const performResend = async (id: string) => {
-    setBusy(true); setError('');
-    try { await apiClient.post(`/admin/agreements/${id}/resend`, {}); await loadList(); setNotice('A new agreement link was issued.'); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not resend the agreement.'); }
+  const performResend = async (id: string, via?: 'email' | 'sms' | 'both') => {
+    if (!window.confirm('Issue a new link and send it to the client? The link they already have will stop working.')) return;
+    setBusy(true); setError(''); setNotice('');
+    try {
+      const result = await apiClient.post<{ delivery: Record<string, boolean> }>(
+        via ? `/admin/agreements/${id}/reissue-link?channels=${via}` : `/admin/agreements/${id}/resend`, {});
+      await loadList(); if (selected === id) await loadDetail(id);
+      const entries = Object.entries(result.delivery ?? {});
+      const summary = entries.map(([k, v]) => `${k} ${v ? 'sent' : 'failed'}`).join(', ');
+      if (entries.length > 0 && entries.every(([, ok]) => !ok)) {
+        setError(`The new link could not be delivered (${summary}). The agreement is back to draft; check the client's contact details and send it again.`);
+      } else {
+        setNotice(`A new agreement link was issued. Delivery: ${summary || 'none requested'}.`);
+      }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not resend the agreement.'); }
     finally { setBusy(false); }
   };
   const performDelete = async (id: string, reference: string) => {
@@ -469,7 +480,7 @@ export function AgreementsPage() {
             {tab === 'preview' && <PreviewPanel id={detail.id} />}
             {tab === 'timeline' && <Timeline events={detail.events} />}
             {tab === 'send' && <div className={styles.sendPanel}>
-              {canWrite && <><h3>Send agreement for review</h3><p>Messages contain a secure link only. No patient name, care details or fees are sent by email or SMS.</p><Field kind="select" label="Send via" value={channels} onChange={(e) => setChannels(e.target.value as typeof channels)}><option value="both">Email and SMS</option><option value="email">Email only</option><option value="sms">SMS only</option></Field><p>Link expiry: 14 days. Reminders: 48 hours and day 5. Expiry warning: 48 hours before expiry.</p><Button onClick={() => void send()} disabled={busy || !['draft','changes_requested','expired'].includes(detail.status)}>Validate and send</Button></>}
+              {canWrite && <><h3>Send agreement for review</h3><p>Messages contain a secure link only. No patient name, care details or fees are sent by email or SMS.</p><Field kind="select" label="Send via" value={channels} onChange={(e) => setChannels(e.target.value as typeof channels)}><option value="both">Email and SMS</option><option value="email">Email only</option><option value="sms">SMS only</option></Field><p>Link expiry: 14 days. Reminders: 48 hours and day 5. Expiry warning: 48 hours before expiry.</p><Button onClick={() => void send()} disabled={busy || !['draft','changes_requested','expired'].includes(detail.status)}>Validate and send</Button>{['sent','client_in_progress'].includes(detail.status) && <><p>Client did not get it, or the link is not working? Issue a fresh link via the channel selected above. The previous link stops working.</p><Button variant="outline" onClick={() => void performResend(detail.id, channels)} disabled={busy}>Resend link</Button></>}</>}
               {canSign && detail.status === 'client_signed' && <section className={styles.countersign}><h3>Bloomwell countersignature</h3><p>By countersigning, the system seals the agreement and stores its PDF in private storage.</p><Field label="Authorised signatory name" value={bloomwellName} onChange={(e) => setBloomwellName(e.target.value)} /><SignatureMethodPicker method={signMethod} onMethod={(next) => { setSignMethod(next); setError(''); }} biometricAvailable={biometricAvailable} mode="staff" password={signPassword} onPassword={setSignPassword} confirm="" onConfirm={() => undefined}
                 drawPanel={<canvas ref={signatureCanvas} className={styles.signaturePad} width={800} height={160} aria-label="Bloomwell countersignature area" onPointerDown={beginSignature} onPointerMove={moveSignature} onPointerUp={() => { drawing.current = false; }} onPointerCancel={() => { drawing.current = false; }} />} /><ButtonGroup>{signMethod === 'drawn' && <Button variant="outline" onClick={clearSignature}>Clear signature</Button>}<Button onClick={() => void countersign()} disabled={busy}>Countersign and seal</Button></ButtonGroup></section>}
               {canVoid && DELETABLE_STATUSES.has(detail.status) && <><ButtonGroup><Button variant="outline" className={styles.danger} onClick={() => void performDelete(detail.id, detail.reference)} disabled={busy}>Delete agreement</Button></ButtonGroup><p className={styles.hint}>Deleting removes this agreement permanently. Sent or signed agreements must be voided first; completed agreements cannot be deleted.</p></>}

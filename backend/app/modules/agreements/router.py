@@ -437,7 +437,7 @@ async def public_view_otp_request(token: str, body: OtpRequest, request: Request
 @public_router.post("/{token}/otp/verify", dependencies=[Depends(_token_rate_limit("agreement_otp_verify", 10, 900))])
 async def public_otp_verify(token: str, body: OtpVerify, request: Request, response: Response):
     doc, session_token = await service.verify_otp(token, "sign", body.code, client_ip(request))
-    service.session_cookie(session_token, response)
+    service.session_cookie(session_token, response, request.scope.get("root_path", ""))
     response.headers["Cache-Control"] = "no-store"
     return {"verified": True, "reference": doc.reference, "next": "review"}
 
@@ -445,7 +445,7 @@ async def public_otp_verify(token: str, body: OtpVerify, request: Request, respo
 @public_router.post("/{token}/otp/verify-view", dependencies=[Depends(_token_rate_limit("agreement_view_otp_verify", 10, 900))])
 async def public_view_otp_verify(token: str, body: OtpVerify, request: Request, response: Response):
     doc, session_token = await service.verify_otp(token, "view", body.code, client_ip(request))
-    service.session_cookie(session_token, response)
+    service.session_cookie(session_token, response, request.scope.get("root_path", ""))
     response.headers["Cache-Control"] = "no-store"
     return {"verified": True, "reference": doc.reference, "next": "signed"}
 

@@ -3823,9 +3823,6 @@ export interface paths {
         /**
          * List Shared
          * @description Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.
-         *
-         *     Members carry the person's current name and email, and `missing: true` when that user no
-         *     longer exists, so the screen never shows a bare id it cannot act on.
          */
         get: operations["list_shared_api_v1_mail_shared_get"];
         put?: never;
