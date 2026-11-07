@@ -362,60 +362,58 @@ async def delete_message(mailbox_message_id: str, principal: Principal = Depends
 @router.post("/shared")
 async def create_shared(body: SharedMailboxBody, principal: Principal = Depends(require_scopes("mail:shared:manage")), mail_totp: str | None = Cookie(default=None)):
     await _require_sensitive_totp(principal,mail_totp,"mail:shared:manage")
+    from app.modules.mail import mailbox_admin
     from app.modules.mail.settings_service import get_value
-    domain=await get_value('mail.domain')
-    if not domain: raise Forbidden("Configure mail.domain first.")
-    from app.modules.mail.core_service import _local_part
-    local_part=_local_part(body.local_part)
-    if not local_part: raise Forbidden("Shared mailbox address is invalid.")
-    pool=mail_db.get_pool()
-    async with pool.acquire() as conn:
-        async with conn.transaction():
-            row=await conn.fetchrow("INSERT INTO mailbox(local_part,kind,display_name) VALUES($1,'shared',$2) RETURNING *",local_part,body.display_name)
-            await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id) VALUES($1,'mail.shared.create',$2)",principal.user_id,row['id'])
-    return {"id":str(row['id']),"address":f"{row['local_part']}@{domain}","display_name":row['display_name']}
+    if not await get_value('mail.domain'): raise Forbidden("Configure mail.domain first.")
+    return await mailbox_admin.create_shared(principal.user_id, body.local_part, body.display_name)
 
 @router.get("/shared")
 async def list_shared(principal: Principal = Depends(require_scopes("mail:shared:manage")), mail_totp: str | None = Cookie(default=None)):
-    """Open shared mailboxes with their assigned members, for the shared-mailbox admin screen."""
+    """Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.
+
+    Members carry the person's current name and email, and `missing: true` when that user no
+    longer exists, so the screen never shows a bare id it cannot act on."""
     await _require_sensitive_totp(principal,mail_totp,"mail:shared:manage")
+    from app.modules.mail import mailbox_admin
     from app.modules.mail.settings_service import get_value
     domain=str(await get_value('mail.domain') or '')
     pool=mail_db.get_pool()
     async with pool.acquire() as conn:
         boxes=await conn.fetch("SELECT id,local_part,display_name FROM mailbox WHERE kind='shared' AND state='open' AND local_part<>'no-reply' ORDER BY local_part")
         members=await conn.fetch("SELECT mailbox_id,user_id,role FROM mailbox_member WHERE mailbox_id=ANY($1::uuid[]) ORDER BY added_at",[b['id'] for b in boxes]) if boxes else []
-    by_box: dict[str,list[dict]]={}
-    for m in members: by_box.setdefault(str(m['mailbox_id']),[]).append({"user_id":str(m['user_id']),"role":m['role']})
-    return {"items":[{"id":str(b['id']),"local_part":b['local_part'],"address":f"{b['local_part']}@{domain}","display_name":b['display_name'],"members":by_box.get(str(b['id']),[])} for b in boxes]}
+    try:
+        users=await mailbox_admin._users_by_id([str(m['user_id']) for m in members])
+    except Exception:
+        # Never let a user-lookup failure hide the mailboxes; members then show as unknown.
+        users={}
+    by_box: dict[str,list]={}
+    for m in members: by_box.setdefault(str(m['mailbox_id']),[]).append(m)
+    try:
+        people=await mailbox_admin.assignable_people()
+    except Exception:
+        people=[]
+    return {
+        "items":[{"id":str(b['id']),"local_part":b['local_part'],"address":f"{b['local_part']}@{domain}","display_name":b['display_name'],"members":mailbox_admin.describe_members(by_box.get(str(b['id']),[]),users)} for b in boxes],
+        "assignable_users":people,
+    }
 
 @router.put("/shared/{mailbox_id}/members/{user_id}")
 async def set_member(mailbox_id: str,user_id: str,body: MemberBody,principal: Principal=Depends(require_scopes("mail:shared:manage")), mail_totp: str | None = Cookie(default=None)):
     await _require_sensitive_totp(principal,mail_totp,"mail:shared:manage")
-    pool=mail_db.get_pool()
-    async with pool.acquire() as conn, conn.transaction():
-        await conn.execute("INSERT INTO mailbox_member(mailbox_id,user_id,role,added_by) SELECT id,$2,$3,$4 FROM mailbox WHERE id=$1 AND kind='shared' ON CONFLICT(mailbox_id,user_id) DO UPDATE SET role=EXCLUDED.role,added_by=EXCLUDED.added_by",mailbox_id,user_id,body.role,principal.user_id)
-        await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id,detail) VALUES($1,'mail.member.add',$2,jsonb_build_object('user_id',$3::text,'role',$4::text))",principal.user_id,mailbox_id,user_id,body.role)
-    return {"updated":True}
+    from app.modules.mail import mailbox_admin
+    return await mailbox_admin.assign_member(principal.user_id, mailbox_id, user_id, body.role)
 
 @router.delete("/shared/{mailbox_id}/members/{user_id}")
 async def remove_member(mailbox_id: str,user_id: str,principal: Principal=Depends(require_scopes("mail:shared:manage")), mail_totp: str | None = Cookie(default=None)):
     await _require_sensitive_totp(principal,mail_totp,"mail:shared:manage")
-    pool=mail_db.get_pool()
-    async with pool.acquire() as conn, conn.transaction():
-        await conn.execute("DELETE FROM mailbox_member WHERE mailbox_id=$1 AND user_id=$2",mailbox_id,user_id)
-        await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id,detail) VALUES($1,'mail.member.remove',$2,jsonb_build_object('user_id',$3::text))",principal.user_id,mailbox_id,user_id)
-    return {"removed":True}
+    from app.modules.mail import mailbox_admin
+    return await mailbox_admin.unassign_member(principal.user_id, mailbox_id, user_id)
 
 @router.post("/shared/{mailbox_id}/close")
 async def close_shared(mailbox_id: str,principal: Principal=Depends(require_scopes("mail:shared:manage")), mail_totp: str | None = Cookie(default=None)):
     await _require_sensitive_totp(principal,mail_totp,"mail:shared:manage")
-    pool=mail_db.get_pool()
-    async with pool.acquire() as conn:
-        row=await conn.fetchrow("UPDATE mailbox SET state='closed',closed_at=now() WHERE id=$1 AND kind='shared' RETURNING id",mailbox_id)
-        if not row: raise Forbidden("Shared mailbox not found.")
-        await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id) VALUES($1,'mail.mailbox.close',$2)",principal.user_id,mailbox_id)
-    return {"closed":True}
+    from app.modules.mail import mailbox_admin
+    return await mailbox_admin.close_shared(principal.user_id, mailbox_id)
 
 @router.get("/archive/mailboxes")
 async def archive_mailboxes(principal: Principal=Depends(require_scopes("mail:archive:read")), mail_totp: str | None = Cookie(default=None)):

@@ -160,6 +160,10 @@ export const adminEn = {
     close: 'Close mailbox',
     closed: 'Mailbox closed.',
     assignError: 'The change could not be saved.',
+    removedUser: 'Removed user (no longer exists)',
+    missingNotice: '{{count}} assigned account(s) no longer exist.',
+    pruneMissing: 'Remove missing people',
+    pruned: 'Missing people removed.',
   },
   mailSettings: {
     title: 'Mail settings',

@@ -2,10 +2,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { apiClient } from '../../../lib/api/client';
+import { apiClient, ApiError } from '../../../lib/api/client';
 import { SharedMailboxesPage } from './SharedMailboxesPage';
 
-vi.mock('../../../lib/api/client', () => ({
+vi.mock('../../../lib/api/client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../lib/api/client')>()),
   apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), put: vi.fn(), delete: vi.fn(), getBlob: vi.fn() },
 }));
 
@@ -13,15 +14,16 @@ const people = [
   { id: 'u1', name: 'Amina', email: 'amina@bhcug.com' },
   { id: 'u2', name: 'Ruth', email: 'ruth@bhcug.com' },
 ];
-const boxes = [{ id: 'b1', local_part: 'info', address: 'info@bhcug.com', display_name: 'Info desk', members: [{ user_id: 'u1', role: 'owner' }] }];
+const amina = { user_id: 'u1', role: 'owner', name: 'Amina', email: 'amina@bhcug.com', is_active: true, missing: false };
+const ghost = { user_id: '6aedd653155add4646050cb6', role: 'send_as', name: null, email: null, is_active: false, missing: true };
+const boxes = [{ id: 'b1', local_part: 'info', address: 'info@bhcug.com', display_name: 'Info desk', members: [amina] }];
 
-function api(options: { sharedFail?: boolean } = {}) {
+function api(options: { sharedFail?: boolean; members?: unknown[] } = {}) {
   vi.mocked(apiClient.get).mockImplementation(async (path: string) => {
     if (path === '/mail/shared') {
       if (options.sharedFail) throw new Error('totp required');
-      return { items: boxes };
+      return { items: [{ ...boxes[0], members: options.members ?? boxes[0].members }], assignable_users: people };
     }
-    if (path === '/admin/users') return { items: people, total: 2, page: 1, page_size: 100 };
     throw new Error(`unexpected GET ${path}`);
   });
   vi.mocked(apiClient.post).mockResolvedValue({});
@@ -77,6 +79,27 @@ describe('SharedMailboxesPage', () => {
     setup();
     await user.click(await screen.findByRole('button', { name: 'Remove: Amina (amina@bhcug.com) (info@bhcug.com)' }));
     await waitFor(() => expect(apiClient.delete).toHaveBeenCalledWith('/mail/shared/b1/members/u1'));
+  });
+
+  it('labels a deleted user instead of showing a raw id, and can remove them', async () => {
+    api({ members: [amina, ghost] });
+    const user = userEvent.setup();
+    setup();
+    expect(await screen.findAllByText(/Removed user \(no longer exists\)/)).not.toHaveLength(0);
+    expect(screen.queryByText(/6aedd653155add4646050cb6/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Remove missing people' }));
+    await waitFor(() => expect(apiClient.delete).toHaveBeenCalledWith('/mail/shared/b1/members/6aedd653155add4646050cb6'));
+  });
+
+  it('shows what the server said when a change fails', async () => {
+    api();
+    vi.mocked(apiClient.put).mockRejectedValue(new ApiError(404, 'not_found', 'That user no longer exists.'));
+    const user = userEvent.setup();
+    setup();
+    await screen.findByRole('region', { name: 'info@bhcug.com' });
+    await user.selectOptions(screen.getByLabelText('Person (info@bhcug.com)'), 'u2');
+    await user.click(screen.getByRole('button', { name: 'Assign (info@bhcug.com)' }));
+    expect(await screen.findByText(/That user no longer exists\./)).toBeInTheDocument();
   });
 
   it('asks for the authenticator code when the list is refused, then verifies', async () => {

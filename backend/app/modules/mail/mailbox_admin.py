@@ -8,6 +8,8 @@ non-internal message. A mailbox with no real content is safe to remove outright.
 from __future__ import annotations
 
 import logging
+import re
+import uuid
 from typing import Any
 
 from app.core.errors import Conflict, Forbidden, NotFound
@@ -286,7 +288,156 @@ async def release_user_mailboxes(user_id: str) -> None:
                         _, keys = await _purge(conn, box["id"], None)
                     else:
                         await conn.execute("UPDATE mailbox SET state='closed', closed_at=now() WHERE id=$1", box["id"])
+                # Shared mailboxes never keep a deleted user, whatever their role. The personal
+                # mailbox (owner row) is handled above: purged when empty, otherwise closed.
+                await conn.execute(
+                    "DELETE FROM mailbox_member WHERE user_id=$1 AND mailbox_id IN (SELECT id FROM mailbox WHERE kind='shared')",
+                    user_id,
+                )
                 await conn.execute("DELETE FROM mailbox_member WHERE user_id=$1 AND role<>'owner'", user_id)
         await _delete_objects(keys if box else [])
     except Exception:
         log.warning("could not release mailbox for deleted user %s", user_id, exc_info=True)
+
+
+# --------------------------------------------------------------------------------------------
+# Shared mailboxes. Every operation below validates ids first, tolerates users that no longer
+# exist (deleted, or their account was changed), and raises a plain, specific error instead of
+# a database failure, so the admin screen can always say what actually went wrong.
+# --------------------------------------------------------------------------------------------
+_ROLES = {"owner", "send_as", "read_only"}
+_LOCAL_RE = re.compile(r"^[a-z0-9](?:[a-z0-9.-]{0,62}[a-z0-9])?$")
+
+
+def _uuid(value: Any, what: str = "Mailbox") -> str:
+    """Canonical uuid string, or NotFound (never a database error) for anything malformed."""
+    try:
+        return str(uuid.UUID(str(value).strip()))
+    except (ValueError, AttributeError, TypeError):
+        raise NotFound(f"{what} not found.") from None
+
+
+def _role(value: Any) -> str:
+    role = str(value or "").strip()
+    if role not in _ROLES:
+        raise Conflict("Choose a valid access level: owner, read and send, or read only.")
+    return role
+
+
+def describe_members(rows: list[Any], users: dict[str, Any]) -> list[dict[str, Any]]:
+    """Member rows with the person's current name and email. A member whose user no longer
+    exists is flagged `missing` so the screen can offer to remove it instead of showing an id."""
+    out = []
+    for m in rows:
+        uid = str(m["user_id"])
+        person = users.get(uid)
+        out.append({
+            "user_id": uid, "role": m["role"],
+            "name": str(person.name) if person else None,
+            "email": str(person.email) if person else None,
+            "is_active": bool(getattr(person, "is_active", True)) if person else False,
+            "missing": person is None,
+        })
+    return out
+
+
+async def assignable_people() -> list[dict[str, Any]]:
+    """Every active user (not a single page of them), for the assign dropdown."""
+    from app.modules.auth.models import User
+
+    people = await User.find({"is_active": True}).to_list()
+    out = [{"id": str(u.id), "name": str(u.name or ""), "email": str(u.email or "")} for u in people]
+    out.sort(key=lambda u: (u["name"].lower(), u["email"].lower()))
+    return out
+
+
+async def create_shared(actor: str, local_part: str, display_name: str) -> dict[str, Any]:
+    import asyncpg
+
+    local = _local_part(local_part or "")
+    if not local or not _LOCAL_RE.match(local):
+        raise Conflict("Use letters, numbers, dots or hyphens for the address name.", {"local_part": "Invalid address name."})
+    if local in _PROTECTED:
+        raise Forbidden("That address is reserved for the system.")
+    name = (display_name or "").strip()[:160]
+    if not name:
+        raise Conflict("Enter a display name.", {"display_name": "Required."})
+    domain = await _domain()
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            await conn.execute("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", local)
+            taken = await conn.fetchval(
+                "SELECT EXISTS(SELECT 1 FROM mailbox WHERE local_part=$1) OR EXISTS(SELECT 1 FROM mailbox_alias WHERE local_part=$1)", local)
+            if taken:
+                raise Conflict(f"{local}@{domain} is already used by a mailbox or alias.", {"local_part": "Already in use."})
+            try:
+                row = await conn.fetchrow("INSERT INTO mailbox(local_part,kind,display_name) VALUES($1,'shared',$2) RETURNING id,local_part::text AS local_part,display_name", local, name)
+            except asyncpg.UniqueViolationError:
+                raise Conflict(f"{local}@{domain} is already used by a mailbox or alias.", {"local_part": "Already in use."}) from None
+            await _audit(conn, actor, "mail.shared.create", row["id"])
+    return {"id": str(row["id"]), "address": f"{row['local_part']}@{domain}", "display_name": row["display_name"]}
+
+
+async def assign_member(actor: str, mailbox_id: str, user_id: str, role: str) -> dict[str, Any]:
+    mailbox_id = _uuid(mailbox_id)
+    role = _role(role)
+    target = (await _users_by_id([str(user_id)])).get(str(user_id))
+    if not target:
+        raise NotFound("That user no longer exists. Refresh the page and choose someone else.")
+    if not getattr(target, "is_active", True):
+        raise Conflict(f"{target.name} is inactive. Reactivate the account before assigning a mailbox.")
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            box = await conn.fetchrow("SELECT id, kind, state FROM mailbox WHERE id=$1 FOR UPDATE", mailbox_id)
+            if not box:
+                raise NotFound("That shared mailbox no longer exists. Refresh the page.")
+            if box["kind"] != "shared":
+                raise Forbidden("Only shared mailboxes take members. Use Reassign for personal mailboxes.")
+            if box["state"] != "open":
+                raise Conflict("That mailbox is closed. Members cannot be changed.")
+            await conn.execute(
+                "INSERT INTO mailbox_member(mailbox_id,user_id,role,added_by) VALUES($1,$2,$3,$4) "
+                "ON CONFLICT (mailbox_id,user_id) DO UPDATE SET role=EXCLUDED.role, added_by=EXCLUDED.added_by",
+                mailbox_id, str(user_id), role, actor,
+            )
+            await _audit(conn, actor, "mail.member.add", mailbox_id, detail={"user_id": str(user_id), "role": role})
+    return {"updated": True}
+
+
+async def unassign_member(actor: str, mailbox_id: str, user_id: str) -> dict[str, Any]:
+    """Always works for a stale member (deleted user, changed account). Removing someone who is
+    already gone is a success, not an error."""
+    mailbox_id = _uuid(mailbox_id)
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            box = await conn.fetchrow("SELECT id, kind FROM mailbox WHERE id=$1 FOR UPDATE", mailbox_id)
+            if not box:
+                raise NotFound("That shared mailbox no longer exists. Refresh the page.")
+            if box["kind"] != "shared":
+                raise Forbidden("Only shared mailbox members can be removed here.")
+            gone = await conn.fetchval("WITH d AS (DELETE FROM mailbox_member WHERE mailbox_id=$1 AND user_id=$2 RETURNING 1) SELECT count(*) FROM d", mailbox_id, str(user_id))
+            if int(gone or 0):
+                await _audit(conn, actor, "mail.member.remove", mailbox_id, detail={"user_id": str(user_id)})
+    return {"removed": True, "was_member": bool(int(gone or 0))}
+
+
+async def close_shared(actor: str, mailbox_id: str) -> dict[str, Any]:
+    mailbox_id = _uuid(mailbox_id)
+    pool = db.get_pool()
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            box = await conn.fetchrow("SELECT kind, state, local_part::text AS local_part FROM mailbox WHERE id=$1 FOR UPDATE", mailbox_id)
+            if not box:
+                raise NotFound("That shared mailbox no longer exists. Refresh the page.")
+            if box["kind"] != "shared":
+                raise Forbidden("Only shared mailboxes are closed here.")
+            if str(box["local_part"]).lower() in _PROTECTED:
+                raise Forbidden("System addresses cannot be closed.")
+            if box["state"] == "closed":
+                return {"closed": True, "already": True}
+            await conn.execute("UPDATE mailbox SET state='closed', closed_at=now() WHERE id=$1", mailbox_id)
+            await _audit(conn, actor, "mail.mailbox.close", mailbox_id)
+    return {"closed": True}
