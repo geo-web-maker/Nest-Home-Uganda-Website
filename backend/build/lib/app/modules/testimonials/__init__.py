@@ -1,0 +1,1 @@
+"""Testimonial content module."""

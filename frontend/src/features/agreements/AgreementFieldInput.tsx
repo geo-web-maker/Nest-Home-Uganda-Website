@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { cleanMoney, fieldMeta, formatMoney, isIsoDate } from './fieldMeta';
+import { PhoneInput } from './PhoneInput';
 import styles from './AgreementFieldInput.module.css';
 
 type Props = {
@@ -82,8 +83,7 @@ export function AgreementFieldInput({ path, id, value, readOnly, onChange, onCom
       break;
     }
     case 'phone':
-      control = <input id={id} type="tel" inputMode="tel" autoComplete="off" value={value} readOnly={readOnly} placeholder="0771 234 567"
-        onChange={(e) => onChange(e.target.value)} onBlur={() => commit(value)} />;
+      control = <PhoneInput id={id} value={value} readOnly={readOnly} onChange={onChange} onCommit={commit} />;
       break;
     case 'email':
       control = <input id={id} type="email" inputMode="email" autoComplete="off" value={value} readOnly={readOnly} placeholder="name@example.com"

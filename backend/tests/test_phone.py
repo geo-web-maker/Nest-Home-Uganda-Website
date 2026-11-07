@@ -35,3 +35,25 @@ def test_local_format_and_mask() -> None:
     assert to_local("+256787499988") == "0787499988"
     assert mask("0787499988") == "0787***988"
     assert "499" not in mask("0787499988")
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("0787 499 988", "+256787499988"),
+        ("+44 20 7946 0958", "+442079460958"),
+        ("+1 (415) 555-0132", "+14155550132"),
+        ("+254 712 345 678", "+254712345678"),
+    ],
+)
+def test_normalise_phone_accepts_other_countries(raw: str, expected: str) -> None:
+    from app.core.phone import normalise_phone
+
+    assert normalise_phone(raw) == expected
+
+
+@pytest.mark.parametrize("raw", ["", "N/A", "0044 20 7946 0958", "712345678", "+0123456", "+12", "abc"])
+def test_normalise_phone_refuses_numbers_without_a_country_code(raw: str) -> None:
+    from app.core.phone import normalise_phone
+
+    assert normalise_phone(raw) is None

@@ -16,7 +16,7 @@ from app.core import db
 from app.core.config import get_settings
 from app.core.deps import Principal
 from app.core.errors import Conflict, Forbidden, NotFound, ValidationFailed
-from app.core.phone import is_mobile, mask, normalise_e164
+from app.core.phone import is_mobile, mask, normalise_e164, normalise_phone
 from app.core.rate_limit import limiter
 from app.core.security import hash_ip, verify_password
 from app.core.storage import Bucket, get_storage
@@ -113,13 +113,20 @@ async def current_template() -> AgreementTemplate | None:
                                             sort=[("version", -1)])  # noqa: E712
 
 
+def _real_phone(doc: Agreement) -> str | None:
+    """The client's phone value, or None when blank or marked N/A."""
+    field = doc.fields.get(rules.field_key("client.phone"))
+    value = field.value if field else None
+    return value if value and str(value).strip().upper() != "N/A" else None
+
+
 def _validate_ready(doc: Agreement, template: AgreementTemplate | None) -> None:
     if template is None or not template.clauses:
         raise Conflict("The agreement clause text has not been published. Add the source agreement wording before sending.")
     required = ("client.name", "patient.full_name", "schedule_b.total_fee", "schedule_b.currency")
     missing = [path for path in required if not doc.fields.get(rules.field_key(path)) or doc.fields[rules.field_key(path)].value in (None, "", [])]
     missing.extend(rules.missing_staff_fields(doc.fields))
-    if not (doc.fields.get(rules.field_key("client.phone")) and doc.fields[rules.field_key("client.phone")].value) and not (doc.fields.get(rules.field_key("client.email")) and doc.fields[rules.field_key("client.email")].value):
+    if not _real_phone(doc) and not (doc.fields.get(rules.field_key("client.email")) and doc.fields[rules.field_key("client.email")].value):
         missing.append("client.phone or client.email")
     if missing:
         raise ValidationFailed("Complete the required agreement fields before sending.", {path: "required" for path in missing})
@@ -192,7 +199,7 @@ async def _assert_customer_delivery_ready(doc: Agreement, channels: Literal["ema
         return
     destinations = {
         "email": doc.fields.get(rules.field_key("client.email")).value if doc.fields.get(rules.field_key("client.email")) else None,
-        "sms": doc.fields.get(rules.field_key("client.phone")).value if doc.fields.get(rules.field_key("client.phone")) else None,
+        "sms": _real_phone(doc),
     }
     selected = ("email", "sms") if channels == "both" else (channels,)
     failures: list[str] = []
@@ -253,7 +260,23 @@ async def get_agreement(agreement_id: str) -> Agreement:
     doc = await Agreement.get(oid) if oid else None
     if doc is None:
         raise NotFound("Agreement not found")
+    await _backfill_registry_fields(doc)
     return doc
+
+
+async def _backfill_registry_fields(doc: Agreement) -> None:
+    """Give a draft any registry field it was created without.
+
+    Agreements drafted before a field was added to the registry never stored it, so the
+    editor could not show it while the send check still demanded it. Only drafts are
+    touched: a sent or signed agreement's fields feed its canonical hash and must not change.
+    """
+    if doc.status != "draft":
+        return
+    missing = {key: field for key, field in rules.initial_fields().items() if key not in doc.fields}
+    if missing:
+        doc.fields.update(missing)
+        await doc.save()
 
 
 async def list_agreements(*, status: str | None = None, q: str | None = None,
@@ -459,10 +482,13 @@ async def patch_fields(doc: Agreement, changes: list[FieldPatch], *, actor: str,
             raise Forbidden("Clients cannot mark fields as entered by staff")
         value = change.value
         if change.path == "client.phone" and value:
-            normalized = normalise_e164(str(value))
-            if not normalized:
-                raise ValidationFailed("Enter a valid Uganda phone number", {change.path: "invalid_phone"})
-            value = normalized
+            if str(value).strip().upper() == "N/A":
+                value = "N/A"  # a client may have no phone; the send check then needs an email instead
+            else:
+                normalized = normalise_phone(str(value))
+                if not normalized:
+                    raise ValidationFailed("Enter a valid phone number with its country code, or N/A", {change.path: "invalid_phone"})
+                value = normalized
         if change.path == "client.email" and value:
             value = str(value).strip().lower()
             if len(value) > 254 or "@" not in value:
@@ -546,7 +572,7 @@ async def patch_fields(doc: Agreement, changes: list[FieldPatch], *, actor: str,
         for channel in ("email", "sms"):
             if channel == "email" and doc.fields.get(rules.field_key("client.email")) and doc.fields[rules.field_key("client.email")].value:
                 delivery[channel] = await _send_message(doc, "staff_revised", "email", link=messages.public_link(token))
-            if channel == "sms" and doc.fields.get(rules.field_key("client.phone")) and doc.fields[rules.field_key("client.phone")].value:
+            if channel == "sms" and _real_phone(doc):
                 delivery[channel] = await _send_message(doc, "staff_revised", "sms", link=messages.public_link(token))
         if not any(delivery.values()):
             # A revised agreement cannot remain in `sent` when no current link was
@@ -1026,7 +1052,7 @@ async def void(doc: Agreement, principal: Principal, reason: str, ip: str | None
     _event(doc, "voided", principal.user_id, {"reason": reason}, ip)
     await doc.save()
     await _send_message(doc, "voided", "email")
-    if doc.fields.get(rules.field_key("client.phone")) and doc.fields[rules.field_key("client.phone")].value:
+    if _real_phone(doc):
         await _send_message(doc, "voided", "sms")
     await audit.record(principal, "agreement.voided", "agreement", str(doc.id), doc.reference,
                        after={"status": "voided", "reason": reason}, ip_hash=ip)
@@ -1193,7 +1219,7 @@ async def sweep_agreements(now: datetime | None = None) -> int:
                 delivered = False
                 if doc.fields.get(rules.field_key("client.email")) and doc.fields[rules.field_key("client.email")].value:
                     delivered = await _send_message(doc, stage, "email", link=link) or delivered
-                if doc.fields.get(rules.field_key("client.phone")) and doc.fields[rules.field_key("client.phone")].value:
+                if _real_phone(doc):
                     sms_stage = stage
                     if (sms_stage, "sms") in messages.DEFAULTS:
                         delivered = await _send_message(doc, sms_stage, "sms", link=link) or delivered
