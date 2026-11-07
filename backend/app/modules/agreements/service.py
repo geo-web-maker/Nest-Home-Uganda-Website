@@ -90,11 +90,18 @@ def verify_session_token(token: str | None) -> tuple[str, str, int] | None:
         return None
 
 
-def session_cookie(token: str, response) -> None:
+def session_cookie(token: str, response, root_path: str = "") -> None:
+    """Set the signing-session cookie.
+
+    The path must include any mount prefix (e.g. "/nest" when hosted under the multi-site mounter),
+    otherwise the browser never sends the cookie back to the session endpoints. SameSite follows
+    COOKIE_SAMESITE so a cross-site frontend (bhcug.com -> API host) can use "none".
+    """
     cfg = get_settings()
     response.set_cookie(
         "agreement_session", token, max_age=SESSION_TTL, httponly=True,
-        secure=cfg.cookie_secure, samesite="lax", path="/api/v1/public/agreements",
+        secure=cfg.cookie_secure, samesite=cfg.cookie_samesite,  # type: ignore[arg-type]
+        path=f"{root_path.rstrip('/')}/api/v1/public/agreements",
     )
 
 

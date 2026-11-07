@@ -32,7 +32,8 @@ Configure at least one **real external delivery channel** before any client send
 
 - Email: Mail must be enabled, external sending enabled, not globally suspended, provider set to Resend or Brevo (not console), configured domain exactly `bhcug.com`, and valid provider API key or Brevo SMTP credentials.
 - SMS: `NEST_SMS_PROVIDER=mambosms`, `NEST_MAMBOSMS_API_KEY` and a valid `NEST_SMS_SENDER_ID` (1–11 characters) must be configured. Existing Uganda mobile validation and daily limits apply.
-- Agreement messages use `https://bhcug.com` only. Configure the website and routing so `/agreement/:token` is served on that host.
+- Agreement messages use `https://bhcug.com` only. Configure the website and routing so `/agreement/:token` is served on that host. `npm run build` writes `dist/agreement-shell.html`; `public/_redirects` (Cloudflare) and `vercel.json` rewrite `/agreement/*` to it. The deploy must run the full `npm run build`, not only `vite-react-ssg build`. Check with `curl -I https://bhcug.com/agreement/x` (expect 200).
+- The signing-session cookie path follows the mount prefix (e.g. `/nest`) and `COOKIE_SAMESITE`; set `COOKIE_SAMESITE=none` if the frontend and API are on different sites.
 - Configure a strong agreement secret (`NEST_MAIL_SECRET_KEY` or the existing app secret, at least 32 characters).
 - Optional Turnstile: configure matching backend `NEST_TURNSTILE_SECRET`, backend `NEST_TURNSTILE_SITE_KEY`, and frontend build variable `VITE_TURNSTILE_SITE_KEY`. If the secret is set without the site key, readiness fails and clients cannot request OTPs. If both are unset, the additional challenge is off and token/IP rate limits remain active.
 

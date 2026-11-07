@@ -41,7 +41,8 @@ function resolveFile(urlPath) {
   }
   if (extname(clean)) return null;
   if (entry) return join(root, entry);
-  // Same as the vercel.json rewrite: /admin/* gets the clean shell, everything else the home page.
+  // Same as the vercel.json rewrites: /admin/* and /agreement/* get their clean shells, everything else the home page.
+  if (/^[/\\]agreement([/\\]|$)/.test(clean)) return join(root, 'agreement-shell.html');
   return join(root, /^[/\\]admin([/\\]|$)/.test(clean) ? 'admin-shell.html' : 'index.html');
 }
 
