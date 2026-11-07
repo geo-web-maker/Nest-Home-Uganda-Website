@@ -22943,7 +22943,7 @@
     },
     "/api/v1/mail/shared": {
       "get": {
-        "description": "Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.\n\nMembers carry the person's current name and email, and `missing: true` when that user no\nlonger exists, so the screen never shows a bare id it cannot act on.",
+        "description": "Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.",
         "operationId": "list_shared_api_v1_mail_shared_get",
         "parameters": [
           {
