@@ -35,8 +35,8 @@ class UserInvite(BaseModel):
     name: Clean = Field(min_length=2, max_length=80)
     email: EmailStr = Field(max_length=254)
     scopes: list[str] = Field(default_factory=list, max_length=64)
-    preset: Literal["nurse", "supervisor", "admin", "executive", "super_admin"] | None = None
-    kind: Literal["staff", "nurse", "supervisor", "admin", "executive"] = "staff"
+    preset: Literal["nurse", "supervisor", "admin", "executive", "lawyer", "super_admin"] | None = None
+    kind: Literal["staff", "nurse", "supervisor", "admin", "executive", "lawyer"] = "staff"
     reach: Literal["own", "team", "all"] = "all"
     phone: Clean | None = Field(default=None, max_length=32)
     # How the person is told: emailed link, texted link, and/or a temporary password shown to you.
@@ -59,7 +59,7 @@ class UserUpdate(BaseModel):
 
     scopes: list[str] | None = Field(default=None, max_length=64)
     active: bool | None = None
-    kind: Literal["staff", "nurse", "supervisor", "admin", "executive"] | None = None
+    kind: Literal["staff", "nurse", "supervisor", "admin", "executive", "lawyer"] | None = None
     reach: Literal["own", "team", "all"] | None = None
 
 

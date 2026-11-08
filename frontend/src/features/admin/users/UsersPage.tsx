@@ -56,11 +56,11 @@ export function UsersPage() {
   const [chosen, setChosen] = useState<string[]>([]);
   const [invitePreset, setInvitePreset] = useState('nurse');
   const [inviteKind, setInviteKind] = useState<
-    'staff' | 'nurse' | 'supervisor' | 'admin' | 'executive'
+    'staff' | 'nurse' | 'supervisor' | 'admin' | 'executive' | 'lawyer'
   >('nurse');
   const [inviteReach, setInviteReach] = useState<'own' | 'team' | 'all'>('own');
   const [editingKind, setEditingKind] = useState<
-    'staff' | 'nurse' | 'supervisor' | 'admin' | 'executive'
+    'staff' | 'nurse' | 'supervisor' | 'admin' | 'executive' | 'lawyer'
   >('staff');
   const [editingReach, setEditingReach] = useState<'own' | 'team' | 'all'>('all');
   const [editingPreset, setEditingPreset] = useState('nurse');
@@ -401,6 +401,7 @@ export function UsersPage() {
                 <option value="supervisor">Supervisor</option>
                 <option value="admin">Admin</option>
                 <option value="executive">Executive</option>
+                <option value="lawyer">Lawyer</option>
               </Field>
             <Field kind="select" label="Data reach"
                 value={inviteReach}
@@ -441,6 +442,7 @@ export function UsersPage() {
                   <option value="supervisor">Supervisor</option>
                   <option value="admin">Admin</option>
                   <option value="executive">Executive</option>
+                  <option value="lawyer">Lawyer</option>
                   {current?.is_superadmin && <option value="super_admin">Super admin</option>}
                 </Field>
 </FilterBar>
@@ -508,6 +510,7 @@ export function UsersPage() {
               <option value="supervisor">Supervisor</option>
               <option value="admin">Admin</option>
               <option value="executive">Executive</option>
+              <option value="lawyer">Lawyer</option>
             </Field>
           <Field kind="select" label="Data reach"
               value={editingReach}
@@ -534,6 +537,7 @@ export function UsersPage() {
                 <option value="supervisor">Supervisor</option>
                 <option value="admin">Admin</option>
                 <option value="executive">Executive</option>
+                <option value="lawyer">Lawyer</option>
                 {current?.is_superadmin && <option value="super_admin">Super admin</option>}
               </Field>
 </FilterBar>

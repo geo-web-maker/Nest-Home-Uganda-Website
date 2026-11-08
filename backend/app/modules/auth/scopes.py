@@ -162,5 +162,17 @@ SCOPE_PRESETS: dict[str, frozenset[str]] = {
             "care-reports:read",
         }
     ),
+    # Legal: works on client agreements end to end (including countersigning for Bloomwell).
+    # Voiding and wording templates stay off; tick them for a particular lawyer if needed.
+    "lawyer": frozenset(
+        {
+            "mail:use",
+            "agreements:read",
+            "agreements:write",
+            "agreements:sign",
+            "clients:read",
+            "enquiries:read",
+        }
+    ),
     "super_admin": ALL_SCOPE_IDS,
 }

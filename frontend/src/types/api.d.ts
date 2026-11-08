@@ -7623,13 +7623,13 @@ export interface components {
              * @default staff
              * @enum {string}
              */
-            kind: "staff" | "nurse" | "supervisor" | "admin" | "executive";
+            kind: "staff" | "nurse" | "supervisor" | "admin" | "executive" | "lawyer";
             /** Name */
             name: string;
             /** Phone */
             phone?: string | null;
             /** Preset */
-            preset?: ("nurse" | "supervisor" | "admin" | "executive" | "super_admin") | null;
+            preset?: ("nurse" | "supervisor" | "admin" | "executive" | "lawyer" | "super_admin") | null;
             /**
              * Reach
              * @default all
@@ -7660,7 +7660,7 @@ export interface components {
             /** Active */
             active?: boolean | null;
             /** Kind */
-            kind?: ("staff" | "nurse" | "supervisor" | "admin" | "executive") | null;
+            kind?: ("staff" | "nurse" | "supervisor" | "admin" | "executive" | "lawyer") | null;
             /** Reach */
             reach?: ("own" | "team" | "all") | null;
             /** Scopes */
