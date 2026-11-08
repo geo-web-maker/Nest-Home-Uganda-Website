@@ -38,9 +38,17 @@ describe('agreement link problem screens', () => {
   });
 
   it('does not call a network failure a bad link', async () => {
-    vi.spyOn(apiClient, 'get').mockRejectedValue(new ApiError(0, 'network_error', 'Could not reach'));
-    renderPage();
-    expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument();
-    expect(screen.getByText(/^N1-/)).toBeInTheDocument();
+    // The page quietly retries a dead network twice (1.5s, then 4s) before it shows the problem screen.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const get = vi.spyOn(apiClient, 'get').mockRejectedValue(new ApiError(0, 'network_error', 'Could not reach'));
+      renderPage();
+      await vi.advanceTimersByTimeAsync(6000);
+      expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument();
+      expect(screen.getByText(/^N1-/)).toBeInTheDocument();
+      expect(get).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

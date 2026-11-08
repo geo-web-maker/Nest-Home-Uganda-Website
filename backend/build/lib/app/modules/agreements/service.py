@@ -784,7 +784,7 @@ async def public_view(doc: Agreement, *, signed: bool = False) -> dict[str, Any]
         "status": doc.status,
         "template_version": doc.template_version,
         "clauses": template.clauses,
-        "document_html": render.render_agreement_html(doc, template.clauses, blocks=template.blocks, signed=signed) if template.blocks else None,
+        "document_html": render.render_agreement_html(doc, template.clauses, blocks=template.blocks, signed=signed),
         "fields": {rules.field_path(key): value.model_dump(mode="json") for key, value in doc.fields.items()},
         "schedule_b_computed": doc.schedule_b_computed,
         "variation_clause": doc.variation_clause,

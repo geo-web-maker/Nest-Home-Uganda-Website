@@ -15,7 +15,7 @@ import styles from './AgreementsPage.module.css';
 import { AgreementDiagnostics } from './AgreementDiagnostics';
 import { AgreementFieldInput } from '../../agreements/AgreementFieldInput';
 import { SignatureMethodPicker, credentialProblem, type SignatureChoice } from '../../agreements/SignatureMethodPicker';
-import { OWNER_LABEL, SCHEDULE_SECTIONS, fieldLabel, fieldMeta, isBlank, type FieldSection, type ScheduleTab } from '../../agreements/fieldMeta';
+import { OWNER_LABEL, SCHEDULE_SECTIONS, fieldLabel, fieldMeta, isBlank, isHiddenField, type FieldSection, type ScheduleTab } from '../../agreements/fieldMeta';
 
 type Owner = 'staff' | 'clinical' | 'client' | 'either';
 type AgreementField = { value: unknown; owner: Owner; revision: number; entered_by_staff: boolean; updated_at?: string | null; updated_by?: string | null };
@@ -416,7 +416,7 @@ export function AgreementsPage() {
             {isScheduleTab(tab) && (() => {
               const config = SCHEDULE_SECTIONS[tab];
               const known = new Set(config.sections.flatMap((section) => section.paths));
-              const leftovers = displayedFields.map(([path]) => path).filter((path) => !known.has(path));
+              const leftovers = displayedFields.map(([path]) => path).filter((path) => !known.has(path) && !isHiddenField(path));
               const sections: FieldSection[] = leftovers.length ? [...config.sections, { id: 'other', title: 'Other fields', paths: leftovers }] : config.sections;
               const currencyField = detail.fields['schedule_b.currency'];
               const currency = (drafts['schedule_b.currency'] ?? valueText(currencyField?.value)) || 'UGX';
@@ -425,6 +425,7 @@ export function AgreementsPage() {
                 const field = detail.fields[path];
                 if (!field) return null;
                 const meta = fieldMeta(path);
+                if (meta.showWhen && !meta.showWhen((other) => drafts[other] ?? valueText(detail.fields[other]?.value))) return null;
                 const local = drafts[path] ?? valueText(field.value);
                 const locked = ['voided', 'expired', 'client_signed', 'completed'].includes(detail.status);
                 const readOnly = !canWrite || locked || field.owner === 'client';
@@ -484,7 +485,7 @@ export function AgreementsPage() {
             {tab === 'preview' && <PreviewPanel id={detail.id} />}
             {tab === 'timeline' && <Timeline events={detail.events} />}
             {tab === 'send' && <div className={styles.sendPanel}>
-              {canWrite && <><h3>Send agreement for review</h3><p>Messages contain a secure link only. No patient name, care details or fees are sent by email or SMS.</p><fieldset><legend>Send via (tick one or more)</legend><label><input type="checkbox" checked={pick.email} onChange={(e) => setPick({ ...pick, email: e.target.checked })} /> Email</label>{' '}<label><input type="checkbox" checked={pick.sms} onChange={(e) => setPick({ ...pick, sms: e.target.checked })} /> SMS</label>{noChannel && <p role="alert">Tick at least one way to send.</p>}</fieldset><p>Link expiry: 14 days. Reminders: 48 hours and day 5. Expiry warning: 48 hours before expiry.</p><Button onClick={() => void send()} disabled={busy || noChannel || !['draft','changes_requested','expired'].includes(detail.status)}>Validate and send</Button>{['sent','client_in_progress'].includes(detail.status) && <><p>Client did not get it? Resend sends the same link again by the channel selected above. Nothing earlier stops working.</p><LinkPanel id={detail.id} link={detail.link} onChanged={() => void loadDetail(detail.id)} resend={<Button variant="outline" onClick={() => void performResend(detail.id, channels)} disabled={busy || noChannel}>Resend link</Button>} /></>}</>}
+              {canWrite && <><h3>Send agreement for review</h3><p>Messages contain a secure link only. No patient name, care details or fees are sent by email or SMS.</p><fieldset><legend>Send via (tick one or more)</legend><Checkbox checked={pick.email} onChange={(e) => setPick({ ...pick, email: e.target.checked })} label="Email" />{' '}<Checkbox checked={pick.sms} onChange={(e) => setPick({ ...pick, sms: e.target.checked })} label="SMS" />{noChannel && <p role="alert">Tick at least one way to send.</p>}</fieldset><p>Link expiry: 14 days. Reminders: 48 hours and day 5. Expiry warning: 48 hours before expiry.</p><Button onClick={() => void send()} disabled={busy || noChannel || !['draft','changes_requested','expired'].includes(detail.status)}>Validate and send</Button>{['sent','client_in_progress'].includes(detail.status) && <><p>Client did not get it? Resend sends the same link again by the channel selected above. Nothing earlier stops working.</p><LinkPanel id={detail.id} link={detail.link} onChanged={() => void loadDetail(detail.id)} resend={<Button variant="outline" onClick={() => void performResend(detail.id, channels)} disabled={busy || noChannel}>Resend link</Button>} /></>}</>}
               {canSign && detail.status === 'client_signed' && <section className={styles.countersign}><h3>Bloomwell countersignature</h3><p>By countersigning, the system seals the agreement and stores its PDF in private storage.</p><Field label="Authorised signatory name" value={bloomwellName} onChange={(e) => setBloomwellName(e.target.value)} /><SignatureMethodPicker method={signMethod} onMethod={(next) => { setSignMethod(next); setError(''); }} biometricAvailable={biometricAvailable} mode="staff" password={signPassword} onPassword={setSignPassword} confirm="" onConfirm={() => undefined}
                 drawPanel={<canvas ref={signatureCanvas} className={styles.signaturePad} width={800} height={160} aria-label="Bloomwell countersignature area" onPointerDown={beginSignature} onPointerMove={moveSignature} onPointerUp={() => { drawing.current = false; }} onPointerCancel={() => { drawing.current = false; }} />} /><ButtonGroup>{signMethod === 'drawn' && <Button variant="outline" onClick={clearSignature}>Clear signature</Button>}<Button onClick={() => void countersign()} disabled={busy}>Countersign and seal</Button></ButtonGroup></section>}
               {canVoid && DELETABLE_STATUSES.has(detail.status) && <><ButtonGroup><Button variant="outline" className={styles.danger} onClick={() => void performDelete(detail.id, detail.reference)} disabled={busy}>Delete agreement</Button></ButtonGroup><p className={styles.hint}>Deleting removes this agreement permanently. Sent or signed agreements must be voided first; completed agreements cannot be deleted.</p></>}

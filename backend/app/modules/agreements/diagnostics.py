@@ -339,7 +339,7 @@ async def run_workflow_simulation(principal: Any) -> list[Check]:
         }
         for path, owner in rules.FIELD_OWNERS.items():
             if owner in {"staff", "clinical"}:
-                staff_fields.append((path, special_staff_values.get(path, "DIAGNOSTIC ONLY — Not applicable"), False))
+                staff_fields.append((path, special_staff_values.get(path, "N/A" if path in rules.CHOICE_FIELDS else "DIAGNOSTIC ONLY — Not applicable"), False))
         await service.patch_fields(
             doc,
             [FieldPatch(path=path, value=value, expected_revision=0, entered_by_staff=entered)
@@ -389,13 +389,13 @@ async def run_workflow_simulation(principal: Any) -> list[Check]:
         client_changes = [
             FieldPatch(path="schedule_a.patient_rep_initials", value="SD", expected_revision=0),
             FieldPatch(path="schedule_a.patient_rep_initials_date", value="2030-01-01", expected_revision=0),
-            FieldPatch(path="schedule_c.decision_maker", value="patient", expected_revision=0),
-            FieldPatch(path="schedule_c.care_consent", value="DIAGNOSTIC ONLY — synthetic consent; no care is authorized.", expected_revision=0),
-            FieldPatch(path="schedule_c.communication_channel", value="email", expected_revision=0),
+            FieldPatch(path="schedule_c.decision_maker", value="Patient with capacity", expected_revision=0),
+            FieldPatch(path="schedule_c.care_consent", value="Consent given", expected_revision=0),
+            FieldPatch(path="schedule_c.communication_channel", value="Email", expected_revision=0),
             FieldPatch(path="schedule_c.permissions", value="DIAGNOSTIC ONLY — no routine updates permitted.", expected_revision=0),
             FieldPatch(path="schedule_c.initials", value="SD", expected_revision=0),
             FieldPatch(path="schedule_c.verified_contact", value="agreement-diagnostics@example.invalid", expected_revision=0),
-            FieldPatch(path="schedule_c.information_permitted", value="DIAGNOSTIC ONLY — none", expected_revision=0),
+            FieldPatch(path="schedule_c.information_permitted", value="Booking / billing only", expected_revision=0),
             FieldPatch(path="schedule_c.authorized_people_scope", value="DIAGNOSTIC ONLY — none", expected_revision=0),
         ]
         await service.patch_fields(sign_doc, client_changes, actor="client", ip="127.0.0.1")

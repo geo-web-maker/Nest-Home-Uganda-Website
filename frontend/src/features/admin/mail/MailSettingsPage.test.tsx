@@ -229,7 +229,7 @@ describe('MailSettingsPage', () => {
     api();
     setup();
     const suite = await screen.findByRole('region', { name: 'Email Diagnostics & Test Suite' });
-    expect(within(suite).getByRole('region', { name: 'Setup check' })).toBeInTheDocument();
+    expect(await within(suite).findByRole('region', { name: 'Setup check' })).toBeInTheDocument();
     expect(within(suite).getByRole('region', { name: 'External sending test' })).toBeInTheDocument();
     expect(within(suite).getByRole('region', { name: 'Full SMTP trace' })).toBeInTheDocument();
     expect(within(suite).getByRole('region', { name: 'Incoming mail trace' })).toBeInTheDocument();

@@ -29,6 +29,11 @@ def _agreement(signatures: list[AgreementSignature]):
     )
 
 
+def _signature_area(page: str, structured: bool) -> str:
+    """Legacy pages list signatures in a section; structured pages print them on the signature lines."""
+    return page if structured else page.split("Captured signatures", 1)[1]
+
+
 def _render(agreement, *, structured: bool, images=None) -> str:
     blocks = SOURCE_BLOCKS if structured else None
     return render.render_agreement_html(agreement, SOURCE_CLAUSES, blocks=blocks, signed=True,
@@ -39,26 +44,26 @@ def _render(agreement, *, structured: bool, images=None) -> str:
 def test_passkey_signature_shows_stamp_and_credential(structured):
     sig = _sig("client", "biometric", verification={"credential_id": "abcdef0123456789"})
     page = _render(_agreement([sig]), structured=structured)
-    assert "verified-stamp" in page
+    assert "class=\"verified-stamp\"" in page
     assert "abcdef012345" in page and "abcdef0123456789" not in page  # truncated, never the full id
-    assert "<img" not in page.split("Captured signatures", 1)[1]
+    assert "<img" not in _signature_area(page, structured)
 
 
 @pytest.mark.parametrize("structured", [False, True], ids=["legacy", "blocks"])
 def test_password_signature_shows_stamp_without_secret_material(structured):
     sig = _sig("bloomwell", "password", verification={"type": "account_password", "verified_user_id": "u1"})
     page = _render(_agreement([sig]), structured=structured)
-    assert "verified-stamp" in page and "Electronically signed" in page
-    assert "u1" not in page.split("Captured signatures", 1)[1]  # evidence internals are not printed
+    assert "class=\"verified-stamp\"" in page and "Electronically signed" in page
+    assert "u1" not in _signature_area(page, structured)  # evidence internals are not printed
 
 
 @pytest.mark.parametrize("structured", [False, True], ids=["legacy", "blocks"])
 def test_drawn_signature_embeds_png_and_no_stamp(structured):
     sig = _sig("client", "drawn", image_key="agreements/BHC/signatures/client-1.png")
     page = _render(_agreement([sig]), structured=structured, images={sig.image_key: PNG})
-    tail = page.split("Captured signatures", 1)[1]
+    tail = _signature_area(page, structured)
     assert 'class="signature"' in tail and "data:image/png;base64," in tail
-    assert "verified-stamp" not in tail
+    assert "class=\"verified-stamp\"" not in tail
 
 
 @pytest.mark.parametrize("structured", [False, True], ids=["legacy", "blocks"])
@@ -67,7 +72,7 @@ def test_mixed_methods_and_missing_image_never_crash(structured):
     passkey = _sig("bloomwell", "biometric", verification={"credential_id": "zz"})
     # image bytes unavailable for the drawn signature: still renders the card
     page = _render(_agreement([drawn, passkey]), structured=structured, images={})
-    assert page.count('class="sig"') == 2 and "verified-stamp" in page
+    assert page.count('class="sig"') == 2 if not structured else page.count('class="signed-line"') == 5 and "class=\"verified-stamp\"" in page
 
 
 def test_stamp_style_exists_in_structured_stylesheet():
@@ -82,3 +87,14 @@ def test_client_passphrase_and_staff_password_are_worded_differently(structured)
     page = _render(_agreement([client, staff]), structured=structured)
     assert "Passphrase set by signer" in page and "Account password verified" in page
     assert "$argon2id$secret" not in page
+
+
+def test_signatures_print_on_their_own_lines_with_dates():
+    client = _sig("client", "drawn", image_key="k1")
+    staff = _sig("bloomwell", "password", verification={"type": "account_password"})
+    page = _render(_agreement([client, staff]), structured=True, images={"k1": PNG})
+    assert "Captured signatures" not in page
+    # Schedule B (client + Bloomwell), consent line, client line and Bloomwell line
+    assert page.count('class="signed-line"') == 5
+    assert page.count("07 Nov 2026") >= 4
+    assert "client person" in page and "bloomwell person" in page

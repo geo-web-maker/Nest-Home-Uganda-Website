@@ -19,12 +19,7 @@ def _format_value(value: Any) -> str:
     return str(value)
 
 
-def _signature_card(signature: Any, signature_images: dict[str, bytes] | None) -> str:
-    """One signature block, shared by the legacy and structured renderers.
-
-    Drawn/thumbprint signatures embed their PNG. Password/biometric signatures have no
-    image (image_key is None) and instead show a stamp naming the verification method.
-    """
+def _signature_mark(signature: Any, signature_images: dict[str, bytes] | None) -> str:
     image_markup = ""
     image = (signature_images or {}).get(signature.image_key) if signature.image_key else None
     if image:
@@ -34,7 +29,17 @@ def _signature_card(signature: Any, signature_images: dict[str, bytes] | None) -
         credential = str(signature.verification.get("credential_id", ""))[:12]
         detail = f" · credential {html.escape(credential)}…" if credential else ""
         image_markup = (f'<div class="verified-stamp">Electronically signed — '
-                        f'{html.escape(credentials.public_label(signature.method, signature.verification.get('type')))}{detail}</div>')
+                        f'{html.escape(credentials.public_label(signature.method, signature.verification.get("type")))}{detail}</div>')
+    return image_markup
+
+
+def _signature_card(signature: Any, signature_images: dict[str, bytes] | None) -> str:
+    """One signature block, shared by the legacy and structured renderers.
+
+    Drawn/thumbprint signatures embed their PNG. Password/biometric signatures have no
+    image (image_key is None) and instead show a stamp naming the verification method.
+    """
+    image_markup = _signature_mark(signature, signature_images)
     return (f'<div class="sig"><strong>{html.escape(signature.role.title())}</strong>{image_markup}'
             f'<div>{html.escape(signature.name)}</div><small>{signature.signed_at.isoformat()}</small></div>')
 
@@ -182,6 +187,52 @@ def _money(currency: Any, amount: Any) -> str:
         return ""
 
 
+# Answers the client gives online that have no line in the printed agreement. They are listed after the
+# schedules so nothing that was collected is missing from the signed record.
+_RECORD_SECTIONS = (
+    ("Consent and communication recorded online", (
+        ("Who makes care decisions", "schedule_c.decision_maker"),
+        ("Consent to care", "schedule_c.care_consent"),
+        ("Permissions and conditions", "schedule_c.permissions"),
+        ("Initials", "schedule_c.initials"),
+    )),
+    ("Additional agreed particulars", (
+        ("Rates", "schedule_b.rates"),
+        ("Fees breakdown", "schedule_b.fees"),
+        ("Payment instructions", "schedule_b.payment_details"),
+        ("Organisation payer contact", "schedule_b.organisation_payer_contact"),
+    )),
+)
+
+
+def _record_sections(values: dict[str, Any]) -> str:
+    out: list[str] = []
+    for title, rows in _RECORD_SECTIONS:
+        body = []
+        for label, path in rows:
+            value = values.get(path)
+            text = "" if value is None else str(value).strip()
+            if text and text.upper() != "N/A":
+                body.append(f"<tr><th>{html.escape(label)}</th><td>{html.escape(text)}</td></tr>")
+        if body:
+            out.append(f'<section class="record"><h2>{html.escape(title)}</h2><table>{"".join(body)}</table></section>')
+    return "".join(out)
+
+
+def _signature_lines(agreement: Agreement, signature_images: dict[str, bytes] | None) -> dict[str, dict[str, str]]:
+    """What prints on the signature and date lines, by party (a representative signs as the client)."""
+    lines: dict[str, dict[str, str]] = {}
+    for signature in agreement.signatures:
+        role = "bloomwell" if signature.role == "bloomwell" else "client"
+        who = f"{signature.name} ({signature.role.title()})" if role == "client" and signature.role != "client" else signature.name
+        lines[role] = {
+            "html": f"{_signature_mark(signature, signature_images)}<small>{html.escape(who)} &middot; "
+                    f"{signature.signed_at.strftime('%d %b %Y %H:%M UTC')}</small>",
+            "date": signature.signed_at.strftime("%d %b %Y"),
+        }
+    return lines
+
+
 def _render_blocks(agreement: Agreement, blocks: list[dict[str, Any]], *, signed: bool,
                    certificate: dict[str, Any] | None,
                    signature_images: dict[str, bytes] | None) -> str:
@@ -202,13 +253,11 @@ def _render_blocks(agreement: Agreement, blocks: list[dict[str, Any]], *, signed
                    'The original completed agreement remains in effect except for the change expressly approved in this amendment.</div>')
     if signed:
         banner += '<div class="banner">SIGNED AGREEMENT</div>'
-    extra = ""
-    if agreement.signatures:
-        cards = [_signature_card(signature, signature_images) for signature in agreement.signatures]
-        extra += f'<section class="after"><h2>Captured signatures</h2>{"".join(cards)}</section>'
+    extra = _record_sections(values)
+    signatures = _signature_lines(agreement, signature_images)
     if certificate:
         rows = "".join(f'<tr><th>{html.escape(str(k).replace("_", " ").title())}</th><td>{html.escape(_format_value(v))}</td></tr>'
                        for k, v in certificate.items())
         extra += f'<section class="after"><h2>Certificate of completion</h2><table>{rows}</table></section>'
     return block_renderer.document_html(blocks, values, meta, title=f"Bloomwell care agreement {agreement.reference}",
-                                        banner=banner, extra=extra)
+                                        banner=banner, extra=extra, signatures=signatures)

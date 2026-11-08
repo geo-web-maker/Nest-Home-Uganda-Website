@@ -56,7 +56,51 @@ FIELD_OWNERS: dict[str, str] = {
     "schedule_a.clinical_lead_contact": "clinical",
     "schedule_b.assessment_fee_basis": "staff", "schedule_b.bloomwell_signatory": "staff",
     "schedule_c.witness_name_contact": "either",
+    # Added with template v3: the labelled cells of the Schedule B fee table that had no field.
+    "schedule_b.price_type": "staff", "schedule_b.transport_basis": "staff",
+    "schedule_b.consumables_items": "staff", "schedule_b.equipment_inventory_ref": "staff",
+    "schedule_b.overtime_approval": "staff",
 }
+
+# Fields answered by choosing one option. These are the tick boxes and pick-lists of the agreement;
+# the document ticks exactly the chosen option. Older free-text answers stay readable (see choice_error).
+CHOICE_FIELDS: dict[str, tuple[str, ...]] = {
+    "schedule_a.coverage_arrangement": ("Scheduled visits", "Day shifts", "Night shifts", "Continuous care by roster"),
+    "schedule_b.currency": ("UGX", "USD"),
+    "schedule_b.price_basis": ("Per visit", "Per shift", "Per day", "Per week", "Fixed package total"),
+    "schedule_b.price_type": ("Fixed", "Estimate"),
+    "schedule_b.transport_basis": ("Included", "Additional"),
+    "schedule_b.overtime_approval": ("Yes", "No"),
+    "schedule_b.tax_treatment": ("Inclusive", "Exempt", "Additional"),
+    "schedule_c.decision_maker": ("Patient with capacity", "Parent/Guardian", "Other lawful representative"),
+    "schedule_c.care_consent": ("Consent given", "Consent given with conditions"),
+    "schedule_c.communication_channel": ("Telephone", "SMS", "Email", "WhatsApp", "Other"),
+    "schedule_c.information_permitted": ("Booking / billing only", "Agreed care updates", "Other"),
+}
+# The server or the signing check needs a real answer for these, so "N/A" is not accepted.
+CHOICE_REQUIRES_ANSWER = frozenset({
+    "schedule_b.currency", "schedule_c.decision_maker", "schedule_c.care_consent",
+    "schedule_c.communication_channel", "schedule_c.information_permitted",
+})
+
+
+def choice_error(path: str, value: Any, current: Any = None) -> str | None:
+    """Why this answer is not one of the field's options, or None when it is acceptable.
+
+    Blank clears the field and "N/A" is accepted where the field may be not applicable. Re-saving the answer
+    already stored is always accepted, so an agreement drafted before the options existed can still be edited.
+    """
+    options = CHOICE_FIELDS.get(path)
+    if options is None or value is None:
+        return None
+    text = str(value).strip()
+    if not text or text == (str(current).strip() if current is not None else None):
+        return None
+    if text.upper() == "N/A":
+        return "Choose one of the listed options." if path in CHOICE_REQUIRES_ANSWER else None
+    if text not in options:
+        return f"Choose one of: {', '.join(options)}."
+    return None
 
 
 _SUBCLAUSE_COUNTS = {

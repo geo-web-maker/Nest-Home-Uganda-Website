@@ -2,9 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ButtonGroup } from '../../../components/admin/ButtonGroup';
 import { Modal } from '../../../components/admin/Modal';
+import { FilterBar } from '../../../components/admin/FilterBar';
 import { Notice } from '../../../components/admin/Notice';
 import { SectionHeader } from '../../../components/admin/SectionHeader';
 import { Button } from '../../../components/ui/Button';
+import { Checkbox } from '../../../components/ui/Checkbox';
 import { Field } from '../../../components/ui/Field';
 import { apiClient } from '../../../lib/api/client';
 import pageStyles from './MailPage.module.css';
@@ -101,12 +103,16 @@ export function MailboxAdminSection({ unlocked }: { unlocked: boolean }) {
         <>
           {message ? <Notice tone={message.tone} floating onDismiss={() => setMessage(null)}>{message.text}</Notice> : null}
           {list.isError ? <Notice tone="error">{errorText(list.error)}</Notice> : null}
-          <div className={styles.filters}>
+          <FilterBar
+            label="Mailbox filters"
+            actions={(
+              <Button variant={onlyOrphans ? 'primary' : 'outline'} onClick={() => setOnlyOrphans((current) => !current)}>
+                {onlyOrphans ? 'Showing orphans only' : 'Show orphans only'}
+              </Button>
+            )}
+          >
             <Field label="Search addresses or owners" value={filter} onChange={(event) => setFilter(event.target.value)} />
-            <Button variant={onlyOrphans ? 'primary' : 'outline'} size="compact" onClick={() => setOnlyOrphans((current) => !current)}>
-              {onlyOrphans ? 'Showing orphans only' : 'Show orphans only'}
-            </Button>
-          </div>
+          </FilterBar>
           <div className={styles.list}>
             {rows.map((box) => (
               <div key={box.id} className={styles.row}>
@@ -178,9 +184,11 @@ export function MailboxAdminSection({ unlocked }: { unlocked: boolean }) {
                     {moveTargets.map((box) => <option key={box.id} value={box.id}>{box.address}</option>)}
                   </Field>
                   {!moveTo ? (
-                    <label>
-                      <input type="checkbox" checked={purge} onChange={(event) => setPurge(event.target.checked)} /> Permanently delete the mail in this mailbox
-                    </label>
+                    <Checkbox
+                      checked={purge}
+                      onChange={(event) => setPurge(event.target.checked)}
+                      label="Permanently delete the mail in this mailbox"
+                    />
                   ) : null}
                 </>
               ) : null}

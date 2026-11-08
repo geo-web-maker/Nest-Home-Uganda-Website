@@ -7,7 +7,7 @@ import { ContractReader } from './ContractReader';
 import { describeLinkFailure, loadWithRetry } from './linkFailure';
 import { createPasskey, passkeysSupported, type PasskeyCreationOptions } from '../../../lib/webauthn';
 import { AgreementFieldInput } from '../../agreements/AgreementFieldInput';
-import { SCHEDULE_SECTIONS, fieldLabel as metaLabel, fieldMeta } from '../../agreements/fieldMeta';
+import { SCHEDULE_SECTIONS, fieldLabel as metaLabel, fieldMeta, isHiddenField } from '../../agreements/fieldMeta';
 import { SignatureMethodPicker, credentialProblem, signatureMethodLabel, type SignatureChoice } from '../../agreements/SignatureMethodPicker';
 import styles from './AgreementPublicPage.module.css';
 
@@ -213,7 +213,6 @@ export function AgreementPublicPage() {
     const next = saveQueue.current.then(run, run);
     saveQueue.current = next;
     return next;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadReview]);
 
   /** Called when the client leaves a field: save straight away. */
@@ -228,7 +227,6 @@ export function AgreementPublicPage() {
     const timer = window.setTimeout(() => { if (dirtyChanges().length) void flushDrafts(); }, 1200);
     return () => window.clearTimeout(timer);
     // dirtyChanges reads refs only, so it is stable.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drafts, step, flushDrafts]);
 
   // Warn before the page is closed with unsaved or in-flight changes.
@@ -239,7 +237,6 @@ export function AgreementPublicPage() {
     };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, saveState]);
 
   const pointerPosition = (event: ReactPointerEvent<HTMLCanvasElement>) => {
@@ -341,16 +338,17 @@ export function AgreementPublicPage() {
           <section className={styles.contractPane}><ContractReader clauses={view.clauses} documentHtml={view.document_html} reference={view.reference} /></section>
           <section className={styles.detailsPane}>
         <h2>Agreement details and schedules</h2>
-        <p>Fields marked read-only have been completed by Bloomwell staff. You can edit fields marked as client or shared.</p>
+        <p>Please complete the details below. Everything else in the agreement has been completed by Bloomwell and is shown in the document.</p>
         {(() => {
           const groups = (['parties', 'schedule_a', 'schedule_b', 'schedule_c'] as const).flatMap((tabId) => SCHEDULE_SECTIONS[tabId].sections.map((section) => ({ ...section, group: SCHEDULE_SECTIONS[tabId].title })));
           const known = new Set(groups.flatMap((section) => section.paths));
-          const leftovers = Object.keys(view.fields).filter((path) => !known.has(path));
+          const leftovers = Object.keys(view.fields).filter((path) => !known.has(path) && !isHiddenField(path));
+          const currentValue = (path: string): string => drafts[path] ?? toText(view.fields[path]?.value);
           const all = leftovers.length ? [...groups, { id: 'other', group: 'Other', title: 'Other details', paths: leftovers }] : groups;
           const currency = toText((drafts['schedule_b.currency'] ?? view.fields['schedule_b.currency']?.value)) || 'UGX';
           let lastGroup = '';
-          return all.map((section) => {
-            const paths = section.paths.filter((path) => view.fields[path]);
+          const rendered = all.map((section) => {
+            const paths = section.paths.filter((path) => view.fields[path] && ['client', 'either'].includes(view.fields[path]!.owner) && (fieldMeta(path).showWhen?.(currentValue) ?? true)); // staff and clinical fields are already in the document above
             if (!paths.length) return null;
             const heading = section.group !== lastGroup ? <h3 className={styles.groupHeading}>{section.group}</h3> : null;
             lastGroup = section.group;
@@ -374,6 +372,7 @@ export function AgreementPublicPage() {
               </fieldset>
             </div>;
           });
+          return rendered.some(Boolean) ? rendered : <p className={styles.notice}>There is nothing for you to fill in. Please read the agreement, then sign below.</p>;
         })()}
           </section>
         </div>
