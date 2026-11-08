@@ -2,7 +2,7 @@
 .bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .seg { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--mint); }
 .seg button { min-height: 40px; padding: 8px 16px; border: 0; border-radius: 9px; background: transparent; color: var(--mut); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
-.seg button[aria-selected='true'] { background: var(--surf); color: var(--forest); box-shadow: 0 1px 3px color-mix(in srgb, var(--forest) 18%, transparent); }
+.seg button[aria-selected='true'] { background: var(--surf); color: var(--ink); box-shadow: 0 1px 3px color-mix(in srgb, var(--forest) 18%, transparent); }
 .seg button:focus-visible, .toggleAll:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 .toggleAll { border: 0; background: transparent; color: var(--leaf); font: inherit; font-size: 14px; font-weight: 700; text-decoration: underline; cursor: pointer; min-height: 40px; }
 
@@ -18,3 +18,6 @@
 .list details { border: 1px solid var(--line); border-radius: 9px; padding: 12px; background: var(--surf); }
 .list summary { font-weight: 700; cursor: pointer; }
 .list details p { margin: 8px 0 0; line-height: 1.6; }
+
+/* The contract paper stays white in both themes, so its muted text must stay dark too. */
+.paper .ref { color: #4a6354; }

@@ -2,16 +2,16 @@
   display: grid;
   gap: 0.8rem;
   padding: 1rem;
-  border: 1px solid var(--border, #dce3de);
+  border: 1px solid var(--line);
   border-radius: 14px;
-  background: var(--surface, #fff);
+  background: var(--surf);
 }
-.help { margin: 0; color: var(--muted, #53635a); font-size: 0.9rem; line-height: 1.5; }
+.help { margin: 0; color: var(--mut); font-size: 0.9rem; line-height: 1.5; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
-.selfTests { display: grid; gap: 0.6rem; border-top: 1px solid var(--border, #dce3de); padding-top: 0.8rem; }
+.selfTests { display: grid; gap: 0.6rem; border-top: 1px solid var(--line); padding-top: 0.8rem; }
 .selfTests h3, .result h3 { margin: 0; font-size: 1rem; }
-.result { display: grid; gap: 0.6rem; border-top: 1px solid var(--border, #dce3de); padding-top: 0.8rem; }
+.result { display: grid; gap: 0.6rem; border-top: 1px solid var(--line); padding-top: 0.8rem; }
 .checks { display: grid; gap: 0.5rem; list-style: none; margin: 0; padding: 0; }
-.checkItem { display: grid; grid-template-columns: 4.4rem minmax(0, 1fr); align-items: start; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid var(--border, #edf0ed); }
+.checkItem { display: grid; grid-template-columns: 4.4rem minmax(0, 1fr); align-items: start; gap: 0.7rem; padding: 0.6rem 0; border-bottom: 1px solid var(--line); }
 .checkItem strong { display: block; text-transform: capitalize; }
-.checkItem p { margin: 0.2rem 0 0; color: var(--muted, #53635a); font-size: 0.88rem; overflow-wrap: anywhere; }
+.checkItem p { margin: 0.2rem 0 0; color: var(--mut); font-size: 0.88rem; overflow-wrap: anywhere; }
