@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/admin/:path*", "destination": "/admin-shell.html" },
     { "source": "/agreement/:path*", "destination": "/agreement-shell.html" },
-    { "source": "/a/:path*", "destination": "/agreement-shell.html" }
+    { "source": "/a/:path*", "destination": "/agreement-shell.html" },
+    { "source": "/verify/:path*", "destination": "/agreement-shell.html" }
   ]
 }

@@ -519,3 +519,26 @@ async def public_signed(response: Response, agreement_session: str | None = Cook
     result = await service.public_view(doc, signed=True)
     response.headers["Cache-Control"] = "no-store"
     return result
+
+@public_router.get("/verify/{reference}/{code}")
+async def public_verify(reference: str, code: str, request: Request, response: Response):
+    """Is this document a genuine sealed Bloomwell agreement? Limited per visitor to stop guessing."""
+    retry_after = limiter.hit(f"agreement_verify:{hash_ip(client_ip(request))}", 20, 900)
+    if retry_after is not None:
+        from app.core.errors import RateLimited
+        raise RateLimited(retry_after)
+    result = await service.verify_public(reference.strip()[:64], code.strip().lower()[:32])
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["X-Robots-Tag"] = "noindex"
+    return result
+
+
+
+@public_router.get("/session/signed/pdf", dependencies=[Depends(_session_rate_limit("agreement_signed_pdf", 10, 900))])
+async def public_signed_pdf(agreement_session: str | None = Cookie(default=None)):
+    """The ready-made sealed PDF (agreement, signatures and certificate) for a verified signed-copy session."""
+    doc, _ = await service.session_agreement(agreement_session, "view")
+    content = await service.get_sealed_pdf(doc)  # integrity-checked against the stored SHA-256
+    return Response(content=content, media_type="application/pdf", headers={
+        "Cache-Control": "no-store", "Content-Disposition": f'attachment; filename="{doc.reference}-signed.pdf"',
+    })

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useParams } from 'react-router-dom';
-import { apiClient } from '../../../lib/api/client';
+import { API_PREFIX, ApiError, apiClient } from '../../../lib/api/client';
 import { dialogs } from '../../../lib/dialogs';
 import { DialogHost } from '../../../components/admin/DialogHost';
 import { LogoMark } from '../../../components/brand/Logo';
@@ -21,10 +21,18 @@ type PublicAgreement = {
   schedule_b_computed: Record<string, string | number>; content_hash: string;
   signed: boolean; variation_clause?: string | null; parent_reference?: string | null;
   signatures?: Array<{ role: string; name: string; method: string; signed_at: string }>;
-  certificate?: Record<string, unknown> | null;
+  certificate?: PublicCertificate | null; pdf_available?: boolean;
 };
+type PublicCertificate = {
+  practice?: boolean; reference?: string | null; client?: string | null; patient?: string | null;
+  client_signed_at?: string | null; countersigned_at?: string | null; sealed_at?: string | null; content_hash?: string | null;
+  signers: Array<{ role: string; name: string; method: string; signed_at: string; code_verified_at?: string | null }>;
+};
+const when = (value?: string | null) => (value ? new Date(value).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—');
 type PreOtp = { link_id?: string; release?: string; company: string; message: string; phone_hint?: string | null; email_hint?: string | null; available_channels: { sms: boolean; email: boolean }; purpose: 'sign' | 'view' };
-type OtpSent = { message: string; destination_hint: string };
+type OtpSent = { message: string; destination_hint: string; channel?: 'sms' | 'email'; resend_after?: number; expires_in?: number };
+const RESEND_FALLBACK_SECONDS = 60;
+const clock = (total: number) => `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 type TurnstileApi = {
   render: (container: HTMLElement, options: {
     sitekey: string; callback: (token: string) => void;
@@ -64,6 +72,9 @@ function AgreementPublicPageInner() {
   const [channel, setChannel] = useState<'sms' | 'email'>('sms');
   const [code, setCode] = useState('');
   const [delivery, setDelivery] = useState<OtpSent | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [tick, setTick] = useState(() => Date.now());
+  const codeInput = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -87,6 +98,19 @@ function AgreementPublicPageInner() {
   const draftsRef = useRef<Record<string, string>>({});
   const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
   draftsRef.current = drafts;
+  // Resend countdown. Derived from an end time, so it stays right if the tab sleeps.
+  useEffect(() => {
+    if (cooldownUntil <= Date.now()) return;
+    const id = window.setInterval(() => {
+      const now = Date.now();
+      setTick(now);
+      if (now >= cooldownUntil) window.clearInterval(id);
+    }, 500);
+    setTick(Date.now());
+    return () => window.clearInterval(id);
+  }, [cooldownUntil]);
+  const secondsLeft = Math.max(0, Math.ceil((cooldownUntil - tick) / 1000));
+  const cooldownTotal = delivery?.resend_after ?? RESEND_FALLBACK_SECONDS;
   useEffect(() => { let live = true; void passkeysSupported().then((ok) => { if (live) setBiometricAvailable(ok); }); return () => { live = false; }; }, []);
 
   const loadReview = useCallback(async (purpose: 'sign' | 'view') => {
@@ -144,24 +168,54 @@ function AgreementPublicPageInner() {
   }, [pre, turnstileSiteKey]);
 
   const requestCode = async () => {
-    if (!pre) return;
-    setBusy(true); setError(''); setNotice(''); setDelivery(null);
+    if (!pre || secondsLeft > 0) return;
+    setBusy(true); setError(''); setNotice(''); setCode('');
     try {
       const suffix = pre.purpose === 'view' ? 'request-view' : 'request';
       const sent = await apiClient.post<OtpSent>(`/public/agreements/${encodeURIComponent(token)}/otp/${suffix}`, {
         channel, ...(turnstileToken ? { turnstile_token: turnstileToken } : {}),
       });
-      setDelivery(sent); setNotice(sent.message);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'The verification code could not be sent.'); }
+      const sentChannel = sent.channel ?? channel;
+      setDelivery({ ...sent, channel: sentChannel });
+      setNotice(sent.message);
+      setCooldownUntil(Date.now() + (sent.resend_after ?? RESEND_FALLBACK_SECONDS) * 1000);
+      window.setTimeout(() => codeInput.current?.focus(), 50);
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.code === 'otp_cooldown') {
+        // Another request was made moments ago (for example before a refresh): resume that countdown.
+        const wait = Number(cause.fields.retry_after) || RESEND_FALLBACK_SECONDS;
+        setCooldownUntil(Date.now() + wait * 1000);
+        setDelivery((old) => old ?? { message: '', destination_hint: '', channel, resend_after: RESEND_FALLBACK_SECONDS });
+        setError('');
+        setNotice('A code was sent a moment ago. Please check your messages, then enter it below.');
+      } else {
+        setError(cause instanceof Error ? cause.message : 'The verification code could not be sent.');
+      }
+    } finally { setBusy(false); }
+  };
+
+  /** Downloads the ready-made sealed PDF (agreement, signatures and certificate) kept by Bloomwell. */
+  const downloadSignedPdf = async () => {
+    setBusy(true); setError('');
+    try {
+      const response = await fetch(`${API_PREFIX}/public/agreements/session/signed/pdf`, { credentials: 'include' });
+      if (!response.ok) throw new Error(response.status === 403 ? 'Your session has expired. Please verify again to download the PDF.' : 'The signed PDF is not available right now. Please try again, or call 0787499988.');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url; link.download = `${view?.reference ?? 'agreement'}-signed.pdf`;
+      document.body.appendChild(link); link.click(); link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'The signed PDF could not be downloaded.'); }
     finally { setBusy(false); }
   };
 
-  const verifyCode = async () => {
-    if (!pre) return;
+  const verifyCode = async (entered: string = code) => {
+    if (!pre || busy) return;
     setBusy(true); setError('');
     try {
       const suffix = pre.purpose === 'view' ? 'verify-view' : 'verify';
-      await apiClient.post(`/public/agreements/${encodeURIComponent(token)}/otp/${suffix}`, { code });
+      await apiClient.post(`/public/agreements/${encodeURIComponent(token)}/otp/${suffix}`, { code: entered });
       await loadReview(pre.purpose); setNotice(pre.purpose === 'view' ? 'Your signed agreement is verified.' : 'Your agreement is ready to review.');
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'That code could not be verified.'); }
     finally { setBusy(false); }
@@ -331,11 +385,34 @@ function AgreementPublicPageInner() {
       {step === 'verify' && pre && <div className={styles.verify}>
         <p>For your privacy, we will send a short verification code to the contact already recorded on your agreement. No agreement details are shown until you verify.</p>
         <div className={styles.contactHint}>{pre.phone_hint && <span>Phone: {pre.phone_hint}</span>}{pre.email_hint && <span>Email: {pre.email_hint}</span>}</div>
-        <label>Send code by<select value={channel} onChange={(e) => setChannel(e.target.value as 'sms' | 'email')}><option value="sms" disabled={!pre.available_channels.sms}>SMS</option><option value="email" disabled={!pre.available_channels.email}>Email</option></select></label>
+        {!delivery && <label>Send code by<select value={channel} onChange={(e) => setChannel(e.target.value as 'sms' | 'email')}><option value="sms" disabled={!pre.available_channels.sms}>SMS</option><option value="email" disabled={!pre.available_channels.email}>Email</option></select></label>}
         {!pre.available_channels.sms && !pre.available_channels.email && <p className={styles.security}>Bloomwell cannot currently send a verification code to this agreement's recorded contacts. No agreement details are displayed. Please call 0787499988 for assistance.</p>}
         {turnstileSiteKey && <div className={styles.turnstile} ref={turnstileRef} aria-label="Security verification" />}
-        <button type="button" className={styles.primary} onClick={() => void requestCode()} disabled={busy || (!pre.available_channels.sms && !pre.available_channels.email) || !pre.available_channels[channel] || Boolean(turnstileSiteKey && !turnstileToken)}>Send verification code</button>
-        {delivery && <><label>Six-digit verification code<input value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} /></label><button type="button" className={styles.primary} onClick={() => void verifyCode()} disabled={busy || code.length !== 6}>Verify and continue</button></>}
+        {!delivery && <button type="button" className={styles.primary} onClick={() => void requestCode()} disabled={busy || (!pre.available_channels.sms && !pre.available_channels.email) || !pre.available_channels[channel] || Boolean(turnstileSiteKey && !turnstileToken)}>Send verification code</button>}
+        {delivery && <div className={styles.otpPanel}>
+          <p className={styles.otpWait}>
+            <strong>Your code is on its way{delivery.destination_hint ? ` to ${delivery.destination_hint}` : ''}.</strong>
+            {' '}{delivery.channel === 'email' ? 'Email can take a minute or two. If you do not see it, check your spam or junk folder.' : 'SMS can take up to a minute to arrive, depending on your network.'}
+          </p>
+          <label>Six-digit verification code
+            <input ref={codeInput} className={styles.otpInput} value={code} inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="••••••" aria-describedby="otp-resend"
+              onChange={(e) => { const next = e.target.value.replace(/\D/g, '').slice(0, 6); setCode(next); if (next.length === 6) void verifyCode(next); }} />
+          </label>
+          <button type="button" className={styles.primary} onClick={() => void verifyCode()} disabled={busy || code.length !== 6}>Verify and continue</button>
+          <div className={styles.resendRow} id="otp-resend">
+            {secondsLeft > 0 ? <>
+              <svg className={styles.ring} viewBox="0 0 36 36" aria-hidden="true"><circle className={styles.ringTrack} cx="18" cy="18" r="15" /><circle className={styles.ringFill} cx="18" cy="18" r="15" pathLength="100" strokeDasharray="100" strokeDashoffset={100 - Math.min(100, (secondsLeft / cooldownTotal) * 100)} /></svg>
+              <span role="timer" aria-live="off">Didn’t get it? You can request a new code in <strong>{clock(secondsLeft)}</strong>.</span>
+            </> : <>
+              <span>Still nothing?</span>
+              <button type="button" className={styles.linkButton} onClick={() => void requestCode()} disabled={busy || Boolean(turnstileSiteKey && !turnstileToken)}>Send a new code</button>
+            </>}
+          </div>
+          <label className={styles.otpChannel}>Send the next code by
+            <select value={channel} onChange={(e) => setChannel(e.target.value as 'sms' | 'email')}><option value="sms" disabled={!pre.available_channels.sms}>SMS</option><option value="email" disabled={!pre.available_channels.email}>Email</option></select>
+          </label>
+          {secondsLeft > 0 && <small className={styles.security}>Switching between SMS and email does not shorten the wait. Please give the first code time to arrive.</small>}
+        </div>}
         <p className={styles.security}>Bloomwell staff will never ask you to share your verification code.</p>
       </div>}
 
@@ -411,7 +488,22 @@ function AgreementPublicPageInner() {
       </div>}
 
       {step === 'signed' && <div className={styles.done}>
-        {pre?.purpose === 'view' && view ? <><div className={styles.signedBanner}>SIGNED AGREEMENT · {view.reference}</div>{view.variation_clause && <div className={styles.notice}>AMENDMENT — This agreement varies clause {view.variation_clause}{view.parent_reference ? ` of agreement ${view.parent_reference}` : ''}.</div>}{view.document_html ? <iframe className={styles.document} title="Signed agreement" srcDoc={view.document_html} sandbox="" /> : <><h2>Agreement clauses</h2>{Object.entries(view.clauses).map(([number, text]) => <details key={number}><summary>Clause {number}</summary><div>{text.split('\n').map((line, i) => line ? <p key={`${number}-${i}`}>{line}</p> : null)}</div></details>)}<h2>Parties and schedules</h2>{Object.entries(view.fields).map(([path, field]) => <div className={styles.formField} key={path}><label><span>{fieldLabel(path)}</span><small>{path.startsWith('schedule_a.') ? 'Schedule A' : path.startsWith('schedule_b.') ? 'Schedule B' : path.startsWith('schedule_c.') ? 'Schedule C' : 'Parties'}</small></label><p>{toText(field.value) || '—'}</p></div>)}</>}<div className={styles.fees}><h3>Fee summary</h3>{Object.entries(view.schedule_b_computed).map(([key, value]) => <p key={key}><span>{key.replaceAll('_', ' ')}</span><strong>{String(value)}</strong></p>)}</div><h2>Signatures</h2>{(view.signatures ?? []).map((sig, index) => <div className={styles.formField} key={`${sig.role}-${index}`}><strong>{sig.role.replaceAll('_', ' ')}</strong><p>{sig.name}</p><small>{signatureMethodLabel(sig.method, sig.role)} · {new Date(sig.signed_at).toLocaleString()}</small></div>)}{view.certificate && <section className={styles.certificate}><h2>Certificate of completion</h2>{Object.entries(view.certificate).map(([key, value]) => <p key={key}><strong>{key.replaceAll('_', ' ')}:</strong> {typeof value === 'object' ? JSON.stringify(value) : String(value)}</p>)}</section>}<button type="button" className={styles.primary} onClick={() => window.print()}>Print signed agreement</button></> : changeRequested ? <><div className={styles.successMark}>✓</div><h2>Your change request was sent</h2><p>The agreement link is paused. Bloomwell staff will review your request and send an updated link if needed.</p></> : <><div className={styles.successMark}>✓</div><h2>Your signature has been received</h2><p>Bloomwell will countersign the agreement and send you a confirmation. When it is complete, you can verify again to view the signed agreement online.</p></>}
+        {pre?.purpose === 'view' && view ? <><div className={styles.signedBanner}>SIGNED AGREEMENT · {view.reference}</div>{view.variation_clause && <div className={styles.notice}>AMENDMENT — This agreement varies clause {view.variation_clause}{view.parent_reference ? ` of agreement ${view.parent_reference}` : ''}.</div>}{view.document_html ? <iframe className={styles.document} title="Signed agreement" srcDoc={view.document_html} sandbox="" /> : <><h2>Agreement clauses</h2>{Object.entries(view.clauses).map(([number, text]) => <details key={number}><summary>Clause {number}</summary><div>{text.split('\n').map((line, i) => line ? <p key={`${number}-${i}`}>{line}</p> : null)}</div></details>)}<h2>Parties and schedules</h2>{Object.entries(view.fields).map(([path, field]) => <div className={styles.formField} key={path}><label><span>{fieldLabel(path)}</span><small>{path.startsWith('schedule_a.') ? 'Schedule A' : path.startsWith('schedule_b.') ? 'Schedule B' : path.startsWith('schedule_c.') ? 'Schedule C' : 'Parties'}</small></label><p>{toText(field.value) || '—'}</p></div>)}</>}<div className={styles.fees}><h3>Fee summary</h3>{Object.entries(view.schedule_b_computed).map(([key, value]) => <p key={key}><span>{key.replaceAll('_', ' ')}</span><strong>{String(value)}</strong></p>)}</div><h2>Signatures</h2>{(view.signatures ?? []).map((sig, index) => <div className={styles.formField} key={`${sig.role}-${index}`}><strong>{sig.role.replaceAll('_', ' ')}</strong><p>{sig.name}</p><small>{signatureMethodLabel(sig.method, sig.role)} · {new Date(sig.signed_at).toLocaleString()}</small></div>)}{view.certificate && <section className={styles.certificate} aria-labelledby="cert-title">
+            <h2 id="cert-title">Certificate of completion</h2>
+            {view.certificate.practice && <div className={styles.error}>Practice agreement. No legal effect.</div>}
+            <dl className={styles.certGrid}>
+              <div><dt>Reference</dt><dd>{view.certificate.reference ?? view.reference}</dd></div>
+              <div><dt>Client</dt><dd>{view.certificate.client || '—'}</dd></div>
+              <div><dt>Patient</dt><dd>{view.certificate.patient || '—'}</dd></div>
+              <div><dt>You signed</dt><dd>{when(view.certificate.client_signed_at)}</dd></div>
+              <div><dt>Bloomwell countersigned</dt><dd>{when(view.certificate.countersigned_at)}</dd></div>
+              <div><dt>Sealed</dt><dd>{when(view.certificate.sealed_at)}</dd></div>
+            </dl>
+            {view.certificate.signers.map((sig, i) => <p key={`${sig.role}-${i}`} className={styles.certSigner}><strong>{sig.name}</strong> · {sig.role === 'bloomwell' ? 'Bloomwell' : 'Client'} · {signatureMethodLabel(sig.method, sig.role)} · {when(sig.signed_at)}</p>)}
+            {view.certificate.content_hash && <small className={styles.certHash}>Fingerprint: {view.certificate.content_hash}</small>}
+          </section>}
+          {view.pdf_available && <button type="button" className={styles.primary} onClick={() => void downloadSignedPdf()} disabled={busy}>Download signed PDF</button>}
+          <button type="button" className={styles.primary} onClick={() => window.print()}>Print this page</button></> : changeRequested ? <><div className={styles.successMark}>✓</div><h2>Your change request was sent</h2><p>The agreement link is paused. Bloomwell staff will review your request and send an updated link if needed.</p></> : <><div className={styles.successMark}>✓</div><h2>Your signature has been received</h2><p>Bloomwell will countersign the agreement. When it is complete, we will email and text you a link. Open it, verify with a new code, and you can view the signed agreement and download your PDF copy, which also comes attached to the email.</p></>}
       </div>}
     </section>
     <footer className={styles.footer}>Questions? Call <a href="tel:0787499988">0787499988</a> or email <a href="mailto:info@bhcug.com">info@bhcug.com</a>. Your agreement remains private.</footer>

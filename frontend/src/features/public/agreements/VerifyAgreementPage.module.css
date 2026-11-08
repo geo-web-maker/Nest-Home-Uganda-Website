@@ -1,0 +1,14 @@
+/* Layout pieces only: colours, fonts, card and buttons come from AgreementPublicPage.module.css so the page matches the site. */
+.stack { display: grid; gap: 18px; }
+.result { display: flex; gap: 14px; align-items: flex-start; padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--mint); }
+.result h2 { margin: 0 0 4px; font-size: 20px; }
+.result p { margin: 0; line-height: 1.55; color: var(--ink); }
+.result[data-tone='bad'] { background: color-mix(in srgb, var(--danger) 10%, var(--surf)); border-color: color-mix(in srgb, var(--danger) 35%, var(--line)); }
+.seal { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: var(--forest, var(--leaf)); color: var(--gold, var(--on-leaf)); font-size: 24px; font-weight: 800; box-shadow: 0 0 0 2px var(--surf), 0 0 0 3.5px var(--gold, var(--leaf)); }
+.result[data-tone='bad'] .seal { background: var(--danger); color: #fff; box-shadow: 0 0 0 2px var(--surf), 0 0 0 3.5px var(--danger); }
+.checker { display: grid; gap: 12px; padding-top: 6px; border-top: 1px solid var(--line); }
+.checker h2 { margin: 12px 0 0; font-size: 18px; }
+.checker p { margin: 0; line-height: 1.55; }
+.drop { display: inline-block; justify-self: start; cursor: pointer; }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.drop:focus-within span { outline: 2px solid var(--leaf); outline-offset: 2px; }

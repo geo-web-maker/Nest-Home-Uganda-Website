@@ -23,6 +23,123 @@ def _format_value(value: Any) -> str:
     return str(value)
 
 
+_METHOD_LABELS = {"drawn": "Drawn signature", "biometric": "Device fingerprint / face", "password": "Passphrase",
+                  "passkey": "Device fingerprint / face"}
+_ROLE_LABELS = {"client": "Client", "representative": "Authorised representative", "bloomwell": "Bloomwell Home Care"}
+
+
+def _nice_time(value: Any) -> str:
+    if not value:
+        return "—"
+    try:
+        stamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        return stamp.astimezone(UTC).strftime("%d %b %Y, %H:%M UTC")
+    except ValueError:
+        return str(value)
+
+
+def public_certificate(cert: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Certificate fields a signer may see on screen: no IP addresses, browser strings or token hashes."""
+    if not cert:
+        return None
+    parties = cert.get("parties") or {}
+    return {
+        "practice": bool(cert.get("practice_agreement")),
+        "reference": cert.get("reference"),
+        "client": parties.get("client"),
+        "patient": parties.get("patient"),
+        "client_signed_at": cert.get("client_signed_at"),
+        "countersigned_at": cert.get("countersigned_at"),
+        "sealed_at": cert.get("sealed_at"),
+        "content_hash": cert.get("content_hash"),
+        "signers": [
+            {"role": sig.get("role"), "name": sig.get("name"), "method": sig.get("method"),
+             "signed_at": sig.get("signed_at"), "code_verified_at": sig.get("code_verified_at")}
+            for sig in cert.get("signers") or []
+        ],
+    }
+
+
+VERIFY_BASE = "https://bhcug.com/verify"
+
+
+def verify_code(content_hash: str | None) -> str:
+    """Short unguessable part of the verify link. Printed in the PDF, so it cannot depend on the PDF's own hash."""
+    return (content_hash or "")[:16]
+
+
+def verify_url(reference: str, content_hash: str | None) -> str:
+    return f"{VERIFY_BASE}/{reference}/{verify_code(content_hash)}"
+
+
+def mask_name(name: Any) -> str:
+    """'Jane Client' -> 'J*** C*****': enough for the owner to recognise, not enough to identify to a stranger."""
+    words = str(name or "").split()
+    return " ".join(w[0] + "*" * min(max(len(w) - 1, 2), 6) for w in words) or "—"
+
+
+def _qr_svg(url: str) -> str:
+    try:
+        import segno  # optional: the verify box still prints the link without it
+        return segno.make(url, error="m").svg_inline(scale=3, border=1, dark="#123524", light="#ffffff")
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def verify_box_html(cert: dict[str, Any]) -> str:
+    url = verify_url(str(cert.get("reference") or ""), cert.get("content_hash"))
+    qr = _qr_svg(url)
+    return ('<div style="display:flex;gap:12pt;align-items:center;border:1px solid #C79A3B;background:#F4EBCB;'
+            'padding:8pt 10pt;margin:10pt 0;break-inside:avoid">'
+            f'<div style="flex:none;width:72pt">{qr}</div><div style="font-size:9pt;line-height:1.5">'
+            '<strong>Check this document is genuine.</strong><br>Scan the code or open the link below, then '
+            'compare the details, or upload this file to confirm it has not been changed.<br>'
+            f'<span style="word-break:break-all;color:#123524">{html.escape(url)}</span></div></div>')
+
+
+def certificate_html(cert: dict[str, Any], *, heading: str = "h2") -> str:
+    """Readable certificate of completion for the sealed PDF (full evidence, laid out as tables)."""
+    th = 'style="text-align:left;width:34%;padding:4pt 6pt;border:1px solid #9db8a8;background:#EEF4EC;vertical-align:top"'
+    td = 'style="padding:4pt 6pt;border:1px solid #9db8a8;vertical-align:top;word-break:break-all"'
+
+    def row(label: str, value: Any) -> str:
+        return f"<tr><th {th}>{html.escape(label)}</th><td {td}>{html.escape(_format_value(value))}</td></tr>"
+
+    parties = cert.get("parties") or {}
+    summary = "".join([
+        row("Agreement reference", cert.get("reference")),
+        row("Client", parties.get("client")), row("Patient", parties.get("patient")),
+        row("Client signed", _nice_time(cert.get("client_signed_at"))),
+        row("Bloomwell countersigned", _nice_time(cert.get("countersigned_at"))),
+        row("Sealed", _nice_time(cert.get("sealed_at"))),
+        row("Template version", cert.get("template_version")),
+    ])
+    signers = ""
+    for sig in cert.get("signers") or []:
+        signers += '<table style="border-collapse:collapse;width:100%;margin:6pt 0;break-inside:avoid">' + "".join([
+            row("Signer", f"{sig.get('name')} ({_ROLE_LABELS.get(str(sig.get('role')), sig.get('role'))})"),
+            row("Signature method", _METHOD_LABELS.get(str(sig.get("method")), sig.get("method"))),
+            row("Signed", _nice_time(sig.get("signed_at"))),
+            row("Code verified", _nice_time(sig.get("code_verified_at"))),
+            row("Email / phone used", " / ".join(x for x in (sig.get("email"), sig.get("phone")) if x) or "—"),
+            row("IP address", sig.get("ip_address")), row("Device", sig.get("user_agent")),
+        ]) + "</table>"
+    integrity = "".join([
+        row("Content fingerprint (SHA-256)", cert.get("content_hash")),
+        row("Template fingerprint", cert.get("template_hash")),
+        row("Electronic signature consent", cert.get("electronic_signature_consent")),
+        row("Verification", "One-time code sent to the contact on the agreement, then signature capture"),
+    ])
+    practice = (f'<p style="color:#8a1f1f;font-weight:700">{html.escape(str(cert["practice_agreement"]))}</p>'
+                if cert.get("practice_agreement") else "")
+    tbl = 'style="border-collapse:collapse;width:100%;margin:6pt 0"'
+    return (f'<section class="after" style="break-before:page"><{heading}>Certificate of completion</{heading}>{practice}'
+            f'<table {tbl}>{summary}</table><{heading}>Signatures</{heading}>{signers}'
+            f'<{heading}>Integrity and consent</{heading}><table {tbl}>{integrity}</table>{verify_box_html(cert)}'
+            '<p style="font-size:8.5pt;color:#5b6b60">This certificate records how this agreement was signed. '
+            'Any change to the agreement after signing alters its fingerprint.</p></section>')
+
+
 def _signature_mark(signature: Any, signature_images: dict[str, bytes] | None) -> str:
     image_markup = ""
     image = (signature_images or {}).get(signature.image_key) if signature.image_key else None
@@ -46,6 +163,10 @@ def _signature_card(signature: Any, signature_images: dict[str, bytes] | None) -
     image_markup = _signature_mark(signature, signature_images)
     return (f'<div class="sig"><strong>{html.escape(signature.role.title())}</strong>{image_markup}'
             f'<div>{html.escape(signature.name)}</div><small>{signature.signed_at.isoformat()}</small></div>')
+
+
+def certificate_html_block(cert: dict[str, Any]) -> str:
+    return certificate_html(cert, heading="h1")
 
 
 def render_agreement_html(agreement: Agreement, clauses: dict[str, str], *, blocks: list[dict[str, Any]] | None = None,
@@ -142,13 +263,7 @@ def render_agreement_html(agreement: Agreement, clauses: dict[str, str], *, bloc
             f'{completed_fields}{fee_summary}</section>'
         )
     variation_html = (f'<div class="banner variation">AMENDMENT — This agreement varies clause {html.escape(agreement.variation_clause or "")}. The original completed agreement remains in effect except for the change expressly approved in this amendment.</div>' if agreement.variation_clause else '')
-    certificate_html = ""
-    if certificate:
-        rows = "".join(
-            f'<tr><th>{html.escape(str(k).replace("_", " ").title())}</th><td>{html.escape(_format_value(v))}</td></tr>'
-            for k, v in certificate.items()
-        )
-        certificate_html = f'<section class="certificate"><h1>Certificate of completion</h1><table>{rows}</table></section>'
+    certificate_html = certificate_html_block(certificate) if certificate else ""
     agreement_date = agreement.created_at.date().isoformat() if agreement.created_at else datetime.now(UTC).date().isoformat()
     return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bloomwell care agreement {html.escape(agreement.reference)}</title><style>
@@ -294,8 +409,6 @@ def _render_blocks(agreement: Agreement, blocks: list[dict[str, Any]], *, signed
     extra = _record_sections(values)
     signatures = _signature_lines(agreement, signature_images)
     if certificate:
-        rows = "".join(f'<tr><th>{html.escape(str(k).replace("_", " ").title())}</th><td>{html.escape(_format_value(v))}</td></tr>'
-                       for k, v in certificate.items())
-        extra += f'<section class="after"><h2>Certificate of completion</h2><table>{rows}</table></section>'
+        extra += certificate_html(certificate)
     return block_renderer.document_html(blocks, values, meta, title=f"Bloomwell care agreement {agreement.reference}",
                                         banner=banner, extra=extra, signatures=signatures, highlight=owners)
