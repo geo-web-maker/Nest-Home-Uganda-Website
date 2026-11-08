@@ -10303,16 +10303,6 @@
               "title": "Agreement Id",
               "type": "string"
             }
-          },
-          {
-            "in": "query",
-            "name": "highlight",
-            "required": false,
-            "schema": {
-              "default": false,
-              "title": "Highlight",
-              "type": "boolean"
-            }
           }
         ],
         "responses": {
@@ -10446,51 +10436,6 @@
           }
         ],
         "summary": "Admin Resend",
-        "tags": [
-          "admin-agreements"
-        ]
-      }
-    },
-    "/api/v1/admin/agreements/{agreement_id}/review-pdf": {
-      "get": {
-        "operationId": "admin_review_pdf_api_v1_admin_agreements__agreement_id__review_pdf_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "agreement_id",
-            "required": true,
-            "schema": {
-              "title": "Agreement Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Admin Review Pdf",
         "tags": [
           "admin-agreements"
         ]

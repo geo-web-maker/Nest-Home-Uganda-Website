@@ -5,6 +5,8 @@ import { PillButton } from '../../ui/PillButton';
 import { Sheet, SheetActions } from '../../ui/Sheet';
 import { AttachmentList } from '../../shared/mail-rich/react/AttachmentList';
 import { NurseMailUiProvider } from './mailUiKit';
+import { RecipientInput } from './RecipientInput';
+import { invalidAddresses, parseAddresses } from './mailAddresses';
 import type { MailAttachment, MailFormat } from '../../shared/mail-rich/core/types';
 
 const LazyMailRichEditor = lazy(() => import('../../shared/mail-rich/react/MailRichEditor').then((module) => ({ default: module.MailRichEditor })));
@@ -53,12 +55,12 @@ function plainToHtml(value: string): string {
 
 /** Offline-capable composer with confirmation guards, a quoted-message boundary and a shared TipTap editor. */
 export function MailComposeSheet({ value, problem, onDismissProblem, online, attaching, onAttach, onPasteImage, onRemoveAttachment, onChange, onSend, onSaveDraft, onCancel, onDiscard }: Props) {
-  const first = useRef<HTMLInputElement>(null);
   const picker = useRef<HTMLInputElement>(null);
   const cancelRef = useRef(onCancel);
   const initialSnapshot = useRef(JSON.stringify(value));
   const [closeConfirm, setCloseConfirm] = useState(false);
   const [editorNotice, setEditorNotice] = useState('');
+  const [showCc, setShowCc] = useState(Boolean(value.cc.trim() || value.bcc.trim()));
   const [format, setFormat] = useState<MailFormat>(value.bodyFormat ?? 'html');
   cancelRef.current = onCancel;
   const dirty = JSON.stringify(value) !== initialSnapshot.current;
@@ -73,10 +75,10 @@ export function MailComposeSheet({ value, problem, onDismissProblem, online, att
     setFormat(value.bodyFormat ?? 'html');
   }, [value.id, value.bodyFormat]);
 
-  // Focus the first field once per draft. This must not depend on `value`, or every keystroke in the editor
+  // Focus the To field once per draft. This must not depend on `value`, or every keystroke in the editor
   // would pull focus back to the To field.
   useEffect(() => {
-    first.current?.focus();
+    document.getElementById('mail-compose-title')?.closest('section')?.querySelector<HTMLInputElement>('input[role="combobox"]')?.focus();
   }, [value.id]);
 
   useEffect(() => {
@@ -102,7 +104,12 @@ export function MailComposeSheet({ value, problem, onDismissProblem, online, att
     event.preventDefault();
     onSend();
   };
-  const hasRecipient = value.to.trim() !== '' || value.cc.trim() !== '' || value.bcc.trim() !== '';
+  const toList = parseAddresses(value.to);
+  const ccList = parseAddresses(value.cc);
+  const bccList = parseAddresses(value.bcc);
+  const badRecipients = invalidAddresses([...toList, ...ccList, ...bccList]);
+  const recipientError = badRecipients.length ? `Check these addresses: ${badRecipients.join(', ')}` : undefined;
+  const hasRecipient = toList.length + ccList.length + bccList.length > 0 && badRecipients.length === 0;
   const bodyHasContent = format === 'html' ? (Boolean((value.bodyHtml ?? '').replace(/<[^>]+>/g, '').trim()) || /<(img|table)\b/i.test(value.bodyHtml ?? '')) : value.body.trim() !== '';
   const canSend = hasRecipient && value.subject.trim() !== '' && (bodyHasContent || Boolean(value.quote || value.quotedHtml)) && !attaching;
   const attachmentItems: MailAttachment[] = value.attachments.map(({ size: _size, ...file }) => file);
@@ -125,12 +132,11 @@ export function MailComposeSheet({ value, problem, onDismissProblem, online, att
   return <NurseMailUiProvider><Sheet labelledBy="mail-compose-title" className="mail-compose-sheet">
     <h2 id="mail-compose-title">{copy.mail.compose}</h2>
     <form onSubmit={submit} className="stack-form">
-      <label htmlFor="mail-to">{copy.mail.to}</label>
-      <input ref={first} id="mail-to" value={value.to} onChange={(event) => onChange({ ...value, to: event.target.value })} placeholder={copy.mail.toHint} autoComplete="off" aria-describedby={problem ? 'mail-problem' : undefined} aria-invalid={problem ? true : undefined} />
-      <label htmlFor="mail-cc">{copy.mail.cc}</label>
-      <input id="mail-cc" value={value.cc} onChange={(event) => onChange({ ...value, cc: event.target.value })} placeholder={copy.mail.toHint} autoComplete="off" />
-      <label htmlFor="mail-bcc">{copy.mail.bcc}</label>
-      <input id="mail-bcc" value={value.bcc} onChange={(event) => onChange({ ...value, bcc: event.target.value })} placeholder={copy.mail.toHint} autoComplete="off" />
+      <RecipientInput label={copy.mail.to} value={value.to} onChange={(to) => onChange({ ...value, to })} placeholder={copy.mail.toHint} error={recipientError} exclude={[...ccList, ...bccList]} online={online} />
+      {showCc ? <>
+        <RecipientInput label={copy.mail.cc} value={value.cc} onChange={(cc) => onChange({ ...value, cc })} exclude={[...toList, ...bccList]} online={online} />
+        <RecipientInput label={copy.mail.bcc} value={value.bcc} onChange={(bcc) => onChange({ ...value, bcc })} exclude={[...toList, ...ccList]} online={online} />
+      </> : <div><PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={() => setShowCc(true)}>{copy.mail.cc}/{copy.mail.bcc}</PillButton></div>}
       <label htmlFor="mail-subject">{copy.mail.subject}</label>
       <input id="mail-subject" value={value.subject} onChange={(event) => onChange({ ...value, subject: event.target.value })} />
       <div className="mr-composer-mode" role="group" aria-label="Message format">
