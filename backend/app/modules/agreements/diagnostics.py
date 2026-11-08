@@ -176,6 +176,19 @@ async def run_readiness_checks() -> list[Check]:
         except Exception:
             checks.append(Check("agreement_storage_cleanup", WARN, "The private-storage probe could not be deleted. Remove the diagnostic object manually."))
 
+    _env_prefix = str(get_settings().model_config.get("env_prefix") or "")
+    if not settings.s3_bucket_signed:
+        checks.append(Check("agreement_signed_bucket", WARN,
+                            f"{_env_prefix}S3_BUCKET_SIGNED is empty, so sealed PDFs go to the private bucket with no retention lock. Set it before relying on locked storage."))
+    elif not hasattr(storage, "probe_signed"):
+        checks.append(Check("agreement_signed_bucket", SKIP, "This storage backend cannot test the signed bucket."))
+    else:
+        try:
+            for item in await storage.probe_signed():
+                checks.append(Check(item["id"], item["status"], item["detail"]))
+        except Exception as exc:
+            checks.append(Check("agreement_signed_bucket", FAIL, f"The signed-bucket test could not run ({type(exc).__name__})."))
+
     try:
         pdf = service.render.render_pdf("<!doctype html><html><body><h1>Bloomwell diagnostic PDF</h1><p>Selectable text check.</p></body></html>")
         valid = pdf.startswith(b"%PDF-") and len(pdf) > 500

@@ -4,6 +4,7 @@ Two buckets: public media and private files (CVs). Private files are only reacha
 through short-lived signed links. S3Storage uses boto3 (blocking) in a worker thread.
 """
 
+import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
@@ -14,6 +15,7 @@ from urllib.parse import quote
 import boto3
 from anyio import to_thread
 from botocore.config import Config
+from botocore.exceptions import ClientError
 
 from app.core.config import get_settings
 
@@ -113,6 +115,136 @@ class S3Storage:
                 ObjectLockMode=self._lock_mode, ObjectLockRetainUntilDate=until,
             )
         )
+
+    async def probe_signed(self, retain_days: int = 1) -> list[dict[str, str]]:
+        """Diagnostics only: exercise the sealed-agreements bucket the way a real countersign does.
+
+        Checks reachability, Object Lock, a locked write with read-back, the stored retention and that
+        deleting a locked version is refused. The probe file is tiny and stays locked for ``retain_days``;
+        the next run removes expired probes. Real agreements are never touched.
+        """
+        s = get_settings()
+        bucket_name = self._buckets[Bucket.SIGNED]
+        client = self._c(Bucket.SIGNED)
+        prefix = "agreements/diagnostics/signed-probe-"
+
+        def run() -> list[dict[str, str]]:
+            out: list[dict[str, str]] = []
+
+            def add(check_id: str, status: str, detail: str) -> None:
+                out.append({"id": check_id, "status": status, "detail": detail})
+
+            def code(exc: Exception) -> str:
+                if isinstance(exc, ClientError):
+                    return str(exc.response.get("Error", {}).get("Code") or "ClientError")
+                return type(exc).__name__
+
+            mode = (s.s3_signed_lock_mode or "").upper()
+            own = self._signed_client is not None
+            if mode not in {"GOVERNANCE", "COMPLIANCE"}:
+                add("agreement_signed_bucket_config", "fail",
+                    f"Lock mode {s.s3_signed_lock_mode!r} is not valid. Use GOVERNANCE or COMPLIANCE.")
+            elif s.s3_signed_retention_days < 1:
+                add("agreement_signed_bucket_config", "fail", "Retention days must be at least 1.")
+            else:
+                add("agreement_signed_bucket_config", "pass",
+                    f"Bucket {bucket_name!r}, {mode} mode, {s.s3_signed_retention_days} days retention; "
+                    + ("using its own endpoint and credentials." if own else
+                       "no signed endpoint or key set, so the main storage endpoint and credentials are used."))
+                if not own and not s.s3_endpoint:
+                    add("agreement_signed_bucket_config", "warn", "No endpoint is set for the signed bucket or main storage.")
+
+            try:
+                client.head_bucket(Bucket=bucket_name)
+                add("agreement_signed_bucket_connect", "pass", "The signed bucket is reachable with these credentials.")
+            except Exception as exc:
+                add("agreement_signed_bucket_connect", "fail",
+                    f"Could not open bucket {bucket_name!r} ({code(exc)}). Check the bucket name, endpoint, region and key.")
+                return out
+
+            try:
+                lock = client.get_object_lock_configuration(Bucket=bucket_name).get("ObjectLockConfiguration", {})
+                if lock.get("ObjectLockEnabled") == "Enabled":
+                    if lock.get("Rule", {}).get("DefaultRetention"):
+                        add("agreement_signed_bucket_lock", "warn",
+                            "Object Lock is on, but the bucket has a default retention. Remove it; the app sets retention per file.")
+                    else:
+                        add("agreement_signed_bucket_lock", "pass", "Object Lock is enabled on the bucket.")
+                else:
+                    add("agreement_signed_bucket_lock", "fail",
+                        "Object Lock is not enabled. It can only be turned on when a bucket is created; make a new bucket.")
+                    return out
+            except Exception as exc:
+                if code(exc) in {"ObjectLockConfigurationNotFoundError", "NoSuchObjectLockConfiguration"}:
+                    add("agreement_signed_bucket_lock", "fail",
+                        "Object Lock is not enabled. It can only be turned on when a bucket is created; make a new bucket.")
+                    return out
+                add("agreement_signed_bucket_lock", "warn",
+                    f"Could not read the Object Lock setting ({code(exc)}). Allow the key to read bucket settings, or confirm it in the provider console.")
+
+            removed = 0
+            list_failed = ""
+            try:
+                listing = client.list_object_versions(Bucket=bucket_name, Prefix=prefix)
+                for item in [*listing.get("Versions", []), *listing.get("DeleteMarkers", [])]:
+                    try:
+                        client.delete_object(Bucket=bucket_name, Key=item["Key"], VersionId=item["VersionId"])
+                        removed += 1
+                    except Exception:
+                        pass
+            except Exception as exc:
+                list_failed = code(exc)
+
+            key = f"{prefix}{uuid.uuid4().hex}.txt"
+            payload = b"Bloomwell signed-bucket diagnostics - synthetic data only"
+            until = datetime.now(UTC) + timedelta(days=max(1, retain_days))
+            version = None
+            try:
+                put = client.put_object(Bucket=bucket_name, Key=key, Body=payload, ContentType="text/plain",
+                                        ObjectLockMode=mode if mode in {"GOVERNANCE", "COMPLIANCE"} else "GOVERNANCE",
+                                        ObjectLockRetainUntilDate=until)
+                version = put.get("VersionId")
+                same = client.get_object(Bucket=bucket_name, Key=key)["Body"].read() == payload
+                add("agreement_signed_bucket_write", "pass" if same else "fail",
+                    "A locked probe file was written and read back." if same else "The probe file read back different bytes.")
+            except Exception as exc:
+                add("agreement_signed_bucket_write", "fail",
+                    f"The locked write failed ({code(exc)}). A real countersign would fail the same way; check the key can write files and set retention.")
+                return out
+
+            try:
+                kept = client.get_object_retention(Bucket=bucket_name, Key=key, **({"VersionId": version} if version else {}))
+                got = kept.get("Retention", {})
+                if got.get("Mode") == mode:
+                    add("agreement_signed_bucket_retention", "pass", f"Retention was recorded ({mode}).")
+                else:
+                    add("agreement_signed_bucket_retention", "fail", f"Retention came back as {got.get('Mode')!r}, expected {mode}.")
+            except Exception as exc:
+                add("agreement_signed_bucket_retention", "warn",
+                    f"Could not read the retention back ({code(exc)}). Allow the key to read file retention.")
+
+            if not version:
+                add("agreement_signed_bucket_enforced", "warn", "The provider returned no version id, so the lock could not be tested.")
+            else:
+                try:
+                    client.delete_object(Bucket=bucket_name, Key=key, VersionId=version)
+                    add("agreement_signed_bucket_enforced", "fail",
+                        "A locked file was deleted. Object Lock is not protecting this bucket; check the key has no bypass permission.")
+                except Exception as exc:
+                    if isinstance(exc, ClientError):
+                        add("agreement_signed_bucket_enforced", "pass", "Deleting the locked probe was refused, so the lock is being enforced.")
+                    else:
+                        add("agreement_signed_bucket_enforced", "warn", f"Delete test was inconclusive ({code(exc)}).")
+
+            if list_failed:
+                add("agreement_signed_bucket_cleanup", "warn",
+                    f"Could not list old probe files ({list_failed}). Each run leaves one tiny file; delete them from the console when they unlock.")
+            else:
+                add("agreement_signed_bucket_cleanup", "pass",
+                    f"Removed {removed} expired probe file(s). This run's probe stays locked until {until:%Y-%m-%d %H:%M} UTC, then the next run removes it.")
+            return out
+
+        return await to_thread.run_sync(run)
 
     async def put(self, bucket: Bucket, key: str, data: bytes, content_type: str) -> None:
         await to_thread.run_sync(
