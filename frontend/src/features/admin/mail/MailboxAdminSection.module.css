@@ -8,4 +8,3 @@
 .warn { border-color: var(--danger); color: var(--danger); }
 .preview { margin: 0.25rem 0 0; padding-left: 1.1rem; font-size: var(--fs-small); overflow-wrap: anywhere; }
 .actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.filters { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: end; }

@@ -594,6 +594,9 @@ async def patch_fields(doc: Agreement, changes: list[FieldPatch], *, actor: str,
             value = str(value).strip().lower()
             if len(value) > 254 or "@" not in value:
                 raise ValidationFailed("Enter a valid email address", {change.path: "invalid_email"})
+        choice_problem = rules.choice_error(change.path, value, current.value)
+        if choice_problem:
+            raise ValidationFailed(choice_problem, {change.path: "invalid_choice"})
         if isinstance(value, str) and len(value) > 12_000:
             raise ValidationFailed("Field value is too long", {change.path: "too_long"})
         updates.append((change.path, value, current))
@@ -885,7 +888,7 @@ async def public_view(doc: Agreement, *, signed: bool = False) -> dict[str, Any]
         "status": doc.status,
         "template_version": doc.template_version,
         "clauses": template.clauses,
-        "document_html": render.render_agreement_html(doc, template.clauses, blocks=template.blocks, signed=signed) if template.blocks else None,
+        "document_html": render.render_agreement_html(doc, template.clauses, blocks=template.blocks, signed=signed),  # same renderer as the admin preview
         "fields": {rules.field_path(key): value.model_dump(mode="json") for key, value in doc.fields.items()},
         "schedule_b_computed": doc.schedule_b_computed,
         "variation_clause": doc.variation_clause,

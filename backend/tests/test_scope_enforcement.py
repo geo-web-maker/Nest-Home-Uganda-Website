@@ -24,7 +24,10 @@ SIGNED_PHOTO_STREAMS = {SIGNED_PHOTO_STREAM, SIGNED_FIELD_PHOTO_STREAM}
 SUPERADMIN_ONLY_PATHS = {"/api/v1/admin/app-releases"}
 # A GET that lists assignment candidates (users who could supervise a nurse). It is gated by
 # nurses:write on purpose, so read-only staff cannot enumerate accounts.
-WRITE_GATED_READS = {"/api/v1/admin/care/nurses/supervisor-options"}
+WRITE_GATED_READS = {
+    "/api/v1/admin/care/nurses/supervisor-options",
+    "/api/v1/admin/agreements/{agreement_id}/link",  # reveals a live client link, so it needs write access
+}
 
 
 def admin_cases() -> list[tuple[str, str]]:

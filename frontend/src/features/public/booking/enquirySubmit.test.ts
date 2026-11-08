@@ -4,12 +4,12 @@ import { submitEnquiryViaClient } from './enquirySubmit';
 const payload = { name: 'Ada', preferred_start: '' } as never;
 
 describe('submitEnquiryViaClient', () => {
-  it('posts to /public/enquiries, sends an empty start as null, maps the result', async () => {
+  it('posts to /public/enquiries, sends empty email and start as null, maps the result', async () => {
     const post = vi.fn().mockResolvedValue({ reference: 'NHC-1', whatsapp_url: 'https://wa.me/1' });
     const result = await submitEnquiryViaClient(payload, { post });
     expect(post).toHaveBeenCalledWith(
       '/public/enquiries',
-      { name: 'Ada', preferred_start: null },
+      { name: 'Ada', email: null, preferred_start: null },
       { params: { lang: 'en' } },
     );
     expect(result).toEqual({ reference: 'NHC-1', whatsappUrl: 'https://wa.me/1' });

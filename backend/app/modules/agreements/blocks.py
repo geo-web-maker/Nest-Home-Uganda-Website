@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import html
 import re
+from datetime import datetime
 from typing import Any
 
 ESC = html.escape
@@ -22,15 +23,67 @@ HANG = re.compile(r"^\d{1,2}\.(?!0\b)\d{1,2}\.")
 HEADING = re.compile(r"^\d{1,2}\.0\.")
 
 
+# Fields shown as money or as a date in the document. The stored value stays plain digits / an ISO date.
+MONEY_PATHS = frozenset({
+    "schedule_b.assessment_fee", "schedule_b.nursing_visit_shift", "schedule_b.transport",
+    "schedule_b.dressings_consumables", "schedule_b.equipment_hire_deposit", "schedule_b.overtime_extra_visit",
+    "schedule_b.late_cancellation_charge", "schedule_b.total_fee",
+})
+DATE_PATHS = frozenset({
+    "schedule_a.assessment_date", "schedule_a.care_start_date", "schedule_a.care_end_review_date",
+    "schedule_a.patient_rep_initials_date", "schedule_b.start_date", "schedule_b.end_date",
+    "schedule_b.advance_due_date",
+})
+_NUMBER = re.compile(r"^\d+(\.\d{1,2})?$")
+_ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _one(ctx: dict[str, Any], path: str) -> str:
+    """One field (or @meta value) as the text printed in the document."""
+    path = path.strip()
+    raw = ctx["meta"].get(path) if path.startswith("@") else ctx["values"].get(path)
+    if isinstance(raw, (list, tuple)):
+        raw = ", ".join(str(x) for x in raw)
+    text = "" if raw is None else str(raw).strip()
+    if not text:
+        return ""
+    if path in MONEY_PATHS and _NUMBER.match(text):
+        currency = str(ctx["values"].get("schedule_b.currency") or "UGX")
+        number = float(text)
+        shown = f"{number:,.0f}" if number == int(number) else f"{number:,.2f}"
+        return f"{currency if currency in ('UGX', 'USD') else 'UGX'} {shown}"
+    if path in DATE_PATHS and _ISO_DATE.match(text):
+        try:
+            day = datetime.strptime(text, "%Y-%m-%d")
+        except ValueError:
+            return text
+        return f"{day.day} {day:%b %Y}"
+    return text
+
+
+def _segment(ctx: dict[str, Any], seg: str) -> str:
+    if "&" in seg:  # "a&b": b is appended only when a has a value (e.g. a rate followed by its unit)
+        main, _, suffix = seg.partition("&")
+        first, second = _one(ctx, main), _one(ctx, suffix)
+        if suffix.strip() == "schedule_b.price_basis":
+            second = second.lower()
+        return f"{first} {second}".strip() if first else ""
+    if "~" in seg:  # "a~b": a date range
+        start, _, end = seg.partition("~")
+        return " \u2013 ".join(part for part in (_one(ctx, start), _one(ctx, end)) if part)
+    return _one(ctx, seg)
+
+
 def _value(ctx: dict[str, Any], spec: str) -> str:
-    parts: list[str] = []
-    for path in spec.split("+"):
-        raw = ctx["meta"].get(path) if path.startswith("@") else ctx["values"].get(path)
-        if isinstance(raw, (list, tuple)):
-            raw = ", ".join(str(x) for x in raw)
-        if raw not in (None, ""):
-            parts.append(str(raw))
-    return " ".join(parts)
+    """Resolve a field spec: "a+b" joins with a space, "a,b" with a comma, "a|b" takes the first that has
+    a value, "a~b" is a range and "a&b" appends b only when a is filled."""
+    for alternative in spec.split("|"):
+        chunks = [" ".join(part for part in (_segment(ctx, seg) for seg in chunk.split("+")) if part)
+                  for chunk in alternative.split(",")]
+        text = ", ".join(chunk for chunk in chunks if chunk)
+        if text:
+            return text
+    return ""
 
 
 def _runs_html(runs: list[dict[str, Any]], ctx: dict[str, Any]) -> str:
@@ -41,8 +94,12 @@ def _runs_html(runs: list[dict[str, Any]], ctx: dict[str, Any]) -> str:
             text = EMAIL.sub(r'<span class="mail">\1</span>', ESC(run["t"]))
             out.append(f"<strong>{text}</strong>" if run.get("b") else text)
         elif kind == "box":
-            value = _value(ctx, run["f"]).lower() if run.get("f") else ""
-            on = bool(value) and any(word in value for word in run.get("kw", []))
+            value = _value(ctx, run["f"]).strip().lower() if run.get("f") else ""
+            option = (run.get("o") or "").lower()
+            if option and value in [o.lower() for o in run.get("opts", [])]:
+                on = value == option  # a choice field ticks exactly its own box
+            else:  # older free-text answers: match by keyword
+                on = bool(value) and any(word in value for word in run.get("kw", []))
             out.append('<span class="box on">&#10003;</span>' if on else '<span class="box"></span>')
         elif kind == "calc":
             value = _value(ctx, run["f"]) if run.get("f") else ""
@@ -50,11 +107,20 @@ def _runs_html(runs: list[dict[str, Any]], ctx: dict[str, Any]) -> str:
                 out.append(f'<span class="filled">{ESC(value)}</span>')
         elif kind == "blank":
             value = _value(ctx, run["f"]) if run.get("f") else ""
-            if value:
+            signed = ctx.get("signatures", {}).get(run.get("s") or run.get("d") or "")
+            if signed and run.get("s"):
+                out.append(f'<span class="signed-line">{signed["html"]}</span>')
+            elif signed and run.get("d"):
+                out.append(f'<span class="filled">{ESC(signed["date"])}</span>')
+            elif value:
                 out.append(f'<span class="filled">{ESC(value)}</span>')
             else:
                 out.append(f'<span class="blank" style="min-width:{min(run["n"], 60) * 0.26:.1f}em"></span>')
     return "".join(out)
+
+
+def para_text(block: dict[str, Any]) -> str:
+    return "".join(run.get("t", "") for run in block.get("runs", []))
 
 
 def _first_text(runs: list[dict[str, Any]]) -> str:
@@ -91,10 +157,12 @@ def _table_html(block: dict[str, Any], ctx: dict[str, Any]) -> str:
     return f'<table class="grid"><colgroup>{colgroup}</colgroup>{"".join(body)}</table>'
 
 
-def blocks_html(blocks: list[dict[str, Any]], values: dict[str, Any], meta: dict[str, Any]) -> str:
-    ctx = {"values": values, "meta": meta}
+def blocks_html(blocks: list[dict[str, Any]], values: dict[str, Any], meta: dict[str, Any],
+                signatures: dict[str, dict[str, str]] | None = None) -> str:
+    ctx = {"values": values, "meta": meta, "signatures": signatures or {}}
     out: list[str] = []
     seen_title = False
+    after_schedule = False
     for block in blocks:
         if block["type"] == "table":
             out.append(_table_html(block, ctx))
@@ -112,7 +180,16 @@ def blocks_html(blocks: list[dict[str, Any]], values: dict[str, Any], meta: dict
             if block["align"] == "center" and not seen_title and block.get("page") == 1:
                 classes.append("title")
                 seen_title = True
-            if block.get("underline"):
+            text = para_text(block).strip()
+            if re.fullmatch(r"SCHEDULE [ABC]", text):
+                classes.append("sch")
+                after_schedule = True
+            elif after_schedule:
+                classes.append("sch-sub")
+                after_schedule = False
+            elif (block["align"] == "center" and block.get("underline")) or text.startswith("Interpreter / reader certificate"):
+                classes.append("sub")
+            elif block.get("underline"):
                 classes.append("u")
             if first.startswith("Service enquiries"):
                 classes.append("rule")
@@ -135,8 +212,12 @@ body{{font-family:Tahoma,Verdana,'DejaVu Sans',sans-serif;font-size:11pt;line-he
 .p.title{{font-family:Georgia,'Times New Roman',serif;font-size:16pt;letter-spacing:.03em;margin-bottom:3pt}}
 .p.rule{{border-bottom:2px solid {GOLD};padding-bottom:7pt;margin-bottom:12pt;color:{MUTED};font-size:9.5pt}}
 .p.hd{{font-family:Georgia,'Times New Roman',serif;font-size:13pt;margin:12pt 0 5pt;padding-bottom:2pt;border-bottom:1px solid {STRAW_DEEP};break-after:avoid;text-align:left}}
+.p.sch{{font-family:Georgia,'Times New Roman',serif;font-size:15pt;font-weight:700;letter-spacing:.16em;text-align:left;margin:26pt 0 0;padding:9pt 14pt 1pt;background:{FOREST};color:#fff;border-radius:4pt 4pt 0 0;break-before:page;break-after:avoid}}
+.p.sch strong,.p.sch-sub strong{{color:inherit}}
+.p.sch-sub{{text-align:left;margin:0 0 12pt;padding:0 14pt 9pt;background:{FOREST};color:{STRAW};border-bottom:3px solid {GOLD};border-radius:0 0 4pt 4pt;font-size:10.5pt;break-after:avoid}}
+.p.sub{{text-align:left;font-family:Georgia,'Times New Roman',serif;font-size:11.5pt;margin:14pt 0 5pt;padding:1pt 0 1pt 8pt;border-left:3pt solid {GOLD};break-after:avoid}}
 .p.c.u{{text-decoration:none;font-family:Georgia,'Times New Roman',serif;border-bottom:1px solid {GOLD};display:table;margin:8pt auto 6pt;padding:0 12pt 2pt}}
-.blank{{display:inline-block;border-bottom:1px dotted {FOREST};height:.9em;vertical-align:baseline;max-width:100%}}
+.signed-line{{display:inline-block;vertical-align:bottom;border-bottom:1px solid {FOREST};min-width:10em;padding:0 4px}}.signed-line img{{display:block;max-height:46px;max-width:200px;object-fit:contain}}.signed-line small{{display:block;color:#5b6b60;font-size:7.5pt}}.blank{{display:inline-block;border-bottom:1px dotted {FOREST};height:.9em;vertical-align:baseline;max-width:100%}}
 .filled{{border-bottom:1px solid {GOLD};font-weight:600;padding:0 2px;color:#0b2a1a;overflow-wrap:anywhere}}
 .box{{display:inline-block;width:.95em;height:.95em;border:1px solid {FOREST};vertical-align:-.15em;margin:0 .2em}}
 .box.on{{background:{LEAF};color:#fff;font-size:.75em;line-height:.95em;text-align:center;border-color:{LEAF}}}
@@ -147,9 +228,10 @@ table.grid td.th{{color:#fff;padding:6pt 5pt;border-color:{LEAF};border-bottom:2
 strong{{font-weight:700}} .mail{{color:#2F6B4A;text-decoration:underline}}
 .banner{{background:{STRAW};border-left:4px solid {GOLD};padding:10px 12px;margin:0 0 12px;font-weight:bold}}
 .after{{break-before:page}}
-.after h2{{font-family:Georgia,'Times New Roman',serif;font-size:13pt;margin:0 0 8px;padding-bottom:3px;border-bottom:1px solid {STRAW_DEEP}}}
-.after table{{width:100%;border-collapse:collapse}} .after th,.after td{{padding:6px 8px;border-bottom:1px solid #CBD8C6;text-align:left;vertical-align:top;font-size:9.5pt}}
-.after th{{width:34%;color:{LEAF};background:#F3F8F1}}
+.record{{margin:20pt 0 6pt;break-inside:avoid}}
+.after h2,.record h2{{font-family:Georgia,'Times New Roman',serif;font-size:13pt;margin:0 0 8px;padding-bottom:3px;border-bottom:1px solid {STRAW_DEEP}}}
+.after table,.record table{{width:100%;border-collapse:collapse}} .after th,.after td,.record th,.record td{{padding:6px 8px;border-bottom:1px solid #CBD8C6;text-align:left;vertical-align:top;font-size:9.5pt}}
+.record td{{white-space:pre-wrap}} .after th,.record th{{width:34%;color:{LEAF};background:#F3F8F1}}
 .sig{{display:inline-block;width:46%;vertical-align:top;margin:10px 2% 8px 0;min-height:90px;border-bottom:1px solid #6c7a72;padding:8px}}
 .signature{{display:block;max-width:220px;max-height:70px;object-fit:contain}}
 .verified-stamp{{border:1px solid {LEAF};background:#F3F8F1;color:{FOREST};padding:8px 10px;margin:6px 0;font-size:9pt;font-weight:bold;border-radius:4px}}
@@ -158,9 +240,9 @@ strong{{font-weight:700}} .mail{{color:#2F6B4A;text-decoration:underline}}
 
 
 def document_html(blocks: list[dict[str, Any]], values: dict[str, Any], meta: dict[str, Any], *, title: str,
-                  banner: str = "", extra: str = "") -> str:
+                  banner: str = "", extra: str = "", signatures: dict[str, dict[str, str]] | None = None) -> str:
     ref = ESC(str(meta.get("@reference", "")))
     return (f'<!doctype html><html lang="en"><head><meta charset="utf-8">'
             f'<meta name="viewport" content="width=device-width,initial-scale=1"><title>{ESC(title)}</title>'
             f'<style>:root{{--ref:"{ref}"}}{CSS}</style></head><body>{banner}'
-            f'{blocks_html(blocks, values, meta)}{extra}</body></html>')
+            f'{blocks_html(blocks, values, meta, signatures)}{extra}</body></html>')

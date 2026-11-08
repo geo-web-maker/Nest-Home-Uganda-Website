@@ -49,6 +49,7 @@ describe('ActivityPage', () => {
     expect(await screen.findByRole('alert')).toBeInTheDocument();
   });
   it('keeps activity data hidden until the authenticator is verified', async () => {
+    vi.mocked(apiClient.get).mockClear();
     setup(emptyPage, { enabled: true, verified: false });
     expect(await screen.findByText(/Verify your identity to view audit records/i)).toBeInTheDocument();
     expect(apiClient.get).not.toHaveBeenCalledWith('/admin/activity', expect.anything());

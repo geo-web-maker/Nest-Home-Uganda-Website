@@ -195,6 +195,7 @@ describe('AdminLayout phone navigation', () => {
       'Schedule',
       'Flags',
       'My team',
+      'Agreements',
       'Live dashboard',
       'Executive charts',
       'Last-seen map',
