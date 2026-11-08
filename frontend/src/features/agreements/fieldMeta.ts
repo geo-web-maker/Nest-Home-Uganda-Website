@@ -112,7 +112,7 @@ export const FIELD_META: Record<string, FieldMeta> = {
 
   'schedule_b.currency': { label: 'Currency', kind: 'select', options: ['UGX', 'USD'], na: false, required: true, help: 'USD fees are payable in UGX at the Bank of Uganda mid-rate on the payment date (clause 8.6).' },
   'schedule_b.total_fee': { label: 'Total service fee', kind: 'money', na: false, required: true, help: 'Numbers only. Excludes the UGX 50,000 booking fee. 50% is due as advance.' },
-  'schedule_b.price_basis': select('Rate unit', ['Per visit', 'Per shift', 'Per day', 'Per week', 'Fixed package total'], { help: 'Printed after the visit or shift rate, for example UGX 80,000 per day.' }),
+  'schedule_b.price_basis': select('Rate unit', ['Per visit', 'Per shift', 'Per day', 'Per week', 'Per month', 'Fixed package total'], { help: 'Printed after the visit or shift rate, for example UGX 80,000 per day.' }),
   'schedule_b.price_type': select('Total is fixed or an estimate', ['Fixed', 'Estimate'], { help: 'Printed beside the total contract price.' }),
   'schedule_b.tax_treatment': select('Taxes', ['Inclusive', 'Exempt', 'Additional'], { help: 'Inclusive: rates already include taxes. Exempt: no tax applies. Additional: tax is added. Clause 8.6 requires this.' }),
   'schedule_b.transport_basis': select('Transport is', ['Included', 'Additional'], { help: 'Whether transport is inside the rates or charged on top.' }),
