@@ -67,7 +67,7 @@ FIELD_OWNERS: dict[str, str] = {
 CHOICE_FIELDS: dict[str, tuple[str, ...]] = {
     "schedule_a.coverage_arrangement": ("Scheduled visits", "Day shifts", "Night shifts", "Continuous care by roster"),
     "schedule_b.currency": ("UGX", "USD"),
-    "schedule_b.price_basis": ("Per visit", "Per shift", "Per day", "Per week", "Fixed package total"),
+    "schedule_b.price_basis": ("Per visit", "Per shift", "Per day", "Per week", "Per month", "Fixed package total"),
     "schedule_b.price_type": ("Fixed", "Estimate"),
     "schedule_b.transport_basis": ("Included", "Additional"),
     "schedule_b.overtime_approval": ("Yes", "No"),
