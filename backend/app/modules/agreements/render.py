@@ -51,11 +51,15 @@ def _signature_card(signature: Any, signature_images: dict[str, bytes] | None) -
 def render_agreement_html(agreement: Agreement, clauses: dict[str, str], *, blocks: list[dict[str, Any]] | None = None,
                           signed: bool = False,
                           certificate: dict[str, Any] | None = None,
-                          signature_images: dict[str, bytes] | None = None) -> str:
-    """Render the same source wording and completed field values for web and PDF."""
+                          signature_images: dict[str, bytes] | None = None,
+                          highlight: bool = False) -> str:
+    """Render the same source wording and completed field values for web and PDF.
+
+    `highlight` produces the staff-only review copy (needed / filled / client-completes colours); it is never sent to clients.
+    """
     if blocks:
         return _render_blocks(agreement, blocks, signed=signed, certificate=certificate,
-                              signature_images=signature_images)
+                              signature_images=signature_images, highlight=highlight)
     intro = clauses.get("Agreement introduction", "")
     party_paths = [p for p in agreement.fields if rules.field_path(p).startswith(("client.", "patient."))]
     party_details_html = ""
@@ -253,9 +257,20 @@ def _signature_lines(agreement: Agreement, signature_images: dict[str, bytes] | 
     return lines
 
 
+def _review_legend(values: dict[str, Any], owners: dict[str, str]) -> str:
+    still_empty = sum(1 for path, owner in owners.items()
+                      if owner in ("staff", "clinical") and not str(values.get(path) or "").strip())
+    status = (f"{still_empty} staff field{'s' if still_empty != 1 else ''} still empty." if still_empty
+              else "All staff fields are filled.")
+    return ('<div class="legend"><strong>REVIEW COPY for staff. Do not send this file to the client.</strong> '
+            f'{status}<br><span class="key hl-needed">yellow</span>staff must fill (or mark N/A) before sending'
+            '<span class="key hl-done">green</span>filled'
+            '<span class="key hl-other">blue</span>the client fills in</div>')
+
+
 def _render_blocks(agreement: Agreement, blocks: list[dict[str, Any]], *, signed: bool,
                    certificate: dict[str, Any] | None,
-                   signature_images: dict[str, bytes] | None) -> str:
+                   signature_images: dict[str, bytes] | None, highlight: bool = False) -> str:
     """Structured template path: typed values fill the original blanks, tick boxes and table cells."""
     values = {rules.field_path(key): field.value for key, field in agreement.fields.items()}
     computed = agreement.schedule_b_computed or {}
@@ -268,6 +283,9 @@ def _render_blocks(agreement: Agreement, blocks: list[dict[str, Any]], *, signed
         "@balance": _money(currency, computed["balance"]) if computed.get("balance") else "",
     }
     banner = PRACTICE_BANNER if agreement.is_test else ""
+    owners = {path: field.owner for path, field in ((rules.field_path(k), f) for k, f in agreement.fields.items())} if highlight else None
+    if owners is not None:
+        banner += _review_legend(values, owners)
     if agreement.variation_clause:
         banner += (f'<div class="banner">AMENDMENT — This agreement varies clause {html.escape(agreement.variation_clause)}. '
                    'The original completed agreement remains in effect except for the change expressly approved in this amendment.</div>')
@@ -280,4 +298,4 @@ def _render_blocks(agreement: Agreement, blocks: list[dict[str, Any]], *, signed
                        for k, v in certificate.items())
         extra += f'<section class="after"><h2>Certificate of completion</h2><table>{rows}</table></section>'
     return block_renderer.document_html(blocks, values, meta, title=f"Bloomwell care agreement {agreement.reference}",
-                                        banner=banner, extra=extra, signatures=signatures)
+                                        banner=banner, extra=extra, signatures=signatures, highlight=owners)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHOICES, FIELD_META, HIDDEN_FIELDS, SCHEDULE_SECTIONS, cleanMoney, formatMoney } from './fieldMeta';
+import { CHOICES, FIELD_META, HIDDEN_FIELDS, NOT_IN_FORM, notInFormNote, SCHEDULE_SECTIONS, cleanMoney, formatMoney } from './fieldMeta';
 
 describe('agreement field metadata', () => {
   const sectioned = Object.values(SCHEDULE_SECTIONS).flatMap((tab) => tab.sections.flatMap((section) => section.paths));
@@ -52,5 +52,11 @@ describe('agreement field metadata', () => {
   it('asks for a duplicated answer only once', () => {
     for (const path of HIDDEN_FIELDS) expect(sectioned, path).not.toContain(path);
     expect(sectioned).toContain('patient.dob_or_age');
+  });
+
+  it('explains fields that have no line in the printed agreement', () => {
+    for (const path of NOT_IN_FORM) expect(FIELD_META[path], path).toBeDefined();
+    expect(notInFormNote('schedule_b.rates', 'staff')).toContain('Mark N/A to skip');
+    expect(notInFormNote('schedule_b.total_fee', 'staff')).toBeNull();
   });
 });

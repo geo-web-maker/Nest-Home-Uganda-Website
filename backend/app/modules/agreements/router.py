@@ -260,8 +260,17 @@ async def admin_events(agreement_id: str, _: CanRead):
 
 
 @admin_router.get("/{agreement_id}/preview-data")
-async def admin_preview_data(agreement_id: str, _: CanRead):
-    return {"html": await service.preview_agreement(await service.get_agreement(agreement_id))}
+async def admin_preview_data(agreement_id: str, _: CanRead, highlight: bool = False):
+    return {"html": await service.preview_agreement(await service.get_agreement(agreement_id), highlight=highlight)}
+
+
+@admin_router.get("/{agreement_id}/review-pdf")
+async def admin_review_pdf(agreement_id: str, _: CanRead):
+    doc = await service.get_agreement(agreement_id)
+    return Response(content=await service.review_copy_pdf(doc), media_type="application/pdf", headers={
+        "Cache-Control": "no-store", "Content-Disposition": f'attachment; filename="{doc.reference}-review.pdf"',
+        "X-Content-Type-Options": "nosniff",
+    })
 
 
 @admin_router.get("/{agreement_id}/preview", response_class=HTMLResponse)

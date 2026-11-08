@@ -160,3 +160,10 @@
 /* The signature pad and message previews are paper: they stay light in both themes. */
 .signaturePad { background: #fff; }
 .messagePreview iframe { background: #f2f5f2; }
+
+.notInForm { margin: 0; padding: 6px 8px; border-radius: 8px; font-size: 12px; line-height: 1.4; background: var(--mint, #eef2ef); color: var(--mut, #3b4a41); border-left: 3px solid var(--gold, #c79a3b); }
+.fieldNeeded { border-color: #d9a400; background: color-mix(in srgb, #ffe066 22%, var(--surf, #fff)); }
+.fieldDone { border-color: #7dbf8c; }
+.previewBar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.previewKey { font-size: 12px; color: var(--mut, #53635a); }
+.previewKey i { display: inline-block; width: 10px; height: 10px; margin: 0 4px 0 10px; border-radius: 2px; }
