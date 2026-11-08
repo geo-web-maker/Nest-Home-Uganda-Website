@@ -22,6 +22,13 @@ type Folder = keyof typeof copy.mail.folders;
 const FOLDERS = Object.keys(copy.mail.folders) as Folder[];
 type Detail = { message_id_header?: string | null; recipients: { kind: 'to' | 'cc' | 'bcc' | string; address: string; name?: string | null }[]; attachments: { id: string; filename: string; size_bytes: number; content_type?: string; scan_state?: string; sha256?: string | null; disposition?: 'attachment' | 'inline'; content_id?: string | null; blocked_reason?: string | null; scan_detail?: string | null; scanned_at?: string | null }[]; body_text: string; body_html?: string | null; quoted_html?: string | null; has_remote_images?: boolean; can_download_original?: boolean; render_notes?: Record<string, unknown>; delivery?: MailDelivery | null };
 
+/** The real reason an upload or save failed (server message, or which step broke), so it can be fixed. */
+function reasonOf(cause: unknown): string {
+  const text = cause instanceof Error ? cause.message
+    : cause && typeof cause === 'object' && 'detail' in cause ? String((cause as { detail: unknown }).detail) : '';
+  return text.length > 260 ? `${text.slice(0, 257)}…` : text;
+}
+
 function escapeMailHtml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;');
 }
@@ -378,12 +385,12 @@ export function MailScreen() {
               content_id: result.content_id, blocked_reason: null,
             }],
           };
-        } catch {
-          setProblem(copy.mail.attachFailed.replace('{name}', file.name));
+        } catch (cause) {
+          setProblem(`${copy.mail.attachFailed.replace('{name}', file.name)} ${reasonOf(cause)}`.trim());
         }
       }
-    } catch {
-      setProblem(copy.mail.actionError);
+    } catch (cause) {
+      setProblem(`${copy.mail.actionError} ${reasonOf(cause)}`.trim());
     } finally {
       setComposer((now) => (now && now.id === current.id ? { ...now, serverDraftId: current.serverDraftId, attachments: current.attachments } : now));
       setAttaching(false);
@@ -432,8 +439,8 @@ export function MailScreen() {
       <PillButton type="button" tone="gold" size="sm" showArrow={false} onClick={() => { setProblem(''); setComposer(blank(activeBoxId)); }} disabled={!activeBoxId || !ownerId}>{copy.mail.compose}</PillButton>
     </header>
     {!online && <Banner tone="warn">{copy.mail.offline}</Banner>}
-    {error && <Banner tone="bad" role="alert">{error}</Banner>}
-    {notice && <Banner tone="ok">{notice}</Banner>}
+    {error && <Banner tone="bad" role="alert" floating onDismiss={() => setError('')}>{error}</Banner>}
+    {notice && <Banner tone="ok" floating onDismiss={() => setNotice('')}>{notice}</Banner>}
     {boxes.length === 0 && !loading && online && !error && <Banner tone="info">{copy.mail.noMailbox}</Banner>}
     {mailboxPicker}
 
@@ -531,6 +538,6 @@ export function MailScreen() {
       </Sheet>
     ) : null}
     {undo && <div className="mail-undo-bar" role="status" aria-live="polite"><span>Sending…</span><PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={undoSend}>Undo</PillButton><PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={flushUndo}>Send now</PillButton></div>}
-    {composer && <MailComposeSheet value={composer} problem={problem} online={online} attaching={attaching} onAttach={(files) => void attach(files)} onPasteImage={pasteImage} onRemoveAttachment={(id) => void removeAttachment(id)} onChange={(next) => { setComposer(next); setProblem(''); }} onSend={() => void save('queued')} onSaveDraft={() => void save('draft')} onCancel={() => setComposer(null)} onDiscard={(value) => { void (async () => { await removeDraft(value.id); if (value.serverDraftId && navigator.onLine) { try { await apiRequest(`/mail/drafts/${value.serverDraftId}`, { method: 'DELETE' }); } catch { /* Local discard must still succeed. */ } } setComposer(null); await reloadDrafts(); })(); }} />}
+    {composer && <MailComposeSheet value={composer} problem={problem} online={online} attaching={attaching} onDismissProblem={() => setProblem('')} onAttach={(files) => void attach(files)} onPasteImage={pasteImage} onRemoveAttachment={(id) => void removeAttachment(id)} onChange={(next) => { setComposer(next); setProblem(''); }} onSend={() => void save('queued')} onSaveDraft={() => void save('draft')} onCancel={() => setComposer(null)} onDiscard={(value) => { void (async () => { await removeDraft(value.id); if (value.serverDraftId && navigator.onLine) { try { await apiRequest(`/mail/drafts/${value.serverDraftId}`, { method: 'DELETE' }); } catch { /* Local discard must still succeed. */ } } setComposer(null); await reloadDrafts(); })(); }} />}
   </section>;
 }

@@ -258,7 +258,7 @@ describe('nurse MailScreen', () => {
     const dialog = await openCompose();
     await fill(dialog, 'sam@mail.test');
     fireEvent.change(within(dialog).getByLabelText('Attach files'), { target: { files: [new File(['x'], 'big.pdf')] } });
-    expect(await within(dialog).findByText('big.pdf could not be attached.')).toBeInTheDocument();
+    expect(await within(dialog).findByText(/big\.pdf could not be attached\./)).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Send' })).toBeEnabled();
   });
 
