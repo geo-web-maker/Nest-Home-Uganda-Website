@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import hashlib
 import hmac
@@ -1390,11 +1391,16 @@ async def reset_message_template(stage_key: str, channel: Literal["email", "sms"
                        item_label=f"{stage_key}/{channel}", after={"reset_to_default": True})
 
 
-async def preview_agreement(doc: Agreement) -> str:
+async def preview_agreement(doc: Agreement, highlight: bool = False) -> str:
     template = await AgreementTemplate.find_one(AgreementTemplate.version == doc.template_version)
     if template is None:
         return "<p>Agreement wording has not been loaded.</p>"
-    return render.render_agreement_html(doc, template.clauses, blocks=template.blocks)
+    return render.render_agreement_html(doc, template.clauses, blocks=template.blocks, highlight=highlight)
+
+
+async def review_copy_pdf(doc: Agreement) -> bytes:
+    """Staff-only PDF of the current preview with the fields colour-coded (needed / filled / client fills)."""
+    return await asyncio.to_thread(render.render_pdf, await preview_agreement(doc, highlight=True))
 
 
 async def sweep_agreements(now: datetime | None = None) -> int:

@@ -49,6 +49,21 @@ export const CHOICES = {
 export const HIDDEN_FIELDS: ReadonlySet<string> = new Set(['schedule_a.patient_dob_or_age', 'schedule_a.language']);
 export const isHiddenField = (path: string): boolean => HIDDEN_FIELDS.has(path);
 
+/**
+ * Fields with no line in the printed agreement. If filled they print only on the extra pages after the schedules.
+ * The backend test test_fields_without_a_line_in_the_printed_agreement keeps this list in step with the document.
+ */
+export const NOT_IN_FORM: ReadonlySet<string> = new Set([
+  'schedule_b.fees', 'schedule_b.rates', 'schedule_b.payment_details', 'schedule_b.organisation_payer_contact',
+  'schedule_c.permissions', 'schedule_c.care_consent', 'schedule_c.initials',
+]);
+export function notInFormNote(path: string, owner: string): string | null {
+  if (!NOT_IN_FORM.has(path)) return null;
+  if (owner === 'staff') return 'Not a line in the agreement. Mark N/A to skip it; if you fill it, it prints only on the extra “Additional agreed particulars” page.';
+  if (owner === 'either') return 'Not a line in the agreement. Optional; if filled it prints only on the extra “Additional agreed particulars” page.';
+  return 'No line for this on the agreement form. The client’s answer is kept on the extra “Consent and communication recorded online” page.';
+}
+
 export const FIELD_META: Record<string, FieldMeta> = {
   'client.name': { label: 'Client full name', kind: 'text', help: 'The person who signs and is responsible for the agreement.', placeholder: 'As on their national ID' },
   'client.title': { label: 'Title', kind: 'text', suggestions: ['Mr', 'Mrs', 'Ms', 'Miss', 'Dr', 'Prof', 'Rev'] },

@@ -16,7 +16,8 @@ import { dialogs } from '../../../lib/dialogs';
 import { AgreementDiagnostics } from './AgreementDiagnostics';
 import { AgreementFieldInput } from '../../agreements/AgreementFieldInput';
 import { SignatureMethodPicker, credentialProblem, type SignatureChoice } from '../../agreements/SignatureMethodPicker';
-import { OWNER_LABEL, SCHEDULE_SECTIONS, fieldLabel, fieldMeta, isBlank, isHiddenField, type FieldSection, type ScheduleTab } from '../../agreements/fieldMeta';
+import { OWNER_LABEL, SCHEDULE_SECTIONS, fieldLabel, fieldMeta, isBlank, isHiddenField, notInFormNote, type FieldSection, type ScheduleTab } from '../../agreements/fieldMeta';
+import { DateCalculator, type CalcDateField } from '../../agreements/DateCalculator';
 
 type Owner = 'staff' | 'clinical' | 'client' | 'either';
 type AgreementField = { value: unknown; owner: Owner; revision: number; entered_by_staff: boolean; updated_at?: string | null; updated_by?: string | null };
@@ -464,17 +465,19 @@ export function AgreementsPage() {
                 const conflict = conflicts[path];
                 const blank = isBlank(field.value);
                 const staffNeeds = blank && (field.owner === 'staff' || field.owner === 'clinical');
-                return <div className={`${styles.field} ${meta.kind === 'long' ? styles.wide : ''}`} key={path}>
+                const skipNote = notInFormNote(path, field.owner);
+                return <div className={`${styles.field} ${meta.kind === 'long' ? styles.wide : ''} ${staffNeeds ? styles.fieldNeeded : !blank ? styles.fieldDone : ''}`} key={path}>
                   <label htmlFor={`agreement-${path}`}>
                     <span>{meta.label}{meta.required && <abbr title="Required before sending" className={styles.req}> *</abbr>}</span>
                     <span className={`${styles.pill} ${styles[`owner_${field.owner}`]}`}>{OWNER_LABEL[field.owner] ?? field.owner}</span>
                   </label>
+                  {skipNote && <p className={styles.notInForm}><strong>Not in the agreement form.</strong> {skipNote}</p>}
                   {meta.help && <p className={styles.fieldHelp}>{meta.help}</p>}
                   <AgreementFieldInput path={path} id={`agreement-${path}`} value={local} readOnly={readOnly} currency={currency}
                     allowNA={field.owner !== 'client'} onChange={(value) => setDrafts((old) => ({ ...old, [path]: value }))} />
                   <div className={styles.fieldFoot}>
                     <span className={blank ? (staffNeeds ? styles.statusNeeded : styles.statusWaiting) : styles.statusDone}>
-                      {!blank ? '✓ Saved' : staffNeeds ? 'Needed before sending' : field.owner === 'client' ? 'Waiting for client' : 'Optional'}
+                      {!blank ? '✓ Saved' : staffNeeds ? (skipNote ? 'Fill or mark N/A to skip' : 'Needed before sending') : field.owner === 'client' ? 'Waiting for client' : 'Optional'}
                       {field.entered_by_staff ? ' · entered by staff' : ''}{field.updated_at ? ` · last edited ${new Date(field.updated_at).toLocaleString()}${field.updated_by && field.updated_by !== 'client' ? ` by staff ${field.updated_by.slice(-4)}` : field.updated_by === 'client' ? ' by client' : ''}` : ''}
                     </span>
                     {!readOnly && <Button size="compact" variant="outline" onClick={() => void saveField(path)} disabled={busy || local === valueText(field.value)}>Save</Button>}
@@ -483,6 +486,10 @@ export function AgreementsPage() {
                   {conflict && <div className={styles.conflict}><p><strong>Another saver updated this field.</strong><br />Current saved value: {conflict.remote || '—'}<br />Your unsaved value: {conflict.local || '—'}</p><Button size="compact" onClick={() => void saveField(path, { value: conflict.local, revision: conflict.revision })} disabled={busy}>Keep my value</Button><Button size="compact" variant="outline" onClick={() => { setDrafts((old) => ({ ...old, [path]: conflict.remote })); setConflicts((old) => { const next = { ...old }; delete next[path]; return next; }); }}>Use saved value</Button></div>}
                 </div>;
               };
+              const dateLocked = ['voided', 'expired', 'client_signed', 'completed'].includes(detail.status);
+              const calcDateFields: CalcDateField[] = Object.entries(detail.fields)
+                .filter(([path]) => fieldMeta(path).kind === 'date' && !isHiddenField(path))
+                .map(([path, field]) => ({ path, label: label(path), value: drafts[path] ?? valueText(field.value), writable: canWrite && !dateLocked && field.owner !== 'client' }));
               const computed = detail.schedule_b_computed ?? {};
               const money = (key: string) => typeof computed[key] === 'number' ? Number(computed[key]).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—';
               return <div className={styles.schedule}>
@@ -491,6 +498,7 @@ export function AgreementsPage() {
                   <p>{config.intro}</p>
                   {(needed.length > 0 || tab === 'schedule_a' || tab === 'schedule_b') && <p className={needed.length ? styles.guideNeeded : styles.guideDone}>{needed.length ? `${needed.length} staff field${needed.length === 1 ? '' : 's'} still to complete or mark N/A before sending.` : '✓ Everything staff need to enter here is complete.'}</p>}
                 </div>
+                {(tab === 'schedule_a' || tab === 'schedule_b') && <DateCalculator busy={busy} fields={calcDateFields} onUse={(path, iso) => { const current = detail.fields[path]; if (current) void saveField(path, { value: iso, revision: current.revision }); }} />}
                 {sections.map((section) => {
                   const paths = section.paths.filter((path) => detail.fields[path]);
                   if (!paths.length) return null;
@@ -514,7 +522,7 @@ export function AgreementsPage() {
                 </div>}
               </div>;
             })()}
-            {tab === 'preview' && <PreviewPanel id={detail.id} />}
+            {tab === 'preview' && <PreviewPanel id={detail.id} reference={detail.reference} />}
             {tab === 'timeline' && <Timeline events={detail.events} />}
             {tab === 'send' && <div className={styles.sendPanel}>
               {canWrite && <><h3>Send agreement for review</h3><p>Messages contain a secure link only. No patient name, care details or fees are sent by email or SMS.</p><fieldset><legend>Send via (tick one or more)</legend><Checkbox checked={pick.email} onChange={(e) => setPick({ ...pick, email: e.target.checked })} label="Email" />{' '}<Checkbox checked={pick.sms} onChange={(e) => setPick({ ...pick, sms: e.target.checked })} label="SMS" />{noChannel && <p role="alert">Tick at least one way to send.</p>}</fieldset><p>Link expiry: 14 days. Reminders: 48 hours and day 5. Expiry warning: 48 hours before expiry.</p><Button onClick={() => void send()} disabled={busy || noChannel || !['draft','changes_requested','expired'].includes(detail.status)}>Validate and send</Button>{['sent','client_in_progress'].includes(detail.status) && <><p>Client did not get it? Resend sends the same link again by the channel selected above. Nothing earlier stops working.</p><LinkPanel id={detail.id} link={detail.link} onChanged={() => void loadDetail(detail.id)} resend={<Button variant="outline" onClick={() => void performResend(detail.id, channels)} disabled={busy || noChannel}>Resend link</Button>} /></>}</>}
@@ -548,12 +556,38 @@ export function AgreementsPage() {
   );
 }
 
-function PreviewPanel({ id }: { id: string }) {
+function PreviewPanel({ id, reference }: { id: string; reference: string }) {
   const [html, setHtml] = useState('');
   const [error, setError] = useState('');
-  useEffect(() => { let live = true; void apiClient.get<Preview>(`/admin/agreements/${id}/preview-data`).then((value) => { if (live) setHtml(value.html); }).catch((cause: unknown) => { if (live) setError(cause instanceof Error ? cause.message : 'Preview unavailable.'); }); return () => { live = false; }; }, [id]);
-  if (error) return <Notice tone="error">{error}</Notice>;
-  return <div className={styles.preview}><iframe title="Rendered client agreement preview" srcDoc={html} sandbox="" /></div>;
+  const [highlight, setHighlight] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void apiClient.get<Preview>(`/admin/agreements/${id}/preview-data`, { params: { highlight: highlight ? 'true' : 'false' } })
+      .then((value) => { if (live) { setHtml(value.html); setError(''); } })
+      .catch((cause: unknown) => { if (live) setError(cause instanceof Error ? cause.message : 'Preview unavailable.'); });
+    return () => { live = false; };
+  }, [id, highlight]);
+  const download = async () => {
+    setDownloading(true); setError('');
+    try {
+      const blob = await apiClient.getBlob(`/admin/agreements/${id}/review-pdf`);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${reference}-review.pdf`;
+      document.body.appendChild(anchor); anchor.click(); anchor.remove(); URL.revokeObjectURL(url);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not download the review copy.'); }
+    finally { setDownloading(false); }
+  };
+  return <>
+    <div className={styles.previewBar}>
+      <Checkbox label="Highlight fields" checked={highlight} onChange={(e) => setHighlight(e.target.checked)} />
+      <span className={styles.previewKey}>
+        <i style={{ background: '#ffe066' }} />staff must fill<i style={{ background: '#d7f0dc' }} />filled<i style={{ background: '#dceaf8' }} />client fills
+      </span>
+      <Button variant="outline" size="compact" onClick={() => void download()} disabled={downloading}>{downloading ? 'Preparing…' : 'Download highlighted copy (PDF)'}</Button>
+    </div>
+    {error ? <Notice tone="error">{error}</Notice> : <div className={styles.preview}><iframe title="Rendered client agreement preview" srcDoc={html} sandbox="" /></div>}
+  </>;
 }
 
 function LinkPanel({ id, link, onChanged, resend }: { id: string; link?: LinkInfo; onChanged: () => void; resend?: ReactNode }) {

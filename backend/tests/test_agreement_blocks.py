@@ -163,3 +163,28 @@ def test_registry_choice_validation():
     assert rules.choice_error("schedule_c.decision_maker", "The patient personally", "The patient personally") is None
     assert rules.choice_error("schedule_a.care_plan", "anything") is None
     assert set(rules.CHOICE_FIELDS) <= set(rules.FIELD_OWNERS)
+
+
+def _owners() -> dict[str, str]:
+    return dict(rules.FIELD_OWNERS)
+
+
+def test_review_copy_marks_empty_staff_spots_and_filled_spots():
+    values = {"schedule_a.care_start_date": "2026-01-01"}
+    html_out = block_renderer.document_html(SOURCE_BLOCKS, values, {}, title="t", highlight=_owners())
+    assert "hl-needed" in html_out and "hl-done" in html_out and "hl-other" in html_out
+    assert "hl-needed" not in block_renderer.document_html(SOURCE_BLOCKS, values, {}, title="t")
+
+
+def test_review_copy_counts_na_as_filled():
+    every = {path: "N/A" for path, owner in rules.FIELD_OWNERS.items() if owner in ("staff", "clinical")}
+    html_out = block_renderer.document_html(SOURCE_BLOCKS, every, {}, title="t", highlight=_owners())
+    assert "hl-needed" not in html_out.split("</style>", 1)[1]
+
+
+def test_fields_without_a_line_in_the_printed_agreement():
+    """Keep NOT_IN_FORM in frontend/src/features/agreements/fieldMeta.ts equal to this set."""
+    assert set(rules.FIELD_OWNERS) - block_renderer.referenced_paths(SOURCE_BLOCKS) == {
+        "schedule_b.fees", "schedule_b.rates", "schedule_b.payment_details", "schedule_b.organisation_payer_contact",
+        "schedule_c.permissions", "schedule_c.care_consent", "schedule_c.initials",
+    }

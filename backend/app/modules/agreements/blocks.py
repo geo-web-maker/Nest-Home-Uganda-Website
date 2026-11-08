@@ -36,6 +36,43 @@ DATE_PATHS = frozenset({
 })
 _NUMBER = re.compile(r"^\d+(\.\d{1,2})?$")
 _ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_SPEC_SPLIT = re.compile(r"[|+,~&]")
+
+
+def spec_paths(spec: str | None) -> list[str]:
+    """The field paths named by a binding spec (meta values such as @date are not fields)."""
+    return [p.strip() for p in _SPEC_SPLIT.split(spec or "") if p.strip() and not p.strip().startswith("@")]
+
+
+def referenced_paths(blocks: list[dict[str, Any]]) -> set[str]:
+    """Every field that has a place (blank, tick box or table cell) in the printed agreement."""
+    found: set[str] = set()
+
+    def visit(node: Any) -> None:
+        if isinstance(node, dict):
+            if isinstance(node.get("f"), str):
+                found.update(spec_paths(node["f"]))
+            for value in node.values():
+                visit(value)
+        elif isinstance(node, list):
+            for value in node:
+                visit(value)
+
+    visit(blocks)
+    return found
+
+
+def _hl_state(ctx: dict[str, Any], spec: str | None) -> str | None:
+    """Review-copy colour for a spot in the document: done, needed (staff must fill) or other (client fills)."""
+    owners_by_path = ctx.get("hl")
+    if owners_by_path is None or not spec:
+        return None
+    owners = [owners_by_path[p] for p in spec_paths(spec) if p in owners_by_path]
+    if not owners:
+        return None
+    if _value(ctx, spec):
+        return "done"
+    return "needed" if any(o in ("staff", "clinical") for o in owners) else "other"
 
 
 def _one(ctx: dict[str, Any], path: str) -> str:
@@ -100,11 +137,15 @@ def _runs_html(runs: list[dict[str, Any]], ctx: dict[str, Any]) -> str:
                 on = value == option  # a choice field ticks exactly its own box
             else:  # older free-text answers: match by keyword
                 on = bool(value) and any(word in value for word in run.get("kw", []))
-            out.append('<span class="box on">&#10003;</span>' if on else '<span class="box"></span>')
+            state = _hl_state(ctx, run.get("f"))
+            cls = "box on" if on else "box"
+            if state and (state != "done" or on):  # a filled choice marks only the ticked box
+                cls += f" hl hl-{state}"
+            out.append(f'<span class="{cls}">&#10003;</span>' if on else f'<span class="{cls}"></span>')
         elif kind == "calc":
             value = _value(ctx, run["f"]) if run.get("f") else ""
             if value:
-                out.append(f'<span class="filled">{ESC(value)}</span>')
+                out.append(f'<span class="filled{" hl hl-done" if _hl_state(ctx, run.get("f")) else ""}">{ESC(value)}</span>')
         elif kind == "blank":
             value = _value(ctx, run["f"]) if run.get("f") else ""
             signed = ctx.get("signatures", {}).get(run.get("s") or run.get("d") or "")
@@ -113,9 +154,10 @@ def _runs_html(runs: list[dict[str, Any]], ctx: dict[str, Any]) -> str:
             elif signed and run.get("d"):
                 out.append(f'<span class="filled">{ESC(signed["date"])}</span>')
             elif value:
-                out.append(f'<span class="filled">{ESC(value)}</span>')
+                out.append(f'<span class="filled{" hl hl-done" if _hl_state(ctx, run.get("f")) else ""}">{ESC(value)}</span>')
             else:
-                out.append(f'<span class="blank" style="min-width:{min(run["n"], 60) * 0.26:.1f}em"></span>')
+                state = _hl_state(ctx, run.get("f"))
+                out.append(f'<span class="blank{f" hl hl-{state}" if state else ""}" style="min-width:{min(run["n"], 60) * 0.26:.1f}em"></span>')
     return "".join(out)
 
 
@@ -148,8 +190,10 @@ def _table_html(block: dict[str, Any], ctx: dict[str, Any]) -> str:
                 style.append("text-align:center")
             if cell.get("valign") == "middle":
                 style.append("vertical-align:middle")
-            tag_class = ' class="th"' if cell.get("hdr") else ""
             inner = "<br>".join(_runs_html(line, ctx) for line in cell["lines"])
+            cell_state = _hl_state(ctx, cell.get("f")) if not inner.strip() else None
+            classes = (["th"] if cell.get("hdr") else []) + ([f"hl-cell hl-{cell_state}"] if cell_state else [])
+            tag_class = f' class="{" ".join(classes)}"' if classes else ""
             if not inner.strip() and cell.get("f") and _value(ctx, cell["f"]):
                 inner = f'<span class="filled">{ESC(_value(ctx, cell["f"]))}</span>'
             tds.append(f'<td{tag_class} colspan="{cell["cs"]}" rowspan="{cell["rs"]}" style="{";".join(style)}">{inner or "&nbsp;"}</td>')
@@ -158,8 +202,9 @@ def _table_html(block: dict[str, Any], ctx: dict[str, Any]) -> str:
 
 
 def blocks_html(blocks: list[dict[str, Any]], values: dict[str, Any], meta: dict[str, Any],
-                signatures: dict[str, dict[str, str]] | None = None) -> str:
-    ctx = {"values": values, "meta": meta, "signatures": signatures or {}}
+                signatures: dict[str, dict[str, str]] | None = None,
+                highlight: dict[str, str] | None = None) -> str:
+    ctx = {"values": values, "meta": meta, "signatures": signatures or {}, "hl": highlight}
     out: list[str] = []
     seen_title = False
     after_schedule = False
@@ -239,10 +284,24 @@ strong{{font-weight:700}} .mail{{color:#2F6B4A;text-decoration:underline}}
 """
 
 
+HIGHLIGHT_CSS = """
+.hl-needed{background:#FFE066;box-shadow:0 0 0 2px #D9A400}
+.hl-done{background:#D7F0DC;box-shadow:0 0 0 2px #7DBF8C}
+.hl-other{background:#DCEAF8;box-shadow:0 0 0 2px #7FA9D6}
+.box.on.hl-done{background:#2F6B4A}
+.blank.hl{display:inline-block;min-width:8em;height:1.2em}
+table.grid td.hl-cell{box-shadow:none}
+.legend{border:1px solid #9db8a8;border-left:4px solid #D9A400;padding:8px 12px;margin:0 0 12px;font:9.5pt Arial,sans-serif}
+.legend .key{display:inline-block;padding:0 6px;margin:0 4px 0 10px;border-radius:2px}
+"""
+
+
 def document_html(blocks: list[dict[str, Any]], values: dict[str, Any], meta: dict[str, Any], *, title: str,
-                  banner: str = "", extra: str = "", signatures: dict[str, dict[str, str]] | None = None) -> str:
+                  banner: str = "", extra: str = "", signatures: dict[str, dict[str, str]] | None = None,
+                  highlight: dict[str, str] | None = None) -> str:
     ref = ESC(str(meta.get("@reference", "")))
+    css = CSS + (HIGHLIGHT_CSS if highlight is not None else "")
     return (f'<!doctype html><html lang="en"><head><meta charset="utf-8">'
             f'<meta name="viewport" content="width=device-width,initial-scale=1"><title>{ESC(title)}</title>'
-            f'<style>:root{{--ref:"{ref}"}}{CSS}</style></head><body>{banner}'
-            f'{blocks_html(blocks, values, meta, signatures)}{extra}</body></html>')
+            f'<style>:root{{--ref:"{ref}"}}{css}</style></head><body>{banner}'
+            f'{blocks_html(blocks, values, meta, signatures, highlight)}{extra}</body></html>')
