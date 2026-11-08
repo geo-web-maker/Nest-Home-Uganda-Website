@@ -16,7 +16,7 @@ import { dialogs } from '../../../lib/dialogs';
 import { AgreementDiagnostics } from './AgreementDiagnostics';
 import { AgreementFieldInput } from '../../agreements/AgreementFieldInput';
 import { SignatureMethodPicker, credentialProblem, type SignatureChoice } from '../../agreements/SignatureMethodPicker';
-import { OWNER_LABEL, SCHEDULE_SECTIONS, fieldLabel, fieldMeta, isBlank, isHiddenField, notInFormNote, type FieldSection, type ScheduleTab } from '../../agreements/fieldMeta';
+import { OWNER_LABEL, SCHEDULE_SECTIONS, fieldLabel, fieldMeta, isBlank, isHiddenField, notInFormNote, paymentOptionKind, type FieldSection, type ScheduleTab } from '../../agreements/fieldMeta';
 import { DateCalculator, type CalcDateField } from '../../agreements/DateCalculator';
 
 type Owner = 'staff' | 'clinical' | 'client' | 'either';
@@ -79,7 +79,14 @@ function missingFieldsMessage(cause: unknown, fallback: string): string {
 }
 function isScheduleTab(value: string): value is ScheduleTab { return value === 'parties' || value === 'schedule_a' || value === 'schedule_b' || value === 'schedule_c'; }
 function outstanding(fields: Record<string, AgreementField>, paths: string[]): string[] {
-  return paths.filter((path) => { const field = fields[path]; return field !== undefined && (field.owner === 'staff' || field.owner === 'clinical') && isBlank(field.value); });
+  const option = paymentOptionKind(valueText(fields['schedule_b.payment_option']?.value));
+  return paths.filter((path) => {
+    const field = fields[path];
+    if (path === 'schedule_b.payment_option') return false; // blank means Standard 50/50
+    if (path === 'schedule_b.payment_plan_details' && option === 'standard') return false;
+    if ((path === 'schedule_b.advance_due_date' || path === 'schedule_b.balance_due_dates') && option !== 'standard') return false;
+    return field !== undefined && (field.owner === 'staff' || field.owner === 'clinical') && isBlank(field.value);
+  });
 }
 function valueText(value: unknown): string {
   if (value === null || value === undefined) return '';
@@ -464,7 +471,7 @@ export function AgreementsPage() {
                 const readOnly = !canWrite || locked || field.owner === 'client';
                 const conflict = conflicts[path];
                 const blank = isBlank(field.value);
-                const staffNeeds = blank && (field.owner === 'staff' || field.owner === 'clinical');
+                const staffNeeds = blank && path !== 'schedule_b.payment_option' && (field.owner === 'staff' || field.owner === 'clinical');
                 const skipNote = notInFormNote(path, field.owner);
                 return <div className={`${styles.field} ${meta.kind === 'long' ? styles.wide : ''} ${staffNeeds ? styles.fieldNeeded : !blank ? styles.fieldDone : ''}`} key={path}>
                   <label htmlFor={`agreement-${path}`}>

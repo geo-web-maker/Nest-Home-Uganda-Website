@@ -82,6 +82,8 @@ def _one(ctx: dict[str, Any], path: str) -> str:
     if isinstance(raw, (list, tuple)):
         raw = ", ".join(str(x) for x in raw)
     text = "" if raw is None else str(raw).strip()
+    if path == "schedule_b.payment_option" and (not text or text.upper() == "N/A"):
+        return "Standard 50/50"  # blank means the standard payment
     if not text:
         return ""
     if path in MONEY_PATHS and _NUMBER.match(text):
@@ -208,6 +210,11 @@ def _first_text(runs: list[dict[str, Any]]) -> str:
     return ""
 
 
+def _payment_option(ctx: dict[str, Any]) -> str:
+    text = _one(ctx, "schedule_b.payment_option").lower()
+    return "already" if text.startswith("plan already") else "plan" if text == "payment plan" else "standard"
+
+
 def _table_html(block: dict[str, Any], ctx: dict[str, Any]) -> str:
     rows: dict[int, list[dict[str, Any]]] = {}
     for cell in sorted(block["cells"], key=lambda c: (c["r"], c["c"])):
@@ -215,9 +222,14 @@ def _table_html(block: dict[str, Any], ctx: dict[str, Any]) -> str:
     total = sum(block["cols"]) or 1
     colgroup = "".join(f'<col style="width:{w * 100 / total:.1f}%">' for w in block["cols"])
     body: list[str] = []
+    option = _payment_option(ctx)
     for key in sorted(rows):
+        if any(option in (cell.get("hide") or []) for cell in rows[key]):
+            continue  # e.g. the advance and balance rows when the client already has a payment plan
         tds: list[str] = []
         for cell in rows[key]:
+            if option in (cell.get("alt") or {}):
+                cell = {**cell, "lines": cell["alt"][option]}
             style: list[str] = []
             fill = FILL_MAP.get((cell.get("fill") or "").lower(), cell.get("fill"))
             if fill:

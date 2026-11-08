@@ -523,23 +523,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/agreements/{agreement_id}/review-pdf": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Admin Review Pdf */
-        get: operations["admin_review_pdf_api_v1_admin_agreements__agreement_id__review_pdf_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/admin/agreements/{agreement_id}/sealed-pdf": {
         parameters: {
             query?: never;
@@ -8736,9 +8719,7 @@ export interface operations {
     };
     admin_preview_data_api_v1_admin_agreements__agreement_id__preview_data_get: {
         parameters: {
-            query?: {
-                highlight?: boolean;
-            };
+            query?: never;
             header?: never;
             path: {
                 agreement_id: string;
@@ -8801,37 +8782,6 @@ export interface operations {
         };
     };
     admin_resend_api_v1_admin_agreements__agreement_id__resend_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agreement_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    admin_review_pdf_api_v1_admin_agreements__agreement_id__review_pdf_get: {
         parameters: {
             query?: never;
             header?: never;
