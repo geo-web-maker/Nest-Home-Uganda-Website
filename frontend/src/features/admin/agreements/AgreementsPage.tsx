@@ -400,7 +400,14 @@ export function AgreementsPage() {
   return (
     <div className={styles.page}>
       <PageHeader title="Agreements" subtitle="Online client agreements · Bloomwell Home Care Uganda Limited"
-        actions={canWrite ? <><Button onClick={() => void create()} disabled={busy}>New agreement</Button> <Button variant="outline" onClick={() => void create(true)} disabled={busy}>New practice agreement</Button> <label><input type="checkbox" checked={showPractice} onChange={(e) => { setShowPractice(e.target.checked); setSelected(null); }} /> Show practice</label>{canVoid && showPractice && <> <Button variant="outline" className={styles.danger} onClick={() => void performDeletePractice()} disabled={busy}>Delete all practice</Button></>}</> : undefined} />
+        actions={canWrite ? <div className={styles.actionRow}>
+          <Button onClick={() => void create()} disabled={busy}>New agreement</Button>
+          <Button variant="outline" onClick={() => void create(true)} disabled={busy}>New practice agreement</Button>
+          <div className={styles.modeSwitch} role="group" aria-label="Agreements to show">
+            <button type="button" className={styles.modeOption} aria-pressed={!showPractice} onClick={() => { if (showPractice) { setShowPractice(false); setSelected(null); } }}>Real</button>
+            <button type="button" className={styles.modeOption} aria-pressed={showPractice} onClick={() => { if (!showPractice) { setShowPractice(true); setSelected(null); } }}>Practice</button>
+          </div>
+        </div> : undefined} />
       {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}
       {notice && <Notice tone="success" floating onDismiss={() => setNotice('')}>{notice}</Notice>}
       <div className={styles.layout}>
@@ -416,6 +423,7 @@ export function AgreementsPage() {
               {['draft','sent','client_in_progress','client_signed','completed','changes_requested','expired','voided'].map((s) => <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>)}
             </Field>
           </FilterBar>
+          {canVoid && showPractice && <div className={styles.practiceBar}><span>Showing practice agreements</span><Button variant="outline" size="compact" className={styles.danger} onClick={() => void performDeletePractice()} disabled={busy}>Delete all practice</Button></div>}
           {rows.length === 0 ? <div className={styles.empty}><h2>No agreements yet</h2><p>Create an agreement from a client enquiry, review the staff-only care and fee sections, then send a secure link. Clients complete and sign in their browser.</p>{canWrite && <Button onClick={() => void create()} variant="outline">Create first agreement</Button>}</div> : (
             <ul className={styles.rows}>{rows.map((row) => <li key={row.id} className={selected === row.id ? styles.selected : ''}>
               <Button type="button" variant="outline" size="compact" className={styles.rowMain} onClick={() => { setSelected(row.id); setTab('parties'); }}>
