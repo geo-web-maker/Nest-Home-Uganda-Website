@@ -188,3 +188,13 @@ def test_fields_without_a_line_in_the_printed_agreement():
         "schedule_b.fees", "schedule_b.rates", "schedule_b.payment_details", "schedule_b.organisation_payer_contact",
         "schedule_c.permissions", "schedule_c.care_consent", "schedule_c.initials",
     }
+
+
+def test_rate_marked_na_prints_once_without_a_unit():
+    ctx = {"values": {"schedule_b.nursing_visit_shift": "N/A", "schedule_b.price_basis": "N/A"}, "meta": {}}
+    spec = "schedule_b.nursing_visit_shift&schedule_b.price_basis"
+    assert block_renderer._value(ctx, spec) == "N/A"
+    ctx["values"] = {"schedule_b.nursing_visit_shift": "80000", "schedule_b.price_basis": "N/A"}
+    assert block_renderer._value(ctx, spec) == "UGX 80,000"
+    ctx["values"]["schedule_b.price_basis"] = "Per day"
+    assert block_renderer._value(ctx, spec) == "UGX 80,000 per day"
