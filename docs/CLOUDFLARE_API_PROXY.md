@@ -5,8 +5,9 @@ networks, DNS or blockers dropped that call and saw the N1 screen, while the pag
 Now the browser only talks to `bhcug.com`. A Worker (`frontend/worker/index.js`) forwards `/api/*`.
 
 ## Deploy
-1. `frontend/wrangler.jsonc`: set `vars.BACKEND_URL` to the backend base including its mount prefix,
-   for example `https://YOUR-MULTI-HOST-DOMAIN/nest` (no trailing slash).
+1. `frontend/wrangler.jsonc`: set `vars.BACKEND_URL` to the backend base including its mount prefix
+   (currently `https://multi-site-hosting.onrender.com/nest`, no trailing slash). Keep the dashboard variable
+   `BACKEND_URL` set to the same value, or the next deploy from this file overwrites it.
 2. Build variable `VITE_API_URL` must be EMPTY (set it to nothing, or delete it). Rebuild the frontend.
 3. Deploy with `wrangler deploy` (or your Cloudflare Git build). Make sure bhcug.com is attached to this Worker as a custom domain.
 4. Cloudflare dashboard: cache rule "Bypass cache" for `/api/*`, `/a/*`, `/agreement/*`; purge cache once.
