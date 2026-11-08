@@ -196,6 +196,8 @@ def test_published_source_template_contains_complete_pdf_text_and_only_two_email
     assert "0787499988" in SOURCE_CLAUSES["Agreement introduction"]
     assert "+256787499988" in SOURCE_CLAUSES["14.1"]
     assert "is additional to, and is not included in calculating" in SOURCE_CLAUSES["8.4"]
+    assert "or, as otherwise agreed, of the agreed service fees" in SOURCE_CLAUSES["8.4"]
+    assert "or balance shall be payable" in SOURCE_CLAUSES["8.4"]
     # the source text is hard-wrapped, so compare with whitespace collapsed
     assert "Illiterates Protection Act" in " ".join(SOURCE_CLAUSES["Schedule C"].split())
     assert all(f"{major}.{minor}" in SOURCE_CLAUSES

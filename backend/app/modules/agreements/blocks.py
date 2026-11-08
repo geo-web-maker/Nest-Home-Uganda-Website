@@ -125,12 +125,44 @@ def _value(ctx: dict[str, Any], spec: str) -> str:
     return ""
 
 
+_TITLE_LINE = "Mr./Mrs./Miss./Dr"
+_TITLE_OPTIONS = ("Mr", "Mrs", "Miss", "Dr")
+_TITLE_SPEC = "client.title+client.name"
+
+
+def _title_state(ctx: dict[str, Any]) -> tuple[str | None, str]:
+    """(matched printed title or None, extra title text to print before the name).
+
+    A title that matches one of the printed options is shown by striking out the others, so it is not
+    repeated before the name. Any other real title (e.g. Prof) is printed before the name and every
+    option is struck out. Blank or N/A leaves the options as printed and adds nothing before the name."""
+    raw = _one(ctx, "client.title").rstrip(".").strip()
+    if not raw or raw.upper() == "N/A":
+        return None, ""
+    for option in _TITLE_OPTIONS:
+        if raw.lower() == option.lower():
+            return option, ""
+    return None, raw
+
+
+def _title_options_html(ctx: dict[str, Any], text: str) -> str:
+    """The printed 'Mr./Mrs./Miss./Dr' text with the options that do not apply crossed out."""
+    matched, extra = _title_state(ctx)
+    if matched is None and not extra:
+        return ESC(text)
+    parts = []
+    for i, option in enumerate(_TITLE_OPTIONS):
+        dot = "." if i < len(_TITLE_OPTIONS) - 1 else ""
+        parts.append(ESC(option + dot) if option == matched else f'<s class="t-off">{ESC(option + dot)}</s>')
+    return ESC(text).replace(_TITLE_LINE, "/".join(parts), 1)
+
+
 def _runs_html(runs: list[dict[str, Any]], ctx: dict[str, Any]) -> str:
     out: list[str] = []
     for run in runs:
         kind = run["k"]
         if kind == "t":
-            text = EMAIL.sub(r'<span class="mail">\1</span>', ESC(run["t"]))
+            text = EMAIL.sub(r'<span class="mail">\1</span>', _title_options_html(ctx, run["t"]) if _TITLE_LINE in run["t"] else ESC(run["t"]))
             out.append(f"<strong>{text}</strong>" if run.get("b") else text)
         elif kind == "box":
             value = _value(ctx, run["f"]).strip().lower() if run.get("f") else ""
@@ -150,6 +182,8 @@ def _runs_html(runs: list[dict[str, Any]], ctx: dict[str, Any]) -> str:
                 out.append(f'<span class="filled{" hl hl-done" if _hl_state(ctx, run.get("f")) else ""}">{ESC(value)}</span>')
         elif kind == "blank":
             value = _value(ctx, run["f"]) if run.get("f") else ""
+            if run.get("f") == _TITLE_SPEC:  # the title is shown by striking options, or only when it is not one of them
+                value = " ".join(part for part in (_title_state(ctx)[1], _one(ctx, "client.name")) if part)
             signed = ctx.get("signatures", {}).get(run.get("s") or run.get("d") or "")
             if signed and run.get("s"):
                 out.append(f'<span class="signed-line">{signed["html"]}</span>')
@@ -265,6 +299,7 @@ body{{font-family:Tahoma,Verdana,'DejaVu Sans',sans-serif;font-size:11pt;line-he
 .p.sub{{text-align:left;font-family:Georgia,'Times New Roman',serif;font-size:11.5pt;margin:14pt 0 5pt;padding:1pt 0 1pt 8pt;border-left:3pt solid {GOLD};break-after:avoid}}
 .p.c.u{{text-decoration:none;font-family:Georgia,'Times New Roman',serif;border-bottom:1px solid {GOLD};display:table;margin:8pt auto 6pt;padding:0 12pt 2pt}}
 .signed-line{{display:inline-block;vertical-align:bottom;border-bottom:1px solid {FOREST};min-width:10em;padding:0 4px}}.signed-line img{{display:block;max-height:46px;max-width:200px;object-fit:contain}}.signed-line small{{display:block;color:#5b6b60;font-size:7.5pt}}.blank{{display:inline-block;border-bottom:1px dotted {FOREST};height:.9em;vertical-align:baseline;max-width:100%}}
+.t-off{{text-decoration:line-through;color:#5b6b60}}
 .filled{{border-bottom:1px solid {GOLD};font-weight:600;padding:0 2px;color:#0b2a1a;overflow-wrap:anywhere}}
 .box{{display:inline-block;width:.95em;height:.95em;border:1px solid {FOREST};vertical-align:-.15em;margin:0 .2em}}
 .box.on{{background:{LEAF};color:#fff;font-size:.75em;line-height:.95em;text-align:center;border-color:{LEAF}}}
