@@ -147,3 +147,16 @@
   .listPanel > :not(ul) { flex: none; }
   .editorPanel > [role="tablist"] { min-height: 62px; padding-bottom: 8px; }
 }
+
+/* Dark mode: warning colours, owner pills and paper-like surfaces */
+.page { --warning-soft: #fff6df; --warning-text: #7a4b00; }
+:global(:root[data-theme='dark']) .page {
+  --warning-soft: color-mix(in srgb, var(--gold) 16%, var(--surf));
+  --warning-text: var(--gold);
+}
+:global(:root[data-theme='dark']) .owner_clinical { background: #17334f; color: #b3d6ff; }
+:global(:root[data-theme='dark']) .owner_either { background: #2d2250; color: #d6c8f7; }
+.conflict { color: var(--ink); }
+/* The signature pad and message previews are paper: they stay light in both themes. */
+.signaturePad { background: #fff; }
+.messagePreview iframe { background: #f2f5f2; }

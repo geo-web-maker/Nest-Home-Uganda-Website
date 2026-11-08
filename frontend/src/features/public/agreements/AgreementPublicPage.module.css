@@ -48,7 +48,7 @@
 .turnstile { display: flex; justify-content: center; margin: 14px 0; min-height: 65px; }
 
 .groupHeading { margin: 22px 0 8px; font-size: 18px; }
-.fieldGroup { display: grid; gap: 14px; margin: 0 0 14px; padding: 14px; border: 1px solid var(--border, #dce3de); border-radius: 12px; min-width: 0; }
+.fieldGroup { display: grid; gap: 14px; margin: 0 0 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
 .fieldGroup legend { padding: 0 8px; font-weight: 700; font-size: 14px; }
 
 /* Refined brand layer: green foundation with gold accents */
@@ -148,3 +148,7 @@
 
 .consent{display:flex;gap:10px;align-items:flex-start;margin:14px 0;font-size:.95rem;line-height:1.4}
 .consent input{margin-top:3px;width:20px;height:20px;flex:none}
+
+/* Dark mode */
+:global(:root[data-theme='dark']) .fieldGroup legend { color: var(--leaf); }
+:global(:root[data-theme='dark']) .saveState[data-state='unsaved'] { color: var(--gold); }

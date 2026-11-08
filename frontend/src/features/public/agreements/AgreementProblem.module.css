@@ -12,7 +12,7 @@
 .card[data-tone='link'] .badge { background: color-mix(in srgb, var(--gold) 20%, var(--surf)); color: color-mix(in srgb, var(--gold) 55%, var(--forest)); }
 .card[data-tone='fault'] .badge { background: color-mix(in srgb, var(--danger) 12%, var(--surf)); color: var(--danger); }
 
-.card h1 { margin: 0 0 10px; font-family: var(--serif); font-size: clamp(25px, 6vw, 31px); line-height: 1.15; letter-spacing: -.01em; color: var(--forest); text-wrap: balance; }
+.card h1 { margin: 0 0 10px; font-family: var(--serif); font-size: clamp(25px, 6vw, 31px); line-height: 1.15; letter-spacing: -.01em; color: var(--ink); text-wrap: balance; }
 .lead { margin: 0 0 8px; font-size: 16.5px; line-height: 1.6; }
 .more { margin: 0 0 8px; color: var(--mut); font-size: 14.5px; line-height: 1.6; }
 .offline { margin: 12px 0 0; padding: 10px 12px; border-radius: 9px; background: color-mix(in srgb, var(--danger) 10%, var(--surf)); color: var(--danger); font-size: 14px; line-height: 1.45; }
@@ -48,3 +48,7 @@
   .actions { grid-template-columns: repeat(2, max-content); }
   .action { padding: 10px 26px; }
 }
+
+/* Dark mode: --forest is near-black, so avoid it for text and hover fills. */
+:global(:root[data-theme='dark']) .card[data-tone='link'] .badge { color: var(--gold); }
+:global(:root[data-theme='dark']) .primary:hover { background: var(--leaf); filter: brightness(1.1); }

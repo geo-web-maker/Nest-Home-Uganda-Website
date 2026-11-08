@@ -1,18 +1,18 @@
 .wrap { display: grid; gap: 6px; min-width: 0; }
-.wrap input, .wrap select, .wrap textarea { width: 100%; min-width: 0; border: 1px solid var(--border, #cbd5ce); border-radius: 8px; padding: 10px 11px; color: inherit; background: var(--surface, #fff); font: inherit; }
-.wrap input:focus-visible, .wrap select:focus-visible, .wrap textarea:focus-visible { outline: 2px solid var(--brand, #245d4a); outline-offset: 1px; }
+.wrap input, .wrap select, .wrap textarea { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 10px 11px; color: inherit; background: var(--surf); font: inherit; }
+.wrap input:focus-visible, .wrap select:focus-visible, .wrap textarea:focus-visible { outline: 2px solid var(--leaf); outline-offset: 1px; }
 .wrap textarea { resize: vertical; min-height: 76px; }
-.wrap input[readonly], .wrap textarea[readonly], .wrap select:disabled, .wrap input:disabled { background: var(--subtle, #f5f7f5); color: var(--muted, #53635a); cursor: not-allowed; }
+.wrap input[readonly], .wrap textarea[readonly], .wrap select:disabled, .wrap input:disabled { background: color-mix(in srgb, var(--mint) 55%, var(--surf)); color: var(--mut); cursor: not-allowed; }
 .affix { display: flex; align-items: stretch; }
-.affix span { display: grid; place-items: center; padding: 0 12px; border: 1px solid var(--border, #cbd5ce); border-right: 0; border-radius: 8px 0 0 8px; background: var(--subtle, #f5f7f5); font-weight: 700; font-size: 13px; letter-spacing: .04em; }
+.affix span { display: grid; place-items: center; padding: 0 12px; border: 1px solid var(--line); border-right: 0; border-radius: 8px 0 0 8px; background: color-mix(in srgb, var(--mint) 55%, var(--surf)); font-weight: 700; font-size: 13px; letter-spacing: .04em; }
 .wrap .affix input { border-radius: 0 8px 8px 0; font-variant-numeric: tabular-nums; font-weight: 600; }
 .initials { max-width: 120px; text-align: center; letter-spacing: .15em; font-weight: 700; }
-.hint { color: var(--muted, #53635a); font-size: 12px; }
-.bad { color: var(--danger, #a02a1d); font-size: 12px; font-weight: 600; }
-.link { border: 0; background: transparent; color: var(--brand, #245d4a); text-decoration: underline; cursor: pointer; margin-left: 8px; font: inherit; }
-.naButton { justify-self: start; border: 0; background: transparent; color: var(--brand, #245d4a); text-decoration: underline; cursor: pointer; font-size: 12px; padding: 0; }
-.na { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px dashed var(--border, #cbd5ce); border-radius: 8px; color: var(--muted, #53635a); background: var(--subtle, #f5f7f5); font-style: italic; }
-.na button { border: 0; background: transparent; color: var(--brand, #245d4a); text-decoration: underline; cursor: pointer; font: inherit; font-style: normal; }
+.hint { color: var(--mut); font-size: 12px; }
+.bad { color: var(--danger); font-size: 12px; font-weight: 600; }
+.link { border: 0; background: transparent; color: var(--leaf); text-decoration: underline; cursor: pointer; margin-left: 8px; font: inherit; }
+.naButton { justify-self: start; border: 0; background: transparent; color: var(--leaf); text-decoration: underline; cursor: pointer; font-size: 12px; padding: 0; }
+.na { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 8px; color: var(--mut); background: color-mix(in srgb, var(--mint) 55%, var(--surf)); font-style: italic; }
+.na button { border: 0; background: transparent; color: var(--leaf); text-decoration: underline; cursor: pointer; font: inherit; font-style: normal; }
 .phone { display: flex; gap: 6px; min-width: 0; }
 .wrap .phone select { flex: 0 1 46%; width: auto; min-width: 0; text-overflow: ellipsis; }
 .wrap .phone input { flex: 1 1 0; width: auto; font-variant-numeric: tabular-nums; }
