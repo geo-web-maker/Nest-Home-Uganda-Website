@@ -76,7 +76,7 @@ export function AgreementFieldInput({ path, id, value, readOnly, onChange, onCom
       const options = meta.options ?? [];
       const unknown = value && !options.includes(value);
       control = (
-        <select id={id} value={value} disabled={readOnly} onChange={(e) => set(e.target.value, true)}>
+        <select id={id} value={value || meta.defaultOption || ''} disabled={readOnly} onChange={(e) => set(e.target.value, true)}>
           <option value="">Select…</option>
           {options.map((option) => <option key={option} value={option}>{option}</option>)}
           {unknown && <option value={value}>{value} (current)</option>}

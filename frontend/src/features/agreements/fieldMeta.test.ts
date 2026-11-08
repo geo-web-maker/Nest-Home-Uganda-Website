@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHOICES, FIELD_META, HIDDEN_FIELDS, NOT_IN_FORM, notInFormNote, SCHEDULE_SECTIONS, cleanMoney, formatMoney } from './fieldMeta';
+import { CHOICES, FIELD_META, paymentOptionKind, HIDDEN_FIELDS, NOT_IN_FORM, notInFormNote, SCHEDULE_SECTIONS, cleanMoney, formatMoney } from './fieldMeta';
 
 describe('agreement field metadata', () => {
   const sectioned = Object.values(SCHEDULE_SECTIONS).flatMap((tab) => tab.sections.flatMap((section) => section.paths));
@@ -58,5 +58,21 @@ describe('agreement field metadata', () => {
     for (const path of NOT_IN_FORM) expect(FIELD_META[path], path).toBeDefined();
     expect(notInFormNote('schedule_b.rates', 'staff')).toContain('Mark N/A to skip');
     expect(notInFormNote('schedule_b.total_fee', 'staff')).toBeNull();
+  });
+});
+
+describe('payment option', () => {
+  it('maps the answer, treating blank and N/A as the standard payment', () => {
+    expect(paymentOptionKind('')).toBe('standard');
+    expect(paymentOptionKind('N/A')).toBe('standard');
+    expect(paymentOptionKind('Payment plan')).toBe('plan');
+    expect(paymentOptionKind('Plan already provided')).toBe('already');
+  });
+  it('shows plan details only for a plan and the 50/50 dates only for the standard payment', () => {
+    const get = (option: string) => (path: string) => (path === 'schedule_b.payment_option' ? option : '');
+    expect(FIELD_META['schedule_b.payment_plan_details']!.showWhen!(get(''))).toBe(false);
+    expect(FIELD_META['schedule_b.payment_plan_details']!.showWhen!(get('Plan already provided'))).toBe(true);
+    expect(FIELD_META['schedule_b.advance_due_date']!.showWhen!(get('Payment plan'))).toBe(false);
+    expect(FIELD_META['schedule_b.balance_due_dates']!.showWhen!(get('Standard 50/50'))).toBe(true);
   });
 });

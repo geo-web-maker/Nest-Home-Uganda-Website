@@ -68,7 +68,7 @@ def test_values_fill_blanks_ticks_and_cells():
     meta = {"@reference": "BHC-2026-0001", "@date": "07 Nov 2026", "@advance": "UGX 600,000", "@balance": "UGX 600,000"}
     page = block_renderer.document_html(SOURCE_BLOCKS, values, meta, title="t")
     assert "Grace Nakato" in page and "Newborn care" in page and "BHC-2026-0001" in page
-    assert page.count('class="box on"') == 2          # day shifts + UGX
+    assert page.count('class="box on"') == 3          # day shifts + UGX + the default Standard 50/50 payment
     assert "UGX 600,000" in page and "Booking Fee" in page
 
 
@@ -95,16 +95,16 @@ def test_every_tick_box_names_its_option_and_matches_the_registry():
 def test_a_choice_ticks_exactly_its_own_box():
     for option in rules.CHOICE_FIELDS["schedule_a.coverage_arrangement"]:
         page = _page({"schedule_a.coverage_arrangement": option})
-        assert page.count('class="box on"') == 1
+        assert page.count('class="box on"') == 2  # the option + the default Standard 50/50 payment
     # Information permitted contains the word "care", but only its own box is ticked.
     page = _page({"schedule_c.information_permitted": "Agreed care updates"})
-    assert page.count('class="box on"') == 1
+    assert page.count('class="box on"') == 2
 
 
 def test_older_free_text_answers_still_tick_by_keyword():
-    assert _page({"schedule_a.coverage_arrangement": "night"}).count('class="box on"') == 1
-    assert _page({"schedule_c.decision_maker": "The patient personally"}).count('class="box on"') == 1
-    assert _page({"schedule_c.decision_maker": "Next of kin with lawful authority"}).count('class="box on"') == 1
+    assert _page({"schedule_a.coverage_arrangement": "night"}).count('class="box on"') == 2
+    assert _page({"schedule_c.decision_maker": "The patient personally"}).count('class="box on"') == 2
+    assert _page({"schedule_c.decision_maker": "Next of kin with lawful authority"}).count('class="box on"') == 2
 
 
 def test_money_dates_and_labelled_cells_read_clearly():
@@ -198,3 +198,42 @@ def test_rate_marked_na_prints_once_without_a_unit():
     assert block_renderer._value(ctx, spec) == "UGX 80,000"
     ctx["values"]["schedule_b.price_basis"] = "Per day"
     assert block_renderer._value(ctx, spec) == "UGX 80,000 per day"
+
+
+def test_payment_option_controls_the_advance_and_balance_rows():
+    import re
+    from app.modules.agreements import blocks, rules
+    from app.modules.agreements.source_blocks import SOURCE_BLOCKS
+
+    def text(option):
+        values = {"schedule_b.currency": "UGX", "schedule_b.payment_option": option,
+                  "schedule_b.payment_plan_details": "Plan sent 05 Nov 2026"}
+        return re.sub(r"<[^>]+>", " ", blocks.blocks_html(SOURCE_BLOCKS, values, {"@reference": "X"}))
+
+    assert "Advance Deposit" in text(None) and "Advance Deposit" in text("Standard 50/50")
+    plan = text("Payment plan")
+    assert "Advance Deposit" in plan and "payment plan below" in plan
+    already = text("Plan already provided")
+    assert "Advance Deposit" not in already and "Balance / Periodic" not in already
+    assert "Plan sent 05 Nov 2026" in already
+    assert {"schedule_b.payment_option", "schedule_b.payment_plan_details"} <= blocks.referenced_paths(SOURCE_BLOCKS)
+    assert rules.payment_option("N/A") == "standard" and rules.payment_option("Plan already provided") == "already"
+
+
+def test_payment_plan_fields_are_only_required_when_they_apply():
+    from app.modules.agreements import rules
+    from app.modules.agreements.models import AgreementField
+
+    def missing(option):
+        fields = rules.initial_fields()
+        for path, owner in rules.FIELD_OWNERS.items():
+            if owner in {"staff", "clinical"}:
+                fields[rules.field_key(path)] = AgreementField(value="x", owner=owner)
+        fields[rules.field_key("schedule_b.payment_option")] = AgreementField(value=option, owner="staff")
+        fields[rules.field_key("schedule_b.payment_plan_details")] = AgreementField(value=None, owner="staff")
+        fields[rules.field_key("schedule_b.balance_due_dates")] = AgreementField(value=None, owner="staff")
+        return rules.missing_staff_fields(fields)
+
+    assert missing(None) == ["schedule_b.balance_due_dates"]
+    assert missing("Payment plan") == ["schedule_b.payment_plan_details"]
+    assert missing("Plan already provided") == ["schedule_b.payment_plan_details"]

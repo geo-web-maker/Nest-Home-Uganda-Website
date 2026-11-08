@@ -119,6 +119,8 @@ def test_lawful_representative_requires_identity_relationship_and_authority() ->
 def test_all_staff_and_clinical_fields_must_be_filled_before_send() -> None:
     fields = rules.initial_fields()
     expected = {path for path, owner in rules.FIELD_OWNERS.items() if owner in {"staff", "clinical"}}
+    # A blank payment option means the standard 50/50 payment, so it and the plan details are not demanded.
+    expected -= {"schedule_b.payment_option", "schedule_b.payment_plan_details"}
     assert set(rules.missing_staff_fields(fields)) == expected
     for path in expected:
         fields[rules.field_key(path)] = fields[rules.field_key(path)].model_copy(update={"value": "Not applicable"})

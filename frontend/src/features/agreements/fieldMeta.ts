@@ -17,6 +17,8 @@ export type FieldMeta = {
   required?: boolean;
   /** Show the field only when this returns true; `get` reads the current (possibly unsaved) value of any field. */
   showWhen?: (get: (path: string) => string) => boolean;
+  /** Shown as the chosen option while the field is still blank (the server treats blank the same way). */
+  defaultOption?: string;
 };
 
 export type FieldSection = { id: string; title: string; hint?: string; paths: string[] };
@@ -44,7 +46,15 @@ export const CHOICES = {
   decisionMaker: ['Patient with capacity', 'Parent/Guardian', 'Other lawful representative'],
   channel: ['Telephone', 'SMS', 'Email', 'WhatsApp', 'Other'],
   informationPermitted: ['Booking / billing only', 'Agreed care updates', 'Other'],
+  paymentOption: ['Standard 50/50', 'Payment plan', 'Plan already provided'],
 } as const;
+
+/** 'standard', 'plan' or 'already'. Blank, N/A or an older draft means the standard 50/50 payment (mirrors the backend). */
+export function paymentOptionKind(value: string | null | undefined): 'standard' | 'plan' | 'already' {
+  const text = (value ?? '').trim().toLowerCase();
+  return text.startsWith('plan already') ? 'already' : text === 'payment plan' ? 'plan' : 'standard';
+}
+const usesPlan = (get: (path: string) => string): boolean => paymentOptionKind(get('schedule_b.payment_option')) !== 'standard';
 
 /** Fields still stored for older agreements but no longer asked for: their answer is entered once, elsewhere. */
 export const HIDDEN_FIELDS: ReadonlySet<string> = new Set(['schedule_a.patient_dob_or_age', 'schedule_a.language']);
@@ -133,8 +143,10 @@ export const FIELD_META: Record<string, FieldMeta> = {
   'schedule_b.other_costs_exclusions': long('Other costs and exclusions', 'Anything not covered by the fees above.'),
   'schedule_b.start_date': date('Billing start date'),
   'schedule_b.end_date': date('Billing end date'),
-  'schedule_b.advance_due_date': date('Advance payment due date', '50% of service fees, before services begin.'),
-  'schedule_b.balance_due_dates': long('Balance due dates', 'One or more dates for the remaining 50%.'),
+  'schedule_b.payment_option': select('Payment option', [...CHOICES.paymentOption], { na: false, defaultOption: 'Standard 50/50', help: 'Standard 50/50: advance and balance as printed. Payment plan: the advance and balance rows point to the plan details below. Plan already provided: those rows are hidden because the client already has the plan in writing.' }),
+  'schedule_b.payment_plan_details': { ...long('Payment plan details, or reference of the plan already given', 'For a plan: each instalment, amount and date. If the client already has the plan, give its reference and date, for example “Plan sent 05 Nov 2026”. Required before sending (N/A is accepted).'), showWhen: usesPlan },
+  'schedule_b.advance_due_date': { ...date('Advance payment due date', '50% of service fees, before services begin.'), showWhen: (get) => !usesPlan(get) },
+  'schedule_b.balance_due_dates': { ...long('Balance due dates', 'One or more dates for the remaining 50%.'), showWhen: (get) => !usesPlan(get) },
   'schedule_b.payment_details': long('Payment details', 'Verified Bloomwell payment instructions only.'),
   'schedule_b.payment_account_name': text('Payment account name'),
   'schedule_b.payment_provider_account_number': text('Bank or mobile money account number'),
@@ -196,7 +208,7 @@ export const SCHEDULE_SECTIONS: Record<ScheduleTab, { title: string; intro: stri
     sections: [
       { id: 'b-fee', title: 'Fee summary', paths: ['schedule_b.currency', 'schedule_b.total_fee', 'schedule_b.price_type', 'schedule_b.price_basis', 'schedule_b.tax_treatment', 'schedule_b.assessment_fee', 'schedule_b.assessment_fee_basis', 'schedule_b.rates', 'schedule_b.fees'] },
       { id: 'b-charges', title: 'Other charges', paths: ['schedule_b.nursing_visit_shift', 'schedule_b.number_visits_shifts', 'schedule_b.transport', 'schedule_b.transport_basis', 'schedule_b.dressings_consumables', 'schedule_b.consumables_items', 'schedule_b.equipment_hire_deposit', 'schedule_b.equipment_inventory_ref', 'schedule_b.overtime_extra_visit', 'schedule_b.overtime_approval', 'schedule_b.late_cancellation_charge', 'schedule_b.other_costs_exclusions'] },
-      { id: 'b-pay', title: 'Dates and how to pay', paths: ['schedule_b.start_date', 'schedule_b.end_date', 'schedule_b.advance_due_date', 'schedule_b.balance_due_dates', 'schedule_b.payment_details', 'schedule_b.payment_account_name', 'schedule_b.payment_provider_account_number', 'schedule_b.repayment_recipient_method'] },
+      { id: 'b-pay', title: 'Dates and how to pay', paths: ['schedule_b.payment_option', 'schedule_b.payment_plan_details', 'schedule_b.start_date', 'schedule_b.end_date', 'schedule_b.advance_due_date', 'schedule_b.balance_due_dates', 'schedule_b.payment_details', 'schedule_b.payment_account_name', 'schedule_b.payment_provider_account_number', 'schedule_b.repayment_recipient_method'] },
       { id: 'b-ins', title: 'Insurance and variations', paths: ['schedule_b.bloomwell_insurance_details', 'schedule_b.agreed_variations', 'schedule_b.bloomwell_signatory'] },
       { id: 'b-payer', title: 'Third-party payer (only if an organisation or insurer pays)', hint: 'Leave blank if the client pays personally.', paths: ['schedule_b.organisation_payer_name', 'schedule_b.organisation_registration_number', 'schedule_b.organisation_payer_address', 'schedule_b.organisation_signatory_name', 'schedule_b.organisation_signatory_role', 'schedule_b.organisation_signatory_authority', 'schedule_b.insurance_external_payer_reference', 'schedule_b.organisation_payer_contact', 'schedule_b.client_billing_address_email'] },
     ],

@@ -60,6 +60,8 @@ FIELD_OWNERS: dict[str, str] = {
     "schedule_b.price_type": "staff", "schedule_b.transport_basis": "staff",
     "schedule_b.consumables_items": "staff", "schedule_b.equipment_inventory_ref": "staff",
     "schedule_b.overtime_approval": "staff",
+    # Payment option: standard 50/50, a payment plan, or a plan the client already received.
+    "schedule_b.payment_option": "staff", "schedule_b.payment_plan_details": "staff",
 }
 
 # Fields answered by choosing one option. These are the tick boxes and pick-lists of the agreement;
@@ -69,6 +71,7 @@ CHOICE_FIELDS: dict[str, tuple[str, ...]] = {
     "schedule_b.currency": ("UGX", "USD"),
     "schedule_b.price_basis": ("Per visit", "Per shift", "Per day", "Per week", "Per month", "Fixed package total"),
     "schedule_b.price_type": ("Fixed", "Estimate"),
+    "schedule_b.payment_option": ("Standard 50/50", "Payment plan", "Plan already provided"),
     "schedule_b.transport_basis": ("Included", "Additional"),
     "schedule_b.overtime_approval": ("Yes", "No"),
     "schedule_b.tax_treatment": ("Inclusive", "Exempt", "Additional"),
@@ -163,11 +166,33 @@ def missing_signing_consent(fields: dict[str, AgreementField]) -> list[str]:
     return missing
 
 
+def payment_option(value: Any) -> str:
+    """'standard', 'plan' or 'already' from the stored answer. Blank, N/A or older drafts mean standard 50/50."""
+    text = str(value or "").strip().lower()
+    if text.startswith("plan already"):
+        return "already"
+    if text == "payment plan":
+        return "plan"
+    return "standard"
+
+
+# Not asked for when the advance/balance rows are replaced by a payment plan.
+_STANDARD_ONLY = frozenset({"schedule_b.advance_due_date", "schedule_b.balance_due_dates"})
+
+
 def missing_staff_fields(fields: dict[str, AgreementField]) -> list[str]:
     """All staff/clinical-owned schedule entries must be filled or marked N/A before send."""
     missing: list[str] = []
+    option_field = fields.get(field_key("schedule_b.payment_option"))
+    option = payment_option(option_field.value if option_field else None)
     for path, owner in FIELD_OWNERS.items():
         if owner not in {"staff", "clinical"}:
+            continue
+        if path == "schedule_b.payment_option":  # blank means the standard 50/50 payment
+            continue
+        if path == "schedule_b.payment_plan_details" and option == "standard":
+            continue
+        if path in _STANDARD_ONLY and option != "standard":
             continue
         field = fields.get(field_key(path))
         if field is None or field.value in (None, "", []):
