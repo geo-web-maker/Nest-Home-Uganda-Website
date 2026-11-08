@@ -17,8 +17,8 @@ export type UserInvite = {
   name: string;
   email: string;
   scopes: string[];
-  preset?: 'nurse' | 'supervisor' | 'admin' | 'executive' | 'super_admin';
-  kind: 'staff' | 'nurse' | 'supervisor' | 'admin' | 'executive';
+  preset?: 'nurse' | 'supervisor' | 'admin' | 'executive' | 'lawyer' | 'super_admin';
+  kind: 'staff' | 'nurse' | 'supervisor' | 'admin' | 'executive' | 'lawyer';
   reach: 'own' | 'team' | 'all';
   phone?: string;
   delivery: Delivery[];
@@ -32,6 +32,6 @@ export type AdminUserIssued = AdminUser & Issued;
 export type UserUpdate = {
   scopes?: string[];
   active?: boolean;
-  kind?: 'staff' | 'nurse' | 'supervisor' | 'admin' | 'executive';
+  kind?: 'staff' | 'nurse' | 'supervisor' | 'admin' | 'executive' | 'lawyer';
   reach?: 'own' | 'team' | 'all';
 };

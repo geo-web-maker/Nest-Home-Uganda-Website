@@ -2,7 +2,7 @@ from app.modules.auth.scopes import ALL_SCOPE_IDS, SCOPE_PRESETS
 
 
 def test_scope_preset_table_contains_expected_bundles():
-    assert set(SCOPE_PRESETS) == {"nurse", "supervisor", "admin", "executive", "super_admin"}
+    assert set(SCOPE_PRESETS) == {"nurse", "supervisor", "admin", "executive", "lawyer", "super_admin"}
     assert SCOPE_PRESETS["nurse"] == frozenset({"field:use", "sos:send", "mail:use"})
     assert SCOPE_PRESETS["super_admin"] == ALL_SCOPE_IDS
 
@@ -34,3 +34,10 @@ def test_nurse_invite_requires_a_supervisor_assignment():
     assert field.is_required()
     assert field.annotation is str
     assert field.metadata
+
+
+def test_lawyer_preset_handles_agreements_and_countersigns_but_not_void_or_wording():
+    lawyer = SCOPE_PRESETS["lawyer"]
+    assert {"agreements:read", "agreements:write", "agreements:sign"} <= lawyer
+    assert not lawyer & {"agreements:void", "agreements:templates", "users:write", "settings:write"}
+    assert not any(scope.startswith(("visits", "timesheets", "photos", "nurses")) for scope in lawyer)
