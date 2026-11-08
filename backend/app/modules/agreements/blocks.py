@@ -104,6 +104,8 @@ def _segment(ctx: dict[str, Any], seg: str) -> str:
         first, second = _one(ctx, main), _one(ctx, suffix)
         if suffix.strip() == "schedule_b.price_basis":
             second = second.lower()
+        if first.upper() == "N/A" or second.upper() == "N/A":  # "N/A" is never followed by a unit, and a unit of N/A is not printed
+            return first if first.upper() == "N/A" else first
         return f"{first} {second}".strip() if first else ""
     if "~" in seg:  # "a~b": a date range
         start, _, end = seg.partition("~")
