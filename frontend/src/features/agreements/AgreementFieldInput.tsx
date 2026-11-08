@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { cleanMoney, fieldMeta, formatMoney, isIsoDate } from './fieldMeta';
 import { PhoneInput } from './PhoneInput';
 import styles from './AgreementFieldInput.module.css';
@@ -20,6 +20,8 @@ const NA = 'N/A';
 export function AgreementFieldInput({ path, id, value, readOnly, onChange, onCommit, currency = 'UGX', allowNA = false }: Props) {
   const meta = fieldMeta(path);
   const listId = useId();
+  const titleOptions = meta.options ?? [];
+  const [titleOther, setTitleOther] = useState(false);
   const canNA = allowNA && meta.na !== false && !readOnly;
   const commit = (next: string) => onCommit?.(next);
   const set = (next: string, done = false) => { onChange(next); if (done) commit(next); };
@@ -79,6 +81,34 @@ export function AgreementFieldInput({ path, id, value, readOnly, onChange, onCom
           {options.map((option) => <option key={option} value={option}>{option}</option>)}
           {unknown && <option value={value}>{value} (current)</option>}
         </select>
+      );
+      break;
+    }
+    case 'title': {
+      // A printed title (Mr, Mrs, Miss, Dr) or "Other", which opens a box to type any other title.
+      const custom = value !== '' && value !== NA && !titleOptions.includes(value);
+      const other = titleOther || custom;
+      control = (
+        <>
+          <select id={id} value={other ? '__other' : value} disabled={readOnly}
+            onChange={(e) => {
+              if (e.target.value === '__other') { setTitleOther(true); set('', false); return; }
+              setTitleOther(false);
+              set(e.target.value, true);
+            }}>
+            <option value="">No title</option>
+            {titleOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+            <option value="__other">Other…</option>
+          </select>
+          {other && (
+            <>
+              <input value={value} readOnly={readOnly} placeholder="Type the title, e.g. Prof" aria-label="Other title"
+                list={meta.suggestions ? listId : undefined} autoFocus={!custom}
+                onChange={(e) => onChange(e.target.value)} onBlur={() => commit(value)} />
+              {meta.suggestions && <datalist id={listId}>{meta.suggestions.map((s) => <option key={s} value={s} />)}</datalist>}
+            </>
+          )}
+        </>
       );
       break;
     }

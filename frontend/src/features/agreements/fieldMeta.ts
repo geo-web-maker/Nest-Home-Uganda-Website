@@ -3,7 +3,7 @@
  * server (FIELD_OWNERS in backend rules); this only decides how a field is shown, grouped
  * and explained. Values are always stored as plain strings, so older saved text still works.
  */
-export type FieldKind = 'text' | 'long' | 'money' | 'int' | 'date' | 'select' | 'phone' | 'email' | 'initials';
+export type FieldKind = 'text' | 'long' | 'money' | 'int' | 'date' | 'select' | 'phone' | 'email' | 'initials' | 'title';
 
 export type FieldMeta = {
   label: string;
@@ -39,6 +39,7 @@ const decidesForSomeoneElse = (get: (path: string) => string): boolean => {
  * which also checks them on save; the agreement document ticks exactly the chosen option.
  */
 export const CHOICES = {
+  title: ['Mr', 'Mrs', 'Miss', 'Dr'],
   coverage: ['Scheduled visits', 'Day shifts', 'Night shifts', 'Continuous care by roster'],
   decisionMaker: ['Patient with capacity', 'Parent/Guardian', 'Other lawful representative'],
   channel: ['Telephone', 'SMS', 'Email', 'WhatsApp', 'Other'],
@@ -66,7 +67,7 @@ export function notInFormNote(path: string, owner: string): string | null {
 
 export const FIELD_META: Record<string, FieldMeta> = {
   'client.name': { label: 'Client full name', kind: 'text', help: 'The person who signs and is responsible for the agreement.', placeholder: 'As on their national ID' },
-  'client.title': { label: 'Title', kind: 'text', suggestions: ['Mr', 'Mrs', 'Ms', 'Miss', 'Dr', 'Prof', 'Rev'] },
+  'client.title': { label: 'Title', kind: 'title', options: [...CHOICES.title], suggestions: ['Ms', 'Prof', 'Rev', 'Eng', 'Hon'], help: 'Pick one of the printed titles and the others are crossed out in the agreement. Pick Other to type a different title. Leave blank for none.' },
   'client.address': long('Client address', 'Postal or physical address for notices.'),
   'client.phone': { label: 'Client phone', kind: 'phone', help: 'Pick the country code, then the number. SMS only reaches Ugandan mobiles; others are reached by email.' },
   'client.email': { label: 'Client email', kind: 'email', help: 'The signed copy and notices are sent here.' },
