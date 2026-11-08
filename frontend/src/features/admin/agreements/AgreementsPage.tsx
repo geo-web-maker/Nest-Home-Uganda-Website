@@ -237,6 +237,17 @@ export function AgreementsPage() {
     finally { setBusy(false); }
   };
 
+  const installSourceTemplate = async () => {
+    if (!await dialogs.confirm('Install the latest agreement wording? If a version is already live, it is saved as a new draft version and nothing live changes.', { confirmLabel: 'Install as draft' })) return;
+    setBusy(true); setError(''); setNotice('');
+    try {
+      const result = await apiClient.post<{ created: number; message: string }>('/admin/agreements/template/seed', {});
+      await openTemplate();
+      setNotice(result.created ? 'Latest wording installed as a draft. Choose it under "Load version", review it, then press "Publish selected version".' : result.message);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'The latest wording could not be installed. Verify your authenticator in Mail settings and try again.'); }
+    finally { setBusy(false); }
+  };
+
   const loadTemplateVersion = async (version: number) => {
     setBusy(true); setError('');
     try {
@@ -517,7 +528,7 @@ export function AgreementsPage() {
               <p>The source PDF is loaded as a versioned clause map. Review the complete wording and schedules against the original signed source before publishing. The two required company email corrections are checked server-side.</p>
               <Field kind="textarea" label="Clause template JSON" className={styles.templateEditor} rows={16} value={templateJson} onChange={(e) => setTemplateJson(e.target.value)} spellCheck={false} />
               <p>Publishing and voiding require the existing authenticator session. Verify your authenticator in Mail settings first; the session cookie is reused here.</p>
-              <ButtonGroup><Button onClick={() => void saveTemplateDraft()} disabled={busy}>Save new draft version</Button><Button variant="outline" onClick={() => void publishTemplate()} disabled={busy || !templateInfo?.version || templateInfo.published}>Publish selected version</Button></ButtonGroup>
+              <ButtonGroup>{canManageTemplates && <Button variant="outline" onClick={() => void installSourceTemplate()} disabled={busy}>Install latest wording as draft</Button>}<Button onClick={() => void saveTemplateDraft()} disabled={busy}>Save new draft version</Button><Button variant="outline" onClick={() => void publishTemplate()} disabled={busy || !templateInfo?.version || templateInfo.published}>Publish selected version</Button></ButtonGroup>
             </div>}
           </>}
         </section>
