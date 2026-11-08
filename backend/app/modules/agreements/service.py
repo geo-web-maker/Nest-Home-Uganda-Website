@@ -7,6 +7,7 @@ import logging
 import secrets
 from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import Any, Literal
 
 import httpx
@@ -38,6 +39,22 @@ from app.modules.notifications.service import send_sms
 log = logging.getLogger("app.agreements")
 COMPANY = "Bloomwell Home Care Uganda Limited"
 OPEN_STATUSES = {"draft", "sent", "client_in_progress", "client_signed", "changes_requested"}
+LOCAL_TZ = ZoneInfo("Africa/Kampala")
+
+
+def local_expiry_date(moment: datetime | None) -> str:
+    """Expiry as a Kampala calendar date, e.g. "21 Nov 2026".
+
+    Stored times are UTC; taking .date() of the UTC value shows the wrong day for anything sent
+    between 00:00 and 03:00 Kampala time."""
+    if moment is None:
+        return ""
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    local = moment.astimezone(LOCAL_TZ)
+    return f"{local.day} {local:%b %Y}"
+
+
 OTP_TTL = timedelta(minutes=10)
 OTP_LOCK = timedelta(minutes=15)
 SESSION_TTL = 60 * 60
@@ -318,9 +335,14 @@ async def _assert_customer_delivery_ready(doc: Agreement, channels: Literal["ema
 
 async def create(principal: Principal, body: AgreementCreate, ip: str | None = None) -> Agreement:
     year = datetime.now(UTC).year
-    reference = await repository.next_reference(year)
+    is_test = bool(getattr(body, "is_test", False))
+    reference = await repository.next_reference(year, practice=is_test)
     template = await current_template()
     fields = rules.initial_fields()
+    if is_test:
+        name_key = rules.field_key("client.name")
+        fields[name_key] = fields[name_key].model_copy(update={"value": "Practice Client (TEST)", "revision": 1,
+            "updated_by": principal.user_id, "updated_at": datetime.now(UTC)})
     enquiry_id = _oid(body.enquiry_id) if body.enquiry_id else None
     if body.enquiry_id and enquiry_id is None:
         raise ValidationFailed("The enquiry reference is invalid.", {"enquiry_id": "invalid"})
@@ -348,7 +370,7 @@ async def create(principal: Principal, body: AgreementCreate, ip: str | None = N
         assigned_nurse_id=nurse_id, fields=fields,
         template_version=template.version if template else 0,
         template_hash=template.template_hash if template else "",
-        schedule_b_computed=rules.calculate_fees(0),
+        schedule_b_computed=rules.calculate_fees(0), is_test=is_test,
     )
     _event(doc, "created", principal.user_id, {"enquiry_id": str(enquiry_id) if enquiry_id else None}, ip)
     await doc.insert()
@@ -383,8 +405,9 @@ async def _backfill_registry_fields(doc: Agreement) -> None:
 
 async def list_agreements(*, status: str | None = None, q: str | None = None,
                           assigned_nurse_id: str | None = None, limit: int = 50,
-                          skip: int = 0) -> dict[str, Any]:
-    query: dict[str, Any] = {}
+                          skip: int = 0, practice: bool = False) -> dict[str, Any]:
+    # Practice agreements are kept out of the real list unless asked for.
+    query: dict[str, Any] = {"is_test": True} if practice else {"is_test": {"$ne": True}}
     if status:
         if status not in {"draft", "sent", "client_in_progress", "client_signed", "completed", "changes_requested", "expired", "voided"}:
             raise ValidationFailed("Unknown agreement status", {"status": "invalid"})
@@ -418,7 +441,7 @@ def agreement_summary(doc: Agreement) -> dict[str, Any]:
         "client_email": val("client.email"), "client_phone": val("client.phone"),
         "assigned_nurse_id": str(doc.assigned_nurse_id) if doc.assigned_nurse_id else None,
         "created_at": doc.created_at, "updated_at": doc.updated_at,
-        "expires_at": doc.expires_at,
+        "expires_at": doc.expires_at, "is_test": doc.is_test,
     }
 
 
@@ -436,12 +459,26 @@ def agreement_detail(doc: Agreement) -> dict[str, Any]:
     }
 
 
+def _record_message_failure(doc: Agreement, stage: str, channel: str, reason: str) -> None:
+    _event(doc, "message_failed", "system", {"stage": stage, "channel": channel, "reason": reason})
+
+
+def _failure_reasons(doc: Agreement, since: int) -> dict[str, str]:
+    """Why each channel failed in the events recorded after index `since`."""
+    out: dict[str, str] = {}
+    for e in doc.events[since:]:
+        if e.type == "message_failed" and e.detail.get("channel"):
+            out[str(e.detail["channel"])] = str(e.detail.get("reason") or "The provider did not accept the message.")
+    return out
+
+
 async def _send_message(doc: Agreement, stage: str, channel: Literal["email", "sms"], *, link: str = "",
-                        code: str = "", expires_days: int = 14, reason: str = "", recipient: str | None = None) -> bool:
+                        code: str = "", expires_days: int = 14, reason: str = "", recipient: str | None = None,
+                        attachments: list[dict[str, Any]] | None = None) -> bool:
     template, version, _ = await messages.get_template(stage, channel)
     variables = messages.message_variables(
         doc, link=link, code=code, expires_days=expires_days,
-        expires_date=doc.expires_at.date().isoformat() if doc.expires_at else "",
+        expires_date=local_expiry_date(doc.expires_at),
         reason=reason,
     )
     text_template = template.body
@@ -450,6 +487,7 @@ async def _send_message(doc: Agreement, stage: str, channel: Literal["email", "s
         "subject": template.subject, "preheader": template.preheader,
         "body": template.body, "button": template.button, "footer_note": template.footer_note,
     })
+    fail_reason = ""
     capture = _DIAGNOSTIC_CAPTURE.get()
     if capture is not None:
         if channel == "sms":
@@ -466,10 +504,12 @@ async def _send_message(doc: Agreement, stage: str, channel: Literal["email", "s
         to = recipient or (doc.fields.get(rules.field_key("client.phone")).value if doc.fields.get(rules.field_key("client.phone")) else None)
         phone = normalise_e164(str(to or ""))
         if not phone or not is_mobile(phone):
+            _record_message_failure(doc, stage, channel, "The agreement has no valid mobile number.")
             return False
         ready, _reason = await _channel_delivery_readiness("sms", phone)
         if not ready:
             ok = False
+            fail_reason = _reason
         else:
             try:
                 messages.validate_rendered_sms(rendered)
@@ -486,18 +526,28 @@ async def _send_message(doc: Agreement, stage: str, channel: Literal["email", "s
     else:
         to = recipient or (doc.fields.get(rules.field_key("client.email")).value if doc.fields.get(rules.field_key("client.email")) else None)
         if not isinstance(to, str) or "@" not in to:
+            _record_message_failure(doc, stage, channel, "The agreement has no valid email address.")
             return False
         subject, body_html, plain = messages.render_email(stage, template, variables)
+        if doc.is_test:
+            subject = "[PRACTICE] " + subject
         ready, _reason = await _channel_delivery_readiness("email", to)
         if not ready:
             ok = False
+            fail_reason = _reason
         else:
-            result = await get_email_provider().send([to], subject, body_html, plain)
+            result = await get_email_provider().send([to], subject, body_html, plain, attachments=attachments)
+            if attachments and not (result.ok and getattr(result, "provider_message_id", None) != "console"):
+                # The copy could not be attached (storage/mail issue): still send the email with its secure link.
+                result = await get_email_provider().send([to], subject, body_html, plain)
             # SystemMailOutboxAdapter intentionally falls back to a console log on
             # infrastructure errors. That is not delivery and must count as failure.
             ok = bool(result.ok and getattr(result, "provider_message_id", None) != "console")
+            if not ok:
+                fail_reason = "The mail service did not accept the message (it fell back to the console log). Check Mail settings, the Postgres mail database and the outbox."
     _event(doc, "message_sent" if ok else "message_failed", "system", {
         "stage": stage, "channel": channel, "template_version": version,
+        "reason": None if ok else (fail_reason or "The provider did not accept the message."),
         "recipient_hint": mask(str(to)) if channel == "sms" and to else ("email" if to else None),
     })
     await doc.save()
@@ -526,6 +576,7 @@ async def send(doc: Agreement, principal: Principal, body: SendAgreement, ip: st
     doc.status = "sent"
     _event(doc, "send_attempted", principal.user_id, {"channels": body.channels, "expires_days": body.expires_days}, ip)
     await doc.save()
+    events_before = len(doc.events)
     results = {}
     message_stage = "amendment_sent" if doc.parent_agreement_id else "agreement_sent"
     if body.channels in {"email", "both"}:
@@ -549,7 +600,7 @@ async def send(doc: Agreement, principal: Principal, body: SendAgreement, ip: st
     await doc.save()
     await audit.record(principal, "agreement.sent", "agreement", str(doc.id), doc.reference,
                        after={"status": doc.status, "channels": body.channels, "delivery": results}, ip_hash=ip)
-    return {"agreement": agreement_detail(doc), "delivery": results}
+    return {"agreement": agreement_detail(doc), "delivery": results, "reasons": _failure_reasons(doc, events_before)}
 
 
 async def patch_fields(doc: Agreement, changes: list[FieldPatch], *, actor: str,
@@ -884,6 +935,7 @@ async def public_view(doc: Agreement, *, signed: bool = False) -> dict[str, Any]
     return {
         "company": COMPANY,
         "reference": doc.reference,
+        "is_test": doc.is_test,
         "parent_reference": parent.reference if parent else None,
         "status": doc.status,
         "template_version": doc.template_version,
@@ -965,6 +1017,52 @@ async def _store_signature(doc: Agreement, role: str, name: str, method: str, si
     )
 
 
+ESIGN_CONSENT_VERSION = "esign-v1"
+ESIGN_CONSENT_TEXT = ("I agree to sign this agreement electronically. I understand that my electronic "
+                      "signature has the same effect as a handwritten signature.")
+
+
+def _field_text(doc: Agreement, path: str) -> str | None:
+    field_value = doc.fields.get(rules.field_key(path))
+    value = field_value.value if field_value else None
+    return str(value).strip() if value not in (None, "") else None
+
+
+def _enrich_signature(doc: Agreement, sig: AgreementSignature, ip: str | None, *, consent: bool) -> None:
+    """Add the evidence a court or auditor would ask for to the signature record."""
+    sig.ip_address = (ip or "")[:64] or None
+    sig.link_generation = doc.link_generation
+    sig.link_token_hash_prefix = (doc.token_hash or "")[:12] or None
+    if sig.role != "bloomwell":
+        sig.signer_email = _field_text(doc, "client.email")
+        sig.signer_phone = _field_text(doc, "client.phone")
+    if consent:
+        sig.esign_consent = {"accepted": True, "text": ESIGN_CONSENT_TEXT,
+                             "version": ESIGN_CONSENT_VERSION, "at": datetime.now(UTC).isoformat()}
+
+
+async def _store_sealed_pdf(key: str, data: bytes, *, practice: bool = False) -> tuple[Bucket, bool]:
+    """Write the sealed PDF to the dedicated locked bucket when one is configured."""
+    settings = get_settings()
+    storage = get_storage()
+    if not practice and _DIAGNOSTIC_CAPTURE.get() is None and settings.s3_bucket_signed:
+        await storage.put_locked(Bucket.SIGNED, key, data, "application/pdf", settings.s3_signed_retention_days)
+        return Bucket.SIGNED, True
+    await storage.put(Bucket.PRIVATE, key, data, "application/pdf")
+    return Bucket.PRIVATE, False
+
+
+async def _sealed_attachments(doc: Agreement) -> list[dict[str, Any]] | None:
+    if not get_settings().agreement_email_attach_pdf:
+        return None
+    try:
+        data = await get_sealed_pdf(doc)
+    except Exception:  # never block completion mail on the attachment
+        log.warning("could not attach sealed PDF for %s", doc.reference)
+        return None
+    return [{"filename": f"{doc.reference}-signed-agreement.pdf", "content_type": "application/pdf", "data": data}]
+
+
 async def client_sign(doc: Agreement, body, ip: str | None, user_agent: str | None) -> str:
     if doc.status not in {"sent", "client_in_progress"}:
         raise Conflict("This agreement is not ready for a client signature")
@@ -974,6 +1072,8 @@ async def client_sign(doc: Agreement, body, ip: str | None, user_agent: str | No
     current_hash = rules.canonical_hash(doc.fields, doc.template_version, doc.template_hash)
     if not hmac.compare_digest(current_hash, body.expected_content_hash):
         raise Conflict("The agreement changed since you reviewed it. Reload and review the latest version before signing.")
+    if not getattr(body, "esign_consent", False):
+        raise ValidationFailed("Tick the box to agree to sign electronically before signing.", {"esign_consent": "required"})
     if body.method not in {"drawn", "thumbprint", "password", "biometric"}:
         raise ValidationFailed("Choose a valid signing method", {"method": "invalid"})
     missing_consent = rules.missing_signing_consent(doc.fields)
@@ -1000,6 +1100,7 @@ async def client_sign(doc: Agreement, body, ip: str | None, user_agent: str | No
     sig = await _store_signature(doc, body.role, body.name, body.method, body.signature_base64,
                                  current_hash, ip=ip, user_agent=user_agent,
                                  otp_verified_at=otp_rows[0].used_at, verification=evidence)
+    _enrich_signature(doc, sig, ip, consent=True)
     doc.signatures.append(sig)
     doc.status = "client_signed"
     clear_link(doc, "signed")
@@ -1014,7 +1115,7 @@ async def client_sign(doc: Agreement, body, ip: str | None, user_agent: str | No
     capture = _DIAGNOSTIC_CAPTURE.get()
     if staff and capture is not None:
         capture.setdefault("messages", []).append({"stage": "client_signed_staff", "channel": "email"})
-    elif staff:
+    elif staff and not doc.is_test:
         template_msg, _, _ = await messages.get_template("client_signed_staff", "email")
         vars_ = messages.message_variables(doc, link=f"https://bhcug.com/admin/agreements/{doc.id}")
         subject, body_html, plain = messages.render_email("client_signed_staff", template_msg, vars_)
@@ -1053,9 +1154,10 @@ async def _seal(doc: Agreement, content_hash: str) -> None:
     pdf_bytes = render.render_pdf(html_doc)
     pdf_hash = hashlib.sha256(pdf_bytes).hexdigest()
     key = f"agreements/{doc.reference}/sealed/{pdf_hash}.pdf"
-    await get_storage().put(Bucket.PRIVATE, key, pdf_bytes, "application/pdf")
+    bucket, locked = await _store_sealed_pdf(key, pdf_bytes, practice=doc.is_test)
     doc.sealed = {
         "pdf_key": key, "pdf_sha256": pdf_hash, "sealed_at": datetime.now(UTC),
+        "bucket": bucket.value, "object_lock": locked,
         "certificate_json": certificate,
     }
     doc.status = "completed"
@@ -1097,6 +1199,7 @@ async def countersign(doc: Agreement, principal: Principal, name: str, method: s
         sig = await _store_signature(doc, "bloomwell", name, method, signature_base64,
                                      content_hash, ip=ip, user_agent=user_agent,
                                      staff_user_id=principal.user_id, verification=evidence)
+        _enrich_signature(doc, sig, ip, consent=False)
         doc.signatures.append(sig)
     doc.session_version += 1
     clear_link(doc, "signed")
@@ -1112,7 +1215,7 @@ async def countersign(doc: Agreement, principal: Principal, name: str, method: s
     doc.view_token_hash = links.link_hash(view_token)
     await doc.save()
     link = messages.public_link(view_token)
-    await _send_message(doc, "completed_client", "email", link=link)
+    await _send_message(doc, "completed_client", "email", link=link, attachments=await _sealed_attachments(doc))
     await _send_message(doc, "completed_client", "sms", link=link)
     await audit.record(principal, "agreement.completed", "agreement", str(doc.id), doc.reference,
                        after={"status": "completed", "content_hash": content_hash,
@@ -1124,7 +1227,7 @@ async def get_sealed_pdf(doc: Agreement) -> bytes:
     key = doc.sealed.get("pdf_key") if doc.status == "completed" else None
     if not key:
         raise NotFound("The completed agreement PDF is not available")
-    data = await get_storage().get(Bucket.PRIVATE, key)
+    data = await get_storage().get(Bucket(doc.sealed.get("bucket") or "private"), key)
     expected = doc.sealed.get("pdf_sha256")
     if not expected or not hmac.compare_digest(hashlib.sha256(data).hexdigest(), expected):
         raise Conflict("The sealed agreement file failed its integrity check")
@@ -1158,7 +1261,8 @@ async def delete_agreement(doc: Agreement, principal: Principal, ip: str | None)
     link); completed agreements are legal records and are never deleted. The audit log keeps
     a record of every deletion.
     """
-    blocked = rules.deletion_block_reason(doc.status)
+    # Practice agreements can be deleted in any status; real ones keep the legal-record rules.
+    blocked = None if doc.is_test else rules.deletion_block_reason(doc.status)
     if blocked:
         raise Conflict(blocked)
     if await Agreement.find(Agreement.parent_agreement_id == doc.id).count():
@@ -1168,7 +1272,8 @@ async def delete_agreement(doc: Agreement, principal: Principal, ip: str | None)
         keys.append(doc.sealed["pdf_key"])
     for key in keys:
         try:
-            await get_storage().delete(Bucket.PRIVATE, key)
+            target = Bucket(doc.sealed.get("bucket") or "private") if key == doc.sealed.get("pdf_key") else Bucket.PRIVATE
+            await get_storage().delete(target, key)
         except Exception:  # best effort: never block the delete on storage
             log.warning("could not remove stored file for %s", doc.reference)
     reference, agreement_id, status, void_reason = doc.reference, str(doc.id), doc.status, doc.void_reason
@@ -1176,6 +1281,26 @@ async def delete_agreement(doc: Agreement, principal: Principal, ip: str | None)
     await doc.delete()
     await audit.record(principal, "agreement.deleted", "agreement", agreement_id, reference,
                        before={"status": status, "reason": void_reason}, ip_hash=ip)
+
+
+async def purge_practice_agreements(*, older_than_days: int | None = None, principal: Principal | None = None,
+                                    ip: str | None = None) -> int:
+    """Delete practice agreements (all, or only those older than the given age), newest first."""
+    docs = await Agreement.find(Agreement.is_test == True).sort("-created_at").to_list()  # noqa: E712
+    cutoff = datetime.now(UTC) - timedelta(days=older_than_days) if older_than_days is not None else None
+    removed = 0
+    for doc in docs:
+        created = doc.created_at
+        if cutoff is not None and created is not None:
+            created = created if created.tzinfo else created.replace(tzinfo=UTC)
+            if created > cutoff:
+                continue
+        try:
+            await delete_agreement(doc, principal, ip)  # type: ignore[arg-type]
+            removed += 1
+        except Exception:
+            log.warning("could not purge practice agreement %s", doc.reference)
+    return removed
 
 
 async def save_template_draft(body: TemplateDraft, principal: Principal) -> AgreementTemplate:
@@ -1277,6 +1402,10 @@ async def sweep_agreements(now: datetime | None = None) -> int:
     now = now or datetime.now(UTC)
     changed = 0
     try:
+        await purge_practice_agreements(older_than_days=get_settings().agreement_practice_retention_days)
+    except Exception:
+        log.warning("practice agreement cleanup failed")
+    try:
         docs = await Agreement.find(Agreement.status.in_(["sent", "client_in_progress"])).to_list()
         for doc in docs:
             expiry = doc.expires_at or doc.token_expires_at
@@ -1354,6 +1483,7 @@ async def reissue_link(doc: Agreement, principal: Principal, channels: Literal["
     doc.channel_preference = channels
     _event(doc, "link_reissued", principal.user_id, {"channels": channels}, ip)
     await doc.save()
+    events_before = len(doc.events)
     results: dict[str, bool] = {}
     message_stage = "amendment_sent" if doc.parent_agreement_id else "agreement_sent"
     if channels in {"email", "both"}:
@@ -1375,7 +1505,7 @@ async def reissue_link(doc: Agreement, principal: Principal, channels: Literal["
     await doc.save()
     await audit.record(principal, "agreement.link_reissued", "agreement", str(doc.id), doc.reference,
                        after={"status": doc.status, "channels": channels, "delivery": results}, ip_hash=ip)
-    return {"agreement": agreement_detail(doc), "delivery": results}
+    return {"agreement": agreement_detail(doc), "delivery": results, "reasons": _failure_reasons(doc, events_before)}
 
 
 async def amend(doc: Agreement, principal: Principal, clause: str, ip: str | None = None) -> Agreement:

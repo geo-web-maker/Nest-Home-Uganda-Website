@@ -80,6 +80,18 @@ class Settings(BaseSettings):
     s3_bucket_mail: str = ""
     s3_key: str = ""
     s3_secret: str = ""
+    # Optional separate bucket (e.g. Backblaze B2 with Object Lock enabled) for sealed
+    # agreements. Leave s3_bucket_signed empty to keep using the private bucket.
+    # The signed_* credentials fall back to the main S3 credentials when empty.
+    s3_bucket_signed: str = ""
+    s3_signed_endpoint: str = ""
+    s3_signed_region: str = ""
+    s3_signed_key: str = ""
+    s3_signed_secret: str = ""
+    s3_signed_retention_days: int = 2555  # about 7 years
+    s3_signed_lock_mode: str = "GOVERNANCE"  # or COMPLIANCE (cannot be shortened or removed by anyone)
+    agreement_email_attach_pdf: bool = True
+    agreement_practice_retention_days: int = 3  # practice agreements are auto-deleted after this many days
 
     # Dedicated Postgres database and bootstrap-only mail settings. Mail values otherwise
     # live in the Postgres mail_settings table.

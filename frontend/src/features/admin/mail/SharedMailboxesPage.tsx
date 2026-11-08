@@ -30,14 +30,12 @@ export function SharedMailboxesPage() {
 
   const shared = useQuery({
     queryKey: ['mail', 'shared'],
-    queryFn: () => apiClient.get<{ items: SharedMailbox[]; assignable_users?: SharedPerson[]; directory_ok?: boolean }>('/mail/shared'),
+    queryFn: () => apiClient.get<{ items: SharedMailbox[]; assignable_users?: SharedPerson[] }>('/mail/shared'),
     retry: false,
   });
   const people = shared.data?.assignable_users ?? [];
-  const directoryDown = shared.data?.directory_ok === false;
   /** Current name and email come from the server. A user who no longer exists is labelled, never shown as a raw id. */
   const nameOf = (member: SharedMember) => {
-    if (directoryDown && !member.name && !member.email) return t('mailShared.unknownUser');
     if (member.missing || (!member.name && !member.email)) return t('mailShared.removedUser');
     return member.email ? `${member.name ?? member.email} (${member.email})` : String(member.name);
   };
@@ -135,13 +133,7 @@ export function SharedMailboxesPage() {
         }
       />
       {shared.isError ? <Notice tone="info">{t('mailShared.needsTotp')}</Notice> : null}
-      {directoryDown ? (
-        <Notice tone="error">
-          {t('mailShared.directoryDown')}{' '}
-          <Button variant="outline" size="compact" onClick={() => void reload()}>{t('mailShared.retry')}</Button>
-        </Notice>
-      ) : null}
-      {!directoryDown && missingCount > 0 ? (
+      {missingCount > 0 ? (
         <Notice tone="info">
           {t('mailShared.missingNotice', { count: missingCount })}{' '}
           <Button variant="outline" size="compact" disabled={pruneMissing.isPending} onClick={() => pruneMissing.mutate()}>

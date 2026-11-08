@@ -31,19 +31,19 @@ describe('SetPasswordPage', () => {
   });
 
   it('rejects a short password without calling the API', async () => {
-    const post = vi.spyOn(apiClient, 'post');
+    const post = vi.spyOn(apiClient, 'post').mockResolvedValue({ status: 'ok' });
     setup();
     await fill('short', 'short');
     expect(await screen.findByText('Use at least 8 characters.')).toBeInTheDocument();
-    expect(post).not.toHaveBeenCalled();
+    expect(post).not.toHaveBeenCalledWith('/auth/set-password', expect.anything(), expect.anything());
   });
 
   it('rejects mismatched passwords', async () => {
-    const post = vi.spyOn(apiClient, 'post');
+    const post = vi.spyOn(apiClient, 'post').mockResolvedValue({ status: 'ok' });
     setup();
     await fill(GOOD, `${GOOD}x`);
     expect(await screen.findByText('The two passwords do not match.')).toBeInTheDocument();
-    expect(post).not.toHaveBeenCalled();
+    expect(post).not.toHaveBeenCalledWith('/auth/set-password', expect.anything(), expect.anything());
   });
 
   it('posts the token and password, then offers sign in', async () => {
@@ -73,14 +73,34 @@ describe('SetPasswordPage', () => {
     );
   });
 
-  it('explains an expired or used link', async () => {
+  it('explains a used link before a password is typed, and offers sign in', async () => {
     vi.spyOn(apiClient, 'post').mockRejectedValue(
-      new ApiError(422, 'validation_failed', 'This link has expired or was already used.', {
-        token: 'invalid',
+      new ApiError(422, 'validation_error', 'This link was already used.', {
+        token: 'invalid', state: 'used', ref: 'S3-ABC123',
       }),
     );
     setup();
+    expect(await screen.findByRole('heading', { name: 'This link was already used' })).toBeInTheDocument();
+    expect(screen.getByText(/Reference: S3-ABC123/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Go to sign in' })).toHaveAttribute('href', '/admin/login');
+    expect(screen.queryByLabelText(/New password/)).not.toBeInTheDocument();
+  });
+
+  it('explains an incomplete link without calling the server', () => {
+    const post = vi.spyOn(apiClient, 'post');
+    setup('/admin/set-password?token=abc');
+    expect(screen.getByRole('heading', { name: 'This link is incomplete' })).toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it('keeps the form and says the link is fine when the network fails on save', async () => {
+    vi.spyOn(apiClient, 'post').mockImplementation(async (url: string) => {
+      if (url === '/auth/set-password/check') return { status: 'ok' };
+      throw new ApiError(0, 'network_error', 'Network error');
+    });
+    setup();
     await fill(GOOD, GOOD);
-    expect(await screen.findByRole('alert')).toHaveTextContent('expired or was already used');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Your link is fine');
+    expect(screen.getByLabelText(/New password/)).toBeInTheDocument();
   });
 });

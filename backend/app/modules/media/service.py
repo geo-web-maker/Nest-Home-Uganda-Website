@@ -75,7 +75,7 @@ async def create(
 ) -> MediaAdminOut:
     """Validate and store one image, then record its metadata.
 
-    TODO(claude): safe image decoding, width and height, responsive variants (480, 800, 1280)
+    TODO: safe image decoding, width and height, responsive variants (480, 800, 1280)
     and the public URL. They need an image library that is not pinned yet.
     """
     if not data:
@@ -91,7 +91,7 @@ async def create(
     uploader = principal.user_id if PydanticObjectId.is_valid(principal.user_id) else None
     doc = Media(
         storage_key=key,
-        public_url="",  # TODO(claude): build from the public bucket configuration.
+        public_url="",  # TODO: build from the public bucket configuration.
         mime=mime,
         size_bytes=len(data),
         alt_text=alt_text,

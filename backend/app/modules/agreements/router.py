@@ -103,8 +103,10 @@ async def admin_list(
     nurse: str | None = Query(default=None, max_length=30),
     limit: int = Query(default=50, ge=1, le=100),
     skip: int = Query(default=0, ge=0),
+    practice: bool = Query(default=False),
 ):
-    return await service.list_agreements(status=status, q=q, assigned_nurse_id=nurse, limit=limit, skip=skip)
+    return await service.list_agreements(status=status, q=q, assigned_nurse_id=nurse, limit=limit, skip=skip,
+                                         practice=practice)
 
 
 @admin_router.post("", status_code=201)
@@ -209,6 +211,16 @@ async def admin_void(agreement_id: str, body: VoidAgreement, request: Request,
     doc = await service.get_agreement(agreement_id)
     await service.void(doc, principal, body.reason, hash_ip(client_ip(request)))
     return service.agreement_detail(doc)
+
+
+@admin_router.delete("/practice")
+async def admin_delete_practice(request: Request,
+                                principal: Principal = Depends(require_scopes("agreements:void")),
+                                mail_totp: str | None = Cookie(default=None)):
+    """Remove every practice agreement (and its files) in one go."""
+    await assert_totp_session(principal, mail_totp)
+    removed = await service.purge_practice_agreements(principal=principal, ip=hash_ip(client_ip(request)))
+    return {"deleted": removed}
 
 
 @admin_router.delete("/{agreement_id}")

@@ -60,6 +60,13 @@ class AgreementSignature(BaseModel):
     content_hash: str
     ip_hash: str | None = None
     user_agent: str | None = None
+    # Evidence added for the completion certificate.
+    ip_address: str | None = None
+    signer_email: str | None = None
+    signer_phone: str | None = None
+    link_generation: int | None = None
+    link_token_hash_prefix: str | None = None
+    esign_consent: dict[str, Any] | None = None
     otp_verified_at: datetime | None = None
     in_person: bool = False
     staff_device_user_id: str | None = None
@@ -92,6 +99,8 @@ class Agreement(TimestampedDocument):
     void_reason: str | None = None
     parent_agreement_id: PydanticObjectId | None = None
     variation_clause: str | None = None
+    # Practice agreement: full flow for testing, never locked, auto-deleted, hidden from the real list.
+    is_test: bool = False
 
     class Settings:
         name = "agreements"

@@ -9,6 +9,7 @@ class AgreementCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     enquiry_id: str | None = Field(default=None, max_length=30)
     assigned_nurse_id: str | None = Field(default=None, max_length=30)
+    is_test: bool = False
 
 
 class FieldPatch(BaseModel):
@@ -80,6 +81,8 @@ class _SignatureEvidence(BaseModel):
 class SignAgreement(_SignatureEvidence):
     role: Literal["client", "representative", "witness", "interpreter"] = "client"
     expected_content_hash: str = Field(min_length=64, max_length=64)
+    # The client must tick the electronic-signature consent box. The wording is fixed on the server.
+    esign_consent: bool = False
 
 
 class CountersignAgreement(_SignatureEvidence):

@@ -46,6 +46,7 @@ class PasswordReset(TimestampedDocument):
     token_hash: str
     expires_at: datetime  # TTL index (migration)
     used_at: datetime | None = None
+    superseded_at: datetime | None = None  # replaced by a newer link (shown to the person as such)
     purpose: str = "reset"  # reset | invite; used to prevent cross-purpose link redemption
 
     class Settings:

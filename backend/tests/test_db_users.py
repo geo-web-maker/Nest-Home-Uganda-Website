@@ -291,7 +291,10 @@ async def test_the_emailed_link_sets_a_password_once(
     login = await client.post("/api/v1/auth/login", json=new_login)
     assert login.status_code == 200
     again = await client.post(url, json={"token": raw, "password": "another new passphrase"})
-    assert again.status_code == 422 and again.json()["error"]["fields"] == {"token": "invalid"}
+    assert again.status_code == 422
+    fields = again.json()["error"]["fields"]
+    assert fields["token"] == "invalid" and fields["state"] == "used"
+    assert fields["ref"].startswith("S3-")
 
 
 async def test_expired_unknown_and_deactivated_links_are_refused(
@@ -318,3 +321,40 @@ async def test_expired_unknown_and_deactivated_links_are_refused(
     await user.save()
     r = await client.post(url, json={"token": "l" * 40, "password": "a brand new passphrase"})
     assert r.status_code == 422
+
+
+async def test_link_failures_say_why_and_a_resent_invite_keeps_the_older_link(
+    mongo: object, client: httpx.AsyncClient, outbox: Outbox
+) -> None:
+    url = "/api/v1/auth/set-password"
+    check = f"{url}/check"
+    unknown = await client.post(check, json={"token": "u" * 40})
+    assert unknown.json()["error"]["fields"]["state"] == "not_found"
+    short = await client.post(check, json={"token": "abc"})
+    assert short.json()["error"]["fields"]["state"] == "malformed"
+
+    user = await make_user()
+    await PasswordReset(
+        user_id=user.id, token_hash=hash_token("e" * 40),
+        expires_at=datetime.now(UTC) - timedelta(minutes=1),
+    ).insert()
+    expired = await client.post(check, json={"token": "e" * 40})
+    assert expired.json()["error"]["fields"]["state"] == "expired"
+
+    await PasswordReset(
+        user_id=user.id, token_hash=hash_token("r" * 40), used_at=datetime.now(UTC),
+        superseded_at=datetime.now(UTC), expires_at=datetime.now(UTC) + timedelta(hours=1),
+    ).insert()
+    replaced = await client.post(check, json={"token": "r" * 40})
+    assert replaced.json()["error"]["fields"]["state"] == "superseded"
+
+    # Pasted damage is repaired: a whole URL with spaces around it and a trailing full stop.
+    await PasswordReset(
+        user_id=user.id, token_hash=hash_token("g" * 40), purpose="invite",
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
+    ).insert()
+    pasted = f"  https://example.org/admin/set-password?token={'g' * 40}&purpose=invite. "
+    ok = await client.post(check, json={"token": pasted, "purpose": "invite"})
+    assert ok.status_code == 200 and ok.json()["purpose"] == "invite"
+    wrong = await client.post(check, json={"token": "g" * 40, "purpose": "reset"})
+    assert wrong.json()["error"]["fields"]["state"] == "wrong_kind"
