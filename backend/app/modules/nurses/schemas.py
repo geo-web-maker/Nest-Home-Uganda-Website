@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from app.core.password_policy import validate_password
 
 
 class DeviceRegistration(BaseModel):
@@ -25,7 +27,12 @@ class NurseDirectCreate(BaseModel):
     email: EmailStr
     phone: str = Field(min_length=9, max_length=24)
     staff_number: str = Field(min_length=2, max_length=40)
-    password: str = Field(min_length=12, max_length=200)
+    password: str = Field(min_length=1, max_length=200)
+
+    @field_validator("password")
+    @classmethod
+    def _password_ok(cls, value: str) -> str:
+        return validate_password(value)
     supervisor_id: str | None = Field(default=None, min_length=8, max_length=160)
     team_id: str | None = None
 
@@ -108,4 +115,9 @@ class NurseDetailsResponse(BaseModel):
 class NursePasswordSet(BaseModel):
     """Superadmin-only: give an invited nurse a working password at once."""
 
-    password: str = Field(min_length=12, max_length=200)
+    password: str = Field(min_length=1, max_length=200)
+
+    @field_validator("password")
+    @classmethod
+    def _password_ok(cls, value: str) -> str:
+        return validate_password(value)

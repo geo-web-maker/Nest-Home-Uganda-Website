@@ -23,6 +23,7 @@ from app.modules.auth import service as auth_service
 from app.modules.auth.models import PasswordReset, User
 from app.modules.auth.scopes import SCOPE_PRESETS
 from app.modules.notifications.providers import get_email_provider
+from app.modules.users import link_state
 from app.modules.users import repository as repo
 from app.modules.users.schemas import (
     AdminUserOut,
@@ -37,6 +38,7 @@ from app.modules.users.schemas import (
 log = logging.getLogger("app.users")
 ITEM_TYPE = "user"
 INVITE_DAYS = 7  # BUILDER 12.5
+INVITE_LINKS_KEPT = 5  # a resent invite does not kill the earlier, still-valid one
 RESET_MINUTES = 60
 
 
@@ -168,7 +170,13 @@ def _require_mobile(user_phone: str | None, channels: list[str]) -> None:
 
 
 async def _issue_link(user: User, now: datetime, minutes: int, *, purpose: str = "reset") -> str:
-    await repo.invalidate_open_links(user.id, now)
+    if purpose == "invite":
+        # Resending an invite keeps earlier invite links working (a newer message must not kill
+        # an older one); only reset links are withdrawn. Redeeming any one closes the rest.
+        await repo.invalidate_open_links(user.id, now, purposes=("reset",))
+        await repo.trim_open_invites(user.id, now, keep=INVITE_LINKS_KEPT - 1)
+    else:
+        await repo.invalidate_open_links(user.id, now)
     raw = new_opaque_token()
     await PasswordReset(
         user_id=user.id,
@@ -338,33 +346,53 @@ async def sign_out(principal: Principal, user_id: str, ip_hash: str | None) -> D
     return Done(status="signed_out")
 
 
+async def _resolve_link(token: str, now: datetime, expected_purpose: str | None):
+    cleaned = link_state.clean_token(token)
+    if cleaned is None:
+        raise link_state.LinkProblem("malformed")
+    digest = hash_token(cleaned)
+    fingerprint = digest[:6].upper()
+    reset = await repo.reset_by_hash(digest)
+    if reset is None:
+        raise link_state.LinkProblem("not_found", fingerprint)
+    user = await auth_repo.user_by_id(str(reset.user_id))
+    state = link_state.diagnose(reset, user, now, expected_purpose)
+    if state:
+        raise link_state.LinkProblem(state, fingerprint)
+    return reset, user, fingerprint
+
+
+async def check_link(token: str, *, expected_purpose: str | None = None) -> dict:
+    """Say whether a link can still be used, without using it up."""
+    reset, _user, _fp = await _resolve_link(token, datetime.now(UTC), expected_purpose)
+    return {
+        "status": "ok",
+        "purpose": getattr(reset, "purpose", "reset"),
+        "expires_at": reset.expires_at.isoformat(),
+    }
+
+
 async def set_password(
     token: str, password: str, ip_hash: str | None, *, expected_purpose: str | None = None
 ) -> Done:
     """Redeem an invite or reset link. One use, and only before it expires."""
     now = datetime.now(UTC)
-    bad = ValidationFailed("This link has expired or was already used.", {"token": "invalid"})
-    reset = await repo.reset_by_hash(hash_token(token))
-    if (
-        reset is None
-        or reset.used_at is not None
-        or reset.expires_at <= now
-        or (expected_purpose is not None and getattr(reset, "purpose", "reset") != expected_purpose)
-    ):
-        raise bad
-    user = await auth_repo.user_by_id(str(reset.user_id))
-    if user is None or not user.is_active:
-        raise bad
+    reset, user, fingerprint = await _resolve_link(token, now, expected_purpose)
     if not await repo.claim_reset(PydanticObjectId(reset.id), now):
-        raise bad
-    user.password_hash = hash_password(password)
-    user.temp_password_expires_at = None
-    if getattr(reset, "purpose", "reset") == "invite":
-        user.invite_accepted_at = now
-    user.failed_logins = 0
-    user.last_failed_at = None
-    user.locked_until = None
-    await user.save()
+        raise link_state.LinkProblem("used", fingerprint)
+    try:
+        user.password_hash = hash_password(password)
+        user.temp_password_expires_at = None
+        if getattr(reset, "purpose", "reset") == "invite":
+            user.invite_accepted_at = now
+        user.failed_logins = 0
+        user.last_failed_at = None
+        user.locked_until = None
+        await user.save()
+    except Exception:
+        await repo.release_reset(PydanticObjectId(reset.id))  # a failed save must not burn the link
+        raise
+    await repo.close_open_links(user.id, now)
     await auth_service.sign_out_user(user)
     await audit.record(
         None, "user.set_password", ITEM_TYPE, str(user.id), user.email, ip_hash=ip_hash

@@ -324,7 +324,7 @@ def _role(value: Any) -> str:
     return role
 
 
-def describe_members(rows: list[Any], users: dict[str, Any], directory_ok: bool = True) -> list[dict[str, Any]]:
+def describe_members(rows: list[Any], users: dict[str, Any]) -> list[dict[str, Any]]:
     """Member rows with the person's current name and email. A member whose user no longer
     exists is flagged `missing` so the screen can offer to remove it instead of showing an id."""
     out = []
@@ -336,7 +336,7 @@ def describe_members(rows: list[Any], users: dict[str, Any], directory_ok: bool 
             "name": str(person.name) if person else None,
             "email": str(person.email) if person else None,
             "is_active": bool(getattr(person, "is_active", True)) if person else False,
-            "missing": person is None and directory_ok,  # never claim \"removed\" when the lookup itself failed
+            "missing": person is None,
         })
     return out
 

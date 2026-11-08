@@ -46,6 +46,7 @@ PUBLIC_WRITES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/api/v1/auth/refresh"),
         ("POST", "/api/v1/auth/logout"),
         ("POST", "/api/v1/auth/set-password"),
+        ("POST", "/api/v1/auth/set-password/check"),
         ("POST", "/api/v1/auth/accept-invite"),
         ("POST", "/api/v1/auth/native/login"),
         ("POST", "/api/v1/auth/native/refresh"),

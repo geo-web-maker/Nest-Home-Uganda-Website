@@ -9,6 +9,7 @@ import { useAuth } from '../../auth/useAuth';
 import '../care.css';
 import './nurse-detail.css';
 import { Notice } from '../../../../components/admin/Notice';
+import { MIN_PASSWORD_LENGTH, isWeakPassword } from '../../../../lib/passwordStrength';
 
 type NurseDetails = {
   person: { name?: string | null; email?: string | null; phone_e164?: string | null; is_active?: boolean };
@@ -77,7 +78,7 @@ export function NurseDetailPage() {
     <section className="admin-page nurse-detail" aria-labelledby="nurse-detail-title">
       <header className="page-header">
         <div><p className="eyebrow">Nurse profile</p><h1 id="nurse-detail-title">{details.person.name ?? nurse.staff_number}</h1><p>{nurse.staff_number} · {details.person.email ?? 'No email recorded'}</p></div>
-        <div className="nurse-header-actions"><Button variant="outline" onClick={() => navigate('/admin/care/nurses')}>Back to nurses</Button>{canWriteNurse && <Button type="button" disabled={busy} onClick={() => void runAction(() => apiClient.post(`/admin/care/nurses/${encodeURIComponent(userId)}/invite`, {}), 'Invitation resent.')}>Resend invite</Button>}{canWriteNurse && <Button type="button" variant="outline" disabled={busy} onClick={async () => { const pw = await dialogs.prompt('Set a password for this nurse. Share it with them privately.', '', { minLength: 12, secret: true, confirmLabel: 'Set password' }); if (!pw) return; void runAction(() => apiClient.post(`/admin/care/nurses/${encodeURIComponent(userId)}/password`, { password: pw }), 'Password set. The nurse can sign in now.'); }}>Set password</Button>}</div>
+        <div className="nurse-header-actions"><Button variant="outline" onClick={() => navigate('/admin/care/nurses')}>Back to nurses</Button>{canWriteNurse && <Button type="button" disabled={busy} onClick={() => void runAction(() => apiClient.post(`/admin/care/nurses/${encodeURIComponent(userId)}/invite`, {}), 'Invitation resent.')}>Resend invite</Button>}{canWriteNurse && <Button type="button" variant="outline" disabled={busy} onClick={async () => { const pw = await dialogs.prompt('Set a password for this nurse (at least 8 characters). Share it with them privately.', '', { minLength: MIN_PASSWORD_LENGTH, secret: true, confirmLabel: 'Set password' }); if (!pw) return; if (isWeakPassword(pw)) { void dialogs.alert('That password is too easy to guess. Choose something less common.'); return; } void runAction(() => apiClient.post(`/admin/care/nurses/${encodeURIComponent(userId)}/password`, { password: pw }), 'Password set. The nurse can sign in now.'); }}>Set password</Button>}</div>
       </header>
       {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}
       {notice && <Notice floating onDismiss={() => setNotice('')}>{notice}</Notice>}

@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, BeforeValidator, EmailStr, Field
+from pydantic import BaseModel, BeforeValidator, EmailStr, Field, field_validator
+
+from app.core.password_policy import validate_password
 
 
 def _clean(value: str) -> str:
@@ -62,8 +64,24 @@ class UserUpdate(BaseModel):
 
 
 class SetPasswordIn(BaseModel):
-    token: str = Field(min_length=20, max_length=200)
-    password: str = Field(min_length=12, max_length=200)
+    token: str = Field(min_length=1, max_length=400)
+    password: str = Field(min_length=1, max_length=200)
+
+    @field_validator("password")
+    @classmethod
+    def _password_ok(cls, value: str) -> str:
+        return validate_password(value)
+
+
+class LinkCheckIn(BaseModel):
+    token: str = Field(min_length=1, max_length=400)
+    purpose: Literal["invite", "reset"] | None = None
+
+
+class LinkCheckOut(BaseModel):
+    status: str
+    purpose: str
+    expires_at: str
 
 
 class Done(BaseModel):

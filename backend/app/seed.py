@@ -12,6 +12,7 @@ from app.core.config import get_settings
 from app.core.security import hash_password
 from app.modules.areas.seed import seed_areas
 from app.modules.auth.models import User
+from app.core.password_policy import password_problem
 from app.modules.faqs.seed import seed_faqs
 from app.modules.jobs.models import Job
 from app.modules.jobs.seed import seed_jobs
@@ -19,16 +20,15 @@ from app.modules.pricing.seed import seed_pricing
 from app.modules.services.seed import seed_services
 from app.modules.settings.service import seed_settings
 
-MIN_PASSWORD_LENGTH = 12
-
 
 async def seed_first_superadmin(email: str, password: str) -> bool:
     """Create the first superadmin if no user has this email. Returns True if created."""
     email = email.strip().lower()
     if not email or not password:
         raise SystemExit("FIRST_SUPERADMIN_EMAIL and FIRST_SUPERADMIN_PASSWORD are required.")
-    if len(password) < MIN_PASSWORD_LENGTH:
-        raise SystemExit(f"FIRST_SUPERADMIN_PASSWORD must be at least {MIN_PASSWORD_LENGTH} long.")
+    problem = password_problem(password)
+    if problem:
+        raise SystemExit(f"FIRST_SUPERADMIN_PASSWORD: {problem}")
     if await User.find_one(User.email == email) is not None:
         return False
     await User(

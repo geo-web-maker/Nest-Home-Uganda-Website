@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { apiClient } from '../../../lib/api/client';
+import { dialogs } from '../../../lib/dialogs';
+import { DialogHost } from '../../../components/admin/DialogHost';
 import { LogoMark } from '../../../components/brand/Logo';
 import { AgreementProblem } from './AgreementProblem';
 import { ContractReader } from './ContractReader';
@@ -13,6 +15,7 @@ import styles from './AgreementPublicPage.module.css';
 
 type AgreementField = { value: unknown; owner: 'staff' | 'clinical' | 'client' | 'either'; revision: number; entered_by_staff: boolean };
 type PublicAgreement = {
+  is_test?: boolean;
   company: string; reference: string; status: string; template_version: number;
   clauses: Record<string, string>; document_html?: string | null; fields: Record<string, AgreementField>;
   schedule_b_computed: Record<string, string | number>; content_hash: string;
@@ -50,7 +53,10 @@ function SaveStatus({ state, dirty, onRetry }: { state?: SaveState; dirty: boole
   );
 }
 
-export function AgreementPublicPage() {
+// Keep identical to ESIGN_CONSENT_TEXT in the backend agreements service (the server stores its own copy).
+const ESIGN_CONSENT_TEXT = 'I agree to sign this agreement electronically. I understand that my electronic signature has the same effect as a handwritten signature.';
+
+function AgreementPublicPageInner() {
   const { token = '' } = useParams();
   const [pre, setPre] = useState<PreOtp | null>(null);
   const [view, setView] = useState<PublicAgreement | null>(null);
@@ -74,6 +80,7 @@ export function AgreementPublicPage() {
   const [method, setMethod] = useState<SignatureChoice>('drawn');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [esignConsent, setEsignConsent] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [saveState, setSaveState] = useState<Record<string, SaveState>>({});
   const viewRef = useRef<PublicAgreement | null>(null);
@@ -279,6 +286,7 @@ export function AgreementPublicPage() {
 
   const sign = async () => {
     if (!view || name.trim().length < 2) { setError('Enter your full name before submitting.'); return; }
+    if (!esignConsent) { setError('Tick the box to agree to sign electronically before submitting.'); return; }
     if (method === 'drawn' && (!signatureCanvas.current || !hasInk.current)) { setError('Draw your signature in the box before submitting.'); return; }
     const problem = credentialProblem(method, 'client', password, confirmPassword);
     if (problem) { setError(problem); return; }
@@ -288,7 +296,7 @@ export function AgreementPublicPage() {
       if (!fresh) { setError((prev) => prev || 'Some of your answers could not be saved. Please check the marked fields and try again.'); return; }
       const evidence = await collectEvidence();
       const result = await apiClient.post<{ signed: boolean }>('/public/agreements/session/sign', {
-        name: name.trim(), role: 'client', expected_content_hash: fresh.content_hash, ...evidence,
+        name: name.trim(), role: 'client', expected_content_hash: fresh.content_hash, esign_consent: true, ...evidence,
       });
       if (result.signed) { setStep('signed'); setNotice('Your signature has been received. Bloomwell will countersign and send confirmation.'); }
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Your signature could not be recorded.'); }
@@ -296,7 +304,7 @@ export function AgreementPublicPage() {
   };
 
   const requestChange = async () => {
-    const reason = window.prompt('Tell Bloomwell what you would like changed:');
+    const reason = await dialogs.prompt('Tell Bloomwell what you would like changed:', '', { minLength: 3, multiline: true, confirmLabel: 'Send request' });
     if (!reason?.trim()) return;
     setBusy(true); setError('');
     try {
@@ -381,6 +389,7 @@ export function AgreementPublicPage() {
         <div className={styles.fees}><h3>Schedule B fee summary</h3>{Object.entries(view.schedule_b_computed).map(([key, value]) => <p key={key}><span>{key.replaceAll('_', ' ')}</span><strong>{typeof value === 'number' ? value.toLocaleString('en-US', { maximumFractionDigits: 2 }) : String(value)}</strong></p>)}</div>
           </section>
           <section className={styles.signPane}>
+        {view?.is_test && <p className={styles.security}><strong>Practice agreement.</strong> This is for testing only and has no legal effect.</p>}
         <h2>Sign your agreement</h2>
         <p>By signing, you confirm that you have reviewed the agreement and the information shown above. Your signature is bound to this exact version.</p>
         <label>Your full name<input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" /></label>
@@ -390,9 +399,10 @@ export function AgreementPublicPage() {
             <label>Draw your signature below</label>
             <canvas ref={signatureCanvas} className={styles.signature} width={800} height={180} aria-label="Signature drawing area" onPointerDown={beginStroke} onPointerMove={drawStroke} onPointerUp={endStroke} onPointerCancel={endStroke} />
           </>} />
+        <label className={styles.consent}><input type="checkbox" checked={esignConsent} onChange={(e) => { setEsignConsent(e.target.checked); setError(''); }} /> {ESIGN_CONSENT_TEXT}</label>
         <div className={styles.signatureActions}>
           {method === 'drawn' && <button type="button" className={styles.secondary} onClick={clearSignature}>Clear signature</button>}
-          <button type="button" className={styles.primary} onClick={() => void sign()} disabled={busy}>{method === 'biometric' ? 'Sign with fingerprint / face' : method === 'password' ? 'Sign with my passphrase' : 'Submit my signature'}</button>
+          <button type="button" className={styles.primary} onClick={() => void sign()} disabled={busy || !esignConsent}>{method === 'biometric' ? 'Sign with fingerprint / face' : method === 'password' ? 'Sign with my passphrase' : 'Submit my signature'}</button>
         </div>
         <button type="button" className={styles.linkButton} onClick={() => void requestChange()} disabled={busy}>Request a change instead</button>
         <p className={styles.security}>A typed name alone is not accepted as a signature. Sign by drawing with your finger, stylus or mouse, by confirming with your phone's fingerprint or face, or with a passphrase you choose.</p>
@@ -406,4 +416,14 @@ export function AgreementPublicPage() {
     </section>
     <footer className={styles.footer}>Questions? Call <a href="tel:0787499988">0787499988</a> or email <a href="mailto:info@bhcug.com">info@bhcug.com</a>. Your agreement remains private.</footer>
   </main>;
+}
+
+
+export function AgreementPublicPage() {
+  return (
+    <>
+      <AgreementPublicPageInner />
+      <DialogHost />
+    </>
+  );
 }

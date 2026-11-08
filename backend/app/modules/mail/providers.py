@@ -382,6 +382,22 @@ class SystemMailOutboxAdapter(MailProvider):
                         text,
                         html,
                     )
+                    if attachments:
+                        import hashlib
+                        import uuid
+
+                        from app.core.storage import Bucket, get_storage
+
+                        for item in attachments:
+                            att = item if isinstance(item, OutboundAttachment) else OutboundAttachment(**item)
+                            object_key = f"mail/attachments/system-{uuid.uuid4()}.bin"
+                            await get_storage().put(Bucket.MAIL, object_key, att.data, att.content_type)
+                            await conn.execute(
+                                "INSERT INTO attachment(message_id,object_key,filename,content_type,size_bytes,sha256,"
+                                "scan_state,disposition) VALUES($1,$2,$3,$4,$5,$6,'unscanned','attachment')",
+                                message_id, object_key, att.filename, att.content_type, len(att.data),
+                                hashlib.sha256(att.data).hexdigest(),
+                            )
                     for address in to:
                         await conn.execute(
                             "INSERT INTO message_recipient(message_id,kind,address) "

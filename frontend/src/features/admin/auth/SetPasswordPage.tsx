@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -9,6 +9,8 @@ import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
 import { ApiError, apiClient } from '../../../lib/api/client';
 import { MIN_PASSWORD_LENGTH, isWeakPassword, passwordStrength } from '../../../lib/passwordStrength';
+import { loadWithRetry } from '../../public/agreements/linkFailure';
+import { cleanToken, describeSetPasswordFailure, problemForState, type SetPasswordProblem } from './setPasswordLink';
 import styles from './LoginPage.module.css';
 
 type Values = { password: string; confirm: string };
@@ -17,11 +19,15 @@ type Values = { password: string; confirm: string };
 export function SetPasswordPage() {
   const { t } = useTranslation('admin');
   const [params] = useSearchParams();
-  const token = params.get('token') ?? '';
+  const rawToken = params.get('token') ?? '';
+  const token = cleanToken(rawToken);
   const isInvite = params.get('purpose') === 'invite';
   const fromTemp = params.get('from') === 'temp';
   const [formError, setFormError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [problem, setProblem] = useState<SetPasswordProblem | null>(
+    rawToken && !token ? problemForState('malformed') : null,
+  );
 
   const schema = z
     .object({
@@ -46,6 +52,19 @@ export function SetPasswordPage() {
     defaultValues: { password: '', confirm: '' },
   });
 
+  // Ask first whether the link is still good, so a dead link is explained before a password is typed.
+  useEffect(() => {
+    if (!token) return;
+    let live = true;
+    const purpose = isInvite ? 'invite' : undefined;
+    void loadWithRetry(() => apiClient.post('/auth/set-password/check', { token, purpose }, { retryOn401: false }))
+      .catch((error: unknown) => {
+        const found = describeSetPasswordFailure(error);
+        if (live && found.kind === 'link') setProblem(found); // other failures: let the person try Save
+      });
+    return () => { live = false; };
+  }, [token, isInvite]);
+
   const strength = passwordStrength(watch('password'));
   const bind = (name: keyof Values) => {
     const { onChange, onBlur, ref, name: fieldName } = register(name);
@@ -59,15 +78,14 @@ export function SetPasswordPage() {
       await apiClient.post(endpoint, { token, password }, { retryOn401: false });
       setDone(true);
     } catch (error) {
-      if (error instanceof ApiError && error.status === 429) {
-        setFormError(t('login.errors.rateLimited'));
-      } else if (error instanceof ApiError && error.status === 422 && error.fields?.password) {
+      if (error instanceof ApiError && error.status === 422 && error.fields?.password) {
         setFormError(t('setPassword.errors.weak'));
-      } else if (error instanceof ApiError && error.status === 422 && error.fields?.token) {
-        setFormError(t('setPassword.errors.link'));
-      } else {
-        setFormError(t('setPassword.errors.failed'));
+        return;
       }
+      const found = describeSetPasswordFailure(error);
+      if (found.kind === 'link') setProblem(found);
+      else if (error instanceof ApiError && error.status === 429) setFormError(t('login.errors.rateLimited'));
+      else setFormError(`${found.lines[0] ?? t('setPassword.errors.failed')} (${found.ref})`);
     }
   };
 
@@ -82,6 +100,17 @@ export function SetPasswordPage() {
           <h1 className={styles.title}>{t('setPassword.title')}</h1>
           <p role="status">{t('setPassword.done')}</p>
           <Link to="/admin/login">{t('setPassword.toLogin')}</Link>
+        </div>
+      ) : problem ? (
+        <div className={styles.card}>
+          <h1 className={styles.title}>{problem.title}</h1>
+          {problem.lines.map((line, index) => (
+            <p key={line} role={index === 0 ? 'alert' : undefined} className={index === 0 ? styles.error : undefined}>
+              {line}
+            </p>
+          ))}
+          <p>Reference: {problem.ref}</p>
+          {problem.signIn && <Link to="/admin/login">{t('setPassword.toLogin')}</Link>}
         </div>
       ) : token.length === 0 ? (
         <div className={styles.card}>

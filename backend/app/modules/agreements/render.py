@@ -9,6 +9,10 @@ from app.modules.agreements.models import Agreement
 from app.modules.agreements import blocks as block_renderer, credentials, rules
 
 
+PRACTICE_BANNER = ('<div class="banner">PRACTICE AGREEMENT. For testing only: it has no legal effect '
+                   'and will be deleted automatically.</div>')
+
+
 def _format_value(value: Any) -> str:
     if value is None or value == "":
         return "—"
@@ -148,7 +152,7 @@ def render_agreement_html(agreement: Agreement, clauses: dict[str, str], *, bloc
 *{{box-sizing:border-box}}body{{font-family:Arial,Helvetica,sans-serif;color:#123524;font-size:10.5pt;line-height:1.5;margin:0}}header{{border-bottom:2px solid #C79A3B;box-shadow:0 5px 0 #123524;padding:0 0 16px;margin-bottom:26px}}.brand{{font-family:Georgia,'Times New Roman',serif;font-size:19pt;font-weight:700;color:#123524;letter-spacing:.02em}}.ref{{font-size:9pt;color:#9a7420;letter-spacing:.14em;font-weight:700}}h1{{font-family:Georgia,'Times New Roman',serif;font-size:18pt;color:#123524}}h2{{font-family:Georgia,'Times New Roman',serif;font-size:13pt;color:#123524;margin:20px 0 8px;padding-bottom:3px;border-bottom:1px solid #E9DDB8}}h3{{font-size:11pt;color:#2F6B4A;margin:12px 0 5px}}p{{white-space:pre-wrap}}.clause{{break-inside:avoid}}.party-details{{margin:10px 0 18px;padding:10px;border:1px solid #CBD8C6;border-top:3px solid #C79A3B;border-radius:4px}}.schedule,.certificate{{break-before:page}}table{{width:100%;border-collapse:collapse}}th,td{{padding:7px 9px;border-bottom:1px solid #CBD8C6;text-align:left;vertical-align:top}}th{{width:34%;color:#2F6B4A;background:#F3F8F1}}.sig{{display:inline-block;width:46%;vertical-align:top;margin:12px 2% 10px 0;min-height:100px;border-bottom:1px solid #6c7a72;padding:8px}}.signature{{display:block;max-width:220px;max-height:70px;object-fit:contain}}.verified-stamp{{border:1px solid #2F6B4A;background:#F3F8F1;color:#123524;padding:8px 10px;margin:6px 0;font-size:9pt;font-weight:bold;border-radius:4px}}.signature-list{{margin-top:20px;border-top:2px solid #C79A3B;padding-top:12px}}.banner{{background:#F4EBCB;color:#123524;border-left:4px solid #C79A3B;padding:12px;margin:0 0 16px;font-weight:bold}}.certificate{{break-before:page}}.intro{{color:#5b6b60;font-size:9.5pt;margin-top:4px}}.agreement-meta{{display:flex;gap:24px;margin-top:10px;font-size:9.5pt}}
 @media screen{{body{{max-width:850px;margin:24px auto;padding:24px;background:#fff}}}}@media print{{.no-print{{display:none}}}}
 </style></head><body><header><div class="brand">BLOOMWELL HOME CARE UGANDA LIMITED</div><div class="ref">CLIENT HOME NURSING SERVICE AGREEMENT · UNDER THE NEST MAMA PROGRAM</div><div class="intro">{html.escape(intro)}</div><div class="agreement-meta"><span>Agreement Reference: <strong>{html.escape(agreement.reference)}</strong></span><span>Date: <strong>{html.escape(agreement_date)}</strong></span></div></header>
-{'<div class="banner">SIGNED AGREEMENT</div>' if signed else ''}{variation_html}{''.join(clause_html)}{''.join(schedule_html)}{certificate_html}</body></html>'''
+{PRACTICE_BANNER if agreement.is_test else ''}{'<div class="banner">SIGNED AGREEMENT</div>' if signed else ''}{variation_html}{''.join(clause_html)}{''.join(schedule_html)}{certificate_html}</body></html>'''
 
 
 def render_pdf(html_document: str) -> bytes:
@@ -161,7 +165,7 @@ def render_pdf(html_document: str) -> bytes:
 
 
 def make_certificate(agreement: Agreement, content_hash: str) -> dict[str, Any]:
-    return {
+    cert = {
         "reference": agreement.reference,
         "template_version": agreement.template_version,
         "template_hash": agreement.template_hash,
@@ -176,8 +180,24 @@ def make_certificate(agreement: Agreement, content_hash: str) -> dict[str, Any]:
         "signature_methods": {s.role: s.method for s in agreement.signatures},
         "ip_hash_prefix": next((s.ip_hash[:12] for s in agreement.signatures if s.ip_hash), None),
         "content_hash": content_hash,
+        "electronic_signature_consent": next(
+            (f"{s.esign_consent.get('version')}: {s.esign_consent.get('text')} (accepted {s.esign_consent.get('at')})"
+             for s in agreement.signatures if s.esign_consent), None),
+        "signers": [
+            {
+                "role": s.role, "name": s.name, "method": s.method, "signed_at": s.signed_at.isoformat(),
+                "ip_address": s.ip_address, "user_agent": s.user_agent, "email": s.signer_email,
+                "phone": s.signer_phone,
+                "code_verified_at": s.otp_verified_at.isoformat() if s.otp_verified_at else None,
+                "link_generation": s.link_generation, "link_token_hash_prefix": s.link_token_hash_prefix,
+            }
+            for s in agreement.signatures
+        ],
         "sealed_at": datetime.now(UTC).isoformat(),
     }
+    if agreement.is_test:
+        cert = {"practice_agreement": "YES. Practice only; no legal effect.", **cert}
+    return cert
 
 
 def _money(currency: Any, amount: Any) -> str:
@@ -247,7 +267,7 @@ def _render_blocks(agreement: Agreement, blocks: list[dict[str, Any]], *, signed
         "@advance": _money(currency, computed["advance"]) if computed.get("advance") else "",
         "@balance": _money(currency, computed["balance"]) if computed.get("balance") else "",
     }
-    banner = ""
+    banner = PRACTICE_BANNER if agreement.is_test else ""
     if agreement.variation_clause:
         banner += (f'<div class="banner">AMENDMENT — This agreement varies clause {html.escape(agreement.variation_clause)}. '
                    'The original completed agreement remains in effect except for the change expressly approved in this amendment.</div>')

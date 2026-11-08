@@ -409,7 +409,7 @@ async def run_workflow_simulation(principal: Any) -> list[Check]:
         try:
             await service.client_sign(
                 sign_doc,
-                SignAgreement(name="Synthetic Client", method="drawn", signature_base64=signature,
+                SignAgreement(name="Synthetic Client", esign_consent=True, method="drawn", signature_base64=signature,
                               expected_content_hash="0" * 64),
                 "127.0.0.1", "Bloomwell Agreement Diagnostics",
             )
@@ -418,7 +418,7 @@ async def run_workflow_simulation(principal: Any) -> list[Check]:
             await milestone("workflow_stale_hash", "A signature attempt with a stale SHA-256 content hash was rejected before storing a signature.")
         await service.client_sign(
             sign_doc,
-            SignAgreement(name="Synthetic Client", method="drawn", signature_base64=signature,
+            SignAgreement(name="Synthetic Client", esign_consent=True, method="drawn", signature_base64=signature,
                           expected_content_hash=content_hash),
             "127.0.0.1", "Bloomwell Agreement Diagnostics",
         )

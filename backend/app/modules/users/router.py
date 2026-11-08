@@ -13,6 +13,8 @@ from app.modules.users.schemas import (
     AdminUserOut,
     Done,
     InviteOut,
+    LinkCheckIn,
+    LinkCheckOut,
     ResetIn,
     ResetOut,
     SetPasswordIn,
@@ -34,6 +36,16 @@ CanWrite = Annotated[Principal, Depends(require_scopes("users:write"))]
 )
 async def set_password(body: SetPasswordIn, request: Request) -> Done:
     return await service.set_password(body.token, body.password, hash_ip(client_ip(request)))
+
+
+@public_router.post(
+    "/set-password/check",
+    response_model=LinkCheckOut,
+    dependencies=[Depends(rate_limit("check_set_password_link", 30, 900))],
+)
+async def check_set_password_link(body: LinkCheckIn) -> LinkCheckOut:
+    """Tell the page, before the person types a password, whether the link is still good."""
+    return LinkCheckOut(**await service.check_link(body.token, expected_purpose=body.purpose))
 
 
 @public_router.post(

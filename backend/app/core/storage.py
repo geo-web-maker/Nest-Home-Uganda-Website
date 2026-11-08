@@ -5,6 +5,7 @@ through short-lived signed links. S3Storage uses boto3 (blocking) in a worker th
 """
 
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from functools import lru_cache
 from typing import Protocol
@@ -27,6 +28,7 @@ class Bucket(StrEnum):
     PUBLIC = "public"
     PRIVATE = "private"
     MAIL = "mail"
+    SIGNED = "signed"
 
 
 def content_disposition(filename: str) -> str:
@@ -50,6 +52,9 @@ class StorageService(Protocol):
     async def put(self, bucket: Bucket, key: str, data: bytes, content_type: str) -> None: ...
     async def get(self, bucket: Bucket, key: str) -> bytes: ...
     async def delete(self, bucket: Bucket, key: str) -> None: ...
+    async def put_locked(
+        self, bucket: Bucket, key: str, data: bytes, content_type: str, retain_days: int
+    ) -> None: ...
     async def copy(self, bucket: Bucket, src_key: str, dst_key: str) -> None: ...
     async def signed_url(
         self, bucket: Bucket, key: str, expires_seconds: int, *,
@@ -67,7 +72,9 @@ class S3Storage:
             Bucket.PUBLIC: s.s3_bucket_public,
             Bucket.PRIVATE: s.s3_bucket_private,
             Bucket.MAIL: s.s3_bucket_mail,
+            Bucket.SIGNED: s.s3_bucket_signed,
         }
+        self._lock_mode = (s.s3_signed_lock_mode or "GOVERNANCE").upper()
         self._client = boto3.client(
             "s3",
             endpoint_url=s.s3_endpoint or None,
@@ -76,30 +83,60 @@ class S3Storage:
             aws_secret_access_key=s.s3_secret or None,
             config=Config(signature_version="s3v4", retries={"max_attempts": 2}),
         )
+        # Sealed agreements may live on a different provider/account (e.g. a dedicated Backblaze B2 bucket).
+        self._signed_client = None
+        if s.s3_bucket_signed and (s.s3_signed_endpoint or s.s3_signed_key):
+            self._signed_client = boto3.client(
+                "s3",
+                endpoint_url=s.s3_signed_endpoint or s.s3_endpoint or None,
+                region_name=s.s3_signed_region or s.s3_region or None,
+                aws_access_key_id=s.s3_signed_key or s.s3_key or None,
+                aws_secret_access_key=s.s3_signed_secret or s.s3_secret or None,
+                config=Config(signature_version="s3v4", retries={"max_attempts": 2}),
+            )
+
+    def _c(self, bucket: Bucket):
+        if bucket is Bucket.SIGNED and self._signed_client is not None:
+            return self._signed_client
+        return self._client
+
+    async def put_locked(
+        self, bucket: Bucket, key: str, data: bytes, content_type: str, retain_days: int
+    ) -> None:
+        """Write once with an Object Lock retention period (bucket must have Object Lock enabled)."""
+        if not self._buckets[bucket]:
+            raise ValueError(f"Storage bucket {bucket.value!r} is not configured")
+        until = datetime.now(UTC) + timedelta(days=max(1, retain_days))
+        await to_thread.run_sync(
+            lambda: self._c(bucket).put_object(
+                Bucket=self._buckets[bucket], Key=key, Body=data, ContentType=content_type,
+                ObjectLockMode=self._lock_mode, ObjectLockRetainUntilDate=until,
+            )
+        )
 
     async def put(self, bucket: Bucket, key: str, data: bytes, content_type: str) -> None:
         await to_thread.run_sync(
-            lambda: self._client.put_object(
+            lambda: self._c(bucket).put_object(
                 Bucket=self._buckets[bucket], Key=key, Body=data, ContentType=content_type
             )
         )
 
     async def get(self, bucket: Bucket, key: str) -> bytes:
         def read() -> bytes:
-            return self._client.get_object(Bucket=self._buckets[bucket], Key=key)["Body"].read()
+            return self._c(bucket).get_object(Bucket=self._buckets[bucket], Key=key)["Body"].read()
 
         return await to_thread.run_sync(read)
 
     async def delete(self, bucket: Bucket, key: str) -> None:
         await to_thread.run_sync(
-            lambda: self._client.delete_object(Bucket=self._buckets[bucket], Key=key)
+            lambda: self._c(bucket).delete_object(Bucket=self._buckets[bucket], Key=key)
         )
 
     async def copy(self, bucket: Bucket, src_key: str, dst_key: str) -> None:
         if not self._buckets[bucket]:
             raise ValueError(f"Storage bucket {bucket.value!r} is not configured")
         await to_thread.run_sync(
-            lambda: self._client.copy_object(
+            lambda: self._c(bucket).copy_object(
                 Bucket=self._buckets[bucket],
                 Key=dst_key,
                 CopySource={"Bucket": self._buckets[bucket], "Key": src_key},
@@ -119,7 +156,7 @@ class S3Storage:
         if content_type:
             params["ResponseContentType"] = content_type
         return await to_thread.run_sync(
-            lambda: self._client.generate_presigned_url(
+            lambda: self._c(bucket).generate_presigned_url(
                 "get_object", Params=params, ExpiresIn=clamp_expiry(expires_seconds)
             )
         )
@@ -130,7 +167,7 @@ class S3Storage:
         if not self._buckets[bucket]:
             raise ValueError(f"Storage bucket {bucket.value!r} is not configured")
         return await to_thread.run_sync(
-            lambda: self._client.generate_presigned_url(
+            lambda: self._c(bucket).generate_presigned_url(
                 "put_object",
                 Params={
                     "Bucket": self._buckets[bucket],
@@ -147,6 +184,7 @@ class MemoryStorage:
     """In-memory fake for unit tests that must not touch the network."""
 
     objects: dict[tuple[Bucket, str], tuple[bytes, str]] = field(default_factory=dict)
+    locked: set[tuple[Bucket, str]] = field(default_factory=set)
 
     async def put(self, bucket: Bucket, key: str, data: bytes, content_type: str) -> None:
         self.objects[(bucket, key)] = (data, content_type)
@@ -155,7 +193,17 @@ class MemoryStorage:
         return self.objects[(bucket, key)][0]
 
     async def delete(self, bucket: Bucket, key: str) -> None:
+        if (bucket, key) in self.locked:
+            raise PermissionError("object is under retention lock")
         self.objects.pop((bucket, key), None)
+
+    async def put_locked(
+        self, bucket: Bucket, key: str, data: bytes, content_type: str, retain_days: int
+    ) -> None:
+        if (bucket, key) in self.locked:
+            raise PermissionError("object is under retention lock")
+        self.objects[(bucket, key)] = (data, content_type)
+        self.locked.add((bucket, key))
 
     async def copy(self, bucket: Bucket, src_key: str, dst_key: str) -> None:
         self.objects[(bucket, dst_key)] = self.objects[(bucket, src_key)]
