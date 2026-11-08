@@ -10,7 +10,7 @@
     "run_worker_first": ["/api/*"]
   },
   "vars": {
-    // Backend base URL including its mount prefix. Replace before deploying.
-    "BACKEND_URL": "https://YOUR-MULTI-HOST-DOMAIN/nest"
+    // Backend base URL including its mount prefix, no trailing slash.
+    "BACKEND_URL": "https://multi-site-hosting.onrender.com/nest"
   }
 }
