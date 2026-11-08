@@ -191,6 +191,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/agreements/practice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Admin Delete Practice
+         * @description Remove every practice agreement (and its files) in one go.
+         */
+        delete: operations["admin_delete_practice_api_v1_admin_agreements_practice_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/agreements/template/current": {
         parameters: {
             query?: never;
@@ -395,6 +415,40 @@ export interface paths {
         put?: never;
         /** Admin In Person Start */
         post: operations["admin_in_person_start_api_v1_admin_agreements__agreement_id__in_person_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/agreements/{agreement_id}/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin Get Link */
+        get: operations["admin_get_link_api_v1_admin_agreements__agreement_id__link_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/agreements/{agreement_id}/link/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admin Revoke Links */
+        post: operations["admin_revoke_links_api_v1_admin_agreements__agreement_id__link_revoke_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2462,6 +2516,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/set-password/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Set Password Link
+         * @description Tell the page, before the person types a password, whether the link is still good.
+         */
+        post: operations["check_set_password_link_api_v1_auth_set_password_check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/client-errors": {
         parameters: {
             query?: never;
@@ -3823,6 +3897,9 @@ export interface paths {
         /**
          * List Shared
          * @description Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.
+         *
+         *     Members carry the person's current name and email, and `missing: true` when that user no
+         *     longer exists, so the screen never shows a bare id it cannot act on.
          */
         get: operations["list_shared_api_v1_mail_shared_get"];
         put?: never;
@@ -4635,6 +4712,11 @@ export interface components {
             assigned_nurse_id?: string | null;
             /** Enquiry Id */
             enquiry_id?: string | null;
+            /**
+             * Is Test
+             * @default false
+             */
+            is_test: boolean;
         };
         /** AgreementPatch */
         AgreementPatch: {
@@ -5905,6 +5987,22 @@ export interface components {
             colour: string;
             /** Name */
             name: string;
+        };
+        /** LinkCheckIn */
+        LinkCheckIn: {
+            /** Purpose */
+            purpose?: ("invite" | "reset") | null;
+            /** Token */
+            token: string;
+        };
+        /** LinkCheckOut */
+        LinkCheckOut: {
+            /** Expires At */
+            expires_at: string;
+            /** Purpose */
+            purpose: string;
+            /** Status */
+            status: string;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -7185,13 +7283,13 @@ export interface components {
         SignAgreement: {
             /** Challenge Token */
             challenge_token?: string | null;
-            /** Expected Content Hash */
-            expected_content_hash: string;
             /**
              * Esign Consent
              * @default false
              */
-            esign_consent?: boolean;
+            esign_consent: boolean;
+            /** Expected Content Hash */
+            expected_content_hash: string;
             /**
              * Method
              * @default drawn
@@ -7711,6 +7809,7 @@ export interface operations {
                 nurse?: string | null;
                 limit?: number;
                 skip?: number;
+                practice?: boolean;
             };
             header?: never;
             path?: never;
@@ -8030,6 +8129,37 @@ export interface operations {
                 stage_key: string;
                 channel: "email" | "sms";
             };
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_delete_practice_api_v1_admin_agreements_practice_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
             cookie?: {
                 mail_totp?: string | null;
             };
@@ -8473,6 +8603,68 @@ export interface operations {
                 "application/json": components["schemas"]["InPersonStart"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_get_link_api_v1_admin_agreements__agreement_id__link_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agreement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_revoke_links_api_v1_admin_agreements__agreement_id__link_revoke_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agreement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -13626,6 +13818,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Done"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_set_password_link_api_v1_auth_set_password_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkCheckIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LinkCheckOut"];
                 };
             };
             /** @description Validation Error */
