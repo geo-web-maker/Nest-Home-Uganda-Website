@@ -32,11 +32,12 @@
 .list .row {
   display: grid;
   /* The shared Button centres its content; without these the grid column shrinks to the text and floats in the middle. */
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   justify-content: stretch;
   justify-items: stretch;
-  align-content: center;
-  gap: 0.15rem;
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0.15rem;
   width: 100%;
   text-align: left;
   border-radius: 0.8rem;
@@ -44,6 +45,37 @@
 .list .row[aria-pressed='true'] {
   border-color: var(--gold);
   background: var(--mint);
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--on-gold);
+  font-weight: 700;
+}
+.rowMain {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  text-align: left;
+}
+.subjectLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.subjectLine .subject {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--mut);
+}
+.unread .subjectLine .subject {
+  color: inherit;
 }
 .rowTop {
   display: flex;

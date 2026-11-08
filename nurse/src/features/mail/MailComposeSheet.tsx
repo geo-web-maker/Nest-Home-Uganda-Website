@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from 'react';
 import { copy } from '../../copy';
+import { Banner } from '../../ui/Banner';
 import { PillButton } from '../../ui/PillButton';
 import { Sheet, SheetActions } from '../../ui/Sheet';
 import { AttachmentList } from '../../shared/mail-rich/react/AttachmentList';
@@ -30,6 +31,7 @@ export type ComposeState = {
 type Props = {
   value: ComposeState;
   problem: string;
+  onDismissProblem?: () => void;
   online: boolean;
   attaching: boolean;
   onAttach: (files: File[]) => void;
@@ -50,7 +52,7 @@ function plainToHtml(value: string): string {
 }
 
 /** Offline-capable composer with confirmation guards, a quoted-message boundary and a shared TipTap editor. */
-export function MailComposeSheet({ value, problem, online, attaching, onAttach, onPasteImage, onRemoveAttachment, onChange, onSend, onSaveDraft, onCancel, onDiscard }: Props) {
+export function MailComposeSheet({ value, problem, onDismissProblem, online, attaching, onAttach, onPasteImage, onRemoveAttachment, onChange, onSend, onSaveDraft, onCancel, onDiscard }: Props) {
   const first = useRef<HTMLInputElement>(null);
   const picker = useRef<HTMLInputElement>(null);
   const cancelRef = useRef(onCancel);
@@ -160,7 +162,7 @@ export function MailComposeSheet({ value, problem, online, attaching, onAttach, 
       <PillButton type="button" tone="ghost" size="full" showArrow={false} disabled={!online || attaching} onClick={() => picker.current?.click()}>{attaching ? 'Uploading…' : copy.mail.attach}</PillButton>
       {!online && <p className="mail-hint">{copy.mail.attachOffline}</p>}
       <p className="mail-hint">{copy.mail.externalWarning}</p>
-      {problem && <p id="mail-problem" role="alert" className="mail-problem">{problem}</p>}
+      {problem && <Banner id="mail-problem" tone="bad" role="alert" floating onDismiss={onDismissProblem ?? (() => undefined)}>{problem}</Banner>}
       {!online && <p role="status" className="mail-hint">{copy.mail.queued}</p>}
       <SheetActions>
         <PillButton type="submit" tone="forest" size="full" disabled={!canSend}>{copy.mail.send}</PillButton>

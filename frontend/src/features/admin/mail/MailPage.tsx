@@ -33,6 +33,16 @@ function isTyping(target: EventTarget | null): boolean {
   return Boolean(element && (element.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(element.tagName)));
 }
 
+/** Today shows the time, this year shows day and month, older mail shows the full date. */
+function shortTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const now = new Date();
+  if (date.toDateString() === now.toDateString()) return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (date.getFullYear() === now.getFullYear()) return date.toLocaleDateString([], { day: 'numeric', month: 'short' });
+  return date.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 export function MailPage() {
   const { t } = useTranslation('admin');
   const client = useQueryClient();
@@ -403,14 +413,16 @@ export function MailPage() {
                   className={`${styles.row} ${item.is_read ? '' : styles.unread}`}
                   onClick={() => pick(item.mailbox_message_id)}
                 >
-                  <span className={styles.rowTop}>
-                    <span className={styles.sender}>{item.from_name || item.from_address}</span>
-                    {!item.is_read ? <Badge tone="new">{t('mail.unread')}</Badge> : null}
-                  </span>
-                  <span className={styles.subject}>{item.subject || t('mail.noSubject')}</span>
-                  <span className={styles.meta}>
-                    {item.is_starred ? '★ ' : ''}
-                    {new Date(item.received_at).toLocaleString()}
+                  <span className={styles.avatar} aria-hidden="true">{(item.from_name || item.from_address || '?').trim().charAt(0).toUpperCase()}</span>
+                  <span className={styles.rowMain}>
+                    <span className={styles.rowTop}>
+                      <span className={styles.sender}>{item.from_name || item.from_address}{item.is_starred ? ' ★' : ''}</span>
+                      <span className={styles.meta} title={new Date(item.received_at).toLocaleString()}>{shortTime(item.received_at)}</span>
+                    </span>
+                    <span className={styles.subjectLine}>
+                      <span className={styles.subject}>{item.subject || t('mail.noSubject')}</span>
+                      {!item.is_read ? <Badge tone="new">{t('mail.unread')}</Badge> : null}
+                    </span>
                   </span>
                 </Button>
               </div>
