@@ -387,6 +387,11 @@
               }
             ],
             "title": "Enquiry Id"
+          },
+          "is_test": {
+            "default": false,
+            "title": "Is Test",
+            "type": "boolean"
           }
         },
         "title": "AgreementCreate",
@@ -3766,6 +3771,59 @@
         "title": "LabelBody",
         "type": "object"
       },
+      "LinkCheckIn": {
+        "properties": {
+          "purpose": {
+            "anyOf": [
+              {
+                "enum": [
+                  "invite",
+                  "reset"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purpose"
+          },
+          "token": {
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "LinkCheckIn",
+        "type": "object"
+      },
+      "LinkCheckOut": {
+        "properties": {
+          "expires_at": {
+            "title": "Expires At",
+            "type": "string"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "purpose",
+          "expires_at"
+        ],
+        "title": "LinkCheckOut",
+        "type": "object"
+      },
       "LoginRequest": {
         "properties": {
           "email": {
@@ -4613,7 +4671,7 @@
           },
           "password": {
             "maxLength": 200,
-            "minLength": 12,
+            "minLength": 1,
             "title": "Password",
             "type": "string"
           },
@@ -4722,7 +4780,7 @@
         "properties": {
           "password": {
             "maxLength": 200,
-            "minLength": 12,
+            "minLength": 1,
             "title": "Password",
             "type": "string"
           }
@@ -7103,13 +7161,13 @@
         "properties": {
           "password": {
             "maxLength": 200,
-            "minLength": 12,
+            "minLength": 1,
             "title": "Password",
             "type": "string"
           },
           "token": {
-            "maxLength": 200,
-            "minLength": 20,
+            "maxLength": 400,
+            "minLength": 1,
             "title": "Token",
             "type": "string"
           }
@@ -7225,6 +7283,11 @@
               }
             ],
             "title": "Challenge Token"
+          },
+          "esign_consent": {
+            "default": false,
+            "title": "Esign Consent",
+            "type": "boolean"
           },
           "expected_content_hash": {
             "maxLength": 64,
@@ -8070,7 +8133,8 @@
               "nurse",
               "supervisor",
               "admin",
-              "executive"
+              "executive",
+              "lawyer"
             ],
             "title": "Kind",
             "type": "string"
@@ -8101,6 +8165,7 @@
                   "supervisor",
                   "admin",
                   "executive",
+                  "lawyer",
                   "super_admin"
                 ],
                 "type": "string"
@@ -8195,7 +8260,8 @@
                   "nurse",
                   "supervisor",
                   "admin",
-                  "executive"
+                  "executive",
+                  "lawyer"
                 ],
                 "type": "string"
               },
@@ -8754,6 +8820,16 @@
               "minimum": 0,
               "title": "Skip",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "practice",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Practice",
+              "type": "boolean"
             }
           }
         ],
@@ -9347,6 +9423,59 @@
           }
         ],
         "summary": "Admin Message Template Test Send",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/practice": {
+      "delete": {
+        "description": "Remove every practice agreement (and its files) in one go.",
+        "operationId": "admin_delete_practice_api_v1_admin_agreements_practice_delete",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Delete Practice",
         "tags": [
           "admin-agreements"
         ]
@@ -10020,6 +10149,96 @@
           }
         ],
         "summary": "Admin In Person Start",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/{agreement_id}/link": {
+      "get": {
+        "operationId": "admin_get_link_api_v1_admin_agreements__agreement_id__link_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Get Link",
+        "tags": [
+          "admin-agreements"
+        ]
+      }
+    },
+    "/api/v1/admin/agreements/{agreement_id}/link/revoke": {
+      "post": {
+        "operationId": "admin_revoke_links_api_v1_admin_agreements__agreement_id__link_revoke_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agreement_id",
+            "required": true,
+            "schema": {
+              "title": "Agreement Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Revoke Links",
         "tags": [
           "admin-agreements"
         ]
@@ -18553,6 +18772,48 @@
         ]
       }
     },
+    "/api/v1/auth/set-password/check": {
+      "post": {
+        "description": "Tell the page, before the person types a password, whether the link is still good.",
+        "operationId": "check_set_password_link_api_v1_auth_set_password_check_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkCheckIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkCheckOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Check Set Password Link",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/client-errors": {
       "post": {
         "operationId": "receive_client_error_api_v1_client_errors_post",
@@ -22943,7 +23204,7 @@
     },
     "/api/v1/mail/shared": {
       "get": {
-        "description": "Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.",
+        "description": "Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.\n\nMembers carry the person's current name and email, and `missing: true` when that user no\nlonger exists, so the screen never shows a bare id it cannot act on.",
         "operationId": "list_shared_api_v1_mail_shared_get",
         "parameters": [
           {
