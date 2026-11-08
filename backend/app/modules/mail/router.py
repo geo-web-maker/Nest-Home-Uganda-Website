@@ -1,3 +1,4 @@
+import logging
 # ruff: noqa: E501,E701,E702
 import re
 import hashlib
@@ -381,20 +382,27 @@ async def list_shared(principal: Principal = Depends(require_scopes("mail:shared
     async with pool.acquire() as conn:
         boxes=await conn.fetch("SELECT id,local_part,display_name FROM mailbox WHERE kind='shared' AND state='open' ORDER BY (local_part='no-reply') DESC, local_part")
         members=await conn.fetch("SELECT mailbox_id,user_id,role FROM mailbox_member WHERE mailbox_id=ANY($1::uuid[]) ORDER BY added_at",[b['id'] for b in boxes]) if boxes else []
-    try:
-        users=await mailbox_admin._users_by_id([str(m['user_id']) for m in members])
-    except Exception:
-        # Never let a user-lookup failure hide the mailboxes; members then show as unknown.
-        users={}
+    # A failed user lookup must never look like "nobody exists": that made every member show as
+    # removed and left the person list empty. Retry once, log the real cause, and tell the screen.
+    directory_error: str | None=None
+    users: dict={}
+    people: list=[]
+    for attempt in (1,2):
+        try:
+            users=await mailbox_admin._users_by_id([str(m['user_id']) for m in members])
+            people=await mailbox_admin.assignable_people()
+            directory_error=None
+            break
+        except Exception as exc:
+            directory_error=type(exc).__name__
+            logging.getLogger(__name__).exception("shared mailbox user directory lookup failed (attempt %s)",attempt)
     by_box: dict[str,list]={}
     for m in members: by_box.setdefault(str(m['mailbox_id']),[]).append(m)
-    try:
-        people=await mailbox_admin.assignable_people()
-    except Exception:
-        people=[]
     return {
-        "items":[{"id":str(b['id']),"local_part":b['local_part'],"address":f"{b['local_part']}@{domain}","display_name":b['display_name'],"members":mailbox_admin.describe_members(by_box.get(str(b['id']),[]),users)} for b in boxes],
+        "items":[{"id":str(b['id']),"local_part":b['local_part'],"address":f"{b['local_part']}@{domain}","display_name":b['display_name'],"members":mailbox_admin.describe_members(by_box.get(str(b['id']),[]),users,directory_ok=directory_error is None)} for b in boxes],
         "assignable_users":people,
+        "directory_ok":directory_error is None,
+        "directory_error":directory_error,
     }
 
 @router.put("/shared/{mailbox_id}/members/{user_id}")
