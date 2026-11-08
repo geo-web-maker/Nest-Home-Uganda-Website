@@ -8070,8 +8070,7 @@
               "nurse",
               "supervisor",
               "admin",
-              "executive",
-              "lawyer"
+              "executive"
             ],
             "title": "Kind",
             "type": "string"
@@ -8102,7 +8101,6 @@
                   "supervisor",
                   "admin",
                   "executive",
-                  "lawyer",
                   "super_admin"
                 ],
                 "type": "string"
@@ -8197,8 +8195,7 @@
                   "nurse",
                   "supervisor",
                   "admin",
-                  "executive",
-                  "lawyer"
+                  "executive"
                 ],
                 "type": "string"
               },

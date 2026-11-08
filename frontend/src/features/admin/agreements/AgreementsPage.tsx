@@ -436,6 +436,7 @@ export function AgreementsPage() {
                 return { value: entry.id, label: count ? `${entry.label} (${count})` : entry.label };
               })}
               onChange={(value) => { setTab(value as typeof tab); if (value === 'messages') void loadMessage(messageStage, messageChannel); if (value === 'template') void openTemplate(); }} />
+            <div className={styles.editorBody}>
             {isScheduleTab(tab) && (() => {
               const config = SCHEDULE_SECTIONS[tab];
               const known = new Set(config.sections.flatMap((section) => section.paths));
@@ -530,6 +531,7 @@ export function AgreementsPage() {
               <p>Publishing and voiding require the existing authenticator session. Verify your authenticator in Mail settings first; the session cookie is reused here.</p>
               <ButtonGroup>{canManageTemplates && <Button variant="outline" onClick={() => void installSourceTemplate()} disabled={busy}>Install latest wording as draft</Button>}<Button onClick={() => void saveTemplateDraft()} disabled={busy}>Save new draft version</Button><Button variant="outline" onClick={() => void publishTemplate()} disabled={busy || !templateInfo?.version || templateInfo.published}>Publish selected version</Button></ButtonGroup>
             </div>}
+            </div>
           </>}
         </section>
       </div>
@@ -601,7 +603,7 @@ function Timeline({ events }: { events: AgreementDetail['events'] }) {
   const ordered = [...events].map((event, index) => ({ event, index })).sort((a, b) => new Date(b.event.at).getTime() - new Date(a.event.at).getTime() || b.index - a.index);
   if (!ordered.length) return <p className={styles.empty}>No activity yet.</p>;
   let lastDay = '';
-  return <ol className={styles.history}>{ordered.map(({ event, index }) => {
+  return <div className={styles.historyScroll}><ol className={styles.history}>{ordered.map(({ event, index }) => {
     const when = new Date(event.at);
     const day = when.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
     const heading = day !== lastDay ? <li className={styles.historyDay} key={`day-${day}-${index}`} aria-hidden="true">{day}</li> : null;
@@ -614,5 +616,5 @@ function Timeline({ events }: { events: AgreementDetail['events'] }) {
       <small>{who}</small>
       <details><summary>Details</summary><pre>{JSON.stringify(event.detail, null, 2)}</pre></details>
     </li></Fragment>;
-  })}</ol>;
+  })}</ol></div>;
 }
