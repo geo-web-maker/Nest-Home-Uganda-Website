@@ -17,7 +17,7 @@ from beanie import PydanticObjectId
 from app.core import db
 from app.core.config import get_settings
 from app.core.deps import Principal
-from app.core.errors import Conflict, Forbidden, NotFound, ValidationFailed
+from app.core.errors import AppError, Conflict, Forbidden, NotFound, ValidationFailed
 from app.core.phone import is_mobile, mask, normalise_e164, normalise_phone
 from app.core.rate_limit import limiter
 from app.core.security import hash_ip, verify_password
@@ -57,6 +57,9 @@ def local_expiry_date(moment: datetime | None) -> str:
 
 
 OTP_TTL = timedelta(minutes=10)
+# Minimum gap between code requests for one agreement and purpose. Shared by SMS and email,
+# so switching channel never skips the wait. The client shows a matching countdown.
+OTP_RESEND_SECONDS = 60
 OTP_LOCK = timedelta(minutes=15)
 SESSION_TTL = 60 * 60
 MAX_SIGNATURE_BYTES = 1_000_000
@@ -832,6 +835,12 @@ async def request_otp(token: str, purpose: Literal["sign", "view"], body, ip: st
                                      AgreementOtp.purpose == purpose).sort("-created_at").limit(1).to_list()
     if recent and recent[0].locked_until and recent[0].locked_until > now:
         raise Conflict("Too many incorrect codes. Try again in 15 minutes.")
+    if recent:
+        sent_at = recent[0].created_at if recent[0].created_at.tzinfo else recent[0].created_at.replace(tzinfo=UTC)
+        wait = OTP_RESEND_SECONDS - int((now - sent_at).total_seconds())
+        if wait > 0:
+            raise AppError("otp_cooldown", f"Please wait {wait} seconds before requesting another code.", 429,
+                           {"retry_after": str(wait)}, {"Retry-After": str(wait)})
     phone = doc.fields.get(rules.field_key("client.phone")).value if doc.fields.get(rules.field_key("client.phone")) else None
     email_addr = doc.fields.get(rules.field_key("client.email")).value if doc.fields.get(rules.field_key("client.email")) else None
     available = {"sms": bool(phone and is_mobile(normalise_e164(str(phone)) or "")), "email": bool(email_addr)}
@@ -873,9 +882,12 @@ async def request_otp(token: str, purpose: Literal["sign", "view"], body, ip: st
     if not ok:
         # The code remains stored but delivery failed; invalidate it immediately.
         otp.used_at = now
+        otp.created_at = now - timedelta(seconds=OTP_RESEND_SECONDS)  # nothing was delivered, so no wait
         await otp.save()
         raise Conflict("We could not send the verification code. Contact Bloomwell on 0787499988.")
-    return {"message": "A verification code has been sent to the contact already on your agreement.", "destination_hint": otp.destination_hint}
+    return {"message": "A verification code has been sent to the contact already on your agreement.",
+            "destination_hint": otp.destination_hint, "channel": channel,
+            "resend_after": OTP_RESEND_SECONDS, "expires_in": int(OTP_TTL.total_seconds())}
 
 
 async def verify_otp(token: str, purpose: Literal["sign", "view"], code: str, ip: str | None) -> tuple[Agreement, str]:
@@ -949,7 +961,8 @@ async def public_view(doc: Agreement, *, signed: bool = False) -> dict[str, Any]
         "signatures": [sig.model_dump(mode="json", exclude={"image_key", "ip_hash", "user_agent", "verification"}) for sig in doc.signatures] if signed else [],
         "content_hash": rules.canonical_hash(doc.fields, doc.template_version, doc.template_hash),
         "signed": signed,
-        "certificate": doc.sealed.get("certificate_json") if signed else None,
+        "certificate": render.public_certificate(doc.sealed.get("certificate_json")) if signed else None,
+        "pdf_available": bool(signed and doc.sealed.get("pdf_key")),
     }
 
 
@@ -1152,7 +1165,7 @@ async def _seal(doc: Agreement, content_hash: str) -> None:
     certificate = render.make_certificate(doc, content_hash)
     html_doc = render.render_agreement_html(doc, template.clauses, blocks=template.blocks, signed=True,
                                             certificate=certificate, signature_images=signature_images)
-    pdf_bytes = render.render_pdf(html_doc)
+    pdf_bytes = await asyncio.to_thread(render.render_pdf, html_doc)  # CPU heavy: keep the event loop free
     pdf_hash = hashlib.sha256(pdf_bytes).hexdigest()
     key = f"agreements/{doc.reference}/sealed/{pdf_hash}.pdf"
     bucket, locked = await _store_sealed_pdf(key, pdf_bytes, practice=doc.is_test)
@@ -1222,6 +1235,23 @@ async def countersign(doc: Agreement, principal: Principal, name: str, method: s
                        after={"status": "completed", "content_hash": content_hash,
                               "pdf_sha256": doc.sealed.get("pdf_sha256")}, ip_hash=ip)
     return {"agreement": agreement_detail(doc), "certificate": doc.sealed.get("certificate_json")}
+
+
+async def verify_public(reference: str, code: str) -> dict[str, Any]:
+    """Public authenticity check. Needs the reference AND the code printed in the PDF; says nothing sensitive."""
+    doc = await Agreement.find_one(Agreement.reference == reference)
+    cert = doc.sealed.get("certificate_json") if doc and doc.status == "completed" else None
+    expected = render.verify_code((cert or {}).get("content_hash"))
+    if not doc or not cert or not expected or not hmac.compare_digest(expected, code):
+        raise NotFound("No signed agreement matches this link.")  # same answer whether the reference or the code is wrong
+    public = render.public_certificate(cert) or {}
+    return {
+        "valid": True, "reference": doc.reference, "practice": bool(public.get("practice")),
+        "client_name": render.mask_name(public.get("client")),
+        "client_signed_at": public.get("client_signed_at"), "countersigned_at": public.get("countersigned_at"),
+        "sealed_at": public.get("sealed_at"), "content_hash": public.get("content_hash"),
+        "pdf_sha256": doc.sealed.get("pdf_sha256"),
+    }
 
 
 async def get_sealed_pdf(doc: Agreement) -> bytes:

@@ -15,3 +15,5 @@ Rules
 
 ## Last full sync
 2026-11-08: both copies were brought level. The Multi-Site copy gained the audit, TOTP, mail-outcome and invite work from here; this repo gained `local_expiry_date`, the agreement failure reasons and their tests, plus `docs/AGREEMENT_LINKS.md`.
+
+2026-11-09: agreement OTP resend cooldown, readable certificate, public signed-PDF download and the `/verify` authenticity check (adds `segno`) were applied to both copies; parity check passes.

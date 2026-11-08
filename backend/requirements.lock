@@ -65,3 +65,4 @@ requests==2.34.2
 aiohttp==3.14.5
 
 WeasyPrint==66.0
+segno==1.6.6
