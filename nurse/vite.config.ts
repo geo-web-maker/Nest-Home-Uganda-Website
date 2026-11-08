@@ -19,7 +19,7 @@ function headersPlugin(apiUrl: string, mailStorageUrl: string): Plugin {
       } catch { /* A missing or invalid value leaves uploads blocked by CSP. */ }
       if (!storageOrigin) console.warn('[nurse-headers] VITE_MAIL_STORAGE_URL is missing or not https: mail attachment uploads will be blocked by the CSP.');
       const connect = ["'self'", origin, storageOrigin, 'https://api.cloudinary.com'].filter(Boolean).join(' ');
-      const csp = `default-src 'self'; img-src 'self' data: blob:; connect-src ${connect}; frame-ancestors 'none'`;
+      const csp = `default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; connect-src ${connect}; frame-ancestors 'none'`;
       writeFileSync('dist/_headers', `/*\n  X-Robots-Tag: noindex, nofollow\n  Content-Security-Policy: ${csp}\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n`);
     },
   };
