@@ -1,0 +1,1 @@
+.section{padding-block:clamp(42px,7vw,84px);background:var(--paper)}.body{max-width:66ch;margin-inline:auto}.block{margin-block:0 2.4rem}.block h2{margin-bottom:.8rem;font:600 clamp(1.4rem,3vw,2rem)/1.1 var(--font-display)}.block p{color:var(--muted);line-height:1.8;white-space:pre-line}.notice{border-left:3px solid var(--accent);padding-inline-start:1rem;color:var(--muted)}

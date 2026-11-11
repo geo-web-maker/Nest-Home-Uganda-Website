@@ -1,0 +1,14 @@
+.band { position: relative; overflow: hidden; margin-top: var(--space-3xl); padding-block: clamp(56px, 9vw, 120px); background: var(--cta-bg); color: var(--cta-ink); }
+.band::before, .band::after { content: ''; position: absolute; width: 28vw; aspect-ratio: 1; border: 1px solid color-mix(in srgb, var(--cta-ink) 22%, transparent); border-radius: var(--egg); pointer-events: none; }
+.band::before { top: -40%; right: 4%; transform: rotate(22deg); }
+.band::after { bottom: -65%; left: 8%; transform: rotate(-18deg); }
+.inner { position: relative; z-index: 1; display: grid; justify-items: center; text-align: center; gap: 18px; }
+.eyebrow { font-size: .8rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; }
+.heading { max-width: 16ch; font-size: clamp(2.2rem, 4.8vw, 4.5rem); }
+.phone { color: var(--cta-ink); font-family: var(--font-display); font-size: clamp(2rem, 5vw, 4rem); font-weight: 600; line-height: 1.1; text-decoration: none; font-variant-numeric: tabular-nums; }
+.actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 8px; }
+@media (max-width: 699.98px) { .band { margin-top: var(--space-2xl); } .actions { width: 100%; } .actions :global(a) { flex: 1 1 100%; } }
+
+.band :global(a[class*='seal']) { margin-top: 8px; animation: thread-seal-turn 24s linear infinite; }
+@keyframes thread-seal-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .band :global(a[class*='seal']) { animation: none; } }

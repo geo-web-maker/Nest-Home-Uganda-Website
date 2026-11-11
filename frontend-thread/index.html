@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#F3F8F1" />
+    <title>Bloomwell Home Care Uganda</title>
+    <script>
+      (function () {
+        var theme = 'light';
+        try {
+          var saved = window.localStorage.getItem('nest-theme');
+          if (saved === 'light' || saved === 'dark') theme = saved;
+        } catch (_) {
+          /* Storage can be blocked; keep the reviewed light default. */
+        }
+        document.documentElement.dataset.theme = theme;
+        var meta = document.querySelector('meta[name=theme-color]');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#0E251B' : '#F3F8F1');
+      })();
+    </script>
+    <link
+      rel="preload"
+      href="/fonts/fraunces-100-900-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/figtree-400-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

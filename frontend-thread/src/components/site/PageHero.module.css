@@ -1,0 +1,12 @@
+.hero { position: relative; overflow: hidden; padding: clamp(44px, 7vw, 90px) 0; background: var(--paper-2); color: var(--ink); }
+.inner { position: relative; display: grid; gap: 28px; align-items: center; }
+.text { position: relative; z-index: 1; }
+.crumbs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; padding: 0; list-style: none; color: var(--muted); font-size: .85rem; }
+.crumbs li { display: inline-flex; gap: 8px; }
+.crumbLink { color: var(--link-tint); text-decoration: none; }.crumbLink:hover { text-decoration: underline; }
+.sep { opacity: .6; }
+.title { max-width: 16ch; margin-top: 20px; font-size: var(--text-page); }
+.lead { max-width: 44ch; margin-top: 18px; color: var(--muted); font-size: var(--text-lead); }
+.photo { justify-self: center; width: min(260px, 72%); aspect-ratio: 3 / 4; object-fit: cover; border: 0; border-radius: var(--arch); box-shadow: 0 0 0 6px var(--paper-2), 0 0 0 8px var(--accent); }
+@media (min-width: 700px) { .withPhoto .inner { grid-template-columns: 1fr 300px; gap: 48px; }.photo { width: 100%; } }
+@media (min-width: 1040px) { .withPhoto .inner { grid-template-columns: 1fr 380px; gap: 72px; } }
