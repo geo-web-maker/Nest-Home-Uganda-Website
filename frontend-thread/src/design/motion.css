@@ -1,0 +1,6 @@
+[data-reveal="hidden"] { opacity: 0; transform: translate3d(0, 32px, 0); }
+[data-reveal="shown"] { opacity: 1; transform: translate3d(0, 0, 0); transition: opacity var(--dur-long) var(--ease-out), transform var(--dur-long) var(--ease-out); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  [data-reveal="hidden"], [data-reveal="shown"] { opacity: 1 !important; transform: none !important; }
+}

@@ -1,0 +1,82 @@
+.arch { position: relative; display: block; width: 100%; overflow: hidden; border-radius: var(--arch); background: var(--paper-2); isolation: isolate; }
+.arch::after { content: ''; position: absolute; inset: 7px; border: 1px solid var(--accent); border-radius: var(--arch); pointer-events: none; }
+.arch img { width: 100%; height: 100%; object-fit: cover; }
+.arch[data-placeholder='true'] { min-height: 180px; border: 1px dashed var(--line-field); background: repeating-linear-gradient(135deg, var(--paper-2), var(--paper-2) 10px, var(--card) 10px, var(--card) 20px); }
+.diamond { position: absolute; z-index: 1; top: 50%; left: 50%; width: 16px; height: 16px; background: var(--accent); transform: translate(-50%, -50%) rotate(45deg); }
+.shapeField { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.shapeField i { position: absolute; display: block; width: clamp(38px, 7vw, 120px); aspect-ratio: 1; border: 1px solid var(--shape-1); border-radius: var(--egg); opacity: .45; animation: drift 12s ease-in-out infinite alternate; }
+.shapeField i:nth-child(1) { top: 8%; right: 14%; background: var(--shape-2); opacity: .7; }
+.shapeField i:nth-child(2) { top: 42%; right: 4%; border-radius: 50%; width: 18vw; max-width: 220px; }
+.shapeField i:nth-child(3) { bottom: 8%; left: 48%; transform: rotate(45deg); border-radius: 0; width: 26px; }
+.shapeField i:nth-child(4) { top: 17%; left: 8%; width: 50px; border-radius: 0 0 50% 50%; }
+.shapeField i:nth-child(5) { bottom: 18%; right: 30%; width: 75px; }
+.shape-hero i { border-color: var(--hero-ink); }
+.shape-page { opacity: .4; }
+.shape-service i { border-color: var(--accent); }
+.shape-error i { border-color: var(--accent); }
+@keyframes drift { to { translate: 8px -14px; rotate: 10deg; } }
+.threadLine { display: block; width: 100%; height: 48px; overflow: visible; }
+.threadLine path { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+.vertical { width: 40px; height: 100%; }
+.tape { overflow: hidden; padding: 15px 0; background: var(--accent); color: var(--accent-ink); transform: rotate(-1deg) scale(1.02); }
+.tapeTrack { display: flex; width: max-content; animation: tape-slide 42s linear infinite; }
+.tape ul { display: flex; align-items: center; gap: 30px; padding-inline: 20px; white-space: nowrap; list-style: none; }
+.tape li { font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; }
+.tape li::after { content: '◆'; margin-left: 30px; font-size: .62rem; }
+.tapeStatic .tapeTrack { animation: none; width: 100%; }
+.tapeStatic .tapeTrack ul:last-child { display: none; }
+@keyframes tape-slide { to { transform: translateX(-50%); } }
+.railWrap { position: relative; }
+.railControls { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 14px; }
+.railControls button { display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid var(--rule-strong); border-radius: 50%; background: transparent; color: var(--ink); cursor: pointer; }
+.rail { display: grid; grid-auto-columns: minmax(260px, 30%); grid-auto-flow: column; gap: 18px; overflow-x: auto; overscroll-behavior-inline: contain; scroll-snap-type: x mandatory; padding: 8px 4px 24px; scrollbar-width: thin; }
+.rail:focus-visible { outline-offset: -2px; }
+.railCard { min-height: 440px; border-radius: var(--radius-card); background: var(--card); border: 1px solid var(--rule); overflow: hidden; scroll-snap-align: start; }
+.railCardLink { display: flex; flex-direction: column; height: 100%; padding: 22px; text-decoration: none; color: var(--ink); }
+.railNumber { color: var(--num); font-size: .85rem; font-weight: 700; font-variant-numeric: lining-nums; }
+.railCard h3 { margin-top: 14px; font-size: var(--text-title); }
+.railCard p { margin-top: 10px; color: var(--muted); font-size: var(--text-sm); }
+.railCard .arch { margin-top: 18px; max-height: 174px; }
+.readMore { display: flex; justify-content: space-between; margin-top: auto; padding-top: 18px; color: var(--link); font-weight: 700; font-size: .9rem; }
+.tone-s { background: var(--paper-2); }.tone-l { background: var(--paper-3); }.tone-w { background: var(--card); }
+.railProgress { height: 2px; background: var(--rule); overflow: hidden; }.railProgress span { display: block; width: 100%; height: 100%; background: var(--accent); transform-origin: left; }
+.hang { position: relative; max-width: 1000px; margin: 0 auto; padding: 0 24px 32px; }
+.hang > .threadLine { position: absolute; top: 0; left: 0; }
+.hangGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px, 5vw, 64px); padding-top: 35px; }
+.hangItem { display: flex; flex-direction: column; text-align: center; text-decoration: none; color: var(--ink); gap: 6px; }
+.hangItem .arch { max-width: 220px; margin-inline: auto; box-shadow: 0 0 0 6px var(--paper), 0 0 0 8px var(--accent); }
+.hangItem strong { margin-top: 16px; font-family: var(--font-display); font-size: var(--text-title); }
+.hangItem span:last-child { color: var(--muted); font-size: var(--text-sm); }
+.story { padding-block: var(--space-3xl); background: var(--strong-bg); color: var(--strong-ink); }
+.story[data-enhanced='true'] { min-height: 340vh; padding-block: 0; }
+.story[data-enhanced='true'] .storyGrid { position: sticky; top: 80px; min-height: calc(100svh - 80px); padding-block: var(--space-2xl); }
+.storyGrid { display: grid; grid-template-columns: 1fr .85fr; align-items: center; gap: var(--space-2xl); }
+.storyEyebrow { color: var(--strong-accent); text-transform: uppercase; letter-spacing: .14em; font-size: .78rem; font-weight: 700; }
+.story h2 { margin-top: 18px; max-width: 13ch; font-size: var(--text-section); }
+.storySteps { display: grid; gap: 22px; margin-top: 38px; list-style: none; }
+.storySteps li { display: grid; grid-template-columns: 42px 1fr; gap: 16px; padding-top: 18px; border-top: 1px solid var(--strong-rule); transition: border-color var(--dur-short); }
+.storySteps li[data-active='true'] { border-top-color: var(--strong-accent); }
+.storySteps li > span { color: var(--strong-accent); font-weight: 700; }
+.storySteps h3 { font-size: var(--text-title); }.storySteps p { margin-top: 8px; color: var(--strong-muted); }
+.storyVisual { position: relative; display: grid; place-items: center; min-height: 420px; border: 1px solid var(--strong-rule); border-radius: var(--radius-card); background: var(--strong-surface); padding: 30px; }
+.storyVisual > .arch { width: min(75%, 280px); box-shadow: 0 0 0 6px var(--strong-surface), 0 0 0 8px var(--strong-accent); }
+.storyVisual > .threadLine { position: absolute; bottom: 16px; left: 0; opacity: .7; }
+.storyFallback { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; align-items: stretch; }
+.storyFallback > .callSketch, .storyFallback > .planSketch { width: 100%; }
+.storyFallback > .arch { grid-column: 1 / -1; width: min(65%, 210px); justify-self: center; max-height: 180px; }
+.storyVisual[data-static='true'] { min-height: 460px; }
+.callSketch, .planSketch { width: min(100%, 330px); padding: 26px; border-radius: var(--radius-card); background: var(--card); color: var(--card-ink); --ink: var(--card-ink); --muted: var(--card-muted); --num: var(--card-num); }
+.callSketch span, .planSketch > span { display: block; color: var(--num); font-weight: 700; text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; }
+.callSketch a { display: block; margin-block: 22px; font-family: var(--font-display); font-size: clamp(1.6rem, 4vw, 2.5rem); font-weight: 600; text-decoration: none; }
+.callSketch small { color: var(--muted); }.planSketch p { display: flex; align-items: center; gap: 10px; margin-top: 18px; }.planSketch i { width: 8px; height: 8px; background: var(--accent); transform: rotate(45deg); }
+.fillWords { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.fillWord { display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid var(--rule); }
+.fillWord strong { color: var(--ink); font-family: var(--font-display); font-size: clamp(2rem, 5vw, 4rem); line-height: 1; }
+.fillWord span { color: var(--muted); }
+.ledger { border-top: 1px solid var(--rule); }.ledger > div { display: grid; grid-template-columns: 1fr 1.3fr; gap: 24px; padding: 18px 0; border-bottom: 1px solid var(--rule); }.ledger dt { color: var(--muted); font-weight: 700; }.ledger dd { margin: 0; }
+.verticalSteps { position: relative; display: grid; gap: 0; list-style: none; }.verticalSteps li { display: grid; grid-template-columns: 54px 1fr minmax(150px, .5fr); align-items: center; gap: 24px; padding-block: 30px; border-bottom: 1px solid var(--rule); }.stepNumber { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid var(--accent); border-radius: 50%; color: var(--num); }.verticalSteps p { margin-top: 9px; color: var(--muted); }.stepArt { min-height: 90px; display: grid; place-items: center; color: var(--num); }
+.seal { display: grid; place-items: center; width: 86px; height: 86px; border: 1px solid currentColor; border-radius: 50%; color: inherit; text-decoration: none; }.seal span { font-size: .62rem; letter-spacing: .12em; }.seal b { font-size: 1.5rem; }
+.errorDoor { display: inline-flex; align-items: center; font-family: var(--font-display); font-size: clamp(4rem, 12vw, 9rem); line-height: .9; color: var(--ink); }.errorDoor i { display: inline-grid; place-items: center; width: .8em; height: .95em; margin-inline: .02em; border: 3px solid var(--accent); border-radius: 50% 50% 0 0; font-style: normal; font-size: .75em; color: var(--accent); }
+@media (max-width: 1039.98px) { .rail { grid-auto-columns: minmax(280px, 46%); }.storyGrid { grid-template-columns: 1fr 1fr; gap: 24px; } }
+@media (max-width: 699.98px) { .storyFallback { grid-template-columns: 1fr; }.storyFallback > .arch { grid-column: auto; width: min(70%, 190px); }.storyVisual[data-static='true'] { min-height: 0; }.rail { grid-auto-columns: minmax(250px, 84%); }.hangGrid { gap: 16px; }.hangItem strong { font-size: 1.15rem; }.storyGrid { grid-template-columns: 1fr; }.storyVisual { min-height: 320px; }.fillWords { grid-template-columns: 1fr; gap: 16px; }.verticalSteps li { grid-template-columns: 44px 1fr; gap: 14px; }.stepArt { grid-column: 2; justify-content: start; }.ledger > div { grid-template-columns: 1fr; gap: 6px; } }
+@media (prefers-reduced-motion: reduce) { .shapeField i, .tapeTrack { animation: none !important; } }

@@ -1,0 +1,2 @@
+# Review deployments may set an X-Robots-Tag: noindex response header at the hosting layer.
+# Production must remain indexable; the VITE_NOINDEX build flag controls the review meta tag.

@@ -1,0 +1,48 @@
+*, *::before, *::after { box-sizing: border-box; }
+html, body { overflow-x: clip; }
+html { scroll-padding-top: 96px; background: var(--paper); color: var(--ink); }
+body {
+  margin: 0; min-width: 320px; background: var(--paper); color: var(--ink);
+  font-family: var(--font-body); font-size: var(--text-md); line-height: 1.6;
+  -webkit-font-smoothing: antialiased; transition: background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out);
+}
+button, input, textarea, select { font: inherit; }
+button { color: inherit; }
+a { color: inherit; text-underline-offset: .18em; text-decoration-thickness: 1px; }
+img { max-width: 100%; height: auto; display: block; filter: var(--photo-filter); }
+h1, h2, h3, h4 { margin: 0; font-family: var(--font-display); font-weight: 600; letter-spacing: var(--tracking-display); line-height: 1.04; text-wrap: balance; overflow-wrap: break-word; }
+p { margin: 0; text-wrap: pretty; }
+ul, ol { margin: 0; padding: 0; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 6px; }
+[hidden] { display: none !important; }
+.container { width: 100%; max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
+.visually-hidden, .sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important; }
+.on-hero { --ink: var(--hero-ink); --muted: var(--hero-muted); --focus: var(--strong-accent); --num: var(--strong-accent); }
+.on-strong { --ink: var(--strong-ink); --muted: var(--strong-muted); --rule: var(--strong-rule); --focus: var(--strong-accent); --num: var(--strong-accent); --link: var(--strong-accent); }
+.on-cta { --ink: var(--cta-ink); --muted: var(--cta-ink); --focus: var(--cta-ink); }
+/* Thread page rhythm and typography. Existing page modules retain their layout contracts. */
+main h1 { font-size: var(--text-page); }
+main h2 { font-size: var(--text-section); }
+main h3 { font-size: var(--text-title); }
+main p { line-height: 1.65; }
+main section { min-width: 0; }
+main [class*="title"], main [class*="heading"] { text-wrap: balance; }
+main [class*="card"], main [class*="Card"] { border-radius: var(--radius-card); }
+main [class*="section"], main [class*="Section"] { scroll-margin-top: 96px; }
+/* Form controls use the Thread 56px field language while keeping the original validation wiring. */
+main form input:not([type="checkbox"]):not([type="radio"]),
+main form select, main form textarea {
+  min-height: 56px; width: 100%; border: 2px solid var(--line-field); border-radius: var(--radius-field);
+  background: var(--card); color: var(--ink); padding: 12px 15px;
+}
+main form textarea { min-height: 132px; resize: vertical; }
+main form label { color: var(--ink); font-weight: 600; }
+main form [role="alert"] { color: var(--danger); }
+main [class*="skeleton"] { border-radius: var(--radius-card); background: linear-gradient(90deg, var(--paper-2), var(--card), var(--paper-2)); }
+@media (max-width: 1039.98px) {
+  :root { --gutter: 24px; --section-gap: 88px; }
+}
+@media (max-width: 699.98px) {
+  :root { --gutter: 20px; --section-gap: 64px; }
+  body { padding-bottom: 76px; }
+}
