@@ -131,7 +131,8 @@
 .l2 li { padding-bottom: var(--space-xs); border-bottom: 3px dashed var(--strong-accent); font-family: var(--font-display); font-weight: 600; font-size: 1.5rem; }
 .l2 li:nth-child(2) { margin-left: var(--space-lg); }
 .l2 li:nth-child(3) { margin-left: var(--space-xl); }
-.l3 img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 48% 30%; }
+/* The 4:5 arch is too narrow for this wide photo: a plain cover crop leaves both heads touching the arch edges. Scale the photo to 130% of the arch width, centre the pair, and let its top fade into the arch surface. */
+.l3 img { position: absolute; left: -24%; bottom: 0; width: 130%; max-width: none; height: auto; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 24%); mask-image: linear-gradient(to bottom, transparent, #000 24%); }
 .l3none { position: absolute; inset: 0; background: repeating-linear-gradient(135deg, var(--strong-surface) 0 10px, var(--strong-bg) 10px 20px); }
 .l3 figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--space-xl) var(--space-lg) var(--space-lg); background: linear-gradient(transparent, var(--strong-bg)); font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; }
 

@@ -15,7 +15,7 @@
 :global(.on-strong) .outline:hover { color: var(--strong-bg); }
 .whatsapp { background: var(--color-wa); border-color: var(--color-wa); color: var(--color-on-wa); }
 .forest { background: var(--cta-btn); border-color: var(--cta-btn); color: var(--cta-btn-ink); }
-.header { min-height: 48px; padding-inline: 18px; font-size: .92rem; }
+.header { min-height: 48px; padding-inline: var(--space-md); font-size: var(--text-md); }
 .control { min-height: 48px; padding-inline: 18px; font-size: .95rem; }
 .compact { min-height: 38px; padding-inline: 14px; border-width: 1px; font-size: .86rem; }
 .withArrow { justify-content: space-between; gap: 14px; }
@@ -32,5 +32,5 @@
   .whatsapp:hover { background: var(--color-wa-hover); border-color: var(--color-wa-hover); }
   .forest:hover { background: var(--cta-btn-hover); border-color: var(--cta-btn-hover); }
 }
-@media (max-width: 480px) { .button { max-width: 100%; white-space: normal; font-size: .92rem; } .header { min-height: 44px; padding-inline: 12px; } }
+@media (max-width: 480px) { .button { max-width: 100%; white-space: normal; } .header { min-height: 44px; padding-inline: 12px; } }
 @media (prefers-reduced-motion: reduce) { .button::after { display: none; animation: none; } }
