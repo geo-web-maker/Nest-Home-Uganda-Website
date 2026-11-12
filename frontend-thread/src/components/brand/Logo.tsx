@@ -1,7 +1,8 @@
 import { cx } from '../../lib/cx';
 import styles from './Logo.module.css';
 
-export type LogoVariant = 'site' | 'admin';
+export type LogoVariant = 'site' | 'admin' | 'thread';
+type MarkVariant = Exclude<LogoVariant, 'thread'>;
 
 interface LogoProps {
   /** Business name, for example from site settings. */
@@ -12,13 +13,13 @@ interface LogoProps {
   className?: string;
 }
 
-const SIZES: Record<LogoVariant, { width: number; height: number }> = {
+const SIZES: Record<MarkVariant, { width: number; height: number }> = {
   site: { width: 36, height: 30 },
   admin: { width: 30, height: 26 },
 };
 
 /** The nest mark. Decorative: the text beside it names the logo. */
-export function LogoMark({ variant = 'site' }: { variant?: LogoVariant }) {
+export function LogoMark({ variant = 'site' }: { variant?: MarkVariant }) {
   const { width, height } = SIZES[variant];
   return (
     <svg
@@ -49,6 +50,18 @@ export function LogoMark({ variant = 'site' }: { variant?: LogoVariant }) {
 
 /** Mark plus name and subtitle. Never place it on a gold background. */
 export function Logo({ name, subtitle, variant = 'site', className }: LogoProps) {
+  if (variant === 'thread') {
+    // Thread brand: the egg mark with a gold dot, then the name in the display face.
+    return (
+      <span className={cx(styles.thread, className)}>
+        <span className={styles.egg} aria-hidden="true" />
+        <span className={styles.threadName}>
+          {name}
+          <small className={styles.threadSub}>{subtitle}</small>
+        </span>
+      </span>
+    );
+  }
   return (
     <span className={cx(styles.logo, variant === 'admin' && styles.admin, className)}>
       <LogoMark variant={variant} />
