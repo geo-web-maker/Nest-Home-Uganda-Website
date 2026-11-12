@@ -1,4 +1,5 @@
 /* The phone dock: Call and WhatsApp, fixed to the bottom. Pages carry bottom padding so it never covers content. */
-.bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 400; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); padding: var(--space-sm) var(--gutter) calc(var(--space-sm) + env(safe-area-inset-bottom)); border-top: var(--rule-hair) solid var(--rule); background: var(--paper); }
-.bar :global(a) { min-height: 52px; padding-inline: var(--space-sm); }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 400; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); padding: var(--space-sm) var(--gutter) calc(var(--space-sm) + env(safe-area-inset-bottom)); background: transparent; pointer-events: none; transition: background-color var(--dur-short) var(--ease-out); }
+.bar[data-surface='footer'] { background: var(--strong-bg); }
+.bar :global(a) { min-height: 52px; padding-inline: var(--space-sm); pointer-events: auto; }
 @media (min-width: 700px) { .bar { display: none; } }

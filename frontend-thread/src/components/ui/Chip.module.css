@@ -12,18 +12,20 @@
 }
 
 .care {
-  min-height: 44px;
-  padding-inline: 14px;
-  background: var(--bg);
+  min-height: 46px;
+  padding-inline: var(--space-lg);
+  border-color: var(--ink);
+  background: transparent;
   color: var(--ink);
-  font-size: 0.95rem;
+  font-size: var(--text-md);
+  font-weight: 600;
   cursor: pointer;
 }
 
 .care[aria-pressed='true'] {
-  background: var(--moss);
-  border-color: var(--moss);
-  color: var(--onf);
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
 }
 
 .care:disabled {
@@ -39,7 +41,7 @@
 
 @media (hover: hover) and (pointer: fine) {
   .care:not(:disabled):not([aria-pressed='true']):hover {
-    border-color: var(--gold);
+    background: var(--paper-2);
   }
 }
 

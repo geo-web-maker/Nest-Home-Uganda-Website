@@ -12,12 +12,12 @@
 .link:focus-visible { outline: none; }
 .card:has(.link:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
 .summary { max-width: 40ch; color: var(--muted); font-size: var(--text-md); line-height: 1.5; }
-.ask { position: relative; z-index: 2; grid-column: 2; justify-self: start; display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--space-md); border: 2px solid var(--color-wa); border-radius: var(--radius-pill); color: var(--ink); font-weight: 700; font-size: var(--text-sm); text-decoration: none; transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out); }
+.ask { position: relative; z-index: 2; grid-column: 2; justify-self: start; display: inline-flex; align-items: center; min-height: 48px; padding: 0 var(--space-md); border: 2px solid var(--ink); border-radius: var(--radius-pill); color: var(--ink); font-weight: 700; font-size: var(--text-md); text-decoration: none; transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out); }
 @media (hover: hover) and (pointer: fine) {
   .card:hover { padding-inline: var(--space-md); background: var(--paper-2); --arch-gap: var(--paper-2); }
   .card:hover .thumb { box-shadow: 0 0 0 5px var(--paper-2), 0 0 0 10px var(--accent); }
   .card:hover .photo { transform: scale(1.08); }
-  .ask:hover { background: var(--color-wa); color: var(--color-on-wa); }
+  .ask:hover { background: var(--ink); color: var(--paper); }
 }
 @media (min-width: 900px) { .card { grid-template-columns: 150px minmax(0, 1fr) auto; gap: var(--space-xl); padding-block: var(--space-xl); } .ask { grid-column: 3; justify-self: end; } }
 @media (max-width: 479.98px) { .card { grid-template-columns: 88px minmax(0, 1fr); gap: var(--space-md); } .number { font-size: 1.8rem; } }
