@@ -50,10 +50,12 @@ export function ContactPage() {
       <section className={styles.section}>
         <div className={`container ${styles.columns}`}>
           <Reveal className={styles.left}>
+            <div className={`on-strong ${styles.talk}`}>
+              <h2>{t('thread.preferToTalk')}</h2>
+              <a className={styles.phone} href={`tel:${dial}`} aria-label={`${tc('actions.call')} ${phone}`} onClick={() => trackClick('call', pathname, baseUrl)}>{phone}</a>
+              <p>{t('thread.callHint')}</p>
+            </div>
             <div className={styles.actions}>
-              <Button href={`tel:${dial}`} onClick={() => trackClick('call', pathname, baseUrl)}>
-                {t('contact.callBig', { phone })}
-              </Button>
               <Button
                 href={plainWhatsappUrl(whatsapp)}
                 variant="whatsapp"

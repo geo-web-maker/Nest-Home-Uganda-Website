@@ -47,7 +47,12 @@ export function Footer() {
           <ul className={styles.list}>{COMPANY.map((item) => <li key={item.to}><Link to={item.to} aria-current={isCurrent(item.to, pathname) ? 'page' : undefined}>{t(item.label)}</Link></li>)}</ul>
         </nav>
       </div>
-      <p className={styles.legal}>{t('site:footer.copyright')}</p>
+      <div className="container">
+        <div className={styles.legal}>
+          <span>{t('site:footer.copyright')}</span>
+          <a href={tel}>{t('site:thread.callUsOn', { phone })}</a>
+        </div>
+      </div>
     </footer>
   );
 }

@@ -3,14 +3,16 @@
   min-height: 54px; padding: 0 24px; border: 2px solid var(--accent);
   border-radius: var(--radius-pill); background: var(--accent); color: var(--accent-ink);
   font: 700 var(--text-md) var(--font-body); text-align: center; text-decoration: none;
-  cursor: pointer; white-space: nowrap; position: relative; overflow: hidden;
+  cursor: pointer; white-space: nowrap; position: relative; overflow: hidden; isolation: isolate;
   transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), transform var(--dur-short) var(--ease-out);
 }
-.button::after { content: ''; position: absolute; inset: -20% auto -20% -48%; width: 42%; transform: skewX(-20deg); background: linear-gradient(90deg, transparent, rgb(255 255 255 / .34), transparent); animation: button-sheen 5.5s ease-in-out infinite; pointer-events: none; }
-@keyframes button-sheen { 0%, 68%, 100% { left: -48%; } 82% { left: 120%; } }
+.primary::after, .forest::after, .whatsapp::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 42%; pointer-events: none; background: linear-gradient(100deg, transparent, rgb(255 255 255 / .5), transparent); transform: translateX(-170%) skewX(-18deg); animation: button-sheen 6.5s var(--ease-in-out) infinite; }
+@keyframes button-sheen { 0%, 62% { transform: translateX(-170%) skewX(-18deg); } 82%, 100% { transform: translateX(420%) skewX(-18deg); } }
 .button:active { transform: scale(.97); }
 .primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .outline { background: transparent; color: var(--ink); border-color: var(--ink); }
+:global(.on-hero) .outline:hover { color: var(--hero-bg); }
+:global(.on-strong) .outline:hover { color: var(--strong-bg); }
 .whatsapp { background: var(--color-wa); border-color: var(--color-wa); color: var(--color-on-wa); }
 .forest { background: var(--cta-btn); border-color: var(--cta-btn); color: var(--cta-btn-ink); }
 .header { min-height: 48px; padding-inline: 18px; font-size: .92rem; }
