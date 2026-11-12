@@ -1,3 +1,0 @@
-.list { display: grid; grid-template-columns: minmax(0, 1fr); margin: var(--space-lg) 0 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
-.item { display: flex; align-items: flex-start; gap: var(--space-md); padding-block: var(--space-md); border-bottom: 1px solid var(--rule); color: var(--ink); font-size: var(--text-lead); line-height: 1.4; }
-.diamond { flex: none; width: 1.6rem; height: 1.6rem; margin-top: 0.1em; border-radius: 50%; background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231B1706' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 62% no-repeat; }
