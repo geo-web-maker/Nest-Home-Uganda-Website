@@ -89,7 +89,7 @@ export function Header() {
     <header ref={headerRef} className={styles.header} data-enhanced={enhanced ? 'true' : 'false'} onKeyDown={closeOnEscape}>
       <div className={`container ${styles.inner}`}>
         <Link to="/" className={styles.brand} aria-label={t('site:brand.name')}>
-          <Logo name={t('site:brand.name')} subtitle={t('site:brand.subtitle')} />
+          <Logo variant="thread" name={t('site:brand.name')} subtitle={t('site:brand.subtitle')} />
         </Link>
         <nav
           id="site-nav"

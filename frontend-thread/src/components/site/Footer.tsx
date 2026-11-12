@@ -32,7 +32,7 @@ export function Footer() {
       <div className={`container ${styles.columns}`}>
         <section className={styles.brandBlock}>
           <Link to="/" className={styles.brand}>
-            <Logo name={t('site:brand.name')} subtitle={t('site:brand.subtitle')} />
+            <Logo variant="thread" name={t('site:brand.name')} subtitle={t('site:brand.subtitle')} />
           </Link>
           <p className={styles.tagline}>{t('site:footer.tagline')}</p>
           <p className={styles.contactLine}>{t('site:footer.office', { office })}</p>

@@ -55,8 +55,6 @@
 }
 @media (max-width: 699.98px) {
   .inner { min-height: 64px; gap: 8px; }
-  .brand :global(svg) { width: 30px; }
-  .brand :global(small) { display: none; }
   .callButton { display: none; }
   .actions { gap: 6px; }
   .header[data-enhanced='true'] .nav { padding-inline: 20px; }
