@@ -6,6 +6,8 @@ import { Button } from '../../../components/ui/Button';
 import { useServices } from '../../../lib/queries/services';
 import { ServiceCard } from '../../../components/site/ServiceCard';
 import { Reveal } from '../../../components/ui/Reveal';
+import { useSiteSettings } from '../../../lib/queries/site';
+import { whatsappUrl } from '../../../lib/whatsapp';
 import styles from './ServicesPage.module.css';
 import { servicePhotoUrl } from './servicePhotos';
 
@@ -19,6 +21,8 @@ export function ServicesPage() {
   const { t } = useTranslation('site');
   const { t: tc } = useTranslation('common');
   const services = useServices();
+  const site = useSiteSettings();
+  const whatsapp = site.data.business.whatsapp;
 
   return (
     <>
@@ -48,7 +52,15 @@ export function ServicesPage() {
               <ul className={styles.grid}>
                 {services.data.map((service, index) => (
                   <Reveal as="li" index={index % 4} key={service.id}>
-                    <ServiceCard service={service} photoUrl={servicePhotoUrl(service)} />
+                    <ServiceCard
+                      service={service}
+                      photoUrl={servicePhotoUrl(service)}
+                      ask={{
+                        href: whatsappUrl(whatsapp, t('thread.askMessage', { service: service.name.toLowerCase() })),
+                        label: t('thread.askAboutLabel', { service: service.name }),
+                        text: t('thread.askAbout'),
+                      }}
+                    />
                   </Reveal>
                 ))}
               </ul>
@@ -60,6 +72,10 @@ export function ServicesPage() {
               ))}
             </ul>
           )}
+          <div className={styles.note}>
+            <p>{t('thread.notSure')}</p>
+            <Button href="/contact">{t('thread.notSureAction')}</Button>
+          </div>
         </div>
       </section>
       <CtaBand

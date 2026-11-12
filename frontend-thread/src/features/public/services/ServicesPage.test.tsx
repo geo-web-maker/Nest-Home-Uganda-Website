@@ -75,7 +75,7 @@ describe('ServicesPage', () => {
 
     const cards = await screen.findAllByRole('heading', { level: 3 });
     expect(cards.map((h) => h.textContent)).toEqual(NAMES.map(([, name]) => name));
-    expect(screen.getByRole('link', { name: /Postnatal and newborn care/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Postnatal and newborn care' })).toHaveAttribute(
       'href',
       '/services/postnatal-newborn-care',
     );

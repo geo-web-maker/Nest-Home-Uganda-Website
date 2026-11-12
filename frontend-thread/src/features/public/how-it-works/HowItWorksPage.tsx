@@ -4,7 +4,9 @@ import { CtaBand } from '../../../components/site/CtaBand';
 import { PageHero } from '../../../components/site/PageHero';
 import { PriceCard } from '../../../components/site/PriceCard';
 import { Seo } from '../../../components/site/Seo';
-import { Steps } from '../../../components/site/Steps';
+import { VerticalSteps } from '../../../components/thread/ThreadParts';
+import { normaliseUgPhone } from '../../../lib/phone';
+import { useSiteSettings } from '../../../lib/queries/site';
 import { apiClient } from '../../../lib/api/client';
 import type { PricingBlockPublic } from './types';
 import { Reveal } from '../../../components/ui/Reveal';
@@ -18,24 +20,42 @@ export function HowItWorksPage() {
     queryFn: () =>
       apiClient.get<PricingBlockPublic[]>('/public/pricing', { params: { lang: 'en' } }),
   });
+  const site = useSiteSettings();
+  const phone = site.data.business.phone;
+  const telHref = `tel:${normaliseUgPhone(phone) ?? phone.replace(/\s/g, '')}`;
   const steps = [
     {
-      id: 'one',
-      number: '1',
       title: t('howItWorks.steps.callTitle'),
       text: t('howItWorks.steps.callText'),
+      art: (
+        <div className={styles.artCall}>
+          <a href={telHref} aria-label={`${tc('actions.call')} ${phone}`}>{phone}</a>
+          <span>{t('thread.callHint')}</span>
+        </div>
+      ),
     },
     {
-      id: 'two',
-      number: '2',
       title: t('howItWorks.steps.planTitle'),
       text: t('howItWorks.steps.planText'),
+      art: (
+        <ul className={styles.artPlan}>
+          {(['planWho', 'planWhat', 'planWhen'] as const).map((key) => (
+            <li key={key}>{t(`thread.${key}`)}</li>
+          ))}
+        </ul>
+      ),
     },
     {
-      id: 'three',
-      number: '3',
       title: t('howItWorks.steps.homeTitle'),
       text: t('howItWorks.steps.homeText'),
+      art: (
+        <div className={styles.badge} role="img" aria-label={t('thread.badgeLabel')}>
+          <b>{t('thread.badgeRole')}</b>
+          <i />
+          <span>{t('thread.badgeName')}</span>
+          <span>{t('thread.badgeRegistration')}</span>
+        </div>
+      ),
     },
   ];
   return (
@@ -54,9 +74,7 @@ export function HowItWorksPage() {
       <section className={styles.steps}>
         <div className="container">
           <h2 className={styles.srOnly}>{t('howItWorks.stepsLabel')}</h2>
-          <Reveal>
-            <Steps items={steps} label={t('howItWorks.stepsLabel')} />
-          </Reveal>
+          <VerticalSteps steps={steps} label={t('howItWorks.stepsLabel')} />
         </div>
       </section>
       <section className={styles.pricing}>

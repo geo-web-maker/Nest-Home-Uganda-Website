@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { ServicePublic } from '../../types';
+import { cx } from '../../lib/cx';
 import styles from './ServiceCard.module.css';
 import { serviceIcon } from './serviceIcons';
 
@@ -7,26 +8,41 @@ type ServiceCardProps = {
   service: ServicePublic;
   /** Photo URL when the service has one. The API gives only `photo_media_id`, so the page resolves it. */
   photoUrl?: string | null;
+  /** Optional "ask about this" WhatsApp button, shown on the right of the row. */
+  /** Smaller bordered card for "related" lists. */
+  compact?: boolean;
+  ask?: { href: string; label: string; text: string; onClick?: () => void };
 };
 
-/** Link card for the Services overview (spec 4.9). Photo when set, otherwise an icon tile. */
-export function ServiceCard({ service, photoUrl }: ServiceCardProps) {
+/**
+ * One service row (the template's `svc`): arch photo, gold number, name, summary, and an optional
+ * WhatsApp ask button. The whole row opens the service page through the name link.
+ */
+export function ServiceCard({ service, photoUrl, ask, compact = false }: ServiceCardProps) {
   const icon = serviceIcon(service.icon_key, service.slug);
   return (
-    <Link to={`/services/${service.slug}`} className={styles.card}>
-      <span className={styles.thumb}>
+    <div className={cx(styles.card, compact && styles.compact, !photoUrl && styles.noPhoto)}>
+      <span className={styles.thumb} aria-hidden={photoUrl ? undefined : 'true'}>
         {photoUrl ? (
           <img className={styles.photo} src={photoUrl} alt="" loading="lazy" decoding="async" />
         ) : (
-          <span className={styles.tile} data-testid="service-tile">
-            {icon ?? <span className={styles.number}>{service.number}</span>}
+          <span className={styles.tile} data-testid="service-tile" aria-hidden="true">
+            {icon ?? <span className={styles.diamond}>{service.number}</span>}
           </span>
         )}
       </span>
-      <span className={styles.body}>
-        <h3 className={styles.name}>{service.name}</h3>
+      <div className={styles.body}>
+        <span className={styles.number} aria-hidden="true">{String(service.number).padStart(2, '0')}</span>
+        <h3 className={styles.name}>
+          <Link to={`/services/${service.slug}`} className={styles.link}>{service.name}</Link>
+        </h3>
         {service.summary && <span className={styles.summary}>{service.summary}</span>}
-      </span>
-    </Link>
+      </div>
+      {ask && (
+        <a className={styles.ask} href={ask.href} target="_blank" rel="noopener noreferrer" aria-label={ask.label} onClick={ask.onClick}>
+          {ask.text}
+        </a>
+      )}
+    </div>
   );
 }

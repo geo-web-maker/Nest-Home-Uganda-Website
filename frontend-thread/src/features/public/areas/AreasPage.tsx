@@ -27,7 +27,8 @@ export function AreasPage() {
         breadcrumb={[{ label: tc('nav.home'), to: '/' }, { label: t('areas.rule') }]}
       />
       <section className={styles.section}>
-        <div className="container">
+        <div className={`container ${styles.cols}`}>
+          <div>
           <h2>{t('areas.neighbourhoodsHeading')}</h2>
           {areas.isError ? (
             <div role="alert">
@@ -51,10 +52,11 @@ export function AreasPage() {
           ) : (
             <p aria-busy="true">{t('areas.loading')}</p>
           )}
-          <Reveal>
+          <p className={styles.note}>{t('areas.notListed')}</p>
+          </div>
+          <Reveal className={styles.map}>
             <MapPlaceholder label={t('areas.mapLabel')} description={t('areas.mapDescription')} />
           </Reveal>
-          <p className={styles.note}>{t('areas.notListed')}</p>
         </div>
       </section>
       <CtaBand

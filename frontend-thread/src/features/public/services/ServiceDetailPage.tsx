@@ -22,7 +22,6 @@ import { useSiteSettings } from '../../../lib/queries/site';
 import type { ServicePublicDetail } from '../../../types';
 import type { FaqPublic } from '../faq/types';
 import { servicePhotoUrl } from './servicePhotos';
-import { Arch } from '../../../components/thread/ThreadParts';
 import { Reveal } from '../../../components/ui/Reveal';
 import styles from './ServiceDetailPage.module.css';
 
@@ -55,7 +54,8 @@ export function ServiceDetailPage() {
         rule={service.hero_label}
         title={service.hero_headline}
         lead={service.hero_lead}
-        photo={photo ? { src: photo, alt: service.name } : undefined}
+        variant="service"
+        photo={photo ? { src: photo, alt: '' } : undefined}
         breadcrumb={[{ label: tc('nav.home'), to: '/' }, { label: tc('nav.services'), to: '/services' }, { label: service.name }]}
       />
       {service.facts.length ? <Strip items={service.facts} label={t('serviceDetail.factsLabel')} /> : <p className={`${styles.missing} tbc`}>{t('serviceDetail.clientToSupply')}</p>}
@@ -88,7 +88,6 @@ export function ServiceDetailPage() {
             <a className={styles.bookPhone} href={callHref}>{phone}</a>
             <Button href="#book-this-care" fullWidth onClick={(event) => { event.preventDefault(); document.getElementById('book-this-care')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }}>{tc('actions.book')}</Button>
             <Button href={plainWhatsappUrl(site.business.whatsapp)} variant="whatsapp" fullWidth target="_blank" rel="noopener noreferrer" onClick={() => trackClick('whatsapp', pathname, baseUrl)}>{tc('actions.whatsapp')}</Button>
-            <Arch src={photo} alt="" placeholder={!photo} ratio="4/3" />
           </div>
         </aside>
       </div>
@@ -106,7 +105,7 @@ export function ServiceDetailPage() {
           />
         </div>
       </section>
-      {service.related.length > 0 ? <section className={styles.related}><div className="container"><h2>{t('serviceDetail.relatedHeading')}</h2><ul className={styles.relatedGrid}>{service.related.map((related, index) => <Reveal as="li" index={index} key={related.id}><ServiceCard service={related} /></Reveal>)}</ul></div></section> : null}
+      {service.related.length > 0 ? <section className={styles.related}><div className="container"><h2>{t('serviceDetail.relatedHeading')}</h2><ul className={styles.relatedGrid}>{service.related.map((related, index) => <Reveal as="li" index={index} key={related.id}><ServiceCard service={related} photoUrl={servicePhotoUrl(related)} compact /></Reveal>)}</ul></div></section> : null}
     </>
   );
 }

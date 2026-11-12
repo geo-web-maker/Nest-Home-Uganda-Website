@@ -1,47 +1,12 @@
-.row {
-  margin-top: 10px;
-  padding-inline: 18px;
-  background: var(--surf);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-}
-
-.summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 54px;
-  font-weight: 600;
-  list-style: none;
-  cursor: pointer;
-}
-
-.summary::-webkit-details-marker {
-  display: none;
-}
-
-/* Chevron, rotated when open. */
-.summary::after {
-  content: '';
-  flex: none;
-  width: 0.6rem;
-  height: 0.6rem;
-  margin-inline-end: 4px;
-  border-inline-end: 2px solid var(--gold);
-  border-block-end: 2px solid var(--gold);
-  transform: rotate(45deg);
-  transition: transform var(--dur-base) var(--ease-out);
-}
-
-.row[open] > .summary::after {
-  transform: rotate(-135deg);
-}
-
-.answer {
-  padding-bottom: 16px;
-  color: var(--mut);
-}
+.row { border-bottom: 1px solid var(--rule); }
+.summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); min-height: 64px; padding-block: var(--space-sm); font-weight: 700; font-size: var(--text-lead); list-style: none; cursor: pointer; }
+.summary::-webkit-details-marker { display: none; }
+/* Plus in a circle, turning into a gold cross when open. */
+.summary::after { content: ''; flex: none; width: 2.25rem; height: 2.25rem; border: 2px solid var(--ink); border-radius: 50%; background: linear-gradient(currentColor, currentColor) center / 12px 2px no-repeat, linear-gradient(currentColor, currentColor) center / 2px 12px no-repeat; transition: transform var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out); }
+.summary:hover::after { border-color: var(--num); color: var(--num); }
+.row[open] > .summary::after { transform: rotate(45deg); border-color: var(--accent); background-color: var(--accent); color: var(--accent-ink); }
+.answer { max-width: 56ch; padding-bottom: var(--space-lg); color: var(--muted); }
+.accordion { margin-top: var(--space-lg); border-top: 1px solid var(--rule); }
 
 /* Smooth open and close where supported; elsewhere the answer shows instantly. */
 @supports (interpolate-size: allow-keywords) and selector(::details-content) {
