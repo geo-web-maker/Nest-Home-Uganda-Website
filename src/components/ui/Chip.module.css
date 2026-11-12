@@ -1,0 +1,50 @@
+.chip {
+  composes: pill from '../../design/shapes.module.css';
+  display: inline-flex;
+  align-items: center;
+  border: 2px solid var(--line);
+  font-weight: 500;
+  transition:
+    background-color var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.care {
+  min-height: 46px;
+  padding-inline: var(--space-lg);
+  border-color: var(--ink);
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--text-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.care[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.care:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.area {
+  padding: 9px 16px;
+  background: var(--surf);
+  color: var(--ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .care:not(:disabled):not([aria-pressed='true']):hover {
+    background: var(--paper-2);
+  }
+}
+
+.care:not(:disabled):active {
+  transform: scale(0.98);
+}

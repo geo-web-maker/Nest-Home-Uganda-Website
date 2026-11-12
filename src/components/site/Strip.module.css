@@ -1,0 +1,5 @@
+.strip { border-bottom: 1px solid var(--rule-strong); background: var(--paper); }
+.strip ul, .strip p { display: flex; flex-wrap: wrap; gap: var(--space-sm) var(--space-xl); max-width: var(--container); margin: 0 auto; padding: var(--space-lg) var(--gutter); list-style: none; }
+.strip li, .strip p { display: inline-flex; align-items: center; gap: var(--space-sm); font-weight: 600; }
+.strip li::before, .strip p::before { content: ''; flex: none; width: 10px; height: 10px; background: var(--accent); transform: rotate(45deg); }
+.strip p { display: flex; }

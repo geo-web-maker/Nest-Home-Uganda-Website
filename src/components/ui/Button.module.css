@@ -1,0 +1,36 @@
+.button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 54px; padding: 0 24px; border: 2px solid var(--accent);
+  border-radius: var(--radius-pill); background: var(--accent); color: var(--accent-ink);
+  font: 700 var(--text-md) var(--font-body); text-align: center; text-decoration: none;
+  cursor: pointer; white-space: nowrap; position: relative; overflow: hidden; isolation: isolate;
+  transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), transform var(--dur-short) var(--ease-out);
+}
+.primary::after, .forest::after, .whatsapp::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 42%; pointer-events: none; background: linear-gradient(100deg, transparent, rgb(255 255 255 / .5), transparent); transform: translateX(-170%) skewX(-18deg); animation: button-sheen 6.5s var(--ease-in-out) infinite; }
+@keyframes button-sheen { 0%, 62% { transform: translateX(-170%) skewX(-18deg); } 82%, 100% { transform: translateX(420%) skewX(-18deg); } }
+.button:active { transform: scale(.97); }
+.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.outline { background: transparent; color: var(--ink); border-color: var(--ink); }
+:global(.on-hero) .outline:hover { color: var(--hero-bg); }
+:global(.on-strong) .outline:hover { color: var(--strong-bg); }
+.whatsapp { background: var(--color-wa); border-color: var(--color-wa); color: var(--color-on-wa); }
+.forest { background: var(--cta-btn); border-color: var(--cta-btn); color: var(--cta-btn-ink); }
+.header { min-height: 48px; padding-inline: var(--space-md); font-size: var(--text-md); }
+.control { min-height: 48px; padding-inline: 18px; font-size: .95rem; }
+.compact { min-height: 38px; padding-inline: 14px; border-width: 1px; font-size: .86rem; }
+.withArrow { justify-content: space-between; gap: 14px; }
+.arrow { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: rgb(0 0 0 / .08); font-size: 1.2rem; }
+.full { width: 100%; }
+.button:disabled, .button[aria-disabled='true'] { background: var(--rule); border-color: var(--rule); color: var(--muted); cursor: not-allowed; pointer-events: none; }
+.button[aria-busy='true'] { cursor: progress; }
+.button[aria-busy='true']::after { content: ''; position: static; inset: auto; width: 1em; height: 1em; margin-left: .5em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; background: none; animation: button-spin 1s linear infinite; }
+@keyframes button-spin { to { transform: rotate(360deg); } }
+@media (hover: hover) and (pointer: fine) {
+  .button:not(:disabled):hover { transform: translateY(-2px); }
+  .primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .outline:hover { background: var(--ink); color: var(--paper); }
+  .whatsapp:hover { background: var(--color-wa-hover); border-color: var(--color-wa-hover); }
+  .forest:hover { background: var(--cta-btn-hover); border-color: var(--cta-btn-hover); }
+}
+@media (max-width: 480px) { .button { max-width: 100%; white-space: normal; } .header { min-height: 44px; padding-inline: 12px; } }
+@media (prefers-reduced-motion: reduce) { .button::after { display: none; animation: none; } }

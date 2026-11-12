@@ -1,0 +1,8 @@
+.steps { position: relative; display: grid; gap: var(--space-xl); margin: var(--space-xl) 0 0; padding: 0 0 0 5rem; list-style: none; }
+.steps::before { content: ''; position: absolute; left: 1.55rem; top: 1.5rem; bottom: 1.5rem; width: 2px; background: var(--accent); }
+.step { position: relative; }
+.number { position: absolute; left: -5rem; top: -0.2rem; display: grid; place-items: center; width: 3.2rem; height: 3.2rem; border: 2px solid var(--accent); border-radius: 50%; background: var(--paper); color: var(--num); font-family: var(--font-display); font-weight: 600; font-size: 1.4rem; }
+.title { font-size: var(--text-title); }
+.text { max-width: 52ch; margin-top: var(--space-2xs); color: var(--muted); }
+.connector { display: none; }
+@media (max-width: 699.98px) { .steps { padding-left: 4rem; } .steps::before { left: 1.25rem; } .number { left: -4rem; width: 2.6rem; height: 2.6rem; font-size: 1.15rem; } }

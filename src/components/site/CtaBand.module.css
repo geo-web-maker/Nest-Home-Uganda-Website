@@ -1,0 +1,13 @@
+.cta { position: relative; overflow: hidden; padding-block: var(--section-gap); background: var(--cta-bg); color: var(--ink); }
+.bg { position: absolute; inset: -4%; width: 108%; height: 108%; max-width: none; object-fit: cover; opacity: 0.16; filter: blur(7px) grayscale(0.5); transform: translate3d(0, calc(var(--cy, 0) * 1px), 0); }
+.cta :global(.container) { position: relative; }
+.cta h2 { font-size: var(--text-section); }
+.how { max-width: 42ch; margin-top: var(--space-md); font-size: var(--text-lead); line-height: 1.45; }
+.numrow { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-lg); margin-top: var(--space-lg); }
+.num { display: block; font-family: var(--font-display); font-weight: 600; font-size: clamp(3rem, 0.6rem + 9.6vw, 9.5rem); line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--ink); text-decoration: none; transition: opacity var(--dur-short) var(--ease-out); }
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-top: var(--space-xl); }
+@media (hover: hover) and (pointer: fine) { .num:hover { opacity: 0.72; } }
+@media (max-width: 699.98px) { .numrow { flex-wrap: nowrap; gap: var(--space-sm); } .num { min-width: 0; font-size: min(2.6rem, 9vw); } .actions :global(a) { width: 100%; } }
+
+/* The phone dock already carries WhatsApp, so the band drops its duplicate (as the template does). */
+@media (max-width: 699.98px) { .wa { display: none; } }

@@ -90,7 +90,6 @@ export function HomePage() {
         callLabel={t('thread.firstCall')}
         callSay={t('thread.callOrWhatsapp')}
         callSame={t('thread.sameNumber')}
-        stepLink={t('thread.tapToCall', { phone })}
         caption={steps[2]?.text ?? ''}
       />
       <section className={styles.promiseSection}>
