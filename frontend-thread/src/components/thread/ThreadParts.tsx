@@ -355,6 +355,8 @@ export function Story({
   const pathRef = useRef<SVGPathElement>(null);
   const markerRef = useRef<HTMLSpanElement>(null);
   const lineRef = useRef<SVGPathElement>(null);
+  const baseRef = useRef<SVGPathElement>(null);
+  const sizeRef = useRef({ w: 0, h: 0, len: 1 });
 
   useEffect(() => {
     setEnhanced(!reduce && typeof window.matchMedia === 'function');
@@ -368,15 +370,28 @@ export function Story({
     section.style.setProperty('--p', p.toFixed(4));
     section.dataset.s = String(next);
     setActive((current) => (current === next ? current : next));
-    lineRef.current?.style.setProperty('stroke-dashoffset', String(1 - p));
     const path = pathRef.current;
+    const line = lineRef.current;
     const marker = markerRef.current;
     const svg = path?.ownerSVGElement;
-    if (path && marker && svg) {
-      const box = svg.getBoundingClientRect();
-      const point = path.getPointAtLength(path.getTotalLength() * p);
-      marker.style.transform = `translate3d(${(point.x / 1000) * box.width}px, ${(point.y / 100) * box.height}px, 0)`;
+    if (!path || !line || !marker || !svg) return;
+    const box = svg.getBoundingClientRect();
+    const size = sizeRef.current;
+    if (box.width && (box.width !== size.w || box.height !== size.h)) {
+      // Rebuild the thread in real pixels so the stroke is not stretched and dash lengths are exact.
+      const x = (v: number) => ((v / 1000) * box.width).toFixed(1);
+      const y = (v: number) => ((v / 100) * box.height).toFixed(1);
+      const d = `M${x(0)} ${y(50)} C ${x(125)} ${y(0)}, ${x(250)} ${y(0)}, ${x(375)} ${y(50)} S ${x(625)} ${y(100)}, ${x(750)} ${y(50)} S ${x(900)} ${y(10)}, ${x(1000)} ${y(50)}`;
+      svg.setAttribute('viewBox', `0 0 ${box.width.toFixed(1)} ${box.height.toFixed(1)}`);
+      for (const el of [baseRef.current, line, path]) el?.setAttribute('d', d);
+      size.w = box.width;
+      size.h = box.height;
+      size.len = path.getTotalLength();
+      line.style.strokeDasharray = `${size.len.toFixed(1)} ${size.len.toFixed(1)}`;
     }
+    const point = path.getPointAtLength(size.len * p);
+    line.style.strokeDashoffset = (size.len * (1 - p)).toFixed(1);
+    marker.style.transform = `translate3d(${point.x}px, ${point.y}px, 0)`;
   }, []);
   useScrollVars(ref, update, enhanced, 0);
 
@@ -421,8 +436,8 @@ export function Story({
         </div>
         <div className={cx('container', styles.thread)} aria-hidden="true">
           <svg viewBox="0 0 1000 100" preserveAspectRatio="none">
-            <path className={styles.base} d={STORY_PATH} />
-            <path ref={lineRef} className={styles.line} pathLength={1} d={STORY_PATH} />
+            <path ref={baseRef} className={styles.base} d={STORY_PATH} />
+            <path ref={lineRef} className={styles.line} d={STORY_PATH} />
             <path ref={pathRef} d={STORY_PATH} fill="none" stroke="none" />
           </svg>
           <span ref={markerRef} className={styles.marker} />

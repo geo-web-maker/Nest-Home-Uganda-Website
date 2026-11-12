@@ -42,7 +42,7 @@ export function CtaBand({ heading, bookLabel, whatsappLabel }: CtaBandProps) {
           <SealLink href={tel} text={ts('thread.sealText')} />
         </div>
         <div className={styles.actions}>
-          <Button href={plainWhatsappUrl(whatsapp)} variant="whatsapp" target="_blank" rel="noopener noreferrer" onClick={() => trackClick('whatsapp', pathname, import.meta.env.VITE_API_URL ?? '')}>
+          <Button href={plainWhatsappUrl(whatsapp)} variant="whatsapp" className={styles.wa} target="_blank" rel="noopener noreferrer" onClick={() => trackClick('whatsapp', pathname, import.meta.env.VITE_API_URL ?? '')}>
             {whatsappLabel}
           </Button>
           <Button href="/contact" variant="forest">{bookLabel}</Button>
