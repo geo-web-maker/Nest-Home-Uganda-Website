@@ -1,12 +1,12 @@
-.hero { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: center; min-height: min(max(88svh, 600px), 860px); background: var(--hero-bg); color: var(--hero-ink); padding-block: var(--space-3xl); }
+.hero { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: center; min-height: min(max(88svh, 600px), 860px); background: var(--hero-bg); color: var(--hero-ink); padding-block: var(--space-2xl); }
 .heroInner { position: relative; z-index: 2; }
-.hero h1 { max-width: 11ch; font-size: var(--text-display); line-height: 0.98; letter-spacing: var(--tracking-display); }
-.lead { max-width: 34ch; margin-top: var(--space-lg); color: var(--hero-muted); font-size: var(--text-lead); line-height: 1.45; animation: rise var(--dur-long) var(--ease-out) 0.7s both; }
+.hero h1 { max-width: 9ch; font-size: var(--text-display); line-height: 0.96; letter-spacing: var(--tracking-display); }
+.lead { max-width: 32ch; margin-top: var(--space-lg); color: var(--hero-muted); font-size: var(--text-lead); line-height: 1.45; animation: rise var(--dur-long) var(--ease-out) 0.7s both; }
 .actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-top: var(--space-xl); animation: rise var(--dur-long) var(--ease-out) 0.85s both; }
 @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-.cue { position: absolute; left: 50%; bottom: var(--space-lg); z-index: 2; display: flex; flex-direction: column; align-items: center; gap: var(--space-xs); transform: translateX(-50%); color: var(--hero-muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; text-decoration: none; }
-.cue::after { content: ''; width: 2px; height: 44px; background: linear-gradient(var(--hero-accent) 50%, transparent 50%) 0 0 / 2px 8px; animation: cue 1.4s linear infinite; }
-@keyframes cue { to { background-position: 0 16px; } }
+.cue { position: absolute; left: var(--gutter); bottom: var(--space-lg); z-index: 2; display: flex; align-items: center; gap: var(--space-sm); color: var(--hero-muted); font-size: var(--text-sm); text-decoration: none; }
+.cue::after { content: ''; width: 2px; height: 40px; background: var(--hero-accent); transform-origin: top; animation: cue 1.8s var(--ease-in-out) infinite; }
+@keyframes cue { 0% { transform: scaleY(0); opacity: 1; } 70% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
 .railSection, .hangSection, .promiseSection, .teamSection, .testimonials { padding-block: var(--section-gap); }
 .railIntro h2 { max-width: 14ch; font-size: var(--text-section); }
 .railIntro p { max-width: 30ch; margin-top: var(--space-md); color: var(--muted); font-size: var(--text-lead); }
@@ -31,5 +31,5 @@
 .quoteGrid blockquote p { margin-top: var(--space-sm); font-size: var(--text-lead); }
 .quoteGrid blockquote footer { margin-top: var(--space-md); color: var(--strong-muted); font-size: var(--text-sm); }
 @media (max-width: 1039.98px) { .whoGrid { grid-template-columns: minmax(0, 1fr); gap: var(--space-xl); } .teamGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .quoteGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 699.98px) { .hero { min-height: 620px; padding-block: var(--space-2xl) var(--space-3xl); } .hero h1 { max-width: 9ch; } .actions :global(a) { flex: 1 1 100%; } .sectionHeading { align-items: start; flex-direction: column; } .quoteGrid { grid-template-columns: minmax(0, 1fr); } .teamGrid { gap: var(--space-lg) var(--space-sm); } }
+@media (max-width: 699.98px) { .hero { min-height: 600px; align-items: flex-start; padding-block: var(--space-xl) var(--space-2xl); } .hero h1 { font-size: 3.4rem; } .cue { display: none; } .actions :global(a) { flex: 1 1 100%; } .sectionHeading { align-items: start; flex-direction: column; } .quoteGrid { grid-template-columns: minmax(0, 1fr); } .teamGrid { gap: var(--space-lg) var(--space-sm); } }
 @media (prefers-reduced-motion: reduce) { .lead, .actions { animation: none; } .cue::after { animation: none; } }

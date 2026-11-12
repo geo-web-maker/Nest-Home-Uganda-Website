@@ -63,7 +63,7 @@ export function HomePage() {
             label={t('services.listLabel')}
             previousLabel={t('thread.previousServices')}
             nextLabel={t('thread.nextServices')}
-            head={<Reveal className={styles.railIntro}><h2>{t('home.servicesTitleBefore')} {t('home.servicesTitleAccent')} {t('home.servicesTitleAfter')}</h2><p>{t('home.lead')}</p></Reveal>}
+            head={<Reveal className={styles.railIntro}><h2>{t('home.servicesTitleBefore')} {t('home.servicesTitleAccent')} {t('home.servicesTitleAfter')}</h2><p>{t('home.servicesLead')}</p></Reveal>}
           >
             {services.data.map((service, index) => <RailCard key={service.id} number={service.number} title={service.name} summary={service.summary} href={`/services/${service.slug}`} photo={servicePhotoUrl(service)} readLabel={t('thread.readAboutCare')} tone={(['f', 's', 'l', 'w'] as const)[index % 4]} />)}
           </Rail>
@@ -73,7 +73,7 @@ export function HomePage() {
         <div className={`container ${styles.whoGrid}`}>
           <Reveal className={styles.whoHead}>
             <h2>{t('thread.hangHeading')}</h2>
-            <p className={styles.whoLead}>{t('thread.hangRule')}.</p>
+            <p className={styles.whoLead}>{t('thread.hangLead')}</p>
             <Button href="/services" variant="outline">{t('home.allServices')}</Button>
           </Reveal>
           <Hang items={hangItems} label={t('thread.hangLabel')} />
@@ -86,7 +86,7 @@ export function HomePage() {
         planItems={[t('thread.planWho'), t('thread.planWhat'), t('thread.planWhen')]}
         photo="/images/services/service-0-elderly.jpg"
         photoAlt=""
-        heading={t('thread.storyHeading')}
+        heading={t('thread.stepsHeading')}
         callLabel={t('thread.firstCall')}
         callSay={t('thread.callOrWhatsapp')}
         callSame={t('thread.sameNumber')}

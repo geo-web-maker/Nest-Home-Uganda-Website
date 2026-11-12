@@ -33,7 +33,7 @@ describe('HomePage', () => {
       screen.getByRole('heading', { name: /Home-based care for Ugandan families/ }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: /One clear thread from here to home/ }),
+      screen.getByRole('heading', { name: /From first call to first visit/ }),
     ).toBeInTheDocument();
   });
   it('does not invent testimonials when settings are absent', async () => {
@@ -41,7 +41,7 @@ describe('HomePage', () => {
       path === '/public/site' ? {} : [],
     );
     setup();
-    await screen.findByRole('heading', { name: /One clear thread from here to home/ });
+    await screen.findByRole('heading', { name: /From first call to first visit/ });
     expect(
       screen.queryByRole('heading', { name: 'Families share their experience' }),
     ).not.toBeInTheDocument();
