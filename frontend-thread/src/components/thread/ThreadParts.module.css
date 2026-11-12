@@ -113,7 +113,6 @@
 .story:not([data-enhanced='true']) .num { background: var(--strong-accent); color: var(--accent-ink); }
 .step h3 { padding-top: var(--space-2xs); font-size: var(--text-title); }
 .step p { margin-top: var(--space-2xs); color: var(--muted); }
-.steplink { display: inline-block; margin-top: var(--space-sm); color: var(--strong-accent); font-weight: 700; text-decoration-thickness: 2px; }
 
 .orb { position: relative; width: min(100%, 360px, calc((100svh - 300px) * 0.8)); min-width: 220px; aspect-ratio: 4 / 5; margin-inline: auto; overflow: hidden; border-radius: var(--arch); background: var(--strong-surface); box-shadow: 0 0 0 6px var(--strong-bg), 0 0 0 9px var(--strong-accent); }
 .layer { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; text-align: center; pointer-events: none; transition: opacity var(--dur-short) var(--ease-out), transform var(--dur-long) var(--ease-out); }
@@ -131,8 +130,7 @@
 .l2 li { padding-bottom: var(--space-xs); border-bottom: 3px dashed var(--strong-accent); font-family: var(--font-display); font-weight: 600; font-size: 1.5rem; }
 .l2 li:nth-child(2) { margin-left: var(--space-lg); }
 .l2 li:nth-child(3) { margin-left: var(--space-xl); }
-/* The 4:5 arch is too narrow for this wide photo: a plain cover crop leaves both heads touching the arch edges. Scale the photo to 130% of the arch width, centre the pair, and let its top fade into the arch surface. */
-.l3 img { position: absolute; left: -24%; bottom: 0; width: 130%; max-width: none; height: auto; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 24%); mask-image: linear-gradient(to bottom, transparent, #000 24%); }
+.l3 img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 58% 50%; }
 .l3none { position: absolute; inset: 0; background: repeating-linear-gradient(135deg, var(--strong-surface) 0 10px, var(--strong-bg) 10px 20px); }
 .l3 figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--space-xl) var(--space-lg) var(--space-lg); background: linear-gradient(transparent, var(--strong-bg)); font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; }
 
@@ -234,7 +232,7 @@
   .cap { margin-top: var(--space-md); }
   .cap strong { font-size: 1.1rem; }
   .pw li { grid-template-columns: minmax(0, 1fr); gap: var(--space-2xs); }
-  .seal { width: 100px; height: 100px; }
+  .seal { width: 80px; height: 80px; }
   .story[data-enhanced='true'] .stick { gap: var(--space-md); padding-block: var(--space-md); }
   .steps { margin-top: var(--space-md); gap: var(--space-xs); }
   .step { grid-template-columns: 2.75rem minmax(0, 1fr); }

@@ -331,7 +331,6 @@ export function Story({
   callLabel,
   callSay,
   callSame,
-  stepLink,
   caption,
 }: {
   steps: Array<{ title: string; text: string }>;
@@ -344,7 +343,6 @@ export function Story({
   callLabel: string;
   callSay: string;
   callSame: string;
-  stepLink: string;
   caption: string;
 }) {
   void callLabel;
@@ -408,27 +406,26 @@ export function Story({
                   <div>
                     <h3>{step.title}</h3>
                     <p>{step.text}</p>
-                    {index === 0 && <a className={styles.steplink} href={telHref}>{stepLink}</a>}
                   </div>
                 </li>
               ))}
             </ol>
           </div>
-          <div className={styles.orb} aria-hidden="true">
-            <div className={cx(styles.layer, styles.l1)}>
+          <div className={styles.orb}>
+            <div className={cx(styles.layer, styles.l1)} aria-hidden={active !== 1 ? 'true' : undefined}>
               <span className={styles.ripple} style={{ '--i': 0 } as CSSProperties} />
               <span className={styles.ripple} style={{ '--i': 1 } as CSSProperties} />
               <span className={styles.ripple} style={{ '--i': 2 } as CSSProperties} />
-              <a className={styles.callcard} href={telHref} tabIndex={-1}>
+              <a className={styles.callcard} href={telHref} tabIndex={active === 1 ? undefined : -1}>
                 <span className={styles.callSay}>{callSay}</span>
                 <span className={styles.callNum}>{phone}</span>
                 <span className={styles.callSay}>{callSame}</span>
               </a>
             </div>
-            <div className={cx(styles.layer, styles.l2)}>
+            <div className={cx(styles.layer, styles.l2)} aria-hidden="true">
               <ul>{planItems.map((item) => <li key={item}>{item}</li>)}</ul>
             </div>
-            <figure className={cx(styles.layer, styles.l3)}>
+            <figure className={cx(styles.layer, styles.l3)} aria-hidden="true">
               {photo ? <img src={photo} alt={photoAlt ?? ''} loading="lazy" decoding="async" /> : <span className={styles.l3none} />}
               <figcaption>{caption}</figcaption>
             </figure>
