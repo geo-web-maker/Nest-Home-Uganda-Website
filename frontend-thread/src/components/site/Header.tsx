@@ -16,8 +16,15 @@ const NAV = [
   { to: '/contact', key: 'common:nav.contact' },
 ] as const;
 
+const MORE = [
+  { to: '/team', key: 'common:nav.team' },
+  { to: '/areas', key: 'common:nav.areas' },
+  { to: '/careers', key: 'common:nav.careers' },
+  { to: '/privacy', key: 'common:nav.privacy' },
+] as const;
+
 function current(to: string, pathname: string) {
-  return pathname === to || (to === '/services' && pathname.startsWith('/services/'));
+  return pathname === to || (to === '/careers' && pathname.startsWith('/careers/')) || (to === '/services' && pathname.startsWith('/services/'));
 }
 
 export function Header() {
@@ -25,10 +32,14 @@ export function Header() {
   const { pathname } = useLocation();
   const { data: site } = useSiteSettings();
   const [openAt, setOpenAt] = useState<string | null>(null);
+  const [moreAt, setMoreAt] = useState<string | null>(null);
   const [enhanced, setEnhanced] = useState(false);
+  const moreRef = useRef<HTMLButtonElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLButtonElement>(null);
   const isOpen = openAt === pathname;
+  const moreOpen = moreAt === pathname;
+  const moreActive = MORE.some((item) => current(item.to, pathname));
   const phone = site.business.phone;
   const tel = `tel:${normaliseUgPhone(phone) ?? phone.replace(/\s/g, '')}`;
 
@@ -60,10 +71,15 @@ export function Header() {
 
   useEffect(() => {
     setOpenAt(null);
+    setMoreAt(null);
   }, [pathname]);
 
   const closeOnEscape = (event: React.KeyboardEvent) => {
-    if (event.key === 'Escape' && isOpen) {
+    if (event.key !== 'Escape') return;
+    if (moreOpen) {
+      setMoreAt(null);
+      moreRef.current?.focus();
+    } else if (isOpen) {
       setOpenAt(null);
       menuRef.current?.focus();
     }
@@ -81,7 +97,10 @@ export function Header() {
           aria-label={t('site:header.mainNav')}
           data-open={isOpen ? 'true' : 'false'}
           onBlur={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpenAt(null);
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+              setOpenAt(null);
+              setMoreAt(null);
+            }
           }}
         >
           <ul className={styles.list}>
@@ -96,6 +115,28 @@ export function Header() {
                 </Link>
               </li>
             ))}
+            <li className={styles.more}>
+              <button
+                ref={moreRef}
+                type="button"
+                className={`${styles.link} ${styles.moreButton}`}
+                aria-expanded={moreOpen}
+                aria-controls="site-more"
+                data-active={moreActive ? 'true' : 'false'}
+                onClick={() => setMoreAt(moreOpen ? null : pathname)}
+              >
+                {t('site:header.more')}
+              </button>
+              <ul id="site-more" className={styles.sub} aria-label={t('site:header.moreLabel')} hidden={!moreOpen}>
+                {MORE.map((item) => (
+                  <li key={item.to}>
+                    <Link to={item.to} className={styles.subLink} aria-current={current(item.to, pathname) ? 'page' : undefined}>
+                      {t(item.key)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </li>
           </ul>
         </nav>
         <div className={styles.actions}>
@@ -112,7 +153,7 @@ export function Header() {
             aria-label={t('common:actions.menu')}
             onClick={() => setOpenAt(isOpen ? null : pathname)}
           >
-            <span aria-hidden="true">{isOpen ? '×' : '☰'}</span>
+            {t('common:actions.menu')}
           </button>
         </div>
       </div>

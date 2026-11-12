@@ -34,6 +34,20 @@ describe('Thread Header', () => {
     expect(screen.getByRole('link', { name: /Call/ })).toHaveAttribute('href', 'tel:+256787499988');
   });
 
+  it('reaches Team, Areas, Careers and Privacy through the More menu', async () => {
+    setup();
+    const more = screen.getByRole('button', { name: 'More' });
+    expect(more).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(more);
+    expect(more).toHaveAttribute('aria-expanded', 'true');
+    const sub = screen.getByRole('list', { name: 'More pages' });
+    const links = within(sub).getAllByRole('link');
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/team', '/areas', '/careers', '/privacy']);
+    await userEvent.keyboard('{Escape}');
+    expect(more).toHaveAttribute('aria-expanded', 'false');
+    expect(more).toHaveFocus();
+  });
+
   it('marks a service detail route as the current Services destination', () => {
     const { nav } = setup('/services/postnatal-care');
     expect(within(nav).getByRole('link', { name: 'Services' })).toHaveAttribute('aria-current', 'page');
