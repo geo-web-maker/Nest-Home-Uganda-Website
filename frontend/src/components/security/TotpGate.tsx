@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Button } from '../ui/Button';
 import { Field } from '../ui/Field';
-import { Notice } from '../admin/Notice';
-import { SectionHeader } from '../admin/SectionHeader';
+import { Notice } from '../dialogs/Notice';
+import { SectionHeader } from '../dialogs/SectionHeader';
 import { apiClient } from '../../lib/api/client';
 import styles from './TotpGate.module.css';
 

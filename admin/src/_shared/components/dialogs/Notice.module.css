@@ -1,0 +1,53 @@
+/* GENERATED from frontend/src. Edit there, then run: node scripts/sync-admin-shared.mjs */
+.notice {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surf);
+  color: var(--ink);
+}
+
+.error {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.success {
+  border-color: var(--leaf);
+  background: var(--mint);
+}
+
+.body { min-width: 0; }
+
+.floating {
+  position: fixed;
+  z-index: 140;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  width: max-content;
+  max-width: calc(100vw - 1.5rem);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  box-shadow: var(--shadow-2, 0 8px 24px rgba(0, 0, 0, 0.22));
+}
+
+.close {
+  flex: 0 0 auto;
+  min-width: 32px;
+  min-height: 32px;
+  margin: -0.35rem -0.4rem -0.35rem 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@media (min-width: 700px) {
+  .floating { bottom: 1.25rem; max-width: min(32rem, calc(100vw - 2rem)); }
+}

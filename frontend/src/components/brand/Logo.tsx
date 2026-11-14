@@ -1,4 +1,5 @@
 import { cx } from '../../lib/cx';
+import { MARK_CROSS, MARK_LEAVES, MARK_PETALS, MARK_VIEWBOX } from './markPaths';
 import styles from './Logo.module.css';
 
 export type LogoVariant = 'site' | 'admin';
@@ -13,42 +14,44 @@ interface LogoProps {
 }
 
 const SIZES: Record<LogoVariant, { width: number; height: number }> = {
-  site: { width: 36, height: 30 },
-  admin: { width: 30, height: 26 },
+  site: { width: 32, height: 35 },
+  admin: { width: 26, height: 29 },
 };
 
-/** The nest mark. Decorative: the text beside it names the logo. */
+/** The Bloomwell mark. Decorative: the text beside it names the logo. */
 export function LogoMark({ variant = 'site' }: { variant?: LogoVariant }) {
   const { width, height } = SIZES[variant];
   return (
     <svg
-      viewBox="0 0 40 34"
+      className={styles.mark}
+      viewBox={MARK_VIEWBOX}
       width={width}
       height={height}
-      fill="none"
       aria-hidden="true"
       focusable="false"
     >
-      <path d="M20 1v6M17 4h6" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round" />
-      <ellipse cx="14" cy="16" rx="5" ry="6.5" fill="var(--straw)" />
-      <ellipse cx="22" cy="14.5" rx="5" ry="6.5" fill="var(--onf)" />
-      <ellipse cx="29" cy="17" rx="4.5" ry="6" fill="var(--straw)" />
-      <path
-        d={
-          variant === 'admin'
-            ? 'M3 21c4 11 30 11 34 0'
-            : 'M3 21c4 11 30 11 34 0M6 23c6 7 22 7 28 0M10 26c5 4 15 4 20 0'
-        }
-        stroke="var(--gold)"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
+      <path className={styles.leaf} d={MARK_LEAVES} />
+      <path className={styles.leaf} d={MARK_CROSS} />
+      {MARK_PETALS.map((petal) => (
+        <path key={petal.fill} fill={petal.fill} d={petal.d} />
+      ))}
     </svg>
   );
 }
 
-/** Mark plus name and subtitle. Never place it on a gold background. */
+/** Mark plus name and subtitle. Never place it on a gold or orange background. */
 export function Logo({ name, subtitle, variant = 'site', className }: LogoProps) {
+  if (variant === 'thread') {
+    return (
+      <span className={cx(styles.thread, className)}>
+        <LogoMark variant="thread" />
+        <span className={styles.threadName}>
+          {name}
+          <small className={styles.threadSub}>{subtitle}</small>
+        </span>
+      </span>
+    );
+  }
   return (
     <span className={cx(styles.logo, variant === 'admin' && styles.admin, className)}>
       <LogoMark variant={variant} />
@@ -63,12 +66,12 @@ export function Logo({ name, subtitle, variant = 'site', className }: LogoProps)
 /** Fixed-colour mark for sign-in cards, so it stays visible in light and dark. */
 export function LoginMark() {
   return (
-    <svg viewBox="0 0 40 34" width="48" height="41" fill="none" aria-hidden="true" focusable="false">
-        <path d="M20 1v6M17 4h6" stroke="#C79A3B" strokeWidth="2" strokeLinecap="round" />
-        <ellipse cx="14" cy="16" rx="5" ry="6.5" fill="#EADFBC" stroke="#C79A3B" strokeOpacity=".35" />
-        <ellipse cx="22" cy="14.5" rx="5" ry="6.5" fill="#F4EDD3" stroke="#C79A3B" strokeOpacity=".35" />
-        <ellipse cx="29" cy="17" rx="4.5" ry="6" fill="#EADFBC" stroke="#C79A3B" strokeOpacity=".35" />
-        <path d="M3 21c4 11 30 11 34 0M6 23c6 7 22 7 28 0M10 26c5 4 15 4 20 0" stroke="#C79A3B" strokeWidth="1.8" strokeLinecap="round" />
-      </svg>
+    <svg viewBox={MARK_VIEWBOX} width="48" height="53" aria-hidden="true" focusable="false">
+      <path fill="#08675F" d={MARK_LEAVES} />
+      <path fill="#08675F" d={MARK_CROSS} />
+      {MARK_PETALS.map((petal) => (
+        <path key={petal.fill} fill={petal.fill} d={petal.d} />
+      ))}
+    </svg>
   );
 }

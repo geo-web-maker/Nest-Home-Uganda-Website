@@ -1,0 +1,101 @@
+/* GENERATED from frontend/src. Edit there, then run: node scripts/sync-admin-shared.mjs */
+.button {
+  composes: pill from '../../design/shapes.module.css';
+  --btn-hover: color-mix(in srgb, var(--gold) 86%, var(--onf));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding-inline: 22px;
+  border: 2px solid var(--gold);
+  background: var(--gold);
+  color: var(--on-gold);
+  font: 600 0.98rem var(--sans);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-out);
+}
+.withArrow { padding: 6px 6px 6px 24px; }
+.outline {
+  --btn-hover: color-mix(in srgb, currentColor 12%, transparent);
+  background: transparent;
+  color: inherit;
+  border-color: currentColor;
+}
+.whatsapp {
+  --btn-hover: color-mix(in srgb, var(--wa) 88%, var(--onf));
+  background: var(--wa);
+  border-color: var(--wa);
+  color: var(--on-wa);
+}
+.forest {
+  --btn-hover: color-mix(in srgb, var(--moss) 88%, var(--onf));
+  background: var(--moss);
+  border-color: var(--moss);
+  color: var(--onf);
+}
+.header {
+  min-height: 40px;
+  padding-inline: 14px;
+  gap: 8px;
+  font-size: 0.88rem;
+}
+.header.withArrow { padding: 4px 4px 4px 14px; }
+.control {
+  /* Same height as Field's control, so a button beside an input shares its top and bottom edge. */
+  min-height: 48px;
+  padding-inline: 20px;
+  gap: 8px;
+  font-size: 0.95rem;
+  white-space: nowrap; /* a wrapped label would make the button taller than the input beside it */
+}
+.compact {
+  min-height: 36px;
+  padding-inline: 14px;
+  gap: 6px;
+  border-width: 1px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.arrow {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  color: currentColor;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.header .arrow { width: 28px; height: 28px; font-size: 1rem; }
+.full { width: 100%; }
+.full.withArrow { justify-content: space-between; }
+@media (hover: hover) and (pointer: fine) {
+  .button:not(:disabled):hover { background-color: var(--btn-hover); transform: translateY(-1px); }
+}
+.button:not(:disabled):active { transform: scale(0.97); }
+.button:disabled { opacity: 0.7; cursor: not-allowed; }
+.button[aria-busy='true'] { cursor: progress; }
+.button[aria-busy='true']::after {
+  content: '';
+  flex: none;
+  width: 1em;
+  height: 1em;
+  margin-inline-start: 0.6em;
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  animation: button-spin calc(var(--dur-slow) * 2) linear infinite;
+}
+@keyframes button-spin { to { transform: rotate(360deg); } }
+@media (max-width: 480px) {
+  .button { max-width: 100%; font-size: 0.92rem; }
+  .button.withArrow { padding-inline-start: 16px; }
+  .header.withArrow { padding: 4px 4px 4px 14px; }
+  .arrow { width: 34px; height: 34px; }
+  .header .arrow { width: 26px; height: 26px; }
+}

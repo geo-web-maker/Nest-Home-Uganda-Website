@@ -94,7 +94,7 @@ export function DesignPage() {
           </div>
           <Rule>Shapes</Rule>
           <div className={styles.row}>
-            <span className={`${styles.shape} ${shapes.egg}`} />
+            <span className={`${styles.shape} ${shapes.leaf}`} />
             <span className={`${styles.shape} ${shapes.arch}`} />
             <span className={`${styles.shape} ${shapes.circle}`} />
             <span className={`${styles.shape} ${styles.wide} ${shapes.pill}`} />

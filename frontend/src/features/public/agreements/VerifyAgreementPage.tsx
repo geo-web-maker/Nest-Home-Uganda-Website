@@ -4,6 +4,7 @@ import { ApiError, apiClient } from '../../../lib/api/client';
 import { LogoMark } from '../../../components/brand/Logo';
 import styles from './AgreementPublicPage.module.css';
 import verify from './VerifyAgreementPage.module.css';
+import { VerifyBillingPanel } from '../billing/VerifyBillingPanel';
 
 type Verified = {
   valid: true; reference: string; practice: boolean; client_name: string;
@@ -19,7 +20,7 @@ async function sha256Hex(file: File): Promise<string> {
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export function VerifyAgreementPage() {
+function VerifyAgreementLegacyPage() {
   const { reference = '', code = '' } = useParams();
   const [result, setResult] = useState<Verified | null>(null);
   const [state, setState] = useState<'loading' | 'ok' | 'notfound' | 'busy' | 'error'>('loading');
@@ -97,4 +98,12 @@ export function VerifyAgreementPage() {
     </section>
     <footer className={styles.footer}>Questions? Call <a href="tel:0787499988">0787499988</a> or email <a href="mailto:info@bhcug.com">info@bhcug.com</a>. We show only what is needed to confirm a document is genuine.</footer>
   </main>;
+}
+
+export function VerifyAgreementPage() {
+  const { reference = '', code = '' } = useParams();
+  if (/^(BHC|TEST)-(INV|RCT)-\d{4}-\d{4}$/.test(reference)) {
+    return <VerifyBillingPanel reference={reference} code={code} />;
+  }
+  return <VerifyAgreementLegacyPage />;
 }

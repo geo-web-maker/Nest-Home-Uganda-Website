@@ -688,7 +688,7 @@ export const adminEn = {
       'home.btn1': 'Primary button',
       'home.btn2': 'Secondary button',
       'home.lead': 'Homepage introduction',
-      'home.eggs': 'Egg text',
+      'home.arches': 'Arch card text',
       'home.promise': 'Promise text',
       'home.show_team': 'Show team preview on Home',
       'home.show_testimonials': 'Show testimonials on Home',

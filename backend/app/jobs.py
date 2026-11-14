@@ -208,7 +208,14 @@ async def run_agreement_sweep() -> int:
     """Run unsigned-agreement expiry and reminder delivery."""
     try:
         from app.modules.agreements.service import sweep_agreements
-        return await sweep_agreements()
+        from app.modules.billing.service import purge_practice_billing
+        changed = await sweep_agreements()
+        try:
+            await purge_practice_billing(get_settings().agreement_practice_retention_days)
+        except Exception:
+            log.exception("practice billing cleanup failed")
+            await _audit_job_failure("purge_practice_billing")
+        return changed
     except Exception:
         log.exception("agreement lifecycle job failed")
         await _audit_job_failure("run_agreement_sweep")

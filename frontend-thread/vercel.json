@@ -1,5 +1,20 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://multi-site-hosting.onrender.com/nest/api/:path*" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://multi-site-hosting.onrender.com/nest/api/:path*"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "https://admin.bhcug.com/",
+      "permanent": true
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "https://admin.bhcug.com/:path*",
+      "permanent": true
+    }
   ]
 }

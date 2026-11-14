@@ -31,7 +31,7 @@ def setting_defaults(runtime: Settings | None = None) -> dict[str, Any]:
             "Trained, caring nurses for your parents, your newborn and your recovery, "
             "in your own home across Kampala."
         ),
-        "home.eggs": [
+        "home.arches": [
             {"title": "Elders", "caption": "with dignity"},
             {"title": "Newborns", "caption": "and mothers"},
             {"title": "Recovery", "caption": "after surgery"},
@@ -60,8 +60,8 @@ def setting_defaults(runtime: Settings | None = None) -> dict[str, Any]:
         "notify.daily_summary": True,
         "notify.hours_from": s.notify_hours_from,
         "notify.hours_to": s.notify_hours_to,
-        "theme.forest": "#123524",
-        "theme.gold": "#C79A3B",
+        "theme.forest": "#0B2E2A",
+        "theme.gold": "#F8991E",
         "theme.leaf": "#1F8A5B",
         "theme.mint": "#DFF0E6",
         "theme.logo": "",

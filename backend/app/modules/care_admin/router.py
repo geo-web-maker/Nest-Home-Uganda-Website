@@ -3,6 +3,7 @@
 import csv
 import io
 from datetime import UTC, date, datetime, timedelta
+from typing import Literal
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
@@ -58,10 +59,11 @@ class ClientIn(BaseModel):
 class PlaceIn(BaseModel):
     id: str = Field(min_length=8, max_length=160)
     label: str = Field(default="Home", max_length=80)
-    address_text: str = Field(min_length=1, max_length=300)
+    address_text: str = Field(default="", max_length=300)
     lat: float = Field(ge=-90, le=90)
     lng: float = Field(ge=-180, le=180)
     radius_m: int = Field(default=150, ge=50, le=1000)
+    location_source: Literal["pin", "gps", "search", "coordinates", "unknown"] = "unknown"
     is_primary: bool = False
 
 
@@ -277,7 +279,7 @@ async def clients(
 async def create_client(
     body: ClientIn, principal: Principal = Depends(require_scopes("clients:write"))
 ):
-    row = CareClient(**body.model_dump())
+    row = CareClient(**body.model_dump(), created_by=principal.user_id)
     await row.insert()
     await _audit(principal, "care.client.create", "care_client", row.id, None, body.model_dump())
     return row
@@ -369,6 +371,7 @@ async def create_place(
     row = CarePlace(
         id=body.id,
         client_id=client_id,
+        created_by=principal.user_id,
         **body.model_dump(exclude={"id"}),
         geo={"type": "Point", "coordinates": [body.lng, body.lat]},
     )
@@ -391,7 +394,12 @@ async def patch_place(
     if not client or not await _client_reachable(client, ctx):
         raise HTTPException(404, detail="Place not found")
     before = row.model_dump()
-    for key in ("label", "address_text", "lat", "lng", "radius_m", "is_primary"):
+    sources = {"pin", "gps", "search", "coordinates", "unknown"}
+    if body.get("location_source", "unknown") not in sources:
+        raise HTTPException(422, detail="Unknown location source")
+    for key in (
+        "label", "address_text", "lat", "lng", "radius_m", "location_source", "is_primary",
+    ):
         if key in body:
             setattr(row, key, body[key])
     row.geo = {"type": "Point", "coordinates": [row.lng, row.lat]}

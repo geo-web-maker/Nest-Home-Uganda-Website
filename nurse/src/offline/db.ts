@@ -17,6 +17,8 @@ export type CachedVisit = {
   id: string;
   client_display_name: string;
   place_address_text: string;
+  lat?: number | null;
+  lng?: number | null;
   scheduled_start: string;
   scheduled_end: string;
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'missed' | 'needs_attention';

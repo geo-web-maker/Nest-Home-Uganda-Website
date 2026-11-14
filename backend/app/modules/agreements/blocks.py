@@ -14,7 +14,9 @@ from typing import Any
 ESC = html.escape
 
 # Brand tokens (mirror frontend design tokens; fixed hex because PDFs cannot read site CSS).
-FOREST, LEAF, GOLD, STRAW, STRAW_DEEP, MUTED = "#123524", "#2F6B4A", "#C79A3B", "#F4EBCB", "#E9DDB8", "#5b6b60"
+FOREST, LEAF, GOLD, STRAW, STRAW_DEEP, MUTED = "#0B2E2A", "#2A736C", "#F8991E", "#FDEBD0", "#FCE6C4", "#5b6b60"
+# Bloomwell mark (lotus, cross, leaves) for printed documents.
+MARK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="104 72 152 168"><path fill="#08675F" d="M186.55,218.05c-3.58-1.58-3.7-5.77-2.46-9.3,4.34-12.43,11.78-22.84,20.55-32.66,16.33-12.12,29.75-12.19,48.93-4.1-7.78,2.79-14.23,7.47-16.62,15.85-9.12,32.02-42.78,58.68-73.61,45.83-20.34-8.47-34.57-26.09-40.61-46.78-2.27-7.79-8.76-12.29-16.3-14.74,17.53-8.76,38.28-8.06,51.53,6.84,8.74,9.84,25,34,15.71,38.97-5.07-10.1-10.67-17.93-20.35-24.93-3.01,10.2.11,20.5,8.49,27.5,13.12,10.95,22.68,10.64,35.73.64,8.61-6.6,12.31-17.22,9.53-27.96-9.74,5.58-15.42,14.19-20.52,24.84Z"/><path fill="#08675F" d="M188.16,166.2h3.67s-.05,6.25-.05,6.25c-.05,6.4-5.59,11.28-11.8,11.27s-11.75-4.86-11.77-11.28l-.04-8.9-8.91-.04c-6.6-.03-11.51-5.93-11.24-12.27.27-6.5,5.64-11.41,12.23-11.38l7.92.04-.03-8.14c-.02-6.51,4.99-11.76,11.37-12.02s12.25,4.67,12.28,11.27l.04,8.88,8.62.03c6.67.02,11.75,5.8,11.56,12.1-.21,6.85-5.77,11.63-12.56,11.61l-27.56-.05-.06,7.89c-.04,4.54,3.18,8.31,7.69,8.6s8.58-3.11,8.62-7.68l.04-6.18ZM200.29,143.58l-12.12-.04-.09-12.66c-.03-4.51-4.3-7.72-8.57-7.48s-7.7,3.81-7.71,8.24v28.29s28.76-.07,28.76-.07c4.52-.01,7.88-4.12,7.76-8.35-.12-4.24-3.52-7.92-8.04-7.93ZM168.13,159.92l.04-16.38-8.6.05c-4.56.02-8.03,3.98-7.9,8.35s3.62,7.95,8.11,7.96l8.34.02Z"/><path fill="#F9B04F" d="M194.66,96.55c-.26,8.89-5.78,16.89-14.08,20.38-8.3-3.49-13.83-11.48-14.08-20.38-.27-9.35,5.34-18.01,14.08-21.69,8.74,3.68,14.35,12.34,14.08,21.69Z"/><path fill="#FBD39B" d="M201.25,117.14c-9.52,5.43-19.74.67-20.66.22-.05-2.45.12-10.23,5.7-17.06,9.07-11.11,23.92-9.31,24.86-9.18,2.79,10.51-1.48,21.23-9.89,26.03Z"/><path fill="#F8991E" d="M160.26,113.7c8.48,6.95,19.35,3.96,20.34,3.67.46-2.41,1.6-10.1-2.76-17.77-7.08-12.46-22.03-13.18-22.98-13.21-4.51,9.9-2.09,21.18,5.4,27.32Z"/></svg>'
 # Fills stored in the template are semantic; map them to the brand palette at render time.
 FILL_MAP = {"#5b9bd5": LEAF, "#dce6f2": "#EEF4EC"}
 
@@ -319,16 +321,16 @@ table.grid{{border-collapse:collapse;margin:6pt 0;width:100%;table-layout:fixed;
 table.grid tr{{break-inside:avoid}}
 table.grid td{{border:1px solid #9db8a8;padding:3pt 5pt;vertical-align:top;font-size:9.5pt}}
 table.grid td.th{{color:#fff;padding:6pt 5pt;border-color:{LEAF};border-bottom:2px solid {GOLD}}}
-strong{{font-weight:700}} .mail{{color:#2F6B4A;text-decoration:underline}}
+strong{{font-weight:700}} .mail{{color:#2A736C;text-decoration:underline}}
 .banner{{background:{STRAW};border-left:4px solid {GOLD};padding:10px 12px;margin:0 0 12px;font-weight:bold}}
 .after{{break-before:page}}
 .record{{margin:20pt 0 6pt;break-inside:avoid}}
 .after h2,.record h2{{font-family:Georgia,'Times New Roman',serif;font-size:13pt;margin:0 0 8px;padding-bottom:3px;border-bottom:1px solid {STRAW_DEEP}}}
-.after table,.record table{{width:100%;border-collapse:collapse}} .after th,.after td,.record th,.record td{{padding:6px 8px;border-bottom:1px solid #CBD8C6;text-align:left;vertical-align:top;font-size:9.5pt}}
-.record td{{white-space:pre-wrap}} .after th,.record th{{width:34%;color:{LEAF};background:#F3F8F1}}
+.after table,.record table{{width:100%;border-collapse:collapse}} .after th,.after td,.record th,.record td{{padding:6px 8px;border-bottom:1px solid #CAD9D5;text-align:left;vertical-align:top;font-size:9.5pt}}
+.record td{{white-space:pre-wrap}} .after th,.record th{{width:34%;color:{LEAF};background:#F2F8F6}}
 .sig{{display:inline-block;width:46%;vertical-align:top;margin:10px 2% 8px 0;min-height:90px;border-bottom:1px solid #6c7a72;padding:8px}}
 .signature{{display:block;max-width:220px;max-height:70px;object-fit:contain}}
-.verified-stamp{{border:1px solid {LEAF};background:#F3F8F1;color:{FOREST};padding:8px 10px;margin:6px 0;font-size:9pt;font-weight:bold;border-radius:4px}}
+.verified-stamp{{border:1px solid {LEAF};background:#F2F8F6;color:{FOREST};padding:8px 10px;margin:6px 0;font-size:9pt;font-weight:bold;border-radius:4px}}
 @media screen{{body{{max-width:820px;margin:0 auto;padding:22px 26px;background:#fff}}}}
 """
 
@@ -337,7 +339,7 @@ HIGHLIGHT_CSS = """
 .hl-needed{background:#FFE066;box-shadow:0 0 0 2px #D9A400}
 .hl-done{background:#D7F0DC;box-shadow:0 0 0 2px #7DBF8C}
 .hl-other{background:#DCEAF8;box-shadow:0 0 0 2px #7FA9D6}
-.box.on.hl-done{background:#2F6B4A}
+.box.on.hl-done{background:#2A736C}
 .blank.hl{display:inline-block;min-width:8em;height:1.2em}
 table.grid td.hl-cell{box-shadow:none}
 .legend{border:1px solid #9db8a8;border-left:4px solid #D9A400;padding:8px 12px;margin:0 0 12px;font:9.5pt Arial,sans-serif}

@@ -39,5 +39,5 @@ def test_nurse_invite_requires_a_supervisor_assignment():
 def test_lawyer_preset_handles_agreements_and_countersigns_but_not_void_or_wording():
     lawyer = SCOPE_PRESETS["lawyer"]
     assert {"agreements:read", "agreements:write", "agreements:sign"} <= lawyer
-    assert not lawyer & {"agreements:void", "agreements:templates", "users:write", "settings:write"}
+    assert not lawyer & {"agreements:void", "agreements:templates", "billing:read", "billing:write", "billing:void", "users:write", "settings:write"}
     assert not any(scope.startswith(("visits", "timesheets", "photos", "nurses")) for scope in lawyer)

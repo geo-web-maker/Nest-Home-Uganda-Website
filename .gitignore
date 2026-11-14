@@ -1,22 +1,75 @@
+# Dependencies
 node_modules/
 .venv/
+.venv-local/
+venv/
+
+# Build output
 dist/
 dist-admin-native/
+build/
+out/
+*.egg-info/
+*.tsbuildinfo
+.vite/
+.wrangler/
+
+# Native (generated in CI by `cap add android`)
+android/
+ios/
+nurse/android/
+admin/android/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Python caches
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
 .ruff_cache/
-.env
-.env.*
-!.env.example
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Test output
 coverage/
 playwright-report/
 test-results/
-patches/
-*.log
-.DS_Store
-nurse/android/
+blob-report/
 
-# Python packaging output
-*.egg-info/
-.venv-local/
+# Secrets and local config (keep the examples)
+.env
+.env.*
+!.env.example
+!.env.production.example
+.dev.vars
+*.pem
+
+# Logs and OS/editor junk
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local-only working material (not part of the product)
+patches/
+local-tests/logs.zip
+*.zip
+# ...except the zips kept on purpose in original-input/
+!original-input/**
+*.bak
+*.orig
+*.rej
+
+# Housekeeping
+*.zip
+/patches/
+/reconstruction-patches/
+local-tests/logs/

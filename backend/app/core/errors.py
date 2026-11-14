@@ -50,6 +50,14 @@ class Forbidden(AppError):
         super().__init__("forbidden", message, 403)
 
 
+class TotpRequired(Forbidden):
+    """403 with a stable code so the web app can open the authenticator prompt instead of showing an error."""
+
+    def __init__(self, message: str = "Verify your authenticator code to continue.") -> None:
+        super().__init__(message)
+        self.code = "totp_required"
+
+
 class NotFound(AppError):
     def __init__(self, message: str = "Not found.") -> None:
         super().__init__("not_found", message, 404)

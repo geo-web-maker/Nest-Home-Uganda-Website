@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Literal
 
 from app.core.deps import Principal, require_scopes
-from app.core.errors import Forbidden, ValidationFailed, RateLimited
+from app.core.errors import Forbidden, ValidationFailed, RateLimited, TotpRequired
 from app.core.rate_limit import rate_limit, client_ip
 from app.core.security import hash_ip
 from app.core.totp_guard import (
@@ -32,13 +32,13 @@ async def _require_sensitive_totp(principal: Principal, token: str | None, scope
     configured = str(await get_value("mail.require_totp_for_scopes") or "")
     required = {item.strip() for item in configured.split(",") if item.strip()}
     if scope in required and not await is_current_totp_session(principal.user_id, token):
-        raise Forbidden("Verify your authenticator code to continue.")
+        raise TotpRequired("Verify your authenticator code to continue.")
 
 
 async def _require_diagnostics_totp(principal: Principal, token: str | None):
     """Diagnostics can send mail and reveal transport details; TOTP is mandatory."""
     if not await is_current_totp_session(principal.user_id, token):
-        raise Forbidden("Verify your authenticator code to run email diagnostics.")
+        raise TotpRequired("Verify your authenticator code to run email diagnostics.")
 
 
 def _totp_rate_limit(name: str, limit: int = 5, window_seconds: int = 300):
@@ -633,7 +633,7 @@ async def totp_enroll(principal: Principal = Depends(require_scopes("mail:use"))
     from app.modules.mail.totp import enrol, verified
     if await verified(principal.user_id) and not await is_current_totp_session(principal.user_id, mail_totp):
         await _record_totp_event(principal, "security.totp.enroll", "blocked", "Authenticator replacement was blocked because the current session was not verified.")
-        raise Forbidden("Verify your current authenticator before replacing it.")
+        raise TotpRequired("Verify your current authenticator before replacing it.")
     import urllib.parse
     secret = await enrol(principal.user_id)
     await _record_totp_event(principal, "security.totp.enroll", "pending", "Authenticator enrollment started.")
@@ -1303,7 +1303,7 @@ async def mailbox_policy(mailbox_id: str,body: MailboxPolicyBody,principal: Prin
 # ---- Mailbox administration (every route needs a verified authenticator session) ----
 async def _require_admin_totp(principal: Principal, token: str | None):
     if not await is_current_totp_session(principal.user_id, token):
-        raise Forbidden("Verify your authenticator code to manage mailboxes.")
+        raise TotpRequired("Verify your authenticator code to manage mailboxes.")
 
 
 class MailboxRenameBody(BaseModel):

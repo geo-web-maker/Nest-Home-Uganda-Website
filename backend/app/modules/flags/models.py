@@ -3,8 +3,10 @@ from typing import Any
 
 from beanie import Document
 from pydantic import Field
+from app.core.sandbox import hide_test_data
 
 
+@hide_test_data("nurse_id")
 class VisitFlag(Document):
     id: str = Field(index=True, unique=True)
     visit_id: str = Field(index=True)

@@ -45,9 +45,9 @@ export function HomePage() {
     title: t(`home.steps.${index}.title`),
     text: t(`home.steps.${index}.text`),
   }));
-  const eggs = [0, 1, 2].map((index) => ({
-    title: t(`home.eggs.${index}.title`),
-    caption: t(`home.eggs.${index}.caption`),
+  const arches = [0, 1, 2].map((index) => ({
+    title: t(`home.arches.${index}.title`),
+    caption: t(`home.arches.${index}.caption`),
   }));
   return (
     <>
@@ -68,11 +68,11 @@ export function HomePage() {
               </Button>
             </div>
           </div>
-          <div className={styles.eggs} aria-label={t('home.eggsLabel')}>
-            {eggs.map((egg, index) => (
-              <div key={egg.title} className={`${styles.egg} ${styles[`egg${index + 1}`]}`}>
-                <span>{egg.title}</span>
-                <small>{egg.caption}</small>
+          <div className={styles.arches} aria-label={t('home.archesLabel')}>
+            {arches.map((arch, index) => (
+              <div key={arch.title} className={`${styles.archCard} ${styles[`arch${index + 1}`]}`}>
+                <span>{arch.title}</span>
+                <small>{arch.caption}</small>
               </div>
             ))}
           </div>

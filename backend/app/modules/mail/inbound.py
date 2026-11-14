@@ -201,9 +201,9 @@ async def ingest(payload: dict[str, Any], timestamp: str, signature: str) -> dic
                         routing.append({"address": address, "status": "foreign_domain"})
                         continue
                     mailbox = await conn.fetchrow(
-                        """SELECT id,state,local_part::text AS local_part FROM mailbox WHERE local_part=$1
+                        """SELECT id,state,local_part::text AS local_part,is_test FROM mailbox WHERE local_part=$1
                            UNION ALL
-                           SELECT target.id,target.state,target.local_part::text FROM mailbox_alias alias
+                           SELECT target.id,target.state,target.local_part::text,target.is_test FROM mailbox_alias alias
                            JOIN mailbox target ON target.id=alias.mailbox_id
                            WHERE alias.local_part=$1 LIMIT 1""",
                         local_part,
@@ -211,6 +211,9 @@ async def ingest(payload: dict[str, Any], timestamp: str, signature: str) -> dic
                     if mailbox and str(mailbox["local_part"]).lower() == "no-reply":
                         # System sender: it is shared so staff can view what was sent, but it
                         # never receives mail, whether addressed directly or through an alias.
+                        routing.append({"address": address, "status": "receive_blocked"})
+                        continue
+                    if mailbox and mailbox["is_test"]:
                         routing.append({"address": address, "status": "receive_blocked"})
                         continue
                     if not mailbox or mailbox["state"] != "open":

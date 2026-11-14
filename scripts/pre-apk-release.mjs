@@ -45,14 +45,17 @@ console.log('Pre-APK Release Test Suite');
 console.log('This gate tests the web/backend release candidate. It does NOT build APKs.');
 
 assertFile('frontend/package.json', 'frontend package');
+assertFile('admin/package.json', 'admin package');
 assertFile('nurse/package.json', 'nurse package');
 assertFile('backend/pyproject.toml', 'backend project');
 assertFile('docs/PRE_APK_RELEASE_TEST_SUITE.md', 'release-suite documentation');
 assertFile('reference/nest-all-features-mockups.html', 'canonical UI reference');
 
-const frontendScripts = ['typecheck', 'lint', 'test', 'build', 'test:reference', 'test:a11y', 'test:responsive', 'test:admin-native', 'build:admin-native', 'test:e2e:admin-native'];
+const frontendScripts = ['typecheck', 'lint', 'test', 'build', 'test:reference', 'test:e2e'];
+const adminScripts = ['typecheck', 'lint', 'test', 'build', 'test:admin-native', 'test:reference', 'test:a11y', 'test:responsive', 'test:e2e', 'test:e2e:admin-native'];
 const nurseScripts = ['typecheck', 'lint', 'test', 'build', 'test:reference', 'test:a11y', 'test:responsive'];
 for (const script of frontendScripts) packageScript('frontend', script);
+for (const script of adminScripts) packageScript('admin', script);
 for (const script of nurseScripts) packageScript('nurse', script);
 
 // The nurse tests use jest-dom matchers (toBeInTheDocument and friends). Fail here, with a clear
@@ -101,15 +104,23 @@ run('Frontend typecheck', 'npm run typecheck', join(root, 'frontend'));
 run('Frontend lint', 'npm run lint', join(root, 'frontend'));
 run('Frontend unit/component tests', 'npm run test', join(root, 'frontend'));
 run('Frontend production build', 'npm run build', join(root, 'frontend'));
-run('Admin-native identity/unit tests', 'npm run test:admin-native', join(root, 'frontend'));
+run('Frontend reference fidelity', 'npm run test:reference', join(root, 'frontend'));
+run('Admin typecheck', 'npm run typecheck', join(root, 'admin'));
+run('Admin lint', 'npm run lint', join(root, 'admin'));
+run('Admin unit/component tests', 'npm run test', join(root, 'admin'));
+run('Admin production build', 'npm run build', join(root, 'admin'));
+run('Admin native identity/unit tests', 'npm run test:admin-native', join(root, 'admin'));
+run('Admin shared-source sync check', 'node ../scripts/sync-admin-shared.mjs --check', join(root, 'admin'));
+run('Admin mail-rich sync check', 'node ../scripts/sync-mail-rich.mjs --check', join(root, 'admin'));
 
 if (!skipE2E) {
   run('Public/admin reference fidelity', 'npm run test:reference', join(root, 'frontend'));
-  run('Public/admin accessibility', 'npm run test:a11y', join(root, 'frontend'));
-  run('Public/admin responsive checks', 'npm run test:responsive', join(root, 'frontend'));
-  // The browser checks serve ./dist-admin-native, which `npm run build` does not produce.
-  run('Admin-native build', 'npm run build:admin-native', join(root, 'frontend'));
-  run('Admin-native browser checks', 'npm run test:e2e:admin-native', join(root, 'frontend'));
+  // Admin browser checks now run from the standalone admin app's dist/ build.
+  run('Admin reference fidelity', 'npm run test:reference', join(root, 'admin'));
+  run('Admin accessibility', 'npm run test:a11y', join(root, 'admin'));
+  run('Admin responsive checks', 'npm run test:responsive', join(root, 'admin'));
+  run('Admin native browser checks', 'npm run test:e2e:admin-native', join(root, 'admin'));
+  run('Admin full browser E2E', 'npm run test:e2e', join(root, 'admin'));
   run('Frontend full browser E2E', 'npm run test:e2e', join(root, 'frontend'));
 }
 

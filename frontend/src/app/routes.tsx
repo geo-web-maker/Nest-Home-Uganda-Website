@@ -55,8 +55,6 @@ export const routes: RouteRecord[] = [
       { path: 'agreement/:token/review', Component: AgreementPublicPage },
       // Public authenticity check for a sealed PDF (opened from the QR code / link printed on it).
       { path: 'verify/:reference/:code', Component: VerifyAgreementPage },
-      // Admin: lazy, so the public bundle does not grow. `admin/*` is a splat, so it is not pre-rendered.
-      { path: 'admin/*', lazy: () => import('../features/admin/AdminApp') },
       ...devRoutes,
     ],
   },

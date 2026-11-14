@@ -1,0 +1,14 @@
+/* GENERATED from frontend/src. Edit there, then run: node scripts/sync-admin-shared.mjs */
+.badge {
+  composes: pill from '../../design/shapes.module.css';
+  display: inline-block;
+  padding: 3px 10px;
+  background: var(--mint);
+  color: var(--ink);
+  font: 700 0.72rem var(--sans);
+}
+.new { background: var(--straw); color: var(--on-straw); }
+.blue { background: color-mix(in srgb, var(--leaf) 16%, var(--surf)); color: var(--ink); }
+.purple { background: color-mix(in srgb, var(--moss) 18%, var(--surf)); color: var(--ink); }
+.red { background: color-mix(in srgb, var(--danger) 12%, var(--surf)); color: var(--danger); }
+.muted { background: transparent; border: 1px solid var(--line); color: var(--mut); }

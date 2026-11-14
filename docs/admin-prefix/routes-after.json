@@ -1,0 +1,353 @@
+{
+  "generated_from": [
+    "admin/src/features/admin/nav.ts",
+    "admin/src/features/admin/AdminApp.tsx",
+    "admin/src/main.tsx"
+  ],
+  "mode": "current",
+  "nav": [
+    {
+      "path": "/",
+      "labelKey": "dashboard",
+      "scopes": [
+        "dashboard:view"
+      ]
+    },
+    {
+      "path": "/enquiries",
+      "labelKey": "enquiries",
+      "scopes": [
+        "enquiries:read"
+      ]
+    },
+    {
+      "path": "/careers",
+      "labelKey": "careers",
+      "scopes": [
+        "jobs:read"
+      ]
+    },
+    {
+      "path": "/applications",
+      "labelKey": "applications",
+      "scopes": [
+        "applications:read"
+      ]
+    },
+    {
+      "path": "/content",
+      "labelKey": "content",
+      "scopes": [
+        "content:read"
+      ]
+    },
+    {
+      "path": "/settings",
+      "labelKey": "settings",
+      "scopes": [
+        "settings:read"
+      ]
+    },
+    {
+      "path": "/users",
+      "labelKey": "users",
+      "scopes": [
+        "users:read"
+      ]
+    },
+    {
+      "path": "/permissions",
+      "labelKey": "permissions",
+      "scopes": [
+        "users:read"
+      ]
+    },
+    {
+      "path": "/reports",
+      "labelKey": "reports",
+      "scopes": [
+        "reports:read"
+      ]
+    },
+    {
+      "path": "/activity",
+      "labelKey": "activity",
+      "scopes": [
+        "activity:read"
+      ]
+    },
+    {
+      "path": "/mail",
+      "labelKey": "mail",
+      "scopes": [
+        "mail:use"
+      ]
+    },
+    {
+      "path": "/care/clients",
+      "labelKey": "clients",
+      "scopes": [
+        "clients:read"
+      ]
+    },
+    {
+      "path": "/care/places",
+      "labelKey": "places",
+      "scopes": [
+        "places:read"
+      ]
+    },
+    {
+      "path": "/care/nurses",
+      "labelKey": "nurses",
+      "scopes": [
+        "nurses:read"
+      ]
+    },
+    {
+      "path": "/care/visits",
+      "labelKey": "visits",
+      "scopes": [
+        "visits:read"
+      ]
+    },
+    {
+      "path": "/care/schedule",
+      "labelKey": "schedule",
+      "scopes": [
+        "visits:read"
+      ]
+    },
+    {
+      "path": "/care/flags",
+      "labelKey": "flags",
+      "scopes": [
+        "flags:read"
+      ]
+    },
+    {
+      "path": "/care/team",
+      "labelKey": "team",
+      "scopes": [
+        "visits:read"
+      ]
+    },
+    {
+      "path": "/agreements",
+      "labelKey": "agreements",
+      "scopes": [
+        "agreements:read"
+      ]
+    },
+    {
+      "path": "/care/dashboard",
+      "labelKey": "liveDashboard",
+      "scopes": [
+        "dashboard:view"
+      ]
+    },
+    {
+      "path": "/care/executive",
+      "labelKey": "executiveCharts",
+      "scopes": [
+        "dashboard:view"
+      ]
+    },
+    {
+      "path": "/care/map",
+      "labelKey": "lastSeenMap",
+      "scopes": [
+        "visits:read"
+      ]
+    },
+    {
+      "path": "/care/alerts",
+      "labelKey": "alerts",
+      "scopes": [
+        "alerts:read"
+      ]
+    },
+    {
+      "path": "/care/timesheets",
+      "labelKey": "timesheets",
+      "scopes": [
+        "timesheets:read"
+      ]
+    },
+    {
+      "path": "/care/photos",
+      "labelKey": "photos",
+      "scopes": [
+        "photos:read"
+      ]
+    },
+    {
+      "path": "/care/reports/visits",
+      "labelKey": "careReports",
+      "scopes": [
+        "care-reports:read"
+      ]
+    },
+    {
+      "path": "/care/notifications",
+      "labelKey": "notificationLog",
+      "scopes": [
+        "carecfg:read"
+      ]
+    },
+    {
+      "path": "/care/sos",
+      "labelKey": "sos",
+      "scopes": [
+        "alerts:read"
+      ]
+    },
+    {
+      "path": "/care/sos/history",
+      "labelKey": "sosHistory",
+      "scopes": [
+        "alerts:read"
+      ]
+    },
+    {
+      "path": "/care/on-call",
+      "labelKey": "onCallRoster",
+      "scopes": [
+        "carecfg:read"
+      ]
+    },
+    {
+      "path": "/care/sos-procedure",
+      "labelKey": "sosProcedure",
+      "scopes": [
+        "carecfg:read"
+      ]
+    },
+    {
+      "path": "/care/settings",
+      "labelKey": "careSettings",
+      "scopes": [
+        "carecfg:read"
+      ]
+    },
+    {
+      "path": "/care/setting-catalogue",
+      "labelKey": "settingCatalogue",
+      "scopes": [
+        "carecfg:read"
+      ]
+    },
+    {
+      "path": "/care/data-retention",
+      "labelKey": "dataRetention",
+      "scopes": [
+        "carecfg:read"
+      ]
+    },
+    {
+      "path": "/care/sms",
+      "labelKey": "smsSettings",
+      "scopes": [
+        "carecfg:read"
+      ]
+    },
+    {
+      "path": "/care/readiness",
+      "labelKey": "readiness",
+      "scopes": [
+        "carecfg:read"
+      ]
+    },
+    {
+      "path": "/care/data-requests",
+      "labelKey": "dataRequests",
+      "scopes": [
+        "system:manage"
+      ]
+    },
+    {
+      "path": "/app-releases",
+      "labelKey": "appReleases",
+      "scopes": [
+        "system:manage"
+      ]
+    },
+    {
+      "path": "/backups",
+      "labelKey": "backupsHealth",
+      "scopes": [
+        "system:manage"
+      ]
+    },
+    {
+      "path": "/mail/shared",
+      "labelKey": "mailShared",
+      "scopes": [
+        "mail:shared:manage"
+      ]
+    },
+    {
+      "path": "/mail/settings",
+      "labelKey": "mailSettings",
+      "scopes": [
+        "mail:settings:manage"
+      ]
+    }
+  ],
+  "routes": [
+    "/",
+    "/*",
+    "/activity",
+    "/admin/*",
+    "/agreements",
+    "/app-releases",
+    "/applications",
+    "/applications/:id",
+    "/backups",
+    "/care",
+    "/care/alerts",
+    "/care/clients",
+    "/care/clients/:id",
+    "/care/dashboard",
+    "/care/data-requests",
+    "/care/data-retention",
+    "/care/executive",
+    "/care/flags",
+    "/care/map",
+    "/care/notifications",
+    "/care/nurses",
+    "/care/nurses/:userId",
+    "/care/on-call",
+    "/care/photos",
+    "/care/places",
+    "/care/readiness",
+    "/care/reports/visits",
+    "/care/schedule",
+    "/care/setting-catalogue",
+    "/care/settings",
+    "/care/sms",
+    "/care/sos",
+    "/care/sos-procedure",
+    "/care/sos/:id",
+    "/care/sos/history",
+    "/care/team",
+    "/care/timesheets",
+    "/care/visits",
+    "/care/visits/*",
+    "/careers",
+    "/careers/:id",
+    "/careers/new",
+    "/content",
+    "/enquiries",
+    "/enquiries/:id",
+    "/login",
+    "/mail",
+    "/mail/settings",
+    "/mail/shared",
+    "/permissions",
+    "/reports",
+    "/set-password",
+    "/settings",
+    "/users"
+  ]
+}

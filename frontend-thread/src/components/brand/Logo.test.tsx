@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { Logo } from './Logo';
+import { Logo, LoginMark } from './Logo';
 
 describe('Logo', () => {
   it('gives the logo an accessible name from its text', () => {
@@ -14,16 +14,28 @@ describe('Logo', () => {
     );
     const svg = container.querySelector('svg');
     expect(svg).toHaveAttribute('aria-hidden', 'true');
-    expect(svg).toHaveAttribute('width', '30');
-    expect(svg?.querySelectorAll('path')).toHaveLength(2);
+    expect(svg).toHaveAttribute('width', '26');
   });
 
-  it('draws three nest arcs on the site variant', () => {
+  it('draws the lotus, cross and leaves on the site variant', () => {
     const { container } = render(<Logo name="Bloomwell Home Care Uganda" subtitle="Uganda · Kampala" />);
     const svg = container.querySelector('svg');
-    expect(svg).toHaveAttribute('width', '36');
-    expect(svg?.getAttribute('viewBox')).toBe('0 0 40 34');
-    const arcs = svg?.querySelectorAll('path')[1]?.getAttribute('d') ?? '';
-    expect(arcs.match(/M/g)).toHaveLength(3);
+    expect(svg).toHaveAttribute('width', '32');
+    expect(svg?.getAttribute('viewBox')).toBe('104 72 152 168');
+    // leaves, cross and three petals
+    expect(svg?.querySelectorAll('path')).toHaveLength(5);
+  });
+
+  it('keeps fixed brand colours on the sign-in mark', () => {
+    const { container } = render(<LoginMark />);
+    expect(container.querySelectorAll('path[fill="#08675F"]')).toHaveLength(2);
+    expect(container.querySelectorAll('path')).toHaveLength(5);
+  });
+});
+
+describe('Logo thread variant', () => {
+  it('uses the same mark instead of the old egg shape', () => {
+    const { container } = render(<Logo name="Bloomwell" subtitle="Home Care Uganda" variant="thread" />);
+    expect(container.querySelectorAll('svg path')).toHaveLength(5);
   });
 });

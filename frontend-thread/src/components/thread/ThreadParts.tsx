@@ -34,7 +34,7 @@ export function Arch({
 }
 
 /* ---------------------------------------------------------------------------------------------
- * ShapeField: drifting egg, arch, ring and spinning diamond. Decorative. Parallax writes --sy once
+ * ShapeField: drifting leaf, arch, ring and spinning diamond. Decorative. Parallax writes --sy once
  * per frame while the field is near the viewport. No parallax with reduced motion.
  * ------------------------------------------------------------------------------------------- */
 const SHAPES: Record<'hero' | 'page' | 'service' | 'error', string[]> = {
@@ -488,7 +488,7 @@ export function Ledger({ rows, emptyValue, className }: { rows: Array<{ label: s
 }
 
 /* ---------------------------------------------------------------------------------------------
- * VerticalSteps: the gold line fills and the egg marker travels as you scroll.
+ * VerticalSteps: the gold line fills and the Bloomwell mark travels as you scroll.
  * ------------------------------------------------------------------------------------------- */
 export function VerticalSteps({ steps, label }: { steps: Array<{ title: string; text: string; art?: ReactNode }>; label?: string }) {
   const ref = useRef<HTMLDivElement>(null);

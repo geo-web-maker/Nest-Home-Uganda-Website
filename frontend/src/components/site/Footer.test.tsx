@@ -47,7 +47,7 @@ describe('Footer', () => {
       ['About us', '/about'],
       ['Careers', '/careers'],
       ['Privacy and terms', '/privacy'],
-      ['Staff login', '/admin/login'],
+      ['Staff login', 'https://admin.bhcug.com/login'],
     ] as const) {
       expect(within(company).getByRole('link', { name })).toHaveAttribute('href', href);
     }

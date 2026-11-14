@@ -108,3 +108,9 @@ def test_every_audit_read_route_uses_the_totp_guard():
         )
         function_source = ast.get_source_segment(source, function) or ""
         assert marker in function_source, f"{relative}:{function_name} is missing {marker}"
+
+
+def test_totp_required_has_stable_code_and_is_a_forbidden():
+    from app.core.errors import TotpRequired
+    exc = TotpRequired()
+    assert isinstance(exc, Forbidden) and exc.status_code == 403 and exc.code == "totp_required"

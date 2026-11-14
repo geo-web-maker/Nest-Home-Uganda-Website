@@ -21,6 +21,7 @@ class User(TimestampedDocument):
     invite_accepted_at: datetime | None = None
     preferred_language: str = "en"
     kind: str = "staff"
+    is_test: bool = False  # sandbox test account: mail stays between test accounts, data is purgeable
     reach: str = "all"
     phone_e164: str | None = None
     # Set while a staff-issued temporary password is the only way in; login refuses it after this.

@@ -1027,12 +1027,12 @@ async def send_draft(user_id: str, draft_id: str, mailbox_id: str):
                 localpart, _, recipient_domain = address.partition("@")
                 if recipient_domain in local_domains:
                     target = await conn.fetchrow(
-                        "SELECT id,state FROM mailbox WHERE local_part=$1 "
-                        "UNION ALL SELECT b.id,b.state FROM mailbox_alias a "
+                        "SELECT id,state,is_test FROM mailbox WHERE local_part=$1 "
+                        "UNION ALL SELECT b.id,b.state,b.is_test FROM mailbox_alias a "
                         "JOIN mailbox b ON b.id=a.mailbox_id WHERE a.local_part=$1 LIMIT 1",
                         localpart,
                     )
-                    if target and target["state"] == "open":
+                    if target and target["state"] == "open" and bool(target["is_test"]) == bool(box["is_test"]):
                         local.append((target["id"], address))
                         await conn.execute(
                             "UPDATE message_recipient SET mailbox_id=$3 "
@@ -1042,7 +1042,11 @@ async def send_draft(user_id: str, draft_id: str, mailbox_id: str):
                             target["id"],
                         )
                     else:
-                        reason = "This mailbox is closed." if target else "No such mailbox."
+                        reason = (
+                            "Test accounts can only exchange mail with each other."
+                            if target and target["state"] == "open"
+                            else "This mailbox is closed." if target else "No such mailbox."
+                        )
                         bounce = await conn.fetchval(
                             "INSERT INTO message(from_address,from_name,subject,body_text,origin) "
                             "VALUES($1,'Mail Delivery Subsystem','Delivery status notification',$2,'internal') RETURNING id",
@@ -1065,7 +1069,7 @@ async def send_draft(user_id: str, draft_id: str, mailbox_id: str):
             ]
             if external_addresses:
                 global_enabled = bool(await get_value("mail.external_enabled"))
-                allowed = global_enabled and box["external_allowed"] is not False
+                allowed = (global_enabled or bool(box["is_test"])) and box["external_allowed"] is not False
                 if not allowed or box["sending_suspended"] or bool(await get_value("mail.suspend_all_sending")):
                     raise ValueError("External sending is disabled or suspended for this mailbox.")
                 suppressed = await conn.fetch(

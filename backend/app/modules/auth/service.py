@@ -93,6 +93,14 @@ async def login(
         await audit.record(None, "auth.login_failed", "user", None, None, ip_hash=ip_hash)
         raise Unauthorised(BAD_CREDENTIALS)
 
+    if user.is_test:
+        # Test accounts open only while the master switch is on, and never through a temporary password.
+        from app.core import sandbox
+
+        if not await sandbox.master_enabled() or user.temp_password_expires_at:
+            verify_password(password, DUMMY_PASSWORD_HASH)
+            raise Unauthorised(BAD_CREDENTIALS)
+
     if user.locked_until and user.locked_until > now:
         raise RateLimited(int((user.locked_until - now).total_seconds()) + 1)
 

@@ -80,8 +80,8 @@ def _guard_superadmin_target(actor: Principal, target: User) -> None:
 
 
 def _link(raw_token: str, *, purpose: str = "reset") -> str:
-    base = get_settings().frontend_url.rstrip("/")
-    return f"{base}/admin/set-password?token={raw_token}&purpose={purpose}"
+    base = get_settings().admin_url.rstrip("/")
+    return f"{base}/set-password?token={raw_token}&purpose={purpose}"
 
 
 async def _send_link(user: User, raw_token: str, *, invite: bool, minutes: int) -> bool:
@@ -136,6 +136,8 @@ async def _deliver(
     user: User, channels: list[str], *, invite: bool, minutes: int
 ) -> tuple[str | None, dict[str, str]]:
     """Run the chosen channels. Returns the temporary password (shown once) and each outcome."""
+    if user.is_test:
+        raise ValidationFailed(TEST_ACCOUNT_NO_ACCESS, {"user": "test account"})
     chosen = set(channels)
     now = datetime.now(UTC)
     result: dict[str, str] = {}
@@ -169,7 +171,15 @@ def _require_mobile(user_phone: str | None, channels: list[str]) -> None:
         )
 
 
+TEST_ACCOUNT_NO_ACCESS = (
+    "Test accounts cannot be reached by email, SMS or a reset link. A superadmin switches them on "
+    "in Diagnostics and is shown the password once."
+)
+
+
 async def _issue_link(user: User, now: datetime, minutes: int, *, purpose: str = "reset") -> str:
+    if user.is_test:
+        raise ValidationFailed(TEST_ACCOUNT_NO_ACCESS, {"user": "test account"})
     if purpose == "invite":
         # Resending an invite keeps earlier invite links working (a newer message must not kill
         # an older one); only reset links are withdrawn. Redeeming any one closes the rest.

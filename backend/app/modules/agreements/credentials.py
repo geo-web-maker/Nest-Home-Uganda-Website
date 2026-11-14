@@ -56,12 +56,36 @@ def _challenge(agreement_id: str, content_hash: str, role: str, nonce: str, expi
     return hmac.new(_key(), payload, hashlib.sha256).digest()
 
 
+def _hosts() -> list[str]:
+    """Hostnames of the public site and the standalone admin (the staff countersign UI)."""
+    cfg = get_settings()
+    hosts: list[str] = []
+    for url in (cfg.frontend_url, cfg.admin_url):
+        host = urlparse(url).hostname or ""
+        if host and host not in hosts:
+            hosts.append(host)
+    return hosts
+
+
 def _rp_id() -> str:
     cfg = get_settings()
-    rp_id = cfg.webauthn_rp_id.strip() or (urlparse(cfg.frontend_url).hostname or "")
-    if not rp_id:
+    explicit = cfg.webauthn_rp_id.strip()
+    if explicit:
+        return explicit
+    hosts = _hosts()
+    if not hosts:
         raise Conflict("Biometric signing is not configured on this server")
-    return rp_id
+    # A passkey RP ID must be a registrable suffix of every origin that uses it, so with the public site
+    # and admin on different hosts use their longest shared domain suffix (www.x.com + admin.x.com -> x.com).
+    parts = [h.split(".") for h in hosts]
+    common: list[str] = []
+    for labels in zip(*(reversed(p) for p in parts)):
+        if len(set(labels)) != 1:
+            break
+        common.append(labels[0])
+    if len(hosts) == 1 or len(common) < 2:
+        return hosts[0]
+    return ".".join(reversed(common))
 
 
 def _origins() -> list[str]:
@@ -69,10 +93,16 @@ def _origins() -> list[str]:
     explicit = [o.strip().rstrip("/") for o in cfg.webauthn_origins.split(",") if o.strip()]
     if explicit:
         return explicit
-    parsed = urlparse(cfg.frontend_url)
-    if not (parsed.scheme and parsed.netloc):
+    origins: list[str] = []
+    for url in (cfg.frontend_url, cfg.admin_url):
+        parsed = urlparse(url)
+        if parsed.scheme and parsed.netloc:
+            origin = f"{parsed.scheme}://{parsed.netloc}"
+            if origin not in origins:
+                origins.append(origin)
+    if not origins:
         raise Conflict("Biometric signing is not configured on this server")
-    return [f"{parsed.scheme}://{parsed.netloc}"]
+    return origins
 
 
 def issue_passkey_options(agreement_id: str, content_hash: str, role: str, display_name: str) -> dict[str, Any]:

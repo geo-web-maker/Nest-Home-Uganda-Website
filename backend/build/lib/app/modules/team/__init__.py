@@ -1,1 +1,0 @@
-"""Team member content module."""

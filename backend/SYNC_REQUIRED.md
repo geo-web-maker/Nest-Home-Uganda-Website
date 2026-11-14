@@ -17,3 +17,8 @@ Rules
 2026-11-08: both copies were brought level. The Multi-Site copy gained the audit, TOTP, mail-outcome and invite work from here; this repo gained `local_expiry_date`, the agreement failure reasons and their tests, plus `docs/AGREEMENT_LINKS.md`.
 
 2026-11-09: agreement OTP resend cooldown, readable certificate, public signed-PDF download and the `/verify` authenticity check (adds `segno`) were applied to both copies; parity check passes.
+
+2026-11-10: `TotpRequired` error, `modules/test_accounts` and the seed hook were applied to both copies; parity check passes.
+2026-11-10 (later): test accounts reworked to nurse + admin; mail sandbox (`mailbox.is_test`, migration 0013), `User.is_test`, purge and relationship endpoints applied to both copies; parity check passes.
+2026-11-10 (later still): scope-based test-account access/scenarios/link, core/sandbox.py (SMS, push, system mail guards), created_by on care clients and places, photo-file purge applied to both copies; parity check passes.
+2026-11-14: standalone-admin backend changes (`admin_url`, root-path staff links, passkey RP/origins) and the sandbox/test-accounts + pin-first-places work are both in this copy and in Multi-Site-Hosting `projects/nest`; parity check passes.

@@ -1,1 +1,0 @@
-"""Faq content module."""

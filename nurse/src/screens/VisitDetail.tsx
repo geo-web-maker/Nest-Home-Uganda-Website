@@ -15,7 +15,10 @@ type Props = {
 };
 
 export function VisitDetail({ visit, photosEnabled, embedded = false, onArrive, onLeave, onNote, onPhoto }: Props) {
-  const mapUrl = visit.place_address_text ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(visit.place_address_text)}` : null;
+  // The saved pin is exact; the typed address is only a fallback for places that have no pin.
+  const hasPin = typeof visit.lat === 'number' && typeof visit.lng === 'number';
+  const mapQuery = hasPin ? `${visit.lat},${visit.lng}` : visit.place_address_text ? encodeURIComponent(visit.place_address_text) : null;
+  const mapUrl = mapQuery ? `https://www.google.com/maps/search/?api=1&query=${mapQuery}` : null;
   const Heading = embedded ? 'h2' : 'h1';
   return <section className={`screen visit-detail-screen mk-visit-detail${embedded ? ' mk-visit-detail--embedded' : ''}`} aria-labelledby="visit-detail-heading">
     {!embedded && <Link className="back-link" to="/">{copy.generic.backToToday}</Link>}
@@ -25,7 +28,7 @@ export function VisitDetail({ visit, photosEnabled, embedded = false, onArrive, 
     </header>
     <Card className="detail-card mk-detail-card">
       <p className="eyebrow">{copy.visit.address}</p>
-      <h3>{visit.place_address_text || copy.address.missingOffline}</h3>
+      <h3>{visit.place_address_text || (hasPin ? copy.address.pinned : copy.address.missingOffline)}</h3>
       {mapUrl && <a className="mk-map-link" href={mapUrl} target="_blank" rel="noreferrer"><Icon name="map" />{copy.generic.openMaps}<Icon name="arrow-up-right" /></a>}
     </Card>
     <Card className="detail-card mk-detail-card">

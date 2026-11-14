@@ -1,0 +1,72 @@
+# Documentation index
+
+Superseded reports, audits and build logs live in [`archive/`](archive/). Everything below is kept current or is referenced by code, scripts or CI.
+
+
+## Start here
+
+- [BRANDING_RULES.md](BRANDING_RULES.md)
+- [BUILDER_INSTRUCTIONS.md](BUILDER_INSTRUCTIONS.md)
+- [BUILD_LOG.md](BUILD_LOG.md)
+- [CHANGELOG.md](CHANGELOG.md)
+- [HANDOVER.md](HANDOVER.md)
+- [OWNER_DECISIONS.md](OWNER_DECISIONS.md)
+- [SETUP_FIRST_TIME.md](SETUP_FIRST_TIME.md)
+- [STATE.md](STATE.md)
+- [WORK_SPLIT_GUIDE.md](WORK_SPLIT_GUIDE.md)
+
+## Deploy, environment and operations
+
+- [ADMIN_ANDROID_APP.md](ADMIN_ANDROID_APP.md)
+- [AUTO_MIGRATIONS.md](AUTO_MIGRATIONS.md)
+- [BACKUP_AND_RECOVERY_B2.md](BACKUP_AND_RECOVERY_B2.md)
+- [CLOUDFLARE_API_PROXY.md](CLOUDFLARE_API_PROXY.md)
+- [DEPLOY_NORTHFLANK.md](DEPLOY_NORTHFLANK.md)
+- [ENV_CARE_VARS.md](ENV_CARE_VARS.md)
+- [ENV_VARS.md](ENV_VARS.md)
+- [INCIDENT_RUNBOOK.md](INCIDENT_RUNBOOK.md)
+- [MAIL_BACKUP_AND_RECOVERY_B2.md](MAIL_BACKUP_AND_RECOVERY_B2.md)
+- [MULTI_SITE_HOSTER_DEPLOYMENT.md](MULTI_SITE_HOSTER_DEPLOYMENT.md)
+- [PRE_APK_RELEASE_TEST_SUITE.md](PRE_APK_RELEASE_TEST_SUITE.md)
+- [RESTORE_RUNBOOK.md](RESTORE_RUNBOOK.md)
+- [SOS_PROCEDURE.md](SOS_PROCEDURE.md)
+
+## Mail, agreements and billing
+
+- [AGREEMENT_LINKS.md](AGREEMENT_LINKS.md)
+- [AGREEMENT_SIGNED_STORAGE.md](AGREEMENT_SIGNED_STORAGE.md)
+- [MAIL_SCANNING.md](MAIL_SCANNING.md)
+- [MAIL_SETUP.md](MAIL_SETUP.md)
+- [MAMBOSMS_NOTES.md](MAMBOSMS_NOTES.md)
+- [NEST_MAIL_MODULE_SPEC.md](NEST_MAIL_MODULE_SPEC.md)
+- [PINS_MAIL_RICH.md](PINS_MAIL_RICH.md)
+- [PRACTICE_AGREEMENTS.md](PRACTICE_AGREEMENTS.md)
+
+## Admin and nurse apps
+
+- [ADMIN_APP.md](ADMIN_APP.md)
+- [ADMIN_PREFIX_LOG.md](ADMIN_PREFIX_LOG.md)
+- [ADMIN_SPLIT_LOG.md](ADMIN_SPLIT_LOG.md)
+- [NURSE_BUILD_LOG.md](NURSE_BUILD_LOG.md)
+- [NURSE_BUILD_PLAN.md](NURSE_BUILD_PLAN.md)
+- [NURSE_IMPLEMENTATION_STATUS.md](NURSE_IMPLEMENTATION_STATUS.md)
+- [PINS_NURSE.md](PINS_NURSE.md)
+- [TEST_ACCOUNTS.md](TEST_ACCOUNTS.md)
+- [TEST_ACCOUNTS_AND_TOTP_PROMPT.md](TEST_ACCOUNTS_AND_TOTP_PROMPT.md)
+- [nurse-module-spec.md](nurse-module-spec.md)
+
+## Design and product
+
+- [NEST_HOME_CARE_BUILD_SPEC.md](NEST_HOME_CARE_BUILD_SPEC.md)
+- [Nest_Home_Care_Remaining_Work.pdf](Nest_Home_Care_Remaining_Work.pdf)
+- [Nest_Home_Care_Uganda_Website_Project_Master_Document.md](Nest_Home_Care_Uganda_Website_Project_Master_Document.md)
+- [PDPO_CHECKLIST.md](PDPO_CHECKLIST.md)
+- [UI_REFERENCE_GUIDE.md](UI_REFERENCE_GUIDE.md)
+- [nest-home-care-design-system.md](nest-home-care-design-system.md)
+- [system-settings.md](system-settings.md)
+
+## Other
+
+- [IMPLEMENTATION_REPORT.md](IMPLEMENTATION_REPORT.md)
+- [RECONSTRUCTION_STAGE_13_TO_19.md](RECONSTRUCTION_STAGE_13_TO_19.md)
+- [RECONSTRUCTION_STAGE_20_TO_29.md](RECONSTRUCTION_STAGE_20_TO_29.md)

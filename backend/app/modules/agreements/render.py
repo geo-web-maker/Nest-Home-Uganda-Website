@@ -81,7 +81,7 @@ def mask_name(name: Any) -> str:
 def _qr_svg(url: str) -> str:
     try:
         import segno  # optional: the verify box still prints the link without it
-        return segno.make(url, error="m").svg_inline(scale=3, border=1, dark="#123524", light="#ffffff")
+        return segno.make(url, error="m").svg_inline(scale=3, border=1, dark="#0B2E2A", light="#ffffff")
     except Exception:  # noqa: BLE001
         return ""
 
@@ -89,12 +89,12 @@ def _qr_svg(url: str) -> str:
 def verify_box_html(cert: dict[str, Any]) -> str:
     url = verify_url(str(cert.get("reference") or ""), cert.get("content_hash"))
     qr = _qr_svg(url)
-    return ('<div style="display:flex;gap:12pt;align-items:center;border:1px solid #C79A3B;background:#F4EBCB;'
+    return ('<div style="display:flex;gap:12pt;align-items:center;border:1px solid #F8991E;background:#FDEBD0;'
             'padding:8pt 10pt;margin:10pt 0;break-inside:avoid">'
             f'<div style="flex:none;width:72pt">{qr}</div><div style="font-size:9pt;line-height:1.5">'
             '<strong>Check this document is genuine.</strong><br>Scan the code or open the link below, then '
             'compare the details, or upload this file to confirm it has not been changed.<br>'
-            f'<span style="word-break:break-all;color:#123524">{html.escape(url)}</span></div></div>')
+            f'<span style="word-break:break-all;color:#0B2E2A">{html.escape(url)}</span></div></div>')
 
 
 def certificate_html(cert: dict[str, Any], *, heading: str = "h2") -> str:
@@ -268,9 +268,9 @@ def render_agreement_html(agreement: Agreement, clauses: dict[str, str], *, bloc
     return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bloomwell care agreement {html.escape(agreement.reference)}</title><style>
 @page{{size:letter;margin:18mm 16mm 20mm;@bottom-left{{content:"Bloomwell Home Care · {html.escape(agreement.reference)}";font:9pt Arial;color:#5b6b60}}@bottom-right{{content:"Page " counter(page) " of " counter(pages);font:9pt Arial;color:#5b6b60}}}}
-*{{box-sizing:border-box}}body{{font-family:Arial,Helvetica,sans-serif;color:#123524;font-size:10.5pt;line-height:1.5;margin:0}}header{{border-bottom:2px solid #C79A3B;box-shadow:0 5px 0 #123524;padding:0 0 16px;margin-bottom:26px}}.brand{{font-family:Georgia,'Times New Roman',serif;font-size:19pt;font-weight:700;color:#123524;letter-spacing:.02em}}.ref{{font-size:9pt;color:#9a7420;letter-spacing:.14em;font-weight:700}}h1{{font-family:Georgia,'Times New Roman',serif;font-size:18pt;color:#123524}}h2{{font-family:Georgia,'Times New Roman',serif;font-size:13pt;color:#123524;margin:20px 0 8px;padding-bottom:3px;border-bottom:1px solid #E9DDB8}}h3{{font-size:11pt;color:#2F6B4A;margin:12px 0 5px}}p{{white-space:pre-wrap}}.clause{{break-inside:avoid}}.party-details{{margin:10px 0 18px;padding:10px;border:1px solid #CBD8C6;border-top:3px solid #C79A3B;border-radius:4px}}.schedule,.certificate{{break-before:page}}table{{width:100%;border-collapse:collapse}}th,td{{padding:7px 9px;border-bottom:1px solid #CBD8C6;text-align:left;vertical-align:top}}th{{width:34%;color:#2F6B4A;background:#F3F8F1}}.sig{{display:inline-block;width:46%;vertical-align:top;margin:12px 2% 10px 0;min-height:100px;border-bottom:1px solid #6c7a72;padding:8px}}.signature{{display:block;max-width:220px;max-height:70px;object-fit:contain}}.verified-stamp{{border:1px solid #2F6B4A;background:#F3F8F1;color:#123524;padding:8px 10px;margin:6px 0;font-size:9pt;font-weight:bold;border-radius:4px}}.signature-list{{margin-top:20px;border-top:2px solid #C79A3B;padding-top:12px}}.banner{{background:#F4EBCB;color:#123524;border-left:4px solid #C79A3B;padding:12px;margin:0 0 16px;font-weight:bold}}.certificate{{break-before:page}}.intro{{color:#5b6b60;font-size:9.5pt;margin-top:4px}}.agreement-meta{{display:flex;gap:24px;margin-top:10px;font-size:9.5pt}}
+*{{box-sizing:border-box}}body{{font-family:Arial,Helvetica,sans-serif;color:#0B2E2A;font-size:10.5pt;line-height:1.5;margin:0}}header{{border-bottom:2px solid #F8991E;box-shadow:0 5px 0 #0B2E2A;padding:0 0 16px;margin-bottom:26px}}.brand{{font-family:Georgia,'Times New Roman',serif;font-size:19pt;font-weight:700;color:#0B2E2A;letter-spacing:.02em}}.ref{{font-size:9pt;color:#9a7420;letter-spacing:.14em;font-weight:700}}h1{{font-family:Georgia,'Times New Roman',serif;font-size:18pt;color:#0B2E2A}}h2{{font-family:Georgia,'Times New Roman',serif;font-size:13pt;color:#0B2E2A;margin:20px 0 8px;padding-bottom:3px;border-bottom:1px solid #FCE6C4}}h3{{font-size:11pt;color:#2A736C;margin:12px 0 5px}}p{{white-space:pre-wrap}}.clause{{break-inside:avoid}}.party-details{{margin:10px 0 18px;padding:10px;border:1px solid #CAD9D5;border-top:3px solid #F8991E;border-radius:4px}}.schedule,.certificate{{break-before:page}}table{{width:100%;border-collapse:collapse}}th,td{{padding:7px 9px;border-bottom:1px solid #CAD9D5;text-align:left;vertical-align:top}}th{{width:34%;color:#2A736C;background:#F2F8F6}}.sig{{display:inline-block;width:46%;vertical-align:top;margin:12px 2% 10px 0;min-height:100px;border-bottom:1px solid #6c7a72;padding:8px}}.signature{{display:block;max-width:220px;max-height:70px;object-fit:contain}}.verified-stamp{{border:1px solid #2A736C;background:#F2F8F6;color:#0B2E2A;padding:8px 10px;margin:6px 0;font-size:9pt;font-weight:bold;border-radius:4px}}.signature-list{{margin-top:20px;border-top:2px solid #F8991E;padding-top:12px}}.banner{{background:#FDEBD0;color:#0B2E2A;border-left:4px solid #F8991E;padding:12px;margin:0 0 16px;font-weight:bold}}.certificate{{break-before:page}}.intro{{color:#5b6b60;font-size:9.5pt;margin-top:4px}}.agreement-meta{{display:flex;gap:24px;margin-top:10px;font-size:9.5pt}}
 @media screen{{body{{max-width:850px;margin:24px auto;padding:24px;background:#fff}}}}@media print{{.no-print{{display:none}}}}
-</style></head><body><header><div class="brand">BLOOMWELL HOME CARE UGANDA LIMITED</div><div class="ref">CLIENT HOME NURSING SERVICE AGREEMENT · UNDER THE NEST MAMA PROGRAM</div><div class="intro">{html.escape(intro)}</div><div class="agreement-meta"><span>Agreement Reference: <strong>{html.escape(agreement.reference)}</strong></span><span>Date: <strong>{html.escape(agreement_date)}</strong></span></div></header>
+.mk{{display:inline-block;width:30pt;height:33pt;vertical-align:middle;margin-right:10pt}}.mk svg{{width:30pt;height:33pt}}</style></head><body><header><div class="brand"><span class="mk">{block_renderer.MARK_SVG}</span>BLOOMWELL HOME CARE UGANDA LIMITED</div><div class="ref">CLIENT HOME NURSING SERVICE AGREEMENT · UNDER THE NEST MAMA PROGRAM</div><div class="intro">{html.escape(intro)}</div><div class="agreement-meta"><span>Agreement Reference: <strong>{html.escape(agreement.reference)}</strong></span><span>Date: <strong>{html.escape(agreement_date)}</strong></span></div></header>
 {PRACTICE_BANNER if agreement.is_test else ''}{'<div class="banner">SIGNED AGREEMENT</div>' if signed else ''}{variation_html}{''.join(clause_html)}{''.join(schedule_html)}{certificate_html}</body></html>'''
 
 

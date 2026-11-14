@@ -14,18 +14,18 @@
 @keyframes spin { to { transform: rotate(405deg); } }
 
 .s1 { --t: 16s; --k: -0.14; width: min(44vw, 620px); aspect-ratio: 0.82; right: -6vw; top: 6%; }
-.s1 > i { background: var(--shape-1); border-radius: var(--egg); }
+.s1 > i { background: var(--shape-1); border-radius: var(--leaf-shape); }
 .s2 { --t: 12s; --k: -0.28; width: min(22vw, 300px); aspect-ratio: 0.8; right: 24vw; bottom: -4%; }
 .s2 > i { border: 4px solid var(--shape-2); border-bottom: 0; border-radius: var(--arch); }
 .s3 { --t: 10s; --k: 0.12; width: min(16vw, 220px); aspect-ratio: 1; right: 8vw; bottom: 14%; }
 .s3 > i { border: 3px solid var(--shape-3); border-radius: 50%; }
 .s4 { --t: 18s; --k: -0.08; width: min(11vw, 140px); aspect-ratio: 0.8; right: 38vw; top: 10%; }
-.s4 > i { background: var(--shape-4); border-radius: var(--egg); }
+.s4 > i { background: var(--shape-4); border-radius: var(--leaf-shape); }
 .s5 { --t: 12s; --k: -0.2; width: 34px; aspect-ratio: 1; right: 44vw; bottom: 22%; }
 .s5 > i { background: var(--shape-2); animation: spin 12s linear infinite; }
 
 .p1 { --t: 15s; --k: -0.12; width: min(26vw, 340px); aspect-ratio: 0.82; right: -3vw; top: 8%; }
-.p1 > i { background: var(--shape-1); border-radius: var(--egg); }
+.p1 > i { background: var(--shape-1); border-radius: var(--leaf-shape); }
 .p2 { --t: 11s; --k: -0.24; width: min(14vw, 180px); aspect-ratio: 0.8; right: 18vw; bottom: -6%; }
 .p2 > i { border: 4px solid var(--accent); border-bottom: 0; border-radius: var(--arch); }
 .p3 { --t: 9s; width: 28px; aspect-ratio: 1; right: 14vw; top: 22%; }
@@ -139,7 +139,7 @@
 .base { fill: none; stroke: var(--strong-rule); stroke-width: 6; }
 .line { fill: none; stroke: var(--strong-accent); stroke-width: 6; stroke-linecap: round; }
 .story[data-enhanced='true'] .line { stroke-dasharray: 100000; stroke-dashoffset: 100000; }
-.marker { position: absolute; left: 0; top: 0; display: none; width: 26px; height: 32px; margin: calc(var(--space-md) * -1) 0 0 calc(var(--space-sm) * -1); background: var(--strong-accent); border-radius: var(--egg); }
+.marker { position: absolute; left: 0; top: 0; display: none; width: 30px; height: 33px; margin: calc(var(--space-md) * -1) 0 0 calc(var(--space-sm) * -1); background: url('/brand/bloomwell-mark.svg') center / contain no-repeat; }
 .story[data-enhanced='true'] .marker { display: block; }
 
 /* ---- Promise words ------------------------------------------------------------------------- */
@@ -160,7 +160,7 @@
 .vlist { display: grid; gap: var(--space-3xl); margin: 0; padding: 0; list-style: none; }
 .vline { position: absolute; left: 2.2rem; top: 0; bottom: 0; width: 4px; border-radius: var(--radius-pill); background: var(--rule); }
 .vfill { position: absolute; inset: 0; border-radius: var(--radius-pill); background: var(--accent); transform-origin: 50% 0; }
-.vmark { position: absolute; left: calc(2.2rem + 2px); top: 0; display: none; width: 28px; height: 35px; margin-left: calc(var(--space-sm) * -1); background: var(--accent); border-radius: var(--egg); transform: translate3d(0, calc(var(--vp, 0) * var(--vh, 0px)), 0); }
+.vmark { position: absolute; left: calc(2.2rem + 2px); top: 0; display: none; width: 31px; height: 34px; margin-left: calc(var(--space-sm) * -1); background: url('/brand/bloomwell-mark.svg') center / contain no-repeat; transform: translate3d(0, calc(var(--vp, 0) * var(--vh, 0px)), 0); }
 .vsteps[data-enhanced='true'] .vmark { display: block; }
 .vsteps[data-enhanced='true'] .vfill { transform: scaleY(var(--vp, 0)); }
 .vstep { position: relative; display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: var(--space-2xl); align-items: center; }

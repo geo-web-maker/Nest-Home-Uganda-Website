@@ -1,9 +1,5 @@
-// Writes dist/admin-shell.html and dist/agreement-shell.html: dist/index.html with the pre-rendered home
-// page and its page-specific head tags removed. The admin area and the client agreement page
-// (/agreement/:token, a dynamic route that cannot be pre-rendered) are client-rendered, so Vercel (see
-// vercel.json), Cloudflare (public/_redirects) and the e2e static server answer /admin/* and
-// /agreement/* with these shells. Serving dist/index.html instead leaves the pre-rendered home page on
-// screen underneath the app, and serving nothing returns a 404 for every emailed agreement link.
+// Writes dist/agreement-shell.html and dist/404.html from the pre-rendered index. The standalone admin
+// is hosted at admin.bhcug.com; this public site only needs a shell for dynamic agreement links.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -17,7 +13,6 @@ if (rootStart === -1 || rootEnd === -1 || rootEnd < rootStart) {
 }
 
 const SHELLS = [
-  ['admin-shell.html', 'Admin | Bloomwell Home Care Uganda'],
   ['agreement-shell.html', 'Your care agreement | Bloomwell Home Care Uganda'],
   // Served with a 404 status for any unknown address (Cloudflare not_found_handling "404-page", Vercel and
   // Pages pick up /404.html automatically). The router's catch-all route renders the branded not-found page.

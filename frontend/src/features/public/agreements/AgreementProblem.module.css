@@ -3,7 +3,7 @@
 .brand strong, .brand small { display: block; }
 .brand strong { font-family: var(--serif); font-size: 17px; letter-spacing: -.01em; }
 .brand small { margin-top: 3px; color: var(--mut); font-size: 12px; }
-.mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: var(--forest); box-shadow: 0 0 0 2px var(--surf), 0 0 0 3.5px var(--gold); }
+.mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: var(--surf); box-shadow: 0 0 0 2px var(--surf), 0 0 0 3.5px var(--gold); }
 
 .card { position: relative; overflow: hidden; width: min(100%, 520px); margin: 0 auto; padding: clamp(24px, 6vw, 36px); background: var(--surf); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-1), 0 18px 48px color-mix(in srgb, var(--forest) 8%, transparent); }
 .card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: linear-gradient(90deg, var(--leaf), var(--gold) 55%, var(--straw)); }

@@ -47,6 +47,9 @@ async def get_principal(
         raise Unauthorised("Your session has expired. Please sign in again.") from exc
     principal = Principal(claims.user_id, claims.scopes | frozenset({"mail:use"}), claims.is_superadmin)
     request.state.principal = principal
+    from app.core import sandbox
+
+    await sandbox.bind(claims.user_id)
     return principal
 
 

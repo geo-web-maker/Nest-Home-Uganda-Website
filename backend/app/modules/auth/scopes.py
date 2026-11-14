@@ -69,6 +69,9 @@ SCOPES: tuple[Scope, ...] = (
     Scope("agreements:templates", "Agreements", "Manage agreement wording and email/SMS templates"),
     Scope("agreements:notifications", "Agreements", "View agreement email/SMS notification wording"),
     Scope("agreements:diagnostics", "Agreements", "Run agreement readiness checks, workflow simulation and delivery tests"),
+    Scope("billing:read", "Billing", "View invoices, receipts and their timelines; download PDFs"),
+    Scope("billing:write", "Billing", "Create and edit drafts, issue invoices, record payments and email documents"),
+    Scope("billing:void", "Billing", "Void an invoice or payment after authenticator verification"),
 )
 
 ALL_SCOPE_IDS: frozenset[str] = frozenset(s.id for s in SCOPES)
@@ -146,6 +149,9 @@ SCOPE_PRESETS: dict[str, frozenset[str]] = {
             "agreements:void",
             "agreements:templates",
             "agreements:notifications",
+            "billing:read",
+            "billing:write",
+            "billing:void",
         }
     ),
     "executive": frozenset(
@@ -160,6 +166,7 @@ SCOPE_PRESETS: dict[str, frozenset[str]] = {
             "alerts:read",
             "timesheets:read",
             "care-reports:read",
+            "billing:read",
         }
     ),
     # Legal: works on client agreements end to end (including countersigning for Bloomwell).

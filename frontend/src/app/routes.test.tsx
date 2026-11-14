@@ -87,19 +87,11 @@ describe('design route', () => {
   });
 });
 
-describe('admin routes', () => {
-  it('shows the login screen outside the public layout', async () => {
+describe('retired admin routes', () => {
+  // The admin lives on its own origin now; the host redirects /admin/* there, so the public app has no admin route.
+  it('does not mount the admin under the public site', async () => {
     renderAt('/admin/login');
-    expect(
-      await screen.findByRole('heading', { name: 'Welcome back' }, { timeout: 10000 }),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('navigation', { name: 'Main' })).not.toBeInTheDocument();
-  }, 15000);
-
-  it('sends a signed-out visitor from an admin page to the login screen', async () => {
-    renderAt('/admin/enquiries');
-    expect(
-      await screen.findByRole('heading', { name: 'Welcome back' }, { timeout: 10000 }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Page not found' }, { timeout: 10000 })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Welcome back' })).not.toBeInTheDocument();
   }, 15000);
 });

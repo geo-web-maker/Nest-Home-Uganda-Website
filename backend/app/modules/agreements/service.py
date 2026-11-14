@@ -43,6 +43,11 @@ OPEN_STATUSES = {"draft", "sent", "client_in_progress", "client_signed", "change
 LOCAL_TZ = ZoneInfo("Africa/Kampala")
 
 
+def _admin_agreement_link(agreement_id: object) -> str:
+    """Return the staff-facing agreement URL on the standalone admin origin."""
+    return f"{get_settings().admin_url.rstrip('/')}/agreements/{agreement_id}"
+
+
 def local_expiry_date(moment: datetime | None) -> str:
     """Expiry as a Kampala calendar date, e.g. "21 Nov 2026".
 
@@ -980,7 +985,7 @@ async def request_change(doc: Agreement, reason: str, ip: str | None) -> None:
     capture = _DIAGNOSTIC_CAPTURE.get()
     if staff or capture is not None:
         template = await messages.get_template("changes_requested", "email")
-        variables = messages.message_variables(doc, link=f"https://bhcug.com/admin/agreements/{doc.id}")
+        variables = messages.message_variables(doc, link=_admin_agreement_link(doc.id))
         subject, body_html, plain = messages.render_email("changes_requested", template[0], variables)
         if capture is not None:
             capture.setdefault("messages", []).append({"stage": "changes_requested", "channel": "email"})
@@ -1131,7 +1136,7 @@ async def client_sign(doc: Agreement, body, ip: str | None, user_agent: str | No
         capture.setdefault("messages", []).append({"stage": "client_signed_staff", "channel": "email"})
     elif staff and not doc.is_test:
         template_msg, _, _ = await messages.get_template("client_signed_staff", "email")
-        vars_ = messages.message_variables(doc, link=f"https://bhcug.com/admin/agreements/{doc.id}")
+        vars_ = messages.message_variables(doc, link=_admin_agreement_link(doc.id))
         subject, body_html, plain = messages.render_email("client_signed_staff", template_msg, vars_)
         await get_email_provider().send(staff, subject, body_html, plain)
     await audit.record(None, "agreement.client_signed", "agreement", str(doc.id), doc.reference,

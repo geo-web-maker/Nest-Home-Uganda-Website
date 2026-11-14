@@ -1,48 +1,50 @@
 # Bloomwell Home Care Admin Android app
 
-The admin frontend now has a dedicated Capacitor Android target using the same React admin screens,
-authentication, scopes, API and mobile navigation as the web admin.
+The admin is a standalone PWA in `admin/`. The Android app is built from the same production web bundle, so web routes, authentication, scopes, API access and mobile navigation stay aligned.
 
 ## Identity
 
 - App name: **Bloomwell Home Care Admin**
 - Android application id: `ug.nesthomecare.admin`
-- Web bundle: `frontend/dist-admin-native`
-- Capacitor config: `frontend/capacitor.admin.config.ts`
+- Web bundle: `admin/dist`
+- Capacitor config: `admin/capacitor.config.ts`
 
 ## Local build
 
-From `frontend/`:
+From the repository root:
 
 ```bash
+cd admin
 npm ci
-npm run build:admin-native
-npx cap add android --config capacitor.admin.config.ts
-node ../scripts/apply_admin_android_overrides.mjs
-npx cap sync android --config capacitor.admin.config.ts
+npm run build
+npx cap add android --config capacitor.config.ts
+cd ..
+node scripts/apply_admin_android_overrides.mjs
+cd admin
+npx cap sync android --config capacitor.config.ts
 cd android
 ./gradlew assembleDebug
 ```
 
-The APK is written to `frontend/android/app/build/outputs/apk/debug/`.
-The generated `frontend/android/` project is intentionally not committed; CI regenerates it from the
-locked web project.
+The APK is written to `admin/android/app/build/outputs/apk/debug/`. The generated `admin/android/` project is intentionally not committed; CI regenerates it from the locked web project.
 
 ## Focused tests
+
+From `admin/`:
 
 ```bash
 npm run test:admin-native
 npm run test:e2e:admin-native
+npm run test:reference
+npm run test:a11y
+npm run test:responsive
 ```
 
-The broader admin reference, accessibility and responsive suites remain required too.
+## Security and behaviour
 
-## Security/behaviour
+The native admin login uses the existing native refresh-token endpoints and secure storage path. Admin scope checks remain server-side; the Android shell does not grant extra permissions. Push registration is enabled only after an authenticated native admin session.
 
-The native admin login uses the existing native refresh-token endpoints and secure storage path.
-Admin scope checks remain server-side; the Android shell does not grant extra permissions. Push
-registration is enabled only after an authenticated native admin session.
-
+The same-origin `/api/*` Worker proxy is required for web admin refresh-cookie authentication. The native build uses the existing native token flow.
 
 ## Branding
 

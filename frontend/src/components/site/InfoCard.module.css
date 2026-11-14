@@ -19,7 +19,7 @@
 }
 @media (hover: hover) and (pointer: fine) {
   .card:hover {
-    border-color: var(--gold);
+    border-color: var(--gold-text);
   }
   .card:hover::after {
     opacity: 1;
@@ -27,7 +27,7 @@
 }
 .label {
   margin: 0 0 5px;
-  color: var(--gold);
+  color: var(--gold-text);
   font-size: 0.78rem;
   font-weight: 700;
 }

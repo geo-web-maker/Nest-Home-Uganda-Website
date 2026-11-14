@@ -1,5 +1,5 @@
-/admin /admin-shell 200
-/admin/* /admin-shell 200
+/admin   https://admin.bhcug.com/ 301
+/admin/* https://admin.bhcug.com/:splat 301
 /agreement/* /agreement-shell 200
 /a/* /agreement-shell 200
 /verify/* /agreement-shell 200

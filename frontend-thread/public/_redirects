@@ -1,0 +1,2 @@
+/admin   https://admin.bhcug.com/ 301
+/admin/* https://admin.bhcug.com/:splat 301

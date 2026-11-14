@@ -1,4 +1,4 @@
-.box { border: 1px solid var(--line, #dce3de); border-radius: 12px; padding: 10px 14px; background: color-mix(in srgb, var(--straw, #f4ebcb) 25%, var(--surf, #fff)); }
+.box { border: 1px solid var(--line, #dce3de); border-radius: 12px; padding: 10px 14px; background: color-mix(in srgb, var(--straw, #FDEBD0) 25%, var(--surf, #fff)); }
 .box summary { cursor: pointer; font-weight: 700; }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 10px 0; }
 .grid label, .use label { display: grid; gap: 4px; font-size: 13px; color: var(--mut, #53635a); }

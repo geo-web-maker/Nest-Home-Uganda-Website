@@ -256,7 +256,7 @@ for (const { width, height } of VIEWPORTS) {
           }
         }
 
-        // 6. Text inside a round or pill shape is centred in it (rings, eggs, badges).
+        // 6. Text inside a round or pill shape is centred in it (rings, arches, badges).
         for (const shape of Array.from(document.querySelectorAll('main *'))) {
           if (ignored(shape) || shape.closest('[data-reveal="hidden"]')) continue;
           const style = getComputedStyle(shape);
