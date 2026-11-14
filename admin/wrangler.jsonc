@@ -1,5 +1,5 @@
 {
-  "name": "nest-home-admin",
+  "name": "bloomwell-admin-site",
   "compatibility_date": "2026-10-01",
   "main": "worker/index.js",
   "assets": {
