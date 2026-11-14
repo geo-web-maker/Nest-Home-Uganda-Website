@@ -381,6 +381,7 @@ export function ContentPage() {
           </form>
         </section>
       ) : tab === 'media' ? (
+        <p className={styles.note}>{t('content.mediaUploadNote')}</p>
       ) : null}
     </>
   );
