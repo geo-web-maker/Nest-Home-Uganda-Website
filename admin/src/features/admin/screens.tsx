@@ -32,7 +32,7 @@ import { AppReleasesPage, BackupsHealthPage, PermissionsPage, CareSettingCatalog
  * Each screen job adds its list screen here.
  */
 export const adminScreens: Partial<Record<string, ComponentType>> = {
-  '': DashboardPage,
+  '/': DashboardPage,
   '/mail': MailPage,
   '/agreements': AgreementsPage,
   '/billing': BillingPage,
