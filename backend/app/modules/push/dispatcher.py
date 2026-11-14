@@ -96,7 +96,11 @@ async def dispatch(
 ):
     """Persist each inbox item and push attempt before contacting the provider."""
     results = []
+    from app.core import sandbox
+
     for user_id in sorted(set(user_ids)):
+        if sandbox.active() and not await sandbox.is_test_user(user_id):
+            continue  # a test account never notifies real staff
         notification_id = uuid4().hex
         notification = CareInboxNotification(
             id=notification_id,

@@ -18,6 +18,8 @@ from app.modules.applications import router as applications_router
 from app.modules.applications.models import Application
 from app.modules.areas import router as areas_router
 from app.modules.areas.models import Area
+from app.modules.billing.models import Invoice, Payment
+from app.modules.billing.router import admin_router as billing_admin_router, public_router as billing_public_router
 from app.modules.articles import router as articles_router
 from app.modules.articles.models import Article
 from app.modules.audit.models import AuditLog, ContentVersion
@@ -55,6 +57,7 @@ from app.modules.media import router as media_router
 from app.modules.media.models import Media
 from app.modules.notifications.models import SmsLog
 from app.modules.nurses import router as nurses_router
+from app.modules.test_accounts import router as test_accounts_router
 from app.modules.nurses.models import Device, NurseProfile
 from app.modules.pages import router as pages_router
 from app.modules.pages.models import ContentPage
@@ -67,6 +70,7 @@ from app.modules.services.models import Service
 from app.modules.settings import router as settings_router
 from app.modules.settings.models import SiteSetting
 from app.modules.team import router as team_router
+from app.modules.test_accounts.models import TestSandboxConfig
 from app.modules.team.models import TeamMember
 from app.modules.testimonials import router as testimonials_router
 from app.modules.testimonials.models import Testimonial
@@ -103,10 +107,13 @@ DOCUMENT_MODELS: list[type[Document]] = [
     Job,
     Application,
     SiteSetting,
+    TestSandboxConfig,
     Agreement,
     AgreementOtp,
     AgreementTemplate,
     AgreementMessageTemplate,
+    Invoice,
+    Payment,
 ]
 
 CARE_DOCUMENT_MODELS: list[type[Document]] = [
@@ -171,6 +178,7 @@ ROUTERS: list[APIRouter] = [
     users_router.public_router,
     users_router.admin_router,
     nurses_router.router,
+    test_accounts_router.router,
     nurses_router.field_router,
     field_router.router,
     field_ops_router.router,
@@ -179,6 +187,8 @@ ROUTERS: list[APIRouter] = [
     mail_router.router,
     agreements_admin_router,
     agreements_public_router,
+    billing_admin_router,
+    billing_public_router,
 ]
 
 

@@ -2,8 +2,10 @@ from datetime import UTC, datetime
 
 from beanie import Document
 from pydantic import Field
+from app.core.sandbox import hide_test_data
 
 
+@hide_test_data("created_by")
 class CareClient(Document):
     id: str = Field(index=True, unique=True)
     display_name: str = Field(min_length=1, max_length=120)
@@ -11,6 +13,7 @@ class CareClient(Document):
     status: str = "active"
     supervisor_id: str | None = None
     assigned_nurse_ids: list[str] = Field(default_factory=list)
+    created_by: str | None = None  # user id of the creator; lets test-account data be removed
     photo_allowed: bool = False
     photo_required: str | None = Field(
         default=None, pattern=r"^(none|arrival|departure|either|both)$"

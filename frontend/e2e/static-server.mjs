@@ -1,5 +1,5 @@
-// Serves ./dist the way static hosting does: /x -> dist/x, then dist/x/index.html, and
-// unknown paths get dist/404.html with a 404 status (the admin area is client-side routed).
+// Serves ./dist the way static hosting does: /x -> dist/x, then dist/x/index.html;
+// unknown paths get dist/404.html with a 404 status. Admin is an external origin now.
 // `vite preview` does not serve the pre-rendered nested pages, so it cannot be used here.
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -44,9 +44,8 @@ function resolveFile(urlPath) {
   }
   if (extname(clean)) return null;
   if (entry) return join(root, entry);
-  // Same as the vercel.json rewrites: /admin/* and /agreement/* get their clean shells, everything else the home page.
+  // Public agreement URLs are client-rendered and use their own clean shell.
   if (/^[/\\](agreement|a|verify)([/\\]|$)/.test(clean)) return join(root, 'agreement-shell.html');
-  if (/^[/\\]admin([/\\]|$)/.test(clean)) return join(root, 'admin-shell.html');
   // Unknown address: like Cloudflare (not_found_handling "404-page") answer with 404.html and a 404 status.
   notFound = true;
   return join(root, existsSync(join(root, '404.html')) ? '404.html' : 'index.html');

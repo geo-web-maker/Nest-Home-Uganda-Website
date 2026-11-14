@@ -1,8 +1,9 @@
 """Configuration read only from the environment (twelve-factor)."""
 
+import logging
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,6 +39,8 @@ class Settings(BaseSettings):
     refresh_token_days: int = 7
     cors_origins: str = ""
     frontend_url: str = ""
+    # Admin application origin; falls back to frontend_url until ADMIN_URL is configured.
+    admin_url: str = ""
     # WebAuthn (device biometric signing). Empty = derive from frontend_url.
     webauthn_rp_id: str = ""
     webauthn_origins: str = ""  # comma-separated; empty = frontend_url
@@ -106,6 +109,17 @@ class Settings(BaseSettings):
     alert_phones: str = ""
     first_superadmin_email: str = ""
     first_superadmin_password: str = ""
+
+    @model_validator(mode="after")
+    def default_admin_url_to_frontend(self) -> "Settings":
+        if not self.admin_url.strip():
+            self.admin_url = self.frontend_url
+            if self.app_env == "production":
+                logging.getLogger("app.config").warning(
+                    "ADMIN_URL is not set; staff links fall back to FRONTEND_URL and will 404 on the "
+                    "standalone admin. Set ADMIN_URL=https://admin.bhcug.com."
+                )
+        return self
 
     @property
     def is_development(self) -> bool:

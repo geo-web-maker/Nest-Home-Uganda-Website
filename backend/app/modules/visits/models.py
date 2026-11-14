@@ -3,8 +3,10 @@ from typing import Any
 
 from beanie import Document
 from pydantic import Field
+from app.core.sandbox import hide_test_data
 
 
+@hide_test_data("nurse_id")
 class Visit(Document):
     id: str = Field(index=True, unique=True)
     client_id: str = Field(index=True)
@@ -42,6 +44,7 @@ class VisitSyncTombstone(Document):
         name = "visit_sync_tombstones"
 
 
+@hide_test_data("nurse_id")
 class VisitEvent(Document):
     id: str = Field(index=True, unique=True)
     client_op_id: str = Field(index=True, unique=True)
@@ -64,6 +67,7 @@ class VisitEvent(Document):
         name = "visit_events"
 
 
+@hide_test_data("nurse_id")
 class VisitNote(Document):
     id: str = Field(index=True, unique=True)
     client_op_id: str = Field(index=True, unique=True)
@@ -79,6 +83,7 @@ class VisitNote(Document):
         name = "visit_notes"
 
 
+@hide_test_data("nurse_id")
 class VisitPhoto(Document):
     id: str = Field(index=True, unique=True)
     visit_id: str = Field(index=True)

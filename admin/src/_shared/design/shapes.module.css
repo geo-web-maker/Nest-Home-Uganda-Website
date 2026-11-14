@@ -1,0 +1,37 @@
+/* GENERATED from frontend/src. Edit there, then run: node scripts/sync-admin-shared.mjs */
+/* Shapes (spec 2.5). Use with composes or as class names. */
+.leaf {
+  border-radius: var(--leaf-shape);
+}
+
+.arch {
+  border-radius: var(--arch);
+}
+
+.circle {
+  border-radius: 50%;
+}
+
+.pill {
+  border-radius: var(--r-pill);
+}
+
+/* Diamond: section label end (6px, 1.5px border). */
+.diamond {
+  display: inline-block;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border: 1.5px solid var(--gold);
+  transform: rotate(45deg);
+}
+
+/* Large diamond: list bullets (9px, 2px border). */
+.diamondLg {
+  display: inline-block;
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--gold);
+  transform: rotate(45deg);
+}

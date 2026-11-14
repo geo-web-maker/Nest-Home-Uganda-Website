@@ -37,9 +37,9 @@ export function HomePage() {
   const steps = [0, 1, 2].map((index) => ({ title: t(`home.steps.${index}.title`), text: t(`home.steps.${index}.text`) }));
   const promise = [0, 1, 2].map((index) => ({ word: t(`home.promise.${index}.title`), text: t(`home.promise.${index}.text`) }));
   const hangItems = [
-    { title: t('home.eggs.0.title'), caption: t('home.eggs.0.caption'), href: '/services', photo: '/images/services/service-0-elderly.jpg' },
-    { title: t('home.eggs.1.title'), caption: t('home.eggs.1.caption'), href: '/services', photo: '/images/services/service-1-postnatal.jpg' },
-    { title: t('home.eggs.2.title'), caption: t('home.eggs.2.caption'), href: '/services', photo: '/images/services/service-2-wound-care.jpg' },
+    { title: t('home.arches.0.title'), caption: t('home.arches.0.caption'), href: '/services', photo: '/images/services/service-0-elderly.jpg' },
+    { title: t('home.arches.1.title'), caption: t('home.arches.1.caption'), href: '/services', photo: '/images/services/service-1-postnatal.jpg' },
+    { title: t('home.arches.2.title'), caption: t('home.arches.2.caption'), href: '/services', photo: '/images/services/service-2-wound-care.jpg' },
   ];
   return (
     <>

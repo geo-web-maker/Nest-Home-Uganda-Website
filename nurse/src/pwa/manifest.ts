@@ -8,8 +8,8 @@ import { copy } from '../copy';
  * Colours come from design/tokens.json (color.light.forest and color.light.bg). A test keeps them
  * in sync.
  */
-export const THEME_COLOR = '#123524';
-export const BACKGROUND_COLOR = '#F3F8F1';
+export const THEME_COLOR = '#0B2E2A';
+export const BACKGROUND_COLOR = '#F2F8F6';
 
 export const manifest = {
   name: copy.appName,

@@ -1,1 +1,0 @@
-"""Area content module."""

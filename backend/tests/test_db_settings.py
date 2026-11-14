@@ -93,8 +93,8 @@ async def test_sms_and_theme_validation(mongo: object, client: httpx.AsyncClient
     reset = await client.post(f"{ADMIN}/theme/reset", json={}, headers=editor())
     assert reset.status_code == 200
     values = {item["key"]: item["value"] for item in reset.json()}
-    assert values["theme.forest"] == "#123524"
-    assert values["theme.gold"] == "#C79A3B"
+    assert values["theme.forest"] == "#0B2E2A"
+    assert values["theme.gold"] == "#F8991E"
 
 
 async def test_unknown_setting_is_rejected_and_seed_is_idempotent(

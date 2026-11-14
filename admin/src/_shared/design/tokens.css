@@ -1,0 +1,88 @@
+/* GENERATED from frontend/src. Edit there, then run: node scripts/sync-admin-shared.mjs */
+/* Shared colour tokens: light is the default; dark is opt-in through html[data-theme="dark"]. */
+:root {
+  color-scheme: light;
+  --bg: #F2F8F6;
+  --mint: #DDF0EC;
+  --surf: #FFFFFF;
+  --ink: #0B2E2A;
+  --mut: #47615E;
+  --forest: #0B2E2A;
+  --leaf: #08675F;
+  --moss: #2A736C;
+  --gold: #F8991E;
+  --gold-text: #8A4B00; /* orange is for shapes; use this for text on light backgrounds */
+  --straw: #FCE6C4;
+  --line: #CAD9D5;
+  --onf: #F2F8F6;
+  --wa: #25D366;
+  --on-wa: #06260F;
+  --on-gold: #1B1706;
+  --on-straw: #2A2410;
+  --on-leaf: #FFFFFF;
+  --danger: #B3261E;
+  --serif: "Fraunces", Georgia, serif;
+  --sans: "Figtree", system-ui, sans-serif;
+  --script: "Cormorant Garamond", Georgia, serif;
+  --leaf-shape: 0 72% 0 72%;
+  --arch: 999px 999px 18px 18px;
+  --container: 1180px;
+  --shadow-1: 0 1px 2px color-mix(in srgb, var(--forest) 6%, transparent), 0 2px 8px color-mix(in srgb, var(--forest) 8%, transparent);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0A1C1A;
+  --mint: #0F2523;
+  --surf: #112826;
+  --ink: #E6F0EE;
+  --mut: #9DB8B2;
+  --forest: #071F1C;
+  --leaf: #5CC5B8;
+  --moss: #2A736C;
+  --gold: #FBA94A;
+  --gold-text: #FBA94A;
+  --straw: #3A3620;
+  --line: #1F4140;
+  --onf: #F2F8F6;
+  --on-gold: #1B1706;
+  --on-straw: #F0E7C9;
+  --on-leaf: #06260F;
+  --danger: #F28B82;
+}
+
+/* Breakpoints: tablet @700px, desktop @1040px. */
+
+/* Motion tokens (Step 2A). Only these may carry raw ms or cubic-bezier values. */
+:root{
+  --dur-instant:100ms; --dur-fast:160ms; --dur-base:240ms; --dur-slow:400ms; --dur-reveal:560ms; --dur-hero:700ms;
+  --ease-out:cubic-bezier(0.22,1,0.36,1);
+  --ease-in-out:cubic-bezier(0.65,0,0.35,1);
+  --ease-standard:cubic-bezier(0.2,0,0,1);
+  --reveal-distance:16px;
+  --stagger-step:70ms;
+}
+
+/* Type scale (Step 3A). Fluid between 360px and 1180px viewports. */
+:root{
+  --fs-display:clamp(2.5rem,1.7rem + 3.6vw,4.5rem);
+  --fs-h1:clamp(2rem,1.45rem + 2.4vw,3.25rem);
+  --fs-h2:clamp(1.625rem,1.3rem + 1.4vw,2.375rem);
+  --fs-h3:clamp(1.25rem,1.12rem + 0.6vw,1.625rem);
+  --fs-lead:clamp(1.0625rem,1rem + 0.35vw,1.3125rem);
+  --fs-body:1rem;
+  --fs-small:0.875rem;
+  --fs-eyebrow:0.75rem;
+  --lh-tight:1.1; --lh-snug:1.25; --lh-body:1.55;
+  --ls-display:-0.025em; --ls-heading:-0.015em; --ls-body:0; --ls-eyebrow:0.14em;
+}
+
+/* Spacing, radii and depth (Step 3B). */
+:root{
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px;
+  --space-6:32px; --space-7:48px; --space-8:64px; --space-9:80px; --space-10:104px;
+  --r-xs:8px; --r-sm:12px; --r-md:18px; --r-lg:24px; --r-xl:28px; --r-pill:999px;
+  --shadow-1: 0 1px 2px color-mix(in srgb, var(--forest) 6%, transparent), 0 2px 8px color-mix(in srgb, var(--forest) 8%, transparent);
+  --shadow-2: 0 2px 4px color-mix(in srgb, var(--forest) 6%, transparent), 0 12px 32px color-mix(in srgb, var(--forest) 12%, transparent);
+  --highlight-inset:inset 0 0 0 0 transparent;
+}

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const manifestPath = path.resolve('frontend/android/app/src/main/AndroidManifest.xml');
+const manifestPath = path.resolve('admin/android/app/src/main/AndroidManifest.xml');
 if (!fs.existsSync(manifestPath)) {
   throw new Error(`Admin Android manifest not found: ${manifestPath}`);
 }

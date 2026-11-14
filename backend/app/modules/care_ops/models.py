@@ -3,8 +3,10 @@ from typing import Any
 
 from beanie import Document
 from pydantic import Field
+from app.core.sandbox import hide_test_data
 
 
+@hide_test_data("nurse_id")
 class CareAlert(Document):
     id: str = Field(index=True, unique=True)
     type: str
@@ -25,6 +27,7 @@ class CareAlert(Document):
         name = "care_alerts"
 
 
+@hide_test_data("nurse_id")
 class CareTimesheet(Document):
     id: str = Field(index=True, unique=True)
     nurse_id: str = Field(index=True)
@@ -46,6 +49,7 @@ class CareTimesheet(Document):
         name = "care_timesheets"
 
 
+@hide_test_data("nurse_id")
 class SOSCase(Document):
     id: str = Field(index=True, unique=True)
     nurse_id: str = Field(index=True)

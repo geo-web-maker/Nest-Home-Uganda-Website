@@ -78,7 +78,7 @@ describe('Button', () => {
       renderInRouter(
         <>
           <Button size={size}>Act</Button>
-          <Button size={size} href="/admin">
+          <Button size={size} href="/">
             Open
           </Button>
         </>,

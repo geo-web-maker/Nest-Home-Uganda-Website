@@ -1,0 +1,14 @@
+/* GENERATED from frontend/src. Edit there, then run: node scripts/sync-admin-shared.mjs */
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.end {
+  justify-content: flex-end;
+}
+.spaced {
+  margin-top: 16px;
+}

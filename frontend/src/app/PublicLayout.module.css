@@ -63,7 +63,7 @@
 }
 
 :global(:root[data-theme='dark']) .shell {
-  --leaf: #58bc88;
+  --leaf: #5CC5B8;
 }
 
 /* Default-size buttons on public pages keep the original pill (shared Button grew to 52px for admin). */

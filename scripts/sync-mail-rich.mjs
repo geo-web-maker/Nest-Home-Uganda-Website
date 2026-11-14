@@ -7,8 +7,8 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(root, 'shared', 'mail-rich');
 const destinations = [
-  path.join(root, 'frontend', 'src', 'shared', 'mail-rich'),
   path.join(root, 'nurse', 'src', 'shared', 'mail-rich'),
+  path.join(root, 'admin', 'src', 'shared', 'mail-rich'),
 ];
 const check = process.argv.includes('--check');
 const header = '/* GENERATED from shared/mail-rich. Edit there, then run: node scripts/sync-mail-rich.mjs */\n';
@@ -57,4 +57,4 @@ for (const destination of destinations) {
   }
 }
 if (check && failed) process.exitCode = 1;
-if (!check) process.stdout.write('Synced shared/mail-rich into frontend and nurse mirrors.\n');
+if (!check) process.stdout.write('Synced shared/mail-rich into admin and nurse mirrors.\n');

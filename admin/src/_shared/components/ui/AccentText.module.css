@@ -1,0 +1,8 @@
+/* GENERATED from frontend/src. Edit there, then run: node scripts/sync-admin-shared.mjs */
+.accent {
+  font-family: var(--script);
+  font-style: italic;
+  font-weight: 600;
+  color: var(--gold-text);
+  letter-spacing: 0;
+}

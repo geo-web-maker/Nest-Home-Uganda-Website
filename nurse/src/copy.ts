@@ -141,7 +141,7 @@ export const copy = {
     enableNotifications: 'Enable notifications',
     notificationsEnabled: 'Notifications enabled',
   },
-  address: { missingOffline: 'Address not available offline.', noInstructions: 'No additional instructions saved.' },
+  address: { missingOffline: 'Address not available offline.', pinned: 'Pinned location. Tap Open in Maps to navigate.', noInstructions: 'No additional instructions saved.' },
   today: {
     eyebrow: 'Your schedule', heading: 'Visits today', scheduleHeading: 'Visit schedule', refresh: 'Refresh', syncing: 'Syncing…',
     greeting: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening' },

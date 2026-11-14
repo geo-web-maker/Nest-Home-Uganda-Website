@@ -10,7 +10,7 @@ from typing import Annotated
 from fastapi import Cookie, Depends, HTTPException
 
 from app.core.deps import Principal, get_principal
-from app.core.errors import Forbidden
+from app.core.errors import TotpRequired
 
 log = logging.getLogger("app.security.totp")
 
@@ -67,7 +67,7 @@ async def is_current_totp_session(user_id: str, token: str | None) -> bool:
 async def assert_totp_session(principal: Principal, token: str | None) -> None:
     parsed = _parse_cookie(principal.user_id, token)
     if parsed is None:
-        raise Forbidden("Audit access is locked. Verify your authenticator code to continue.")
+        raise TotpRequired("Audit access is locked. Verify your authenticator code to continue.")
     try:
         from app.modules.mail.totp import enrollment_epoch
         current = await enrollment_epoch(principal.user_id)
@@ -75,9 +75,9 @@ async def assert_totp_session(principal: Principal, token: str | None) -> None:
         log.exception("TOTP enrollment check unavailable for audit access")
         raise HTTPException(status_code=503, detail="Authenticator verification is temporarily unavailable. Audit records remain locked; check the mail database connection and try again.") from exc
     if current is None:
-        raise Forbidden("Audit access is locked because an authenticator is not enrolled. Set up TOTP before viewing audit records.")
+        raise TotpRequired("Audit access is locked because an authenticator is not enrolled. Set up TOTP before viewing audit records.")
     if current != parsed[1]:
-        raise Forbidden("Audit access is locked. Your authenticator has changed; verify again to continue.")
+        raise TotpRequired("Audit access is locked. Your authenticator has changed; verify again to continue.")
 
 
 async def require_totp_session(

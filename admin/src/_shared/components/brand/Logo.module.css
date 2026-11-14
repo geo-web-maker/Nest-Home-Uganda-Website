@@ -1,0 +1,35 @@
+/* GENERATED from frontend/src. Edit there, then run: node scripts/sync-admin-shared.mjs */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font: 700 1rem/1.05 var(--serif);
+  text-align: start;
+}
+
+.text {
+  display: block;
+}
+
+.sub {
+  display: block;
+  font: 500 0.68rem var(--sans);
+  color: var(--gold);
+}
+
+.admin {
+  gap: 8px;
+  font-size: 0.95rem;
+  line-height: 1.1;
+}
+
+.admin .sub {
+  font-size: 0.66rem;
+}
+
+/* Bloomwell mark: leaves and cross follow the theme, petals keep the brand orange. */
+.mark { flex: none; display: block; }
+/* The site header and footer are dark in both themes, so the logo there uses the light teal. */
+.leaf { fill: var(--logo-leaf, #08675f); }
+.logo { --logo-leaf: #8fd5c9; }
+:global([data-theme='dark']) .leaf { fill: #8fd5c9; }

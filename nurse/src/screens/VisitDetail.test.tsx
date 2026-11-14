@@ -26,6 +26,18 @@ describe('visit detail actions', () => {
     expect(screen.queryByRole('button', { name: 'Leave' })).toBeNull();
   });
 
+  it('opens the exact pin when the place has one, even with no typed address', () => {
+    renderDetail({ ...baseVisit, place_address_text: '', lat: 0.347612, lng: 32.582599 });
+    expect(screen.getByRole('link', { name: /open in maps/i })).toHaveAttribute('href', 'https://www.google.com/maps/search/?api=1&query=0.347612,32.582599');
+    expect(screen.getByText('Pinned location. Tap Open in Maps to navigate.')).toBeTruthy();
+  });
+
+  it('prefers the pin over the typed address for navigation', () => {
+    renderDetail({ ...baseVisit, place_address_text: 'Behind the church', lat: 0.3, lng: 32.6 });
+    expect(screen.getByRole('link', { name: /open in maps/i })).toHaveAttribute('href', 'https://www.google.com/maps/search/?api=1&query=0.3,32.6');
+    expect(screen.getByText('Behind the church')).toBeTruthy();
+  });
+
   it('encodes the address in the external map link and keeps notes available', () => {
     const onNote = vi.fn();
     render(<MemoryRouter><VisitDetail visit={{ ...baseVisit, place_address_text: 'Plot 4, Kampala & Ntinda' }} photosEnabled onArrive={vi.fn()} onLeave={vi.fn()} onNote={onNote} onPhoto={vi.fn()} /></MemoryRouter>);

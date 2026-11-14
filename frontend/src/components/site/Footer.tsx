@@ -11,6 +11,10 @@ const EXPLORE = [
   { to: '/contact', label: 'common:nav.contact' },
 ] as const;
 
+const ADMIN_LOGIN_HREF = import.meta.env.VITE_ADMIN_URL?.replace(/\/+$/, '')
+  ? `${import.meta.env.VITE_ADMIN_URL.replace(/\/+$/, '')}/login`
+  : 'https://admin.bhcug.com/login';
+
 const COMPANY = [
   { to: '/team', label: 'site:footer.ourTeam' },
   { to: '/areas', label: 'site:footer.areas' },
@@ -74,13 +78,19 @@ export function Footer() {
           <ul className={styles.list}>
             {COMPANY.map((item) => (
               <li key={item.to}>
-                <Link
-                  to={item.to}
-                  className={styles.link}
-                  aria-current={isCurrentLink(item.to, pathname) ? 'page' : undefined}
-                >
-                  {t(item.label)}
-                </Link>
+                {item.to === '/admin/login' ? (
+                  <a href={ADMIN_LOGIN_HREF} className={styles.link}>
+                    {t(item.label)}
+                  </a>
+                ) : (
+                  <Link
+                    to={item.to}
+                    className={styles.link}
+                    aria-current={isCurrentLink(item.to, pathname) ? 'page' : undefined}
+                  >
+                    {t(item.label)}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

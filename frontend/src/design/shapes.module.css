@@ -1,6 +1,6 @@
 /* Shapes (spec 2.5). Use with composes or as class names. */
-.egg {
-  border-radius: var(--egg);
+.leaf {
+  border-radius: var(--leaf-shape);
 }
 
 .arch {

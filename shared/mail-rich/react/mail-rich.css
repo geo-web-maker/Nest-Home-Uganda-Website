@@ -109,7 +109,7 @@
 :root {
   --mail-border: var(--line, #d8dde4);
   --mail-toolbar-bg: color-mix(in srgb, var(--ink, #1a1a1a) 6%, var(--surf, #ffffff));
-  --mail-active-bg: color-mix(in srgb, var(--gold, #c39a3a) 24%, transparent);
+  --mail-active-bg: color-mix(in srgb, var(--gold, #F8991E) 24%, transparent);
   --mail-muted: var(--mut, #687383);
   --mail-focus: var(--gold, #2563eb);
 }
@@ -138,10 +138,10 @@
 .mr-bar-spacer { flex: 1 1 0; min-width: 0; }
 .mr-bar-icon, .mr-bar-text, .mr-bar-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; white-space: nowrap; min-width: 44px; min-height: 44px; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
 .mr-bar-icon:hover:not(:disabled), .mr-bar-text:hover:not(:disabled) { background: color-mix(in srgb, currentColor 8%, transparent); }
-.mr-bar-icon[aria-pressed="true"] { color: var(--gold, #c39a3a); }
-.mr-bar button:focus-visible { outline: 2px solid var(--gold, #c39a3a); outline-offset: 2px; }
+.mr-bar-icon[aria-pressed="true"] { color: var(--gold, #F8991E); }
+.mr-bar button:focus-visible { outline: 2px solid var(--gold, #F8991E); outline-offset: 2px; }
 .mr-bar button:disabled { opacity: .45; cursor: default; }
-.mr-bar-primary { padding: 0 16px; background: var(--gold, #c39a3a); color: var(--on-gold, #1a1a1a); }
+.mr-bar-primary { padding: 0 16px; background: var(--gold, #F8991E); color: var(--on-gold, #1a1a1a); }
 .mr-bar-primary:hover:not(:disabled) { filter: brightness(.95); }
 .mr-bar-text { padding: 0 10px; }
 .mr-bar-label { display: none; }

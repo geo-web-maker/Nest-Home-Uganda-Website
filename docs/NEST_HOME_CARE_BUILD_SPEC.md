@@ -274,7 +274,7 @@ Full-width SVG under the home hero: `viewBox="0 0 1200 46"`, `preserveAspectRati
 
 ### 3.3 Favicon and meta
 
-Favicon 🪺 until a real icon is supplied (admin Appearance setting). Default title `Bloomwell Home Care Uganda | Compassionate Home Care in Kampala`. Default description `Trained nurses for elderly care, newborn care, wound care and more, at home across Kampala. Call 0787 499 988.`
+Favicon is the Bloomwell mark (`/favicon.svg`); the old 🪺 placeholder is retired (admin Appearance setting). Default title `Bloomwell Home Care Uganda | Compassionate Home Care in Kampala`. Default description `Trained nurses for elderly care, newborn care, wound care and more, at home across Kampala. Call 0787 499 988.`
 
 ### 3.4 Images
 

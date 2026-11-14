@@ -1,0 +1,17 @@
+/* GENERATED from frontend/src. Edit there, then run: node scripts/sync-admin-shared.mjs */
+.weave {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: 46px;
+  margin-top: 8px;
+}
+
+.fill {
+  fill: var(--moss);
+}
+
+.stroke {
+  stroke: var(--gold);
+  stroke-width: 2;
+}

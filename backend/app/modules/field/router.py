@@ -36,7 +36,10 @@ router = APIRouter(prefix="/field", tags=["field"])
 
 
 @router.get("/audit")
-async def field_audit(principal: Principal = Depends(require_totp_session)):
+async def field_audit(
+    _scope: Principal = Depends(require_scopes("field:use")),
+    principal: Principal = Depends(require_totp_session),
+):
     """Return only the signed-in nurse's own audit events and relevant system failures."""
     from beanie import PydanticObjectId
     from app.modules.audit.models import AuditLog

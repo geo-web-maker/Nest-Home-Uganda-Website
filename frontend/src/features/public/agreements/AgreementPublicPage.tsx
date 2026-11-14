@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPoi
 import { useParams } from 'react-router-dom';
 import { API_PREFIX, ApiError, apiClient } from '../../../lib/api/client';
 import { dialogs } from '../../../lib/dialogs';
-import { DialogHost } from '../../../components/admin/DialogHost';
+import { DialogHost } from '../../../components/dialogs/DialogHost';
 import { LogoMark } from '../../../components/brand/Logo';
 import { AgreementProblem } from './AgreementProblem';
 import { ContractReader } from './ContractReader';

@@ -103,6 +103,14 @@ async def send_sms(
 ) -> bool:
     """One recipient, with at most 2 retries for failures a retry could fix. Never raises."""
     try:
+        from app.core import sandbox
+
+        # A test account triggered this: text only numbers on the superadmin's allowlist.
+        if sandbox.active() and not await sandbox.allowed_phone(to):
+            await _log(provider, audience, template, to, "skipped", "test sandbox", enquiry)
+            return False
+        if sandbox.active():
+            text = f"[TEST] {text}"
         now = datetime.now(UTC)
         if (
             monthly_cap is not None

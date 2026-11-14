@@ -170,12 +170,13 @@ Root uses `padding-top/bottom: env(safe-area-inset-*)`. A fixed forest bar cover
 ---
 
 ## 6. Logo
-Inline SVG, `40 × 34` in the header.
-- Gold cross: vertical line `20,1 → 20,7`, horizontal `17,4 → 23,4`, 2px stroke, round caps.
-- Three eggs (ellipses): `#E9DDB8`, `#F4F1DF`, `#E9DDB8`, sizes about 10 × 13.
-- Three woven nest arcs below, gold `#C79A3B`, 1.8px stroke, round caps.
-- Beside it: "Bloomwell Home Care" (Fraunces 700, 1.1rem) with "Uganda · Kampala" under it (Figtree 500, .72rem, gold).
-- Keep clear space around the logo equal to the height of one egg. Never place it on gold.
+The Bloomwell mark: an orange lotus above a medical cross held by two teal leaves. It replaces the old nest-and-eggs mark everywhere (site, Thread, admin, nurse app, favicons and app icons).
+- Source: the brand file `bloomwell` (vector). The mark paths live in `components/brand/markPaths.ts` (public site and Thread) and `nurse/src/ui/markPaths.ts`. Do not redraw them.
+- Colours: leaves and cross teal `#08675F` (`#8FD5C9` on dark backgrounds); petals `#F8991E`, `#F9B04F`, `#FBD39B`. The petals are solid tones in the app, because the logo's transparency does not hold up at small sizes.
+- Beside it: "Bloomwell Home Care" (Fraunces 700, 1.1rem) with "Uganda · Kampala" under it.
+- The full wordmark (`/brand/bloomwell-logo.svg`) is outlined paths. Use it as an image and never retype it in a web font.
+- Keep clear space around the logo equal to the height of the cross. Never place it on gold or orange.
+- Icons: `admin/public/icons`, `nurse/public/icons`, and `favicon.svg` plus PNGs in each public site.
 
 ---
 
@@ -306,7 +307,7 @@ Lines: **Bloomwell Home Care Uganda** (bold) · "Trusted · Reliable · Compassi
 **SEO basics**
 - Title: `Bloomwell Home Care Uganda | Compassionate Home Care in Kampala`
 - Description: `Trained nurses for elderly care, newborn care, wound care and more, at home across Kampala. Call 0787 499 988.`
-- Favicon: 🪺
+- Favicon: the Bloomwell mark (`favicon.svg`)
 
 ---
 
@@ -374,3 +375,12 @@ Lines: **Bloomwell Home Care Uganda** (bold) · "Trusted · Reliable · Compassi
 | 8 | Booking | Forest | `#book` |
 | 9 | Footer | Forest | – |
 | 10 | Sticky call bar (below 1040px) | Gold + green | – |
+
+
+---
+
+## Rebrand update (Bloomwell logo)
+- **Palette:** teal `#08675F` is the main brand colour (buttons, links, numbers). Deep teal `#0B2E2A` replaces the forest green for ink and dark surfaces. Orange `#F8991E` replaces the old gold for shapes, highlights and buttons, always with dark ink `#1B1706` (8.2:1). Pale orange `#FCE6C4` replaces straw.
+- **Orange is never body text on light backgrounds** (2.4:1). Use `--gold-text` (`#8A4B00`, 6.3:1) for small orange-toned text on light surfaces; in dark mode it equals the orange.
+- **Dark mode:** light teal `#5CC5B8` for links and accents, orange `#FBA94A`, backgrounds in the `#0A1C1A` family.
+- **Shapes:** the egg is retired. Photo and hero frames use the arch, background shapes use the leaf (`--leaf-shape`), step numbers and the nurse avatar are circles.

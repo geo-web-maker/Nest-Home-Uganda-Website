@@ -1,0 +1,15 @@
+.prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--line, #d8dfd9);
+  background: var(--surface, #fff);
+  color: var(--text, #173b2b);
+  font-size: 0.875rem;
+}
+.actions { display: flex; align-items: center; gap: 0.5rem; }
+.actions button { border: 0; border-radius: 999px; padding: 0.45rem 0.75rem; background: #0B2E2A; color: white; font: inherit; cursor: pointer; }
+.actions button:last-child { background: transparent; color: inherit; text-decoration: underline; }
+@media (max-width: 560px) { .prompt { align-items: flex-start; flex-direction: column; } }

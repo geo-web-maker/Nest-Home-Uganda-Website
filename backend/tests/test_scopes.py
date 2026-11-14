@@ -22,6 +22,7 @@ EXPECTED = {
     "mail:settings:manage", "mail:audit:read",
     "agreements:read", "agreements:write", "agreements:templates", "agreements:notifications",
     "agreements:diagnostics", "agreements:sign", "agreements:void",
+    "billing:read", "billing:write", "billing:void",
 }  # fmt: skip
 
 

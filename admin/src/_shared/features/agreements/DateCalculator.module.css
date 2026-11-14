@@ -1,0 +1,10 @@
+/* GENERATED from frontend/src. Edit there, then run: node scripts/sync-admin-shared.mjs */
+.box { border: 1px solid var(--line, #dce3de); border-radius: 12px; padding: 10px 14px; background: color-mix(in srgb, var(--straw, #FDEBD0) 25%, var(--surf, #fff)); }
+.box summary { cursor: pointer; font-weight: 700; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 10px 0; }
+.grid label, .use label { display: grid; gap: 4px; font-size: 13px; color: var(--mut, #53635a); }
+.grid input, .grid select, .use select { border: 1px solid var(--line, #cbd5ce); border-radius: 8px; padding: 8px 9px; font: inherit; color: inherit; background: var(--surf, #fff); min-width: 0; }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; }
+.result { margin: 10px 0 0; font-size: 15px; }
+.hint { margin: 10px 0 0; font-size: 13px; color: var(--mut, #53635a); }
+.use { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-top: 10px; }

@@ -1,6 +1,6 @@
 .page { min-height: 100vh; background: var(--bg); color: var(--ink); padding: 24px 14px 36px; font-family: Figtree, Arial, sans-serif; }
 .brand { width: min(100%, 760px); margin: 0 auto 18px; display: flex; align-items: center; gap: 11px; }
-.brandMark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: var(--leaf); color: var(--on-leaf); font-size: 21px; font-weight: 800; }
+.brandMark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: var(--surf); border: 1px solid var(--line); font-size: 21px; font-weight: 800; }
 .brand strong, .brand small { display: block; }
 .brand small { color: var(--mut); font-size: 12px; margin-top: 3px; }
 .card { width: min(100%, 760px); margin: auto; padding: clamp(20px, 5vw, 42px); background: var(--surf); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 12px 38px rgba(26, 49, 36, .06); }
@@ -57,7 +57,7 @@
 .brand strong { font-family: var(--serif); letter-spacing: -.01em; font-size: 17px; }
 .card { position: relative; overflow: hidden; border-radius: var(--r-md); box-shadow: var(--shadow-1), 0 18px 48px color-mix(in srgb, var(--forest) 8%, transparent); }
 .card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: linear-gradient(90deg, var(--leaf), var(--gold) 55%, var(--straw)); }
-.eyebrow { color: var(--gold); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; }
+.eyebrow { color: var(--gold-text); letter-spacing: var(--ls-eyebrow); text-transform: uppercase; }
 .card h1, .review h2, .fees h3, .groupHeading { font-family: var(--serif); letter-spacing: var(--ls-heading); }
 .card h1::after { content: ""; display: block; width: 44px; height: 3px; margin-top: 12px; border-radius: 3px; background: var(--gold); }
 .card input:focus-visible, .card select:focus-visible, .card textarea:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; border-color: var(--gold); }
@@ -73,7 +73,7 @@
 .successMark { background: var(--straw); color: var(--on-straw); }
 @media (prefers-reduced-motion: reduce) { .primary { transition: none; } }
 
-.document { width: 100%; height: min(78vh, 920px); border: 1px solid var(--line); border-top: 3px solid var(--gold, #C79A3B); border-radius: 9px; background: #fff; }
+.document { width: 100%; height: min(78vh, 920px); border: 1px solid var(--line); border-top: 3px solid var(--gold, #F8991E); border-radius: 9px; background: #fff; }
 
 .brandMark svg { display: block; width: 28px; height: auto; }
 .turnstile { margin: 4px 0 0; }

@@ -48,8 +48,8 @@ export const siteEn = {
     lead: 'Trained, caring nurses for your parents, your newborn and your recovery, in your own home across Kampala.',
     primaryAction: 'Book a home visit',
     secondaryAction: 'Our services',
-    eggsLabel: 'Care information',
-    eggs: [
+    archesLabel: 'Care information',
+    arches: [
       { title: 'Elders', caption: 'with dignity' },
       { title: 'Newborns', caption: 'and mothers' },
       { title: 'Recovery', caption: 'after surgery' },

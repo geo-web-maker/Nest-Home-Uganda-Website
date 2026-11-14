@@ -10,8 +10,10 @@ Values are owner-supplied at deployment time. Never commit secrets or production
 | `MONGODB_DB` | Existing primary database name. |
 | `SECRET_KEY` | JWT signing secret. |
 | `VITE_API_URL` | Leave EMPTY for the public website: Cloudflare proxies `/api/*` (see docs/CLOUDFLARE_API_PROXY.md). Backend base URL used by the Admin, Nurse and native builds. For Multi-Site Hosting, use `https://<hoster-domain>/nest` (no trailing slash), because the clients append `/api/v1`. |
+| `VITE_ADMIN_URL` | Public frontend build-time base origin for the staff-login link; production value is `https://admin.bhcug.com`. |
 | `VITE_SITE_URL` | Public site origin (canonical and og:url). Set to the new domain; no domain is hardcoded. |
-| `FRONTEND_URL` | Public site origin used by the backend for links in emails and SMS. Set to the new domain. |
+| `FRONTEND_URL` | Public site origin used for public-facing links; also the fallback for `ADMIN_URL` when the latter is empty. |
+| `ADMIN_URL` | Standalone admin origin (`https://admin.bhcug.com`). Used for staff set-password, SOS, alert and agreement links. Defaults to `FRONTEND_URL` when unset/empty. |
 | `SITE_REBUILD_HOOK_URL` | Optional Cloudflare Pages or Vercel deploy hook URL. The backend POSTs to it after an admin edits public content so the pre-rendered pages are rebuilt. Secret; empty disables it. |
 | `SITE_REBUILD_DEBOUNCE_SECONDS` | Quiet time after the last public edit before the hook is called (default 300). Several edits in that window cause one build. |
 | `BUSINESS_EMAIL` | Default public contact email (seeds `business.email`). Set to an address on the new domain; editable later in admin Settings. |

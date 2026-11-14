@@ -16,11 +16,11 @@
 .number {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 62px;
+  width: 56px;
+  height: 56px;
   background: var(--gold);
   color: var(--on-gold);
-  border-radius: var(--egg);
+  border-radius: 50%;
   font-family: var(--serif);
   font-size: 1.3rem;
   font-weight: 700;

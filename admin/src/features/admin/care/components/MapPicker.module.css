@@ -1,0 +1,22 @@
+.wrap { display: grid; gap: 12px; min-width: 0; }
+.search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+.results { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surf); }
+.results li + li { border-top: 1px solid var(--line); }
+.results button { width: 100%; text-align: left; padding: 12px 14px; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; min-height: 44px; }
+.results button:hover, .results button:focus-visible { background: color-mix(in srgb, var(--leaf) 14%, transparent); }
+.map { position: relative; height: 340px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; isolation: isolate; background: var(--surf); }
+.canvas { position: absolute; inset: 0; z-index: 0; }
+.overlay, .hint { position: absolute; z-index: 500; margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--surf); color: var(--mut); font-size: .88rem; box-shadow: 0 1px 6px rgb(0 0 0 / 18%); }
+.overlay { inset: 50% auto auto 50%; transform: translate(-50%, -50%); text-align: center; max-width: 80%; }
+.hint { left: 12px; right: 12px; bottom: 12px; text-align: center; pointer-events: none; }
+.radius { display: grid; gap: 6px; }
+.radius input { width: 100%; min-height: 32px; accent-color: var(--forest); }
+.radius small, .status { color: var(--mut); font-size: .85rem; }
+.advanced summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; color: var(--forest); }
+.fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 8px; }
+.error { margin: 0; color: var(--danger, var(--ink)); }
+/* Leaflet creates this icon outside React; the class name is passed in through styles.pinIcon. */
+.pinIcon { background: transparent; border: 0; }
+.pinIcon span { display: block; width: 28px; height: 28px; margin: 2px 2px 0; border: 3px solid #fff; border-radius: 50% 50% 50% 0; background: var(--forest, #1f6b4a); box-shadow: 0 2px 6px rgb(0 0 0 / 40%); transform: rotate(-45deg); }
+@media (max-width: 700px) { .fields { grid-template-columns: minmax(0, 1fr); } .map { height: 300px; } }

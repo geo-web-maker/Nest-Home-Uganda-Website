@@ -1,8 +1,28 @@
 {
   "rewrites": [
-    { "source": "/admin/:path*", "destination": "/admin-shell.html" },
-    { "source": "/agreement/:path*", "destination": "/agreement-shell.html" },
-    { "source": "/a/:path*", "destination": "/agreement-shell.html" },
-    { "source": "/verify/:path*", "destination": "/agreement-shell.html" }
+    {
+      "source": "/agreement/:path*",
+      "destination": "/agreement-shell.html"
+    },
+    {
+      "source": "/a/:path*",
+      "destination": "/agreement-shell.html"
+    },
+    {
+      "source": "/verify/:path*",
+      "destination": "/agreement-shell.html"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/admin",
+      "destination": "https://admin.bhcug.com/",
+      "permanent": true
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "https://admin.bhcug.com/:path*",
+      "permanent": true
+    }
   ]
 }

@@ -12,6 +12,7 @@ from app.modules.mail.settings_service import get_value
 
 log = logging.getLogger("app.mail.notify")
 _MAX_FAILURES = 5
+ADMIN_MAIL_PUSH_URL = "/mail"
 _background: set[asyncio.Task[Any]] = set()
 
 
@@ -81,7 +82,7 @@ async def _notify(mailbox_ids: list[str], exclude_user_id: str | None, sender: s
             {
                 "title": f"New mail for {row['address_label']}" if not preview else (sender or "New mail"),
                 "body": "You have a new message." if not preview else (subject or "(no subject)")[:120],
-                "url": "/admin/mail",
+                "url": ADMIN_MAIL_PUSH_URL,
                 "tag": "nest-mail",
             }
         )

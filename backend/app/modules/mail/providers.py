@@ -354,8 +354,20 @@ class SystemMailOutboxAdapter(MailProvider):
         attachments=None,
         idempotency_key=None,
     ):
+        from app.core import sandbox
         from app.modules.mail import db
 
+        # Test accounts send nothing real, and real system mail never reaches the test addresses.
+        if sandbox.active():
+            # Real delivery only to the superadmin's allowlist, labelled as a test. Otherwise the console sink.
+            allowed = await sandbox.allowed_emails(to)
+            if not allowed:
+                return await MailProvider().send(to, subject, html, text)
+            to, subject = allowed, f"[TEST] {subject}"
+        else:
+            to = await sandbox.without_test_addresses(to)
+        if not to:
+            return await MailProvider().send(to, subject, html, text)
         try:
             if not bool(await get_value("mail.enabled")):
                 return await MailProvider().send(to, subject, html, text)

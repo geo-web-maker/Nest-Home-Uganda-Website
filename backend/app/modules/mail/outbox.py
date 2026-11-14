@@ -10,7 +10,7 @@ from datetime import UTC, datetime, timedelta
 
 from app.core.storage import Bucket, get_storage
 from app.modules.mail import db
-from app.modules.mail.providers import OutboundAttachment, OutboundMessage, get_provider
+from app.modules.mail.providers import MailProvider, OutboundAttachment, OutboundMessage, get_provider
 from app.modules.mail.settings_service import get_value
 
 log = logging.getLogger("app.mail.outbox")
@@ -201,7 +201,7 @@ async def drain(limit: int = 20) -> int:
             rows = await conn.fetch(
                 """SELECT o.*,m.subject,m.body_text,m.body_html,m.message_id_header,
                          m.in_reply_to,m.references_header,m.render_notes,
-                         b.local_part,b.sending_suspended,b.state AS mailbox_state
+                         b.local_part,b.sending_suspended,b.state AS mailbox_state,b.is_test
                    FROM outbox o JOIN message m ON m.id=o.message_id
                    LEFT JOIN mailbox b ON b.id=o.from_mailbox_id
                    WHERE o.state IN ('queued','deferred') AND o.next_attempt_at<=now()
@@ -305,7 +305,8 @@ async def drain(limit: int = 20) -> int:
                     )
                     reserved = True
 
-            provider = await get_provider()
+            # Test accounts exercise the full external flow, but the message goes to the console sink.
+            provider = MailProvider() if row["is_test"] else await get_provider()
             attachments = await _load_outbound_attachments(row["message_id"])
             domain = str(await get_value("mail.domain") or "")
             from_address = f"{row['local_part']}@{domain}" if row["local_part"] else ""

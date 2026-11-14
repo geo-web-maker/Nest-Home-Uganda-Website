@@ -40,10 +40,15 @@ async def _send_numbers(numbers: list[str], message: str, template: str) -> int:
     return sent
 
 
+def _admin_link(path: str) -> str:
+    """Build a browser link against the standalone admin origin."""
+    return f"{get_settings().admin_url.rstrip('/')}/{path.lstrip('/')}"
+
+
 async def notify_sos(case: SOSCase) -> dict:
     values = await care_values()
     settings = get_settings()
-    url = settings.frontend_url.rstrip("/") + f"/admin/care/sos/{case.id}"
+    url = _admin_link(f"care/sos/{case.id}")
     if case.test:
         test_number = normalise_e164(str(values.get("sms.test_number", "")))
         message = "[TEST] " + render_sms("sos", url)
@@ -91,7 +96,7 @@ async def notify_alert(alert: CareAlert) -> None:
         await _send_numbers(
             numbers,
             render_sms(
-                "critical_alert", get_settings().frontend_url.rstrip("/") + "/admin/care/alerts"
+                "critical_alert", _admin_link("care/alerts")
             ),
             "care_critical_alert",
         )
@@ -103,8 +108,7 @@ async def send_test_sos_sms() -> bool:
     test_number = normalise_e164(str(values.get("sms.test_number", "")))
     if not test_number or not is_mobile(test_number):
         return False
-    settings = get_settings()
-    url = settings.frontend_url.rstrip("/") + "/admin/care/sos"
+    url = _admin_link("care/sos")
     return (
         await _send_numbers([test_number], "[TEST] " + render_sms("sos", url), "care_sos_test") == 1
     )

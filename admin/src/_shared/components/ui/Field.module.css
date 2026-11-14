@@ -1,0 +1,106 @@
+/* GENERATED from frontend/src. Edit there, then run: node scripts/sync-admin-shared.mjs */
+.field {
+  /* Layout containers (FilterBar) set --field-gap: 0 so controls share one bottom edge with buttons. */
+  margin-bottom: var(--field-gap, 12px);
+}
+
+.label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.control {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 1rem var(--sans); /* 16px: stops iOS zooming on focus */
+  transition:
+    border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.control[type='date'],
+.control[type='time'],
+.control[type='datetime-local'],
+.control[type='month'],
+.control[type='week'] {
+  /* Phones ignore min-height on a native date input and draw the value a few pixels off centre,
+     so the text would not share a line with the button beside it. */
+  -webkit-appearance: none;
+  appearance: none;
+  line-height: 1.2;
+}
+
+.control::-webkit-date-and-time-value {
+  min-height: 1.2em;
+  margin: 0;
+  text-align: start;
+}
+
+.control::-webkit-datetime-edit {
+  padding: 0;
+}
+
+.control:focus-visible {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 35%, transparent);
+}
+
+.textarea {
+  min-height: 80px;
+  padding: 10px 12px;
+}
+
+.invalid {
+  border-color: var(--danger);
+}
+
+.error {
+  margin-top: 4px;
+  color: var(--danger);
+  font-size: 0.88rem;
+  animation: field-error-in var(--dur-base) var(--ease-out) both;
+}
+
+@keyframes field-error-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.peekWrap {
+  position: relative;
+}
+
+.withPeek {
+  padding-right: 72px;
+}
+
+.peekButton {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  min-height: 36px;
+  min-width: 56px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font: 600 0.85rem var(--sans);
+  cursor: pointer;
+}
+
+.peekButton:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}

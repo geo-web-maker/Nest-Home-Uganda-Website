@@ -1,6 +1,6 @@
 # Bloomwell Home Care Uganda
 
-Monorepo: `frontend/` (React 18 + Vite + TypeScript), `backend/` (FastAPI + Beanie on PyMongo async + MongoDB), `docs/` (spec, instructions, state ledger), `reference/` (HTML previews).
+Monorepo: `frontend/` (public React 18 + Vite + TypeScript), `frontend-thread/` (public redesign), `admin/` (standalone staff PWA), `nurse/` (standalone nurse PWA), `backend/` (FastAPI + Beanie on PyMongo async + MongoDB), `docs/` (spec, instructions, state ledger), `reference/` (HTML previews).
 
 Start here: `docs/STATE.md` (what is done, what is next) and `docs/BUILDER_INSTRUCTIONS.md` (rules, pinned versions, scope model, SMS).
 
@@ -14,6 +14,7 @@ bash scripts/preflight.sh                # environment check
 cp .env.example .env                     # fill in locally, never commit
 docker compose -f docker-compose.dev.yml up -d   # MongoDB replica set (S3 for e2e is moto, started by local-tests/run.sh)
 cd frontend && npm ci
+cd ../admin && npm ci
 cd ../backend && python3 -m venv .venv && . .venv/bin/activate \
   && pip install -r requirements.lock && pip install -e . --no-deps
 ```
@@ -25,8 +26,11 @@ Database migrations run automatically before the backend accepts traffic. See [`
 ## Everyday commands
 | What | Command (from the folder shown) |
 | --- | --- |
-| Frontend dev server | `frontend`: `npm run dev` |
-| Frontend checks | `frontend`: `npm run lint && npm run typecheck && npm run test && npm run build` |
+| Public frontend dev server | `frontend`: `npm run dev` (port 5173) |
+| Thread frontend dev server | `frontend-thread`: `npm run dev` (port 5174) |
+| Admin dev server | `admin`: `npm run dev` (port 5175) |
+| Public frontend checks | `frontend`: `npm run lint && npm run typecheck && npm run test && npm run build` |
+| Admin checks | `admin`: `npm run lint && npm run typecheck && npm run test && npm run build` |
 | Backend dev server | `backend`: `uvicorn app.main:app --reload` |
 | Backend checks | `backend`: `ruff check . && ruff format --check . && pytest -q` |
 | Database migrations | Applied automatically by the backend during application startup (MongoDB main/care and configured mail PostgreSQL). `python -m app.migrate` remains available for controlled manual runs. |
@@ -38,27 +42,20 @@ Database migrations run automatically before the backend accepts traffic. See [`
 Exact pinned versions only (no `^`, no updates), no roles (scopes only), no Motor, no secrets in git, one commit per job.
 
 
-## Admin Android app
+## Standalone admin app
 
-The admin frontend is also packaged as a dedicated Capacitor Android app. It reuses the same admin React UI, server-side scopes, native refresh-token authentication and push-registration path.
+The staff admin is a dedicated PWA at `https://admin.bhcug.com`, with its own source under `admin/`. The public site and thread redesign remain separate public apps.
 
-- App name: `Bloomwell Home Care Uganda Admin`
-- Android application id: `ug.nesthomecare.admin`
-- Native build config: `frontend/capacitor.admin.config.ts`
-- CI workflow: `.github/workflows/admin-android.yml`
-- Build guide: `docs/ADMIN_ANDROID_APP.md`
+- Admin dev port: `5175` (public site `5173`, thread frontend `5174`).
+- Admin app root: `admin/`; run `npm ci`, then `npm run dev`, `npm run build`, or the scripts in `admin/package.json`.
+- Shared source mirrors: `node scripts/sync-admin-shared.mjs`; verify with `node scripts/sync-admin-shared.mjs --check`. Mail editor mirrors: `node scripts/sync-mail-rich.mjs --check`.
+- Admin origin: `https://admin.bhcug.com`; set backend `ADMIN_URL` and public-build `VITE_ADMIN_URL` to the same origin.
+- The admin's browser API remains same-origin at `/api/*`, proxied by its Cloudflare Worker to `BACKEND_URL`. Backend API routes remain `/api/v1/admin/...`.
+- Admin pages use the origin root (`/login`, `/mail`, `/care/clients`, `/` dashboard). Legacy `/admin/...` browser links redirect to the new paths.
+- Android application id: `ug.nesthomecare.admin`; native build config: `admin/capacitor.config.ts`.
+- CI workflow: `.github/workflows/admin-android.yml`; build guide: `docs/ADMIN_ANDROID_APP.md`; app/deployment guide: `docs/ADMIN_APP.md`.
 
-Focused checks:
-
-```bash
-cd frontend
-npm run test:admin-native
-npm run build:admin-native
-npm run test:e2e:admin-native
-```
-
-The Android project is generated during the build and is not committed to the repository.
-
+Focused Android tests from `admin/`: `npm run test:admin-native` and `npm run test:e2e:admin-native`. The generated Android project is not committed.
 
 ## Pre-APK release gate
 

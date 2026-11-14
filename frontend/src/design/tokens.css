@@ -1,18 +1,19 @@
 /* Shared colour tokens: light is the default; dark is opt-in through html[data-theme="dark"]. */
 :root {
   color-scheme: light;
-  --bg: #F3F8F1;
-  --mint: #DFF0E6;
+  --bg: #F2F8F6;
+  --mint: #DDF0EC;
   --surf: #FFFFFF;
-  --ink: #123524;
-  --mut: #4A6354;
-  --forest: #123524;
-  --leaf: #18784D;
-  --moss: #2F6B4A;
-  --gold: #C79A3B;
-  --straw: #E9DDB8;
-  --line: #CBD8C6;
-  --onf: #F4F1DF;
+  --ink: #0B2E2A;
+  --mut: #47615E;
+  --forest: #0B2E2A;
+  --leaf: #08675F;
+  --moss: #2A736C;
+  --gold: #F8991E;
+  --gold-text: #8A4B00; /* orange is for shapes; use this for text on light backgrounds */
+  --straw: #FCE6C4;
+  --line: #CAD9D5;
+  --onf: #F2F8F6;
   --wa: #25D366;
   --on-wa: #06260F;
   --on-gold: #1B1706;
@@ -22,7 +23,7 @@
   --serif: "Fraunces", Georgia, serif;
   --sans: "Figtree", system-ui, sans-serif;
   --script: "Cormorant Garamond", Georgia, serif;
-  --egg: 50% 50% 50% 50%/62% 62% 38% 38%;
+  --leaf-shape: 0 72% 0 72%;
   --arch: 999px 999px 18px 18px;
   --container: 1180px;
   --shadow-1: 0 1px 2px color-mix(in srgb, var(--forest) 6%, transparent), 0 2px 8px color-mix(in srgb, var(--forest) 8%, transparent);
@@ -30,18 +31,19 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0C1A12;
-  --mint: #12281D;
-  --surf: #14271C;
-  --ink: #E8EFE2;
-  --mut: #9DB5A4;
-  --forest: #091410;
-  --leaf: #58BC88;
-  --moss: #2F6B4A;
-  --gold: #E3BB62;
+  --bg: #0A1C1A;
+  --mint: #0F2523;
+  --surf: #112826;
+  --ink: #E6F0EE;
+  --mut: #9DB8B2;
+  --forest: #071F1C;
+  --leaf: #5CC5B8;
+  --moss: #2A736C;
+  --gold: #FBA94A;
+  --gold-text: #FBA94A;
   --straw: #3A3620;
-  --line: #244233;
-  --onf: #F4F1DF;
+  --line: #1F4140;
+  --onf: #F2F8F6;
   --on-gold: #1B1706;
   --on-straw: #F0E7C9;
   --on-leaf: #06260F;

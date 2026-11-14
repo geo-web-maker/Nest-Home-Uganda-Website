@@ -33,7 +33,7 @@ export function VisitCard({ visit, selected = false }: Props) {
             <Chip kind={statusKind(visit.status, visit.verification_label)}>{status}</Chip>
           </div>
           <h3>{visit.client_display_name}</h3>
-          <p className="visit-address"><Icon name="pin" />{visit.place_address_text || copy.address.missingOffline}</p>
+          <p className="visit-address"><Icon name="pin" />{visit.place_address_text || (typeof visit.lat === 'number' ? copy.address.pinned : copy.address.missingOffline)}</p>
           {/* Distance is intentionally omitted: cached visits do not contain a reliable route distance. */}
           {visit.status === 'in_progress' && <div className="visit-card-timer"><Timer startedAt={start} size="sm" /><span>{copy.active.arrived}</span></div>}
           <span className="visit-card-open" aria-hidden="true"><Icon name="arrow-up-right" /></span>

@@ -21,7 +21,7 @@ jobs:
           if grep -rniE "^motor==|import motor|from motor" backend --include=*.py --include=*.lock --include=*.toml; then echo "Motor is forbidden (Beanie 2 uses PyMongo async)"; exit 1; fi
       - name: Firebase is limited to approved push integration files
         run: |
-          if git grep -nEi 'firebase|googleapis.com/oauth2|fcm.googleapis.com' -- '*.py' '*.ts' '*.tsx' '*.js' '*.mjs' ':!backend/app/modules/push/**' ':!nurse/src/platform/push.ts' ':!frontend/src/admin-native/push.ts' ':!docs/**' ':!reference/**' ':!.github/workflows/**' ':!.env.example'; then echo 'push provider code is outside the approved integration files'; exit 1; fi
+          if git grep -nEi 'firebase|googleapis.com/oauth2|fcm.googleapis.com' -- '*.py' '*.ts' '*.tsx' '*.js' '*.mjs' ':!backend/app/modules/push/**' ':!nurse/src/platform/push.ts' ':!admin/src/admin-native/push.ts' ':!docs/**' ':!reference/**' ':!.github/workflows/**' ':!.env.example'; then echo 'push provider code is outside the approved integration files'; exit 1; fi
       - name: No remote fonts or CDN URLs
         run: |
           if git grep -nE 'fonts\.(googleapis|gstatic)\.com|unpkg\.com|cdn\.jsdelivr\.net' -- ':!docs/**' ':!reference/**'; then echo "remote font or CDN dependency is forbidden"; exit 1; fi
@@ -30,7 +30,7 @@ jobs:
           if git grep -nEi 'googleapis\.com/css|fonts\.googleapis\.com' -- ':!docs/**' ':!reference/**'; then echo "Google-hosted CSS or fonts are forbidden"; exit 1; fi
       - name: No roles in code (scope model only)
         run: |
-          if grep -rnE "require_roles|user_role|UserRole" backend/app frontend/src; then echo "roles are forbidden, use scopes"; exit 1; fi
+          if grep -rnE "require_roles|user_role|UserRole" backend/app frontend/src admin/src; then echo "roles are forbidden, use scopes"; exit 1; fi
 
   frontend:
     runs-on: ubuntu-latest
@@ -49,8 +49,33 @@ jobs:
       - run: npm run typecheck
       - run: npm run test
       - run: npm run build
-      - run: npm run build:admin-native
       - run: npm run format:check
+
+
+  admin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
+      - name: Verify generated shared source mirrors
+        working-directory: .
+        run: |
+          node scripts/sync-admin-shared.mjs --check
+          node scripts/sync-mail-rich.mjs --check
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
 
   backend:
     runs-on: ubuntu-latest

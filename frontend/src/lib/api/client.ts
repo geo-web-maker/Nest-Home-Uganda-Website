@@ -1,3 +1,5 @@
+import { requestTotp } from '../totpPrompt';
+
 export const API_PREFIX = '/api/v1';
 
 type ErrorBody = { error?: { code?: string; message?: string; fields?: Record<string, string>; request_id?: string }; detail?: unknown; message?: string };
@@ -52,6 +54,15 @@ function buildUrl(baseUrl: string, path: string, params: RequestOptions['params'
   return `${baseUrl}${API_PREFIX}${path}${qs ? `?${qs}` : ''}`;
 }
 
+async function isTotpRequired(response: Response): Promise<boolean> {
+  try {
+    const parsed = (await response.clone().json()) as ErrorBody;
+    return parsed?.error?.code === 'totp_required';
+  } catch {
+    return false;
+  }
+}
+
 async function toApiError(response: Response, endpoint: string): Promise<ApiError> {
   const raw = await response.text().catch(() => '');
   let body: ErrorBody | null = null;
@@ -83,6 +94,7 @@ export function createApiClient({
     body: unknown,
     options: RequestOptions,
     isRetry: boolean,
+    totpAsked = false,
   ): Promise<Response> {
     const headers: Record<string, string> = { Accept: 'application/json', ...options.headers };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
@@ -108,7 +120,11 @@ export function createApiClient({
 
     const canRetry = response.status === 401 && !isRetry && options.retryOn401 !== false;
     if (canRetry && onUnauthorized && (await onUnauthorized())) {
-      return send(method, path, body, options, true);
+      return send(method, path, body, options, true, totpAsked);
+    }
+    // A locked action asks for the authenticator code first. The error only shows if they cancel.
+    if (response.status === 403 && !totpAsked && !path.startsWith('/mail/totp/') && (await isTotpRequired(response))) {
+      if (await requestTotp()) return send(method, path, body, options, isRetry, true);
     }
     return response;
   }

@@ -17,8 +17,8 @@ _PUBLIC_GROUPS = ("business", "home", "forms", "theme", "seo", "site")
 _HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 _EDITABLE_THEME_KEYS = ("theme.forest", "theme.gold", "theme.leaf", "theme.mint")
 _BRAND_THEME = {
-    "theme.forest": "#123524",
-    "theme.gold": "#C79A3B",
+    "theme.forest": "#0B2E2A",
+    "theme.gold": "#F8991E",
     "theme.leaf": "#1F8A5B",
     "theme.mint": "#DFF0E6",
 }
@@ -60,7 +60,7 @@ def _check_theme(values: Mapping[str, Any]) -> None:
     gold = values.get("theme.gold", _BRAND_THEME["theme.gold"])
     _check_colour("forest", forest)
     _check_colour("gold", gold)
-    if contrast_ratio("#F4F1DF", forest) < 4.5:
+    if contrast_ratio("#F2F8F6", forest) < 4.5:
         raise ValidationFailed(
             "The forest colour does not provide enough contrast for light text.",
             {"forest": "contrast must be at least 4.5:1"},
@@ -71,7 +71,7 @@ def _check_theme(values: Mapping[str, Any]) -> None:
             {"gold": "contrast must be at least 4.5:1"},
         )
     # The third protected pair is fixed by the design tokens and is checked as a regression guard.
-    if contrast_ratio("#123524", "#F3F8F1") < 4.5:
+    if contrast_ratio("#0B2E2A", "#F2F8F6") < 4.5:
         raise ValidationFailed("The fixed ink and background colours fail contrast validation.")
 
 

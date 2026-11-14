@@ -7,12 +7,12 @@ on:
   push:
     branches: [main, nurse-module]
     paths:
-      - frontend/**
+      - admin/**
       - scripts/apply_admin_android_overrides.mjs
       - .github/workflows/admin-android.yml
   pull_request:
     paths:
-      - frontend/**
+      - admin/**
       - scripts/apply_admin_android_overrides.mjs
       - .github/workflows/admin-android.yml
 
@@ -29,14 +29,14 @@ jobs:
     timeout-minutes: 40
     defaults:
       run:
-        working-directory: frontend
+        working-directory: admin
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: admin/package-lock.json
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -46,20 +46,20 @@ jobs:
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
       - run: npm ci --no-audit --no-fund
-      - run: npm run build:admin-native
+      - run: npm run build
       - name: Generate the native Android project
-        run: npx cap add android --config capacitor.admin.config.ts
+        run: npx cap add android --config capacitor.config.ts
       - name: Apply Android overrides
         working-directory: .
         run: node scripts/apply_admin_android_overrides.mjs
-      - run: npx cap sync android --config capacitor.admin.config.ts
+      - run: npx cap sync android --config capacitor.config.ts
       - uses: gradle/actions/setup-gradle@v4
       - name: Assemble the debug APK
-        working-directory: frontend/android
+        working-directory: admin/android
         run: ./gradlew assembleDebug --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: admin-debug-apk
-          path: frontend/android/app/build/outputs/apk/debug/*.apk
+          path: admin/android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
