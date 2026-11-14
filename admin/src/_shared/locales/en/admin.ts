@@ -56,6 +56,14 @@ export const adminEn = {
     safety: 'Safety',
     setup: 'Setup',
   },
+  /** Short category tags shown above each icon group when the sidebar is icon-only. */
+  groupsShort: {
+    website: 'Site',
+    careOperations: 'Care',
+    monitoring: 'Monitor',
+    safety: 'SOS',
+    setup: 'Config',
+  },
   billing: {
     title: 'Billing and invoices',
     receiptsTitle: 'Receipts',

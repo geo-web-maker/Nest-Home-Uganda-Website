@@ -87,12 +87,14 @@ export function AdminLayout() {
             const groupItems = items.filter((item) => item.group === group);
             if (groupItems.length === 0) return null;
             return (
-              <div key={group} className={styles.group}>
+              <div key={group} className={styles.group} role="group" aria-label={t(`groups.${group}`)}>
                 <p className={styles.groupLabel}>{t(`groups.${group}`)}</p>
+                <p className={styles.groupShort} aria-hidden="true">{t(`groupsShort.${group}`)}</p>
                 {groupItems.map((item) => (
                   <Link
                     key={item.path}
                     to={item.path}
+                    title={label(item)}
                     aria-current={item.path === activePath ? 'page' : undefined}
                     className={cx(styles.item, item.path === activePath && styles.current)}
                   >

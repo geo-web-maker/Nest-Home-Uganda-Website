@@ -18,6 +18,11 @@ describe('hasScopes', () => {
 });
 
 describe('mockup-aligned admin navigation', () => {
+  it('gives every sidebar entry its own icon, so collapsed icons are never ambiguous', () => {
+    const icons = ADMIN_NAV.map((item) => item.icon);
+    expect(new Set(icons).size).toBe(icons.length);
+  });
+
   it('declares implemented screens in the reference information architecture', () => {
     expect(ADMIN_NAV).toHaveLength(42);
     expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 11, careOperations: 8, monitoring: 8, safety: 4, setup: 11 });

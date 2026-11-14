@@ -6,6 +6,8 @@ import { Button } from '@shared/components/ui/Button';
 import { Field } from '@shared/components/ui/Field';
 import { apiClient } from '@shared/lib/api/client';
 import { requestTotp } from '@shared/lib/totpPrompt';
+import { cx } from '@shared/lib/cx';
+import styles from './Diagnostics.module.css';
 
 type Status = { enabled: boolean; verified: boolean };
 
@@ -32,17 +34,27 @@ export function AuthenticatorSection() {
     if (await requestTotp()) { setMessage('Authenticator verified for this device.'); void refresh(); }
   }
 
+  const label = !state ? 'Checking…' : !state.enabled ? 'Not set up yet' : state.verified ? 'Verified on this device' : 'Set up, not verified on this device yet';
   return (
-    <section aria-labelledby="authenticator-heading">
-      <SectionHeader title="Authenticator" />
+    <section className={styles.panel} aria-labelledby="authenticator-heading">
+      <SectionHeader title="Authenticator" note="The code that protects mail, SMS and test-account actions." />
       {message ? <Notice tone="info"><p>{message}</p></Notice> : null}
       {reset.isError ? <Notice tone="error"><p>{reset.error instanceof Error ? reset.error.message : 'The authenticator could not be reset.'}</p></Notice> : null}
-      <p>{!state ? 'Checking…' : !state.enabled ? 'Not set up yet.' : state.verified ? 'Set up and verified on this device.' : 'Set up. Not verified on this device yet.'}</p>
-      <Button variant="outline" onClick={() => void openPrompt()}>{state?.enabled ? 'Verify now' : 'Set up authenticator'}</Button>
+      <p className={styles.status}>
+        <span className={styles.statusLabel}>Status</span>
+        <span className={cx(styles.pill, state?.enabled && state.verified && styles.pillOn)}>{label}</span>
+      </p>
+      <div className={styles.actions}>
+        <Button variant="outline" onClick={() => void openPrompt()}>{state?.enabled ? 'Verify now' : 'Set up authenticator'}</Button>
+      </div>
       {state?.enabled ? (
-        <div>
+        <div className={styles.block}>
+          <h3>Reset</h3>
+          <p className={styles.help}>Removes the authenticator. The next protected action walks you through setting it up again.</p>
           <Field label="Current code, to reset the authenticator" value={code} maxLength={32} autoComplete="one-time-code" onChange={(event) => setCode(event.target.value)} />
-          <Button variant="outline" disabled={code.trim().length < 6 || reset.isPending} onClick={() => reset.mutate()}>Reset authenticator</Button>
+          <div className={styles.actions}>
+            <Button variant="outline" disabled={code.trim().length < 6 || reset.isPending} onClick={() => reset.mutate()}>Reset authenticator</Button>
+          </div>
         </div>
       ) : null}
     </section>

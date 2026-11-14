@@ -5,6 +5,7 @@ import { SectionHeader } from '@shared/components/dialogs/SectionHeader';
 import { Button } from '@shared/components/ui/Button';
 import { apiClient } from '@shared/lib/api/client';
 import { dialogs } from '@shared/lib/dialogs';
+import styles from './Diagnostics.module.css';
 
 type Sms = { provider: string; test_number: string };
 
@@ -38,14 +39,19 @@ export function SmsDiagnosticsSection() {
   }
 
   return (
-    <section aria-labelledby="sms-diagnostics-heading">
-      <SectionHeader title="SMS diagnostics" />
+    <section className={styles.panel} aria-labelledby="sms-diagnostics-heading">
+      <SectionHeader title="SMS diagnostics" note="The test number itself is set in SMS provider & limits." />
       {sms.isError ? <Notice tone="error"><p>Could not load SMS settings.</p></Notice> : null}
       {error ? <Notice tone="error"><p>{error}</p></Notice> : null}
       {notice ? <Notice tone="info"><p>{notice}</p></Notice> : null}
-      <p>Provider: <strong>{live ? 'MamboSMS' : 'Console (dry run)'}</strong> · Test destination: <strong>{number || 'not set'}</strong></p>
-      <Button variant="outline" disabled={!number || busy !== ''} onClick={() => void run('test')}>{busy === 'test' ? 'Testing…' : 'Send test message'}</Button>{' '}
-      {live ? <Button variant="outline" disabled={busy !== ''} onClick={() => void run('balance')}>{busy === 'balance' ? 'Checking…' : 'Check provider balance'}</Button> : null}
+      <p className={styles.status}>
+        <span className={styles.statusLabel}>Provider</span><span className={styles.pill}>{live ? 'MamboSMS' : 'Console (dry run)'}</span>
+        <span className={styles.statusLabel}>Test destination</span><span className={styles.pill}>{number || 'not set'}</span>
+      </p>
+      <div className={styles.actions}>
+        <Button variant="outline" disabled={!number || busy !== ''} onClick={() => void run('test')}>{busy === 'test' ? 'Testing…' : 'Send test message'}</Button>
+        {live ? <Button variant="outline" disabled={busy !== ''} onClick={() => void run('balance')}>{busy === 'balance' ? 'Checking…' : 'Check provider balance'}</Button> : null}
+      </div>
       {balance !== null ? <Notice tone="info"><p>Provider-reported balance: <strong>{balance}</strong> (units not inferred).</p></Notice> : null}
     </section>
   );

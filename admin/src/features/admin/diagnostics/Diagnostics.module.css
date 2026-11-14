@@ -1,0 +1,52 @@
+/* Diagnostics screens. Same card look as Settings, Mail and Agreements: 1px line, 1rem radius, tokens only. */
+.panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1.2rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surf);
+}
+.panel > * { min-width: 0; }
+.block {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+.block h3 { margin: 0; font-size: 1rem; }
+.help { margin: 0; color: var(--mut); font-size: 0.9rem; line-height: 1.5; }
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.8rem; margin: 0; }
+.statusLabel { font-weight: 600; }
+.pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.pillOn { border-color: var(--forest); background: var(--forest); color: var(--onf); }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.8rem; }
+.field { display: grid; gap: 0.3rem; font-weight: 600; font-size: 0.9rem; }
+.field input, .field select { font: inherit; min-height: 44px; padding: 0 12px; border: 2px solid var(--line); border-radius: 0.75rem; background: var(--surf); color: var(--ink); }
+.accounts { display: grid; gap: 0.8rem; margin: 0; padding: 0; list-style: none; }
+.account {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+}
+.accountHead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.accountName { margin: 0; font-weight: 600; }
+.accountMeta { margin: 0; color: var(--mut); font-size: 0.88rem; overflow-wrap: anywhere; }
+.scopes { display: grid; gap: 0.4rem; }
+.scopes label { display: block; font-size: 0.9rem; }
+@media (min-width: 700px) {
+  .panel { padding: 1.5rem; }
+  .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
