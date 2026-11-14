@@ -570,7 +570,8 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
       );
     if (screen === 'places' && (hasScopes(user, ['places:write']) || hasScopes(user, ['clients:write'])))
       return (
-        <div className="care-form">
+        <div className="care-form care-places">
+          <section className="care-places-pick">
           <Field
             label="Client ID"
             value={clientId}
@@ -606,6 +607,8 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
               </Button>
             </>
           )}
+          </section>
+          <section className="care-places-stay">
           <Field
             label="Place ID for stay"
             value={stayPlaceId}
@@ -632,6 +635,7 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
               Move client
             </Button>
           )}
+          </section>
         </div>
       );
     if (screen === 'visits' && hasScopes(user, ['visits:write']))

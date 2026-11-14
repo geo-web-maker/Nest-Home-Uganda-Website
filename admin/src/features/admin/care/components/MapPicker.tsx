@@ -58,6 +58,7 @@ export function MapPicker({ tileUrl, lat, lng, radius, onChange, markers = NO_MA
   const leaflet = useRef<typeof Leaflet | null>(null);
   const map = useRef<Leaflet.Map | null>(null);
   const base = useRef<Leaflet.TileLayer | null>(null);
+  const sizeWatch = useRef<ResizeObserver | null>(null);
   const pin = useRef<Leaflet.Marker | null>(null);
   const ring = useRef<Leaflet.Circle | null>(null);
   const dots = useRef<Leaflet.LayerGroup | null>(null);
@@ -90,6 +91,11 @@ export function MapPicker({ tileUrl, lat, lng, radius, onChange, markers = NO_MA
         map.current = instance;
         dots.current = L.layerGroup().addTo(instance);
         instance.on('click', (event: Leaflet.LeafletMouseEvent) => place(event.latlng.lat, event.latlng.lng));
+        // Re-measure whenever the layout changes size (window resize, rotating a tablet, a column reflowing), or tiles misalign.
+        if (typeof ResizeObserver !== 'undefined') {
+          sizeWatch.current = new ResizeObserver(() => instance.invalidateSize());
+          sizeWatch.current.observe(container.current);
+        }
         setMapState('ready');
       } catch {
         if (!cancelled) setMapState('failed');
@@ -97,6 +103,8 @@ export function MapPicker({ tileUrl, lat, lng, radius, onChange, markers = NO_MA
     })();
     return () => {
       cancelled = true;
+      sizeWatch.current?.disconnect();
+      sizeWatch.current = null;
       map.current?.remove();
       map.current = null;
       pin.current = null;
@@ -115,6 +123,8 @@ export function MapPicker({ tileUrl, lat, lng, radius, onChange, markers = NO_MA
     const url = satellite ? SATELLITE_TILES : tileUrl?.trim() || OSM_TILES;
     base.current = L.tileLayer(url, {
       maxZoom: 19,
+      // The app sends Referrer-Policy: no-referrer; OpenStreetMap blocks tile requests with no Referer (HTTP 403).
+      referrerPolicy: 'strict-origin-when-cross-origin',
       attribution: satellite ? SATELLITE_ATTRIBUTION : OSM_ATTRIBUTION,
     }).addTo(instance);
     base.current.on('tileerror', () => setMessage('Map tiles could not load. You can still enter the coordinates below.'));

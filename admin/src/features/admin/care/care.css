@@ -155,3 +155,34 @@ a.care-danger-button {
 
 /* On wide screens the canonical grouped admin sidebar replaces this compact route switcher. */
 @media (min-width: 1040px) { .care-subnav { display: none; } }
+
+/* Places & stays: pick a place and drop a pin on the left, record a client move on the right. */
+.care-form.care-places {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem 1.5rem;
+  align-items: start;
+}
+.care-places-pick,
+.care-places-stay {
+  display: grid;
+  gap: 0.9rem;
+  min-width: 0;
+  align-content: start;
+}
+.care-places-stay {
+  padding-top: 0;
+}
+.care-places button {
+  justify-self: start;
+  min-width: min(100%, 14rem);
+}
+@media (min-width: 960px) {
+  .care-form.care-places {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  }
+  .care-places-stay {
+    padding: 0 0 0 1.5rem;
+    border-inline-start: 1px solid var(--line);
+  }
+}
