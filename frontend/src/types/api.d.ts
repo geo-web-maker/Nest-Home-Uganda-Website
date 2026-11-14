@@ -752,6 +752,26 @@ export interface paths {
         patch: operations["admin_update_api_v1_admin_articles__item_id__patch"];
         trace?: never;
     };
+    "/api/v1/admin/billing/agreement-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Agreement Options
+         * @description Agreements the invoice form offers in its dropdown, each with the details it pre-fills.
+         */
+        get: operations["agreement_options_api_v1_admin_billing_agreement_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/billing/invoices": {
         parameters: {
             query?: never;
@@ -10109,6 +10129,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ArticleAdminOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agreement_options_api_v1_admin_billing_agreement_options_get: {
+        parameters: {
+            query?: {
+                practice?: boolean;
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

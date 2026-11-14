@@ -11998,6 +11998,70 @@
         ]
       }
     },
+    "/api/v1/admin/billing/agreement-options": {
+      "get": {
+        "description": "Agreements the invoice form offers in its dropdown, each with the details it pre-fills.",
+        "operationId": "agreement_options_api_v1_admin_billing_agreement_options_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "practice",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Practice",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Agreement Options",
+        "tags": [
+          "admin-billing"
+        ]
+      }
+    },
     "/api/v1/admin/billing/invoices": {
       "get": {
         "operationId": "list_invoices_api_v1_admin_billing_invoices_get",
