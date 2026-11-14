@@ -17,11 +17,6 @@ type DashboardData = {
   as_of?: string;
 };
 
-const formatTime = (value: unknown) => {
-  const date = new Date(String(value ?? ''));
-  return Number.isNaN(date.getTime()) ? 'Not provided' : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
-};
-
 function useDashboardData() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);

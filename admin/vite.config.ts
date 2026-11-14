@@ -45,7 +45,7 @@ export default defineConfig(({ mode }) => {
         registerType: 'prompt',
         // InstallHint owns registration and the explicit update action.
         injectRegister: null,
-        manifest,
+        manifest: { ...manifest, icons: [...manifest.icons] },
         injectManifest: { globPatterns: ['**/*.{js,css,html,svg,png,woff2}'] },
       }),
     ],

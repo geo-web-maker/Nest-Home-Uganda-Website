@@ -1,6 +1,6 @@
 export const manifest = {
   name: 'Bloomwell Home Care Uganda Admin',
-  short_name: 'Nest Admin',
+  short_name: 'Bloomwell Admin',
   description: 'Secure administration for Bloomwell Home Care Uganda.',
   start_url: '/mail',
   scope: '/',

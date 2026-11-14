@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { mockAdminApi, signInReferenceAdmin, navigateToAdminPath } from './admin-fixtures';
+import { mockAdminApi, signInReferenceAdmin } from './admin-fixtures';
 
 test.describe('admin route coverage and responsive shell', () => {
   test('every implemented admin navigation entry opens its corresponding screen', async ({ page }) => {

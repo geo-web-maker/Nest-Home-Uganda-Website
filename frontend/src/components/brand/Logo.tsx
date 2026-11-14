@@ -2,7 +2,7 @@ import { cx } from '../../lib/cx';
 import { MARK_CROSS, MARK_LEAVES, MARK_PETALS, MARK_VIEWBOX } from './markPaths';
 import styles from './Logo.module.css';
 
-export type LogoVariant = 'site' | 'admin';
+export type LogoVariant = 'site' | 'admin' | 'thread';
 
 interface LogoProps {
   /** Business name, for example from site settings. */
@@ -16,6 +16,7 @@ interface LogoProps {
 const SIZES: Record<LogoVariant, { width: number; height: number }> = {
   site: { width: 32, height: 35 },
   admin: { width: 26, height: 29 },
+  thread: { width: 32, height: 35 },
 };
 
 /** The Bloomwell mark. Decorative: the text beside it names the logo. */

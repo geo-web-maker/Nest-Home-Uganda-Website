@@ -31,11 +31,11 @@ self.addEventListener('push', (event) => {
     await self.registration.showNotification(title, {
       body: typeof data.body === 'string' ? data.body : 'You have a new message.',
       tag: typeof data.tag === 'string' ? data.tag : 'nest-mail',
-      renotify: true,
+      renotify: true, // not yet in the DOM lib's NotificationOptions type
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
       data: { url: normalizeAdminUrl(rawUrl, self.location.origin) },
-    });
+    } as NotificationOptions & { renotify?: boolean });
   })());
 });
 
