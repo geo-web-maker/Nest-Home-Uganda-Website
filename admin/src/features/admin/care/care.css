@@ -1,11 +1,35 @@
+/* Forms fill the page width and wrap their fields into balanced columns, so a wide screen never
+   shows a narrow card stranded on the left. Fields share a row when 16rem fits, otherwise they stack. */
 .care-form {
-  display: grid;
-  gap: 0.75rem;
-  max-width: 36rem;
+  --field-gap: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem 1rem;
+  width: 100%;
+  box-sizing: border-box;
   margin: 1rem 0;
   padding: 1rem;
   border: 1px solid var(--line);
   border-radius: 0.75rem;
+  background: var(--surf);
+}
+.care-form > * {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+.care-form > :is(h2, h3, p, pre, hr, fieldset, small, .care-check, .care-actions, .care-sheet-actions) {
+  flex-basis: 100%;
+  margin-block: 0;
+}
+.care-form > :is(button, a) {
+  flex: 0 0 auto;
+  min-width: min(100%, 14rem);
+}
+@media (min-width: 840px) {
+  .care-form {
+    padding: 1.25rem;
+  }
 }
 .care-form label {
   display: grid;

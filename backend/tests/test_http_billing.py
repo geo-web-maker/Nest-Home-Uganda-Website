@@ -183,3 +183,11 @@ async def test_payment_endpoint_returns_created_then_ok_for_idempotent_retry(
     assert first.status_code == 201
     assert retry.status_code == 200
     assert first.json()["id"] == retry.json()["id"]
+
+
+@pytest.mark.asyncio
+async def test_agreement_options_need_the_billing_write_scope(client, mongo):
+    path = "/api/v1/admin/billing/agreement-options"
+    assert (await client.get(path)).status_code == 401
+    assert (await client.get(path, headers=auth(make_token(["billing:read"])))).status_code == 403
+    assert (await client.get(path, headers=auth(make_token(["billing:write"])))).status_code == 200

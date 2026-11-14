@@ -14,6 +14,15 @@ import { TotpGate } from '@shared/components/security/TotpGate';
 import { apiClient } from '@shared/lib/api/client';
 import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
+import { ServiceDateField } from './ServiceDateField';
+import {
+  composeServiceDate,
+  emptyService,
+  parseServiceDate,
+  serviceFromAgreement,
+  serviceProblem,
+  type ServiceValue,
+} from './serviceDate';
 import styles from './BillingPage.module.css';
 
 type Item = {
@@ -58,8 +67,40 @@ type Invoice = {
   sealed?: { content_hash?: string };
 };
 type PageResult<T> = { items: T[]; total: number };
+/** One row of the invoice form; the service date is edited as a mode plus dates and saved as text. */
+type EditorItem = {
+  description: string;
+  quantity: number;
+  unit_price_ugx: number;
+  service: ServiceValue;
+};
+type AgreementOption = {
+  reference: string;
+  status: string;
+  client_name: string;
+  client_email: string;
+  client_phone: string;
+  client_address: string;
+  patient_name: string;
+  program: string;
+  service_start: string;
+  service_end: string;
+  payment_instructions: string;
+};
+const PROGRAMS = [
+  'Nest Mama Program',
+  'Postnatal and newborn care',
+  'Postoperative care',
+  'Wound care',
+  'Elderly nursing',
+];
 const today = new Date().toISOString().slice(0, 10);
-const newItem = (): Item => ({ description: '', quantity: 1, unit_price_ugx: 0 });
+const newItem = (): EditorItem => ({
+  description: '',
+  quantity: 1,
+  unit_price_ugx: 0,
+  service: emptyService(),
+});
 const fmt = (value: number) => `UGX ${value.toLocaleString('en-UG')}`;
 
 export function BillingPage() {
@@ -97,7 +138,10 @@ export function BillingPage() {
   const [issueDate, setIssueDate] = useState(today);
   const [dueDate, setDueDate] = useState(today);
   const [instructions, setInstructions] = useState(t('billing.clientToSupply'));
-  const [items, setItems] = useState<Item[]>([newItem()]);
+  const [items, setItems] = useState<EditorItem[]>([newItem()]);
+  const [agreements, setAgreements] = useState<AgreementOption[]>([]);
+  const [agreementError, setAgreementError] = useState(false);
+  const [agreementNote, setAgreementNote] = useState('');
   const [showEditor, setShowEditor] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('mtn_momo');
@@ -171,6 +215,56 @@ export function BillingPage() {
       ),
     [items],
   );
+  const itemsInvalid = items.some((item) => serviceProblem(item.service) !== '');
+
+  // The agreement dropdown lists real agreements (practice ones for a practice invoice).
+  useEffect(() => {
+    if (!showEditor || !canWrite) return;
+    let cancelled = false;
+    setAgreementError(false);
+    apiClient
+      .get<{ items: AgreementOption[] }>('/admin/billing/agreement-options', {
+        params: { practice: isTest },
+      })
+      .then((result) => {
+        if (!cancelled) setAgreements(result.items ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAgreements([]);
+          setAgreementError(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showEditor, canWrite, isTest]);
+
+  /** Picking an agreement fills in the client, care recipient, payment details and item dates. */
+  function chooseAgreement(reference: string) {
+    setAgreementReference(reference);
+    const agreement = agreements.find((entry) => entry.reference === reference);
+    if (!agreement) {
+      setAgreementNote('');
+      return;
+    }
+    setBillName(agreement.client_name);
+    setBillEmail(agreement.client_email);
+    setBillPhone(agreement.client_phone);
+    setBillAddress(agreement.client_address);
+    setCareName(agreement.patient_name);
+    setCareProgram(agreement.program);
+    if (agreement.payment_instructions) setInstructions(agreement.payment_instructions);
+    const period = serviceFromAgreement(agreement.service_start, agreement.service_end);
+    if (period.mode !== 'none') {
+      setItems((current) =>
+        current.map((item) =>
+          item.service.mode === 'none' && !item.service.legacy ? { ...item, service: period } : item,
+        ),
+      );
+    }
+    setAgreementNote(t('billing.agreementFilled', { reference }));
+  }
 
   const openInvoice = useCallback(
     async (id: string) => {
@@ -207,6 +301,7 @@ export function BillingPage() {
     setDueDate(today);
     setInstructions(t('billing.clientToSupply'));
     setItems([newItem()]);
+    setAgreementNote('');
     setShowEditor(true);
   }
 
@@ -227,11 +322,12 @@ export function BillingPage() {
     setItems(
       selected.items.map((item) => ({
         description: item.description,
-        service_date_text: item.service_date_text || '',
+        service: parseServiceDate(item.service_date_text),
         quantity: item.quantity,
         unit_price_ugx: item.unit_price_ugx,
       })),
     );
+    setAgreementNote('');
     setShowEditor(true);
   }
 
@@ -243,11 +339,11 @@ export function BillingPage() {
       bill_to: { name: billName, address: billAddress, phone: billPhone, email: billEmail },
       care_recipient: { name: careName, program: careProgram },
       agreement_reference: agreementReference || null,
-      items: items.map(({ description, quantity, unit_price_ugx, service_date_text }) => ({
+      items: items.map(({ description, quantity, unit_price_ugx, service }) => ({
         description,
         quantity,
         unit_price_ugx,
-        service_date_text: service_date_text || '',
+        service_date_text: composeServiceDate(service),
       })),
       issue_date: issueDate,
       due_date: dueDate,
@@ -567,19 +663,46 @@ export function BillingPage() {
                         : t('billing.downloadReceipt')}
                     </Button>
                     {row.status === 'void' ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="compact"
+                          onClick={() =>
+                            void download(
+                              `/admin/billing/payments/${row.id}/pdf?layout=ledger&original=true`,
+                              `${row.reference}-original-ledger.pdf`,
+                            )
+                          }
+                        >
+                          {t('billing.originalReceipt')}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="compact"
+                          onClick={() =>
+                            void download(
+                              `/admin/billing/payments/${row.id}/pdf?layout=slip&original=true`,
+                              `${row.reference}-original-slip.pdf`,
+                            )
+                          }
+                        >
+                          {t('billing.originalSlip')}
+                        </Button>
+                      </>
+                    ) : (
                       <Button
                         variant="outline"
                         size="compact"
                         onClick={() =>
                           void download(
-                            `/admin/billing/payments/${row.id}/pdf?layout=ledger&original=true`,
-                            `${row.reference}-original-ledger.pdf`,
+                            `/admin/billing/payments/${row.id}/pdf?layout=slip`,
+                            `${row.reference}-slip.pdf`,
                           )
                         }
                       >
-                        {t('billing.originalReceipt')}
+                        {t('billing.slip')}
                       </Button>
-                    ) : null}
+                    )}
                     {canWrite ? (
                       <Button
                         variant="outline"
@@ -704,13 +827,34 @@ export function BillingPage() {
             <Field
               label={t('billing.careProgram')}
               value={careProgram}
+              list="care-programs"
               onChange={(event) => setCareProgram(event.target.value)}
             />
+            <datalist id="care-programs">
+              {PROGRAMS.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
             <Field
+              kind="select"
               label={t('billing.agreementReference')}
               value={agreementReference}
-              onChange={(event) => setAgreementReference(event.target.value)}
-            />
+              onChange={(event) => chooseAgreement(event.target.value)}
+            >
+              <option value="">{t('billing.agreementNone')}</option>
+              {agreementReference && !agreements.some((entry) => entry.reference === agreementReference) ? (
+                <option value={agreementReference}>{agreementReference}</option>
+              ) : null}
+              {agreements.map((entry) => (
+                <option key={entry.reference} value={entry.reference}>
+                  {t('billing.agreementOption', {
+                    reference: entry.reference,
+                    client: entry.client_name || '-',
+                    status: entry.status.replace(/_/g, ' '),
+                  })}
+                </option>
+              ))}
+            </Field>
             <Field
               label={t('billing.issueDate')}
               type="date"
@@ -734,6 +878,12 @@ export function BillingPage() {
               onChange={(event) => setNotes(event.target.value)}
             />
           </div>
+          {agreementError ? <p className={styles.muted}>{t('billing.agreementLoadError')}</p> : null}
+          {agreementNote ? (
+            <p className={styles.muted} role="status">
+              {agreementNote} {t('billing.agreementHelp')}
+            </p>
+          ) : null}
           <label className={styles.practiceFilter}>
             <input
               type="checkbox"
@@ -756,14 +906,11 @@ export function BillingPage() {
                   )
                 }
               />
-              <Field
-                label={t('billing.serviceDate')}
-                value={item.service_date_text || ''}
-                onChange={(event) =>
+              <ServiceDateField
+                value={item.service}
+                onChange={(service) =>
                   setItems((current) =>
-                    current.map((row, i) =>
-                      i === index ? { ...row, service_date_text: event.target.value } : row,
-                    ),
+                    current.map((row, i) => (i === index ? { ...row, service } : row)),
                   )
                 }
               />
@@ -816,7 +963,7 @@ export function BillingPage() {
           <div className={styles.actions}>
             <Button
               onClick={() => void saveDraft()}
-              disabled={busy || !billName.trim() || dueDate < issueDate}
+              disabled={busy || !billName.trim() || dueDate < issueDate || itemsInvalid}
             >
               {t('billing.saveDraft')}
             </Button>

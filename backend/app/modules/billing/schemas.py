@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import unicodedata
 from datetime import date
 from typing import Literal
@@ -15,6 +16,9 @@ def clean_text(value: str) -> str:
         if (ch in "\n\r\t" or unicodedata.category(ch) != "Cc")
         and not (0x202A <= ord(ch) <= 0x202E or 0x2066 <= ord(ch) <= 0x2069)
     )
+
+
+_SERVICE_DATE = re.compile(r"(\d{4}-\d{2}-\d{2})(?: to (\d{4}-\d{2}-\d{2}))?")
 
 
 class BillToIn(BaseModel):
@@ -67,7 +71,18 @@ class ItemIn(BaseModel):
     @field_validator("service_date_text")
     @classmethod
     def sanitise_service_date(cls, value: str) -> str:
-        return clean_text(value).strip()
+        """A date is `YYYY-MM-DD`, a period is `YYYY-MM-DD to YYYY-MM-DD`. Older free text stays valid."""
+        cleaned = clean_text(value).strip()
+        match = _SERVICE_DATE.fullmatch(cleaned)
+        if match:
+            try:
+                start = date.fromisoformat(match.group(1))
+                end = date.fromisoformat(match.group(2)) if match.group(2) else start
+            except ValueError as exc:
+                raise ValueError("Service date is not a real calendar date") from exc
+            if end < start:
+                raise ValueError("The service period must end on or after it starts")
+        return cleaned
 
 
 class InvoiceIn(BaseModel):

@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import json
 import logging
+import re
 from datetime import UTC, datetime
 from typing import Any
 
@@ -245,6 +246,68 @@ def payment_data(doc: Payment) -> dict[str, Any]:
         "void": doc.void,
         "events": [event.model_dump(mode="json") for event in doc.events],
     }
+
+
+_ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
+async def agreement_options(
+    *, practice: bool = False, q: str | None = None, limit: int = 100
+) -> list[dict[str, Any]]:
+    """Agreements an invoice can be raised against, with the details the invoice form fills in itself."""
+    from app.modules.agreements import rules as agreement_rules
+    from app.modules.agreements.models import Agreement
+
+    query: dict[str, Any] = {"is_test": True} if practice else {"is_test": {"$ne": True}}
+    query["status"] = {"$ne": "voided"}
+    docs = await Agreement.find(query).sort("-created_at").limit(300).to_list()
+    needle = (q or "").strip().lower()
+    out: list[dict[str, Any]] = []
+    for doc in docs:
+
+        def val(path: str, doc=doc) -> str:
+            field = doc.fields.get(agreement_rules.field_key(path))
+            value = field.value if field else None
+            return str(value).strip() if isinstance(value, (str, int, float)) else ""
+
+        def day(*paths: str, val=val) -> str:
+            for path in paths:
+                text = val(path)
+                if _ISO_DATE.fullmatch(text):
+                    return text
+            return ""
+
+        client = val("client.name")
+        patient = val("patient.full_name")
+        provider = val("schedule_b.payment_provider_account_number")
+        account = val("schedule_b.payment_account_name")
+        details = ", ".join(
+            part
+            for part in (
+                f"Account name: {account}" if account else "",
+                f"Pay to: {provider}" if provider else "",
+            )
+            if part
+        )
+        item = {
+            "reference": doc.reference,
+            "status": doc.status,
+            "client_name": client,
+            "client_email": val("client.email"),
+            "client_phone": val("client.phone"),
+            "client_address": val("client.address"),
+            "patient_name": patient or client,
+            "program": "Nest Mama Program",
+            "service_start": day("schedule_b.start_date", "schedule_a.care_start_date"),
+            "service_end": day("schedule_b.end_date", "schedule_a.care_end_review_date"),
+            "payment_instructions": details,
+        }
+        if needle and needle not in f"{doc.reference} {client} {patient}".lower():
+            continue
+        out.append(item)
+        if len(out) >= limit:
+            break
+    return out
 
 
 async def get_invoice(invoice_id: str) -> Invoice:

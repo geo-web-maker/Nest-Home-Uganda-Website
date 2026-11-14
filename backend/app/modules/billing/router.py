@@ -33,6 +33,16 @@ def _ip(request: Request) -> str:
     return hash_ip(client_ip(request))
 
 
+@admin_router.get("/agreement-options")
+async def agreement_options(
+    _: CanWrite,
+    practice: bool = False,
+    q: str | None = Query(default=None, max_length=100),
+):
+    """Agreements the invoice form offers in its dropdown, each with the details it pre-fills."""
+    return {"items": await service.agreement_options(practice=practice, q=q)}
+
+
 @admin_router.get("/invoices")
 async def list_invoices(
     _: CanRead,

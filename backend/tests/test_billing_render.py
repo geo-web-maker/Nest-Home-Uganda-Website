@@ -119,3 +119,71 @@ def test_a4_pdf_uses_vector_text_and_embedded_font_resources():
     raw = HTML(string=markup).write_pdf(uncompressed_pdf=True)
     assert b"/Font" in raw
     assert b"/Subtype /Image" not in raw
+
+
+def _receipt():
+    receipt = sample(1)
+    receipt["items"][0]["service_date_text"] = "2022-12-11 to 2022-12-20"
+    receipt.update(
+        {
+            "doc_type": "receipt",
+            "reference": "BHC-RCT-2026-0001",
+            "invoice_reference": "BHC-INV-2026-0001",
+            "invoice_total_ugx": 100000,
+            "paid_before_ugx": 20000,
+            "amount_ugx": 30000,
+            "balance_after_ugx": 50000,
+            "paid_on": "2026-11-14",
+            "document_date": "2026-11-14",
+            "method_label": "Mtn Momo",
+            "payer_reference": "101",
+            "receipt_status": "PART PAID",
+        }
+    )
+    return receipt
+
+
+def test_service_dates_read_as_a_date_or_a_period_and_older_text_is_kept():
+    assert render.service_label("2026-11-14") == ("Service date", "14 Nov 2026")
+    assert render.service_label("2026-11-14 to 2026-11-20") == (
+        "Service period",
+        "14 Nov 2026 to 20 Nov 2026",
+    )
+    assert render.service_label("2026-11-14 to 2026-11-14") == ("Service date", "14 Nov 2026")
+    assert render.service_label("11/12/2022") == ("Service", "11/12/2022")
+    assert render.service_label("") == ("", "")
+
+
+@pytest.mark.parametrize("layout", ["ledger", "slip"])
+def test_service_date_sits_on_its_own_line_not_inside_the_description(layout):
+    snapshot = sample(1)
+    snapshot["items"][0]["service_date_text"] = "2026-11-14"
+    html = render.document_html(snapshot, "a" * 64, layout)
+    if layout == "ledger":
+        assert 'Care 0<span class="svc">Service date: 14 Nov 2026</span>' in html
+        assert ".svc{display:block" in html
+    else:
+        assert '<div class="isvc">14 Nov 2026</div>' in html
+
+
+@pytest.mark.parametrize("layout", ["ledger", "slip"])
+def test_receipt_has_the_payment_summary_in_both_layouts(layout):
+    html = render.document_html(_receipt(), "a" * 64, layout)
+    assert "Payment received" in html or "Amount received" in html
+    assert "UGX 30,000" in html and "UGX 50,000" in html and "UGX 20,000" in html
+    assert "11 Dec 2022 to 20 Dec 2022" in html
+
+
+def test_receipt_payment_reference_and_date_are_on_separate_lines():
+    html = render.document_html(_receipt(), "a" * 64, "ledger")
+    assert "Reference: 101Paid on" not in html
+    assert "Payment reference" in html and "Payment date" in html
+
+
+def test_invoice_shows_agreement_reference_and_notes_when_present():
+    snapshot = sample(1)
+    snapshot.update({"agreement_reference": "BHC-2026-0007", "notes": "Pay by Friday"})
+    html = render.document_html(snapshot, "a" * 64, "ledger")
+    assert "BHC-2026-0007" in html and "Pay by Friday" in html
+    plain = render.document_html(sample(1), "a" * 64, "ledger")
+    assert "Agreement" not in plain and "Notes" not in plain
