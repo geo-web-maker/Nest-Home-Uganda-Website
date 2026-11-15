@@ -88,16 +88,16 @@ export function StackCard({
 }) {
   return (
     <li className={cx(styles.card, styles[`tone-${tone}`])} style={{ ['--i' as string]: index }}>
-      <span className={styles.number} aria-hidden="true">{String(number).padStart(2, '0')}</span>
+      <span className={cx(styles.photo, !photo && styles.photoNone)} aria-hidden="true">
+        {photo && <img src={photo} alt="" loading="lazy" decoding="async" />}
+      </span>
       <div className={styles.text}>
         <h3>
           <Link to={href} className={styles.link}>{title}</Link>
         </h3>
         <p>{summary}</p>
       </div>
-      <span className={cx(styles.photo, !photo && styles.photoNone)} aria-hidden="true">
-        {photo && <img src={photo} alt="" loading="lazy" decoding="async" />}
-      </span>
+      <span className={styles.number} aria-hidden="true">{String(number).padStart(2, '0')}</span>
     </li>
   );
 }

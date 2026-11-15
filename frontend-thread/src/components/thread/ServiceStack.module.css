@@ -1,21 +1,25 @@
 .head { margin-bottom: var(--space-xl); }
 .stack { --stack-top: calc(var(--header-h, 76px) + 16px); display: grid; grid-template-columns: 1fr; gap: var(--space-md); margin: 0; padding: 0; list-style: none; }
 .card { --cbg: var(--strong-bg); --cink: var(--strong-ink); --cn: var(--strong-accent); --cring: var(--strong-accent); --s: 1;
-  position: sticky; top: var(--stack-top); display: grid; grid-template-columns: auto 1fr; gap: var(--space-md) var(--space-lg); align-items: start;
-  min-height: 190px; padding: var(--space-lg); border-radius: var(--radius-card); background: var(--cbg); color: var(--cink); box-shadow: var(--shadow-card); transform-origin: 50% 0; }
+  position: sticky; top: var(--stack-top); display: grid; grid-template-columns: 88px 1fr; gap: var(--space-md); align-items: start;
+  min-height: 150px; padding: var(--space-lg); border-radius: var(--radius-card); background: var(--cbg); color: var(--cink); box-shadow: var(--shadow-card); transform-origin: 50% 0; }
 .tone-s { --cbg: var(--paper-3); --cink: var(--ink); --cn: var(--num); --cring: var(--accent); }
 .tone-l { --cbg: var(--hero-bg); --cink: var(--hero-ink); --cn: var(--strong-accent); --cring: var(--strong-accent); }
 .tone-w { --cbg: var(--paper-2); --cink: var(--ink); --cn: var(--num); --cring: var(--accent); }
-.number { font-family: var(--font-display); font-weight: 600; font-size: 3.4rem; line-height: 0.9; font-variant-numeric: lining-nums; color: var(--cn); transition: transform var(--dur-short) var(--ease-out); }
+.number { position: absolute; top: var(--space-md); right: var(--space-lg); font-family: var(--font-display); font-weight: 600; font-size: 2.6rem; line-height: 0.9; font-variant-numeric: lining-nums; color: var(--cn); transition: transform var(--dur-short) var(--ease-out); }
+.text { min-width: 0; padding-right: 3.4rem; }
 .card h3 { font-size: var(--text-title); }
 .card p { margin-top: var(--space-xs); opacity: 0.86; }
 .link { color: inherit; text-decoration: none; }
 .link::after { content: ''; position: absolute; inset: 0; border-radius: var(--radius-card); }
 .link:focus-visible { outline: none; }
 .card:has(.link:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
-.photo { display: none; width: 104px; aspect-ratio: 3 / 3.8; overflow: hidden; border: 3px solid var(--cring); border-radius: var(--arch); background: var(--paper-2); }
+.photo { display: block; width: 100%; aspect-ratio: 3 / 3.8; overflow: hidden; border: 3px solid var(--cring); border-radius: var(--arch); background: var(--paper-2); transform: rotate(-5deg) scale(0.94); transition: transform var(--dur-long) var(--ease-out); }
 .photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
-.photoNone { place-items: center; border-style: dashed; background: transparent; }
+.photoNone { display: grid; place-items: center; border-style: dashed; background: transparent; }
+.photoNone::after { content: ''; width: 16px; height: 16px; background: var(--cring); transform: rotate(45deg); }
+.enhanced .card.in .photo { transform: none; }
+.enhanced .card.in .photo { transition-delay: 0.1s; }
 
 /* Motion only after hydration, so the pre-rendered page is complete without it. */
 .enhanced .card { opacity: 0; transform: translateY(44px) scale(0.96); transition: opacity 0.6s var(--ease-out), transform 0.7s var(--ease-out), box-shadow var(--dur-short); will-change: transform; }
@@ -29,16 +33,15 @@
 /* Tablet: two columns, both pin at the same height. */
 @media (min-width: 700px) {
   .stack { grid-template-columns: 1fr 1fr; gap: var(--space-lg); }
-  .photo { display: block; justify-self: end; grid-column: 2; }
-  .photoNone { display: grid; }
+  .card { grid-template-columns: 104px 1fr; }
 }
 
 /* Desktop: one wide row per service, each pinning a little lower than the last. */
 @media (min-width: 1100px) {
   .stack { grid-template-columns: 1fr; }
-  .card { top: calc(var(--stack-top) + var(--i) * 18px); grid-template-columns: 110px 1.2fr auto; align-items: center; min-height: 200px; padding: var(--space-lg) var(--space-xl); }
-  .number { font-size: 4.6rem; }
-  .photo { grid-column: 3; }
+  .card { top: calc(var(--stack-top) + var(--i) * 18px); grid-template-columns: 130px 1fr; align-items: center; min-height: 200px; padding: var(--space-lg) var(--space-xl); }
+  .number { top: var(--space-lg); right: var(--space-xl); font-size: 4.6rem; }
+  .text { padding-right: 8rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

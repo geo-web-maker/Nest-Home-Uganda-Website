@@ -72,7 +72,6 @@ export function HomePage() {
           <Reveal className={styles.whoHead}>
             <h2>{t('thread.hangHeading')}</h2>
             <p className={styles.whoLead}>{t('thread.hangLead')}</p>
-            <Button href="/services" variant="outline">{t('home.allServices')}</Button>
           </Reveal>
           <Hang items={hangItems} label={t('thread.hangLabel')} />
         </div>
