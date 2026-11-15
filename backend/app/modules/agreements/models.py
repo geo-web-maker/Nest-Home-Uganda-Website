@@ -101,6 +101,12 @@ class Agreement(TimestampedDocument):
     variation_clause: str | None = None
     # Practice agreement: full flow for testing, never locked, auto-deleted, hidden from the real list.
     is_test: bool = False
+    # How the client chose to complete the form after verifying: themselves, or with Bloomwell filling it in for them.
+    # None until they choose. "assisted" means staff enter the details from the admin; the client still reviews and signs.
+    fill_mode: Literal["self", "assisted"] | None = None
+    assistance_requested_at: datetime | None = None
+    assistance_note: str | None = None
+    assistance_ready_at: datetime | None = None
 
     class Settings:
         name = "agreements"

@@ -1,5 +1,8 @@
 {
   "rewrites": [
+    { "source": "/agreement/:path*", "destination": "/agreement-shell.html" },
+    { "source": "/a/:path*", "destination": "/agreement-shell.html" },
+    { "source": "/verify/:path*", "destination": "/agreement-shell.html" },
     {
       "source": "/api/:path*",
       "destination": "https://multi-site-hosting.onrender.com/nest/api/:path*"

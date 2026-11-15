@@ -30,6 +30,8 @@ type AgreementDetail = AgreementRow & {
   schedule_b_computed: Record<string, string | number>; events: Array<{ type: string; at: string; actor: string; detail: Record<string, unknown> }>;
   sealed?: { sealed_at?: string; pdf_sha256?: string };
   link?: LinkInfo;
+  fill_mode?: 'self' | 'assisted' | null;
+  assistance?: { state: 'none' | 'requested' | 'ready'; requested_at?: string | null; ready_at?: string | null; note?: string | null };
 };
 type LinkInfo = { state: 'live' | 'legacy' | 'none'; link_id: string | null; generation: number; url: string | null; expires_at: string | null; earlier_links_still_valid: number };
 type AgreementList = { items: AgreementRow[]; total: number };
@@ -37,12 +39,12 @@ type Preview = { html: string };
 type TemplateMessage = { subject: string; preheader: string; body: string; button: string; footer_note: string; version: number; is_default: boolean };
 type AgreementTemplateVersion = { version: number; published: boolean; template_hash: string; published_at?: string | null; source_file?: string | null };
 type MessagePreview = { subject?: string; html?: string; text?: string; body?: string; characters?: number; segments?: number; gsm7?: boolean };
-type MessageStage = 'agreement_sent' | 'otp_sign' | 'otp_view' | 'reminder_1' | 'reminder_2' | 'expiring_soon' | 'expired' | 'changes_requested' | 'staff_revised' | 'client_signed_client' | 'client_signed_staff' | 'completed_client' | 'voided' | 'amendment_sent' | 'payment_due';
+type MessageStage = 'agreement_sent' | 'otp_sign' | 'otp_view' | 'reminder_1' | 'reminder_2' | 'expiring_soon' | 'expired' | 'changes_requested' | 'assistance_requested' | 'staff_revised' | 'client_signed_client' | 'client_signed_staff' | 'completed_client' | 'voided' | 'amendment_sent' | 'payment_due';
 
 // Mirrors the server rule (the server enforces it): never sent, or already closed.
 const DELETABLE_STATUSES = new Set(['draft', 'changes_requested', 'expired', 'voided']);
 
-const stages: MessageStage[] = ['agreement_sent', 'otp_sign', 'otp_view', 'reminder_1', 'reminder_2', 'expiring_soon', 'expired', 'changes_requested', 'staff_revised', 'client_signed_client', 'client_signed_staff', 'completed_client', 'voided', 'amendment_sent', 'payment_due'];
+const stages: MessageStage[] = ['agreement_sent', 'otp_sign', 'otp_view', 'reminder_1', 'reminder_2', 'expiring_soon', 'expired', 'changes_requested', 'assistance_requested', 'staff_revised', 'client_signed_client', 'client_signed_staff', 'completed_client', 'voided', 'amendment_sent', 'payment_due'];
 const smsStages = new Set<MessageStage>(['agreement_sent', 'otp_sign', 'otp_view', 'reminder_1', 'reminder_2', 'expiring_soon', 'staff_revised', 'client_signed_client', 'completed_client', 'voided', 'amendment_sent', 'payment_due']);
 const tabs = [
   { id: 'parties', label: 'Parties' }, { id: 'schedule_a', label: 'Schedule A' },
@@ -177,7 +179,7 @@ export function AgreementsPage() {
     try {
       await apiClient.patch(`/admin/agreements/${detail.id}`, { changes: [{
         path, value: local, expected_revision: override?.revision ?? current.revision,
-        entered_by_staff: enteredStaff[path] ?? current.entered_by_staff,
+        entered_by_staff: enteredStaff[path] ?? (current.owner === 'either' && detail.assistance?.state === 'requested' ? true : current.entered_by_staff),
       }] });
       await loadDetail(detail.id); await loadList(); setNotice(`${label(path)} saved.`);
     } catch (cause) {
@@ -305,6 +307,18 @@ export function AgreementsPage() {
         setNotice(`The agreement link was sent again. Delivery: ${summary || 'none requested'}.`);
       }
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not resend the agreement.'); }
+    finally { setBusy(false); }
+  };
+  const markAssistanceReady = async () => {
+    if (!detail) return;
+    if (!await dialogs.confirm('Send the client a new link now? They will verify again, see the details you entered, and sign. Consent items in Schedule C stay theirs to complete.', { confirmLabel: 'Details are ready' })) return;
+    setBusy(true); setError(''); setNotice('');
+    try {
+      const result = await apiClient.post<{ delivery: Record<string, boolean> }>(`/admin/agreements/${detail.id}/assistance/ready`, {});
+      await loadList(); await loadDetail(detail.id);
+      const summary = Object.entries(result.delivery ?? {}).map(([k, v]) => `${k} ${v ? 'sent' : 'failed'}`).join(', ');
+      setNotice(`The client was sent their link to review and sign. Delivery: ${summary || 'none'}.`);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'The client could not be notified.'); }
     finally { setBusy(false); }
   };
   const performDeletePractice = async () => {
@@ -444,6 +458,8 @@ export function AgreementsPage() {
         <section className={styles.editorPanel} aria-label="Agreement editor">
           {!selected || !detail ? <div className={styles.empty}><h2>Select an agreement</h2><p>Open an item from the list or create a new agreement.</p></div> : <>
             <div className={styles.editorHeading}><div><h2>{detail.reference}</h2><p>{detail.client_name || 'Client details pending'} · {detail.status.replaceAll('_', ' ')}</p></div><StatusBadge status={statusTone(detail.status)}>{detail.status.replaceAll('_', ' ')}</StatusBadge></div>
+            {detail.assistance?.state === 'requested' && <Notice tone="info"><strong>The client asked you to fill this in for them.</strong>{detail.assistance.note ? <> Their note: “{detail.assistance.note}”.</> : null} Complete the details in the tabs below (fields entered here are marked as entered by staff), then press the button. The client is messaged once, when you press it, not after each save. Schedule C consent items cannot be entered by staff; the client completes those when they review.{canWrite && <> <Button size="compact" onClick={() => void markAssistanceReady()} disabled={busy}>Details are ready: notify client</Button></>}</Notice>}
+            {detail.assistance?.state === 'ready' && ['sent', 'client_in_progress'].includes(detail.status) && <Notice tone="info">Details were completed by staff{detail.assistance.ready_at ? ` on ${new Date(detail.assistance.ready_at).toLocaleString()}` : ''}. Waiting for the client to review and sign.</Notice>}
             <FilterTabs label="Agreement sections" value={tab}
               tabs={visibleTabs.map((entry) => {
                 const count = isScheduleTab(entry.id) ? outstanding(detail.fields, Object.keys(detail.fields).filter((path) => path.startsWith(entry.id === 'parties' ? 'client.' : `${entry.id}.`) || (entry.id === 'parties' && path.startsWith('patient.')))).length : 0;
@@ -487,7 +503,7 @@ export function AgreementsPage() {
                     </span>
                     {!readOnly && <Button size="compact" variant="outline" onClick={() => void saveField(path)} disabled={busy || local === valueText(field.value)}>Save</Button>}
                   </div>
-                  {field.owner === 'either' && !readOnly && <Checkbox label="Entered by staff on client's behalf" checked={enteredStaff[path] ?? field.entered_by_staff} onChange={(e) => setEnteredStaff((old) => ({ ...old, [path]: e.target.checked }))} />}
+                  {field.owner === 'either' && !readOnly && <Checkbox label="Entered by staff on client's behalf" checked={enteredStaff[path] ?? (detail.assistance?.state === 'requested' || field.entered_by_staff)} onChange={(e) => setEnteredStaff((old) => ({ ...old, [path]: e.target.checked }))} />}
                   {conflict && <div className={styles.conflict}><p><strong>Another saver updated this field.</strong><br />Current saved value: {conflict.remote || '—'}<br />Your unsaved value: {conflict.local || '—'}</p><Button size="compact" onClick={() => void saveField(path, { value: conflict.local, revision: conflict.revision })} disabled={busy}>Keep my value</Button><Button size="compact" variant="outline" onClick={() => { setDrafts((old) => ({ ...old, [path]: conflict.remote })); setConflicts((old) => { const next = { ...old }; delete next[path]; return next; }); }}>Use saved value</Button></div>}
                 </div>;
               };

@@ -465,6 +465,8 @@ def agreement_detail(doc: Agreement) -> dict[str, Any]:
         "signatures": [sig.model_dump(mode="json", exclude={"image_key", "verification"}) for sig in doc.signatures],
         "sealed": {"sealed_at": doc.sealed.get("sealed_at"), "pdf_sha256": doc.sealed.get("pdf_sha256")},
         "link": link_info(doc),
+        "fill_mode": doc.fill_mode,
+        "assistance": {**assistance_summary(doc), "note": doc.assistance_note},
     }
 
 
@@ -693,7 +695,10 @@ async def patch_fields(doc: Agreement, changes: list[FieldPatch], *, actor: str,
                 raise ValidationFailed("Check the Schedule B fee and currency", {"schedule_b.total_fee": str(exc)}) from exc
     if actor == "client" and doc.status == "sent":
         doc.status = "client_in_progress"
-    was_sent = actor == "staff" and original_status in {"sent", "client_in_progress", "changes_requested"}
+    # While the client has asked Bloomwell to fill the form in, staff save quietly. The client is told once,
+    # when staff press "details ready" (complete_assistance), not after every field.
+    assisting = actor == "staff" and assistance_open(doc)
+    was_sent = actor == "staff" and not assisting and original_status in {"sent", "client_in_progress", "changes_requested"}
     raw_token = None
     if was_sent:
         # A staff revision keeps the same link; the client re-verifies and reviews again.
@@ -966,9 +971,110 @@ async def public_view(doc: Agreement, *, signed: bool = False) -> dict[str, Any]
         "signatures": [sig.model_dump(mode="json", exclude={"image_key", "ip_hash", "user_agent", "verification"}) for sig in doc.signatures] if signed else [],
         "content_hash": rules.canonical_hash(doc.fields, doc.template_version, doc.template_hash),
         "signed": signed,
+        "fill_mode": doc.fill_mode,
+        "assistance": assistance_summary(doc),
         "certificate": render.public_certificate(doc.sealed.get("certificate_json")) if signed else None,
         "pdf_available": bool(signed and doc.sealed.get("pdf_key")),
     }
+
+
+def assistance_state(doc: Agreement) -> str:
+    """'none' | 'requested' (staff to fill in) | 'ready' (staff finished, client to review and sign)."""
+    if doc.fill_mode != "assisted" or not doc.assistance_requested_at:
+        return "none"
+    if doc.assistance_ready_at and doc.assistance_ready_at >= doc.assistance_requested_at:
+        return "ready"
+    return "requested"
+
+
+def assistance_open(doc: Agreement) -> bool:
+    return assistance_state(doc) == "requested" and doc.status in {"sent", "client_in_progress"}
+
+
+def assistance_summary(doc: Agreement) -> dict[str, Any]:
+    return {"state": assistance_state(doc),
+            "requested_at": doc.assistance_requested_at.isoformat() if doc.assistance_requested_at else None,
+            "ready_at": doc.assistance_ready_at.isoformat() if doc.assistance_ready_at else None}
+
+
+async def choose_fill_mode(doc: Agreement, mode: Literal["self", "assisted"], note: str | None, ip: str | None) -> Agreement:
+    """Recorded after the client verifies: fill the form in themselves, or ask Bloomwell to do it for them."""
+    if doc.status not in {"sent", "client_in_progress"}:
+        raise Conflict("This agreement is no longer open for client review")
+    clean_note = (note or "").strip()[:500] or None
+    now = datetime.now(UTC)
+    ip_hash = hash_ip(ip or "unknown")
+    if mode == "self":
+        if assistance_state(doc) == "requested":
+            # They asked for help, then changed their mind: staff are no longer expected to fill it in.
+            doc.assistance_requested_at = None
+            doc.assistance_note = None
+        doc.fill_mode = "self"
+        _event(doc, "fill_mode_chosen", "client", {"mode": "self"}, ip_hash)
+        await doc.save()
+        return doc
+    if assistance_state(doc) == "requested":
+        return doc  # already waiting for staff; a second tap must not send a second alert
+    doc.fill_mode = "assisted"
+    doc.assistance_requested_at = now
+    doc.assistance_ready_at = None
+    doc.assistance_note = clean_note
+    if doc.status == "sent":
+        doc.status = "client_in_progress"
+    _event(doc, "assistance_requested", "client", {"note": clean_note}, ip_hash)
+    await doc.save()
+    settings = get_settings()
+    staff = [value.strip() for value in settings.alert_emails.split(",") if value.strip()]
+    capture = _DIAGNOSTIC_CAPTURE.get()
+    if staff or capture is not None:
+        template = await messages.get_template("assistance_requested", "email")
+        variables = messages.message_variables(doc, link=_admin_agreement_link(doc.id))
+        subject, body_html, plain = messages.render_email("assistance_requested", template[0], variables)
+        if capture is not None:
+            capture.setdefault("messages", []).append({"stage": "assistance_requested", "channel": "email"})
+        else:
+            try:
+                await get_email_provider().send(staff, subject, body_html, plain)
+            except Exception:  # the request is already recorded and visible in the admin; never fail the client's tap
+                log.warning("assistance_requested alert could not be sent for %s", doc.reference)
+    await audit.record(None, "agreement.assistance_requested", "agreement", str(doc.id), doc.reference,
+                       after={"status": doc.status}, ip_hash=ip_hash)
+    return doc
+
+
+async def complete_assistance(doc: Agreement, principal: Principal, ip: str | None = None) -> dict[str, Any]:
+    """Staff finished filling the form in. Send the client a fresh link to review and sign."""
+    if assistance_state(doc) != "requested" or doc.status not in {"sent", "client_in_progress"}:
+        raise Conflict("This agreement is not waiting for staff to fill it in")
+    now = datetime.now(UTC)
+    raw_token = activate_link(doc)
+    doc.session_version += 1  # the client re-verifies and sees the finished details
+    doc.token_issued_at = now
+    doc.token_expires_at = now + timedelta(days=14)
+    doc.expires_at = doc.token_expires_at
+    doc.status = "sent"
+    doc.assistance_ready_at = now
+    _event(doc, "assistance_ready", principal.user_id, {}, ip)
+    await doc.save()
+    delivery: dict[str, bool] = {}
+    email_field = doc.fields.get(rules.field_key("client.email"))
+    if email_field and email_field.value:
+        delivery["email"] = await _send_message(doc, "staff_revised", "email", link=raw_token)
+    if _real_phone(doc):
+        delivery["sms"] = await _send_message(doc, "staff_revised", "sms", link=raw_token)
+    if not any(delivery.values()):
+        # Nothing reached the client. Keep the details, put the agreement back to "assistance requested"
+        # so staff can repair the contact details and press the button again.
+        doc.assistance_ready_at = None
+        clear_link(doc, "closed")
+        doc.session_version += 1
+        doc.status = "client_in_progress"
+        _event(doc, "assistance_delivery_failed", principal.user_id, {"requested_channels": list(delivery)}, ip)
+        await doc.save()
+        raise Conflict("The client could not be reached by email or SMS. Check their contact details, then try again.")
+    await audit.record(principal, "agreement.assistance_ready", "agreement", str(doc.id), doc.reference,
+                       after={"status": doc.status, "delivery": delivery}, ip_hash=ip)
+    return {"delivery": delivery}
 
 
 async def request_change(doc: Agreement, reason: str, ip: str | None) -> None:

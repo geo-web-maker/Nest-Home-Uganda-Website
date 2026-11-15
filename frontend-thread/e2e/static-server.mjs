@@ -44,6 +44,8 @@ function resolveFile(urlPath) {
   }
   if (extname(clean)) return null;
   if (entry) return join(root, entry);
+  // Public agreement URLs are client-rendered and use their own clean shell.
+  if (/^[/\\](agreement|a|verify)([/\\]|$)/.test(clean)) return join(root, 'agreement-shell.html');
   // Unknown address: like Cloudflare (not_found_handling "404-page") answer with 404.html and a 404 status.
   notFound = true;
   return join(root, existsSync(join(root, '404.html')) ? '404.html' : 'index.html');

@@ -47,6 +47,12 @@ class PublicFieldPatch(BaseModel):
     changes: list[FieldPatch] = Field(min_length=1, max_length=80)
 
 
+class FillModeChoice(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    mode: Literal["self", "assisted"]
+    note: str | None = Field(default=None, max_length=500)
+
+
 class RequestChange(BaseModel):
     model_config = ConfigDict(extra="forbid")
     reason: str = Field(min_length=5, max_length=2000)

@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite --port 5174",
-    "build": "tsc --noEmit && vite-react-ssg build",
+    "build": "tsc --noEmit && vite-react-ssg build && node scripts/make-admin-shell.mjs",
     "preview": "vite preview --port 4174",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",

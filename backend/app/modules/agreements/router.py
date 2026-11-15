@@ -15,7 +15,7 @@ from app.core.totp_guard import assert_totp_session
 from app.modules.agreements import diagnostics, messages, rules, service
 from app.modules.agreements.models import Agreement, AgreementTemplate
 from app.modules.agreements.schemas import (
-    AgreementCreate, AgreementPatch, AmendmentCreate, CountersignAgreement, MessageTemplatePatch,
+    AgreementCreate, AgreementPatch, AmendmentCreate, CountersignAgreement, FillModeChoice, MessageTemplatePatch,
     OtpRequest, OtpVerify, PasskeyOptionsRequest, RequestChange, SendAgreement, SignAgreement,
     TemplateDraft, VoidAgreement,
 )
@@ -177,6 +177,13 @@ async def admin_resend(agreement_id: str, principal: CanWrite, request: Request)
     doc = await service.get_agreement(agreement_id)
     return await service.reissue_link(doc, principal, doc.channel_preference,
                                       hash_ip(client_ip(request)))
+
+
+@admin_router.post("/{agreement_id}/assistance/ready")
+async def admin_assistance_ready(agreement_id: str, principal: CanWrite, request: Request):
+    """Staff finished filling the client's form in: send the client a fresh link to review and sign."""
+    doc = await service.get_agreement(agreement_id)
+    return await service.complete_assistance(doc, principal, hash_ip(client_ip(request)))
 
 
 @admin_router.post("/{agreement_id}/reissue-link")
@@ -481,6 +488,16 @@ async def public_patch(body: AgreementPatch, request: Request, response: Respons
     doc, _ = await service.session_agreement(agreement_session, "sign")
     doc = await service.patch_fields(doc, body.changes, actor="client", ip=hash_ip(client_ip(request)),
                                      user_agent=request.headers.get("user-agent"))
+    response.headers["Cache-Control"] = "no-store"
+    return await service.public_view(doc)
+
+
+@public_router.post("/session/fill-mode", dependencies=[Depends(_session_rate_limit("agreement_fill_mode", 10, 900))])
+async def public_fill_mode(body: FillModeChoice, request: Request, response: Response,
+                           agreement_session: str | None = Cookie(default=None)):
+    """After verifying, the client chooses to fill the form in themselves or to ask Bloomwell to do it."""
+    doc, _ = await service.session_agreement(agreement_session, "sign")
+    doc = await service.choose_fill_mode(doc, body.mode, body.note, client_ip(request))
     response.headers["Cache-Control"] = "no-store"
     return await service.public_view(doc)
 

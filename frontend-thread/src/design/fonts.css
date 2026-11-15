@@ -21,3 +21,29 @@
   font-weight: 600 700;
   font-display: swap;
 }
+
+/* Sub font: labels, card and step titles, buttons, nav (Bricolage Grotesque, OFL, latin subset). */
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('/fonts/bricolage-grotesque-400-normal.woff') format('woff');
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('/fonts/bricolage-grotesque-700-normal.woff') format('woff');
+  font-style: normal;
+  font-weight: 600 800;
+  font-display: swap;
+}
+
+/* Body font: Hanken Grotesk (OFL), variable weight, latin subset. */
+@font-face {
+  font-family: 'Hanken Grotesk';
+  src: url('/fonts/hanken-grotesk-100-900-normal.woff') format('woff');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}

@@ -1,0 +1,29 @@
+/* Frame for the public agreement screens, in the Thread language: mint paper, forest ink, gold thread, Fraunces headings. */
+.page { --page-w: 680px; position: relative; isolation: isolate; min-height: 100vh; overflow: hidden; display: flex; flex-direction: column; padding: var(--space-md) var(--space-md) var(--space-xl); background: var(--paper); color: var(--ink); }
+.page[data-wide] { --page-w: 1180px; }
+.page[data-narrow] { --page-w: 560px; }
+.page > * { position: relative; z-index: 1; }
+/* The drifting shapes are decoration only: keep them behind the card and out of the reading column. */
+.page > span[aria-hidden='true'] { position: absolute; z-index: 0; }
+
+.header { width: min(100%, var(--page-w)); margin: 0 auto var(--space-lg); display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding-block: var(--space-xs); }
+.home { text-decoration: none; color: var(--ink); border-radius: var(--radius-field); }
+.home:hover { color: var(--ink); }
+
+.main { width: min(100%, var(--page-w)); margin: 0 auto; flex: 1 0 auto; display: block; }
+
+.footer { width: min(100%, var(--page-w)); margin: var(--space-lg) auto 0; text-align: center; color: var(--muted); font-size: 0.85rem; line-height: 1.6; }
+.footer a { color: var(--link); font-weight: 600; }
+
+@media (min-width: 900px) {
+  .page { padding: var(--space-lg) var(--space-xl) var(--space-2xl); }
+  .header { margin-bottom: var(--space-xl); }
+}
+
+@media print {
+  .page { background: #fff; padding: 0; min-height: 0; }
+  .page > span[aria-hidden='true'], .header, .footer { display: none; }
+}
+
+/* Keep the decorative arch from running through the footer text. */
+.footer { padding: var(--space-xs) var(--space-md); background: color-mix(in srgb, var(--paper) 88%, transparent); border-radius: var(--radius-field); }

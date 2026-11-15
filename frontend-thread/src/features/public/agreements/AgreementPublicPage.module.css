@@ -1,0 +1,170 @@
+/* Public agreement flow, Thread language. Colours come from tokens.css only, so light and dark both work. */
+
+.card { position: relative; background: var(--card); color: var(--card-ink); border: 1px solid var(--rule); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: clamp(var(--space-lg), 5vw, var(--space-xl)); min-width: 0; }
+.card + .card { margin-top: var(--space-lg); }
+
+.eyebrow { display: flex; align-items: center; gap: 10px; margin: 0 0 var(--space-sm); color: var(--num); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.eyebrow::before { content: ''; width: 30px; height: 1px; background: var(--accent); flex: none; }
+.card h1 { font-size: clamp(1.9rem, 1.1rem + 2.6vw, 3rem); line-height: 1.06; }
+.reference { margin: var(--space-sm) 0 0; color: var(--muted); font-size: 0.88rem; }
+.lead { margin: var(--space-sm) 0 0; color: var(--ink-2); font-size: var(--text-md); line-height: 1.6; max-width: 62ch; }
+
+.verify, .review, .done { display: grid; gap: var(--space-lg); margin-top: var(--space-lg); min-width: 0; }
+.verify p, .done p { line-height: 1.65; }
+.contactHint { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
+.contactHint span { padding: 6px 14px; border-radius: var(--radius-pill); background: var(--paper-2); color: var(--ink-2); font-size: 0.88rem; font-weight: 600; }
+
+/* Fields on this page. Wraps the ported selects/textareas the same way Thread forms look. */
+.verify label, .plain { display: grid; gap: 6px; font-size: 0.92rem; font-weight: 600; }
+.card input:not([type='checkbox']):not([type='radio']), .card select, .card textarea { width: 100%; min-width: 0; min-height: 48px; padding: 10px 14px; border: 2px solid var(--line-field); border-radius: var(--radius-field); background: var(--paper); color: var(--ink); font: 400 1rem var(--font-body); }
+.card textarea { min-height: 88px; resize: vertical; line-height: 1.5; }
+.card input:focus-visible, .card select:focus-visible, .card textarea:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+.card textarea[readonly] { background: var(--paper-2); color: var(--muted); }
+
+.error, .notice, .security { margin: 0; }
+.error, .notice { padding: 12px 16px; border-radius: var(--radius-field); font-size: 0.94rem; line-height: 1.5; }
+.error { background: color-mix(in srgb, var(--danger) 10%, var(--card)); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--rule)); }
+.notice { background: var(--paper-3); color: var(--ink); border-left: 4px solid var(--accent); }
+.security { color: var(--muted); font-size: 0.84rem; line-height: 1.55; }
+
+.secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; border: 2px solid var(--ink); border-radius: var(--radius-pill); background: transparent; color: var(--ink); font: 700 0.95rem var(--font-body); cursor: pointer; }
+.secondary:hover { background: var(--ink); color: var(--paper); }
+.linkButton { justify-self: start; border: 0; background: transparent; padding: 4px 0; color: var(--link); font: 600 0.92rem var(--font-body); text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; }
+.linkButton:disabled { opacity: 0.55; cursor: wait; text-decoration: none; }
+
+.turnstile { display: flex; justify-content: center; min-height: 65px; }
+
+/* Progress: three small stops joined by a gold thread. */
+.stepper { display: flex; gap: var(--space-xs); margin: var(--space-lg) 0 0; padding: 0; list-style: none; flex-wrap: wrap; }
+.stepper li { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 8px; border-radius: var(--radius-pill); border: 1px solid var(--rule); background: var(--paper); color: var(--muted); font-size: 0.84rem; font-weight: 600; }
+.stepper li > span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--paper-2); color: var(--ink-2); font-size: 0.74rem; font-weight: 800; }
+.stepper li[data-state='done'] { color: var(--ink); }
+.stepper li[data-state='done'] > span { background: var(--num); color: var(--card); }
+.stepper li[aria-current='step'] { border-color: var(--accent); background: var(--paper-3); color: var(--ink); }
+.stepper li[aria-current='step'] > span { background: var(--accent); color: var(--accent-ink); }
+
+/* One-time code */
+.otpPanel { display: grid; gap: var(--space-md); }
+.otpWait { padding: 14px 16px; border-radius: var(--radius-field); background: var(--paper-2); color: var(--ink); font-size: 0.92rem; line-height: 1.55; }
+.otpWait strong { color: var(--num); }
+.card input.otpInput { text-align: center; font-size: 1.75rem; font-weight: 700; letter-spacing: 0.5em; min-height: 64px; padding-left: calc(14px + 0.5em); font-variant-numeric: tabular-nums; }
+.resendRow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: 0.92rem; line-height: 1.4; }
+.resendRow strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+.ring { width: 26px; height: 26px; flex: none; transform: rotate(-90deg); }
+.ringTrack, .ringFill { fill: none; stroke-width: 4; }
+.ringTrack { stroke: var(--rule); }
+.ringFill { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 0.5s linear; }
+.otpChannel { color: var(--muted); font-size: 0.88rem; }
+
+/* Reading the contract, then the details and signing. */
+.progress { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: 0.84rem; }
+.readBand, .signBand { display: grid; gap: var(--space-lg); min-width: 0; }
+.contractPane, .detailsPane, .feesPane, .signPane { min-width: 0; display: grid; gap: var(--space-md); align-content: start; }
+.detailsPane > h2, .signPane > h2, .contractPane > h2 { margin: 0; font-size: var(--text-title); }
+.detailsPane > p, .signPane > p { margin: 0; color: var(--ink-2); }
+.document { width: 100%; height: min(78vh, 920px); border: 1px solid var(--rule); border-top: 4px solid var(--accent); border-radius: var(--radius-field); background: #fff; }
+.card details { border: 1px solid var(--rule); border-radius: var(--radius-field); padding: 12px 16px; background: var(--paper); }
+.card details[open] { border-color: var(--accent); }
+.card summary { font-weight: 700; cursor: pointer; }
+.card details p { line-height: 1.65; white-space: pre-wrap; }
+
+.groupHeading { margin: var(--space-lg) 0 var(--space-xs); font-size: 1.25rem; }
+.fieldGroup { display: grid; gap: var(--space-md); margin: 0 0 var(--space-md); padding: var(--space-md) var(--space-md) var(--space-sm); border: 1px solid var(--rule); border-radius: var(--radius-field); min-width: 0; background: var(--paper); }
+.fieldGroup legend { padding: 0 8px; font: 600 1rem var(--font-display); color: var(--ink); }
+.formField { display: grid; gap: 6px; padding-bottom: var(--space-sm); border-bottom: 1px solid var(--rule); }
+.formField:last-child { border-bottom: 0; }
+.formField label { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 0.92rem; font-weight: 600; }
+.formField small { color: var(--muted); font-weight: 400; font-size: 0.8rem; }
+.formField abbr { color: var(--danger); text-decoration: none; }
+.saveState { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+.saveState[data-state='saved'] { color: var(--num); }
+.saveState[data-state='unsaved'] { color: var(--accent-text); }
+.saveState[data-state='error'] { color: var(--danger); }
+.saveState button { border: 0; background: transparent; padding: 0; color: inherit; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
+
+.fees { padding: var(--space-md) var(--space-lg); background: var(--paper-3); border-radius: var(--radius-field); border-left: 4px solid var(--accent); }
+.fees h3 { margin: 0 0 var(--space-xs); font-size: 1.15rem; }
+.fees p { display: flex; justify-content: space-between; gap: var(--space-md); margin: 6px 0; text-transform: capitalize; }
+
+/* Fill it in myself, or ask Bloomwell */
+.choice { display: grid; gap: var(--space-md); }
+.choiceGrid { display: grid; gap: var(--space-sm); }
+.option { display: grid; grid-template-columns: auto 1fr; gap: var(--space-md); align-items: start; width: 100%; padding: var(--space-md) var(--space-md); text-align: left; border: 2px solid var(--line-field); border-radius: var(--radius-field); background: var(--card); color: var(--ink); cursor: pointer; transition: border-color var(--dur-micro) var(--ease-out), transform var(--dur-short) var(--ease-out), background-color var(--dur-micro) var(--ease-out); }
+.option:hover:not(:disabled) { border-color: var(--accent); background: var(--paper-3); transform: translateY(-2px); }
+.option:active:not(:disabled) { transform: scale(0.99); }
+.option:disabled { opacity: 0.6; cursor: wait; }
+.option[aria-pressed='true'] { border-color: var(--accent); background: var(--paper-3); }
+.optionIcon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50% 50% 0 0 / 60% 60% 0 0; background: var(--paper-2); color: var(--num); }
+.option strong { display: block; font: 600 1.15rem/1.2 var(--font-display); }
+.option span span { display: block; margin-top: 4px; color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+.assist { display: grid; gap: var(--space-sm); padding: var(--space-md); border: 1px solid var(--accent); border-radius: var(--radius-field); background: var(--paper-3); }
+.assist p { margin: 0; line-height: 1.55; font-size: 0.94rem; }
+.actionRow { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; }
+
+.waiting { display: grid; gap: var(--space-md); justify-items: start; padding: var(--space-lg); border-radius: var(--radius-field); border: 1px solid var(--rule); background: var(--paper-2); }
+.waiting h3 { margin: 0; font-size: 1.4rem; }
+.waiting p { margin: 0; line-height: 1.6; }
+.arch { display: grid; place-items: end center; width: 56px; height: 64px; border: 3px solid var(--accent); border-bottom: 0; border-radius: var(--arch); color: var(--num); padding-bottom: 8px; }
+.pulse { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); animation: pulse 1.8s var(--ease-in-out) infinite; }
+@keyframes pulse { 0%, 100% { opacity: 0.35; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.15); } }
+.assistedNote { margin: 0; }
+
+/* Signing */
+.signature { width: 100%; height: 190px; touch-action: none; border: 2px dashed var(--line-field); border-radius: var(--radius-field); background: repeating-linear-gradient(to bottom, #fff 0 43px, #E3ECE9 43px 44px); cursor: crosshair; }
+.signatureActions { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; }
+.consent { display: flex; gap: 10px; align-items: flex-start; font-size: 0.94rem; line-height: 1.45; }
+.consent input { margin-top: 3px; width: 20px; height: 20px; flex: none; accent-color: var(--num); }
+.lockedSign { padding: var(--space-md) var(--space-lg); border-radius: var(--radius-field); border: 1px dashed var(--line-field); color: var(--muted); font-size: 0.94rem; line-height: 1.55; }
+.changePanel { display: grid; gap: var(--space-sm); padding: var(--space-md); border: 1px solid var(--rule); border-radius: var(--radius-field); background: var(--paper); }
+
+/* Signed view, thank-you and certificate */
+.signedBanner { padding: 14px 18px; border-radius: var(--radius-field); background: var(--paper-2); border-left: 4px solid var(--num); color: var(--ink); font-weight: 800; letter-spacing: 0.04em; }
+.successMark { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--paper-3); color: var(--accent-text); font-size: 1.6rem; font-weight: 800; }
+.done h2 { font-size: var(--text-title); }
+.certificate { padding-top: var(--space-md); border-top: 1px solid var(--rule); }
+.certificate p { overflow-wrap: anywhere; }
+.certGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 20px; margin: var(--space-sm) 0; }
+.certGrid dt { color: var(--muted); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.certGrid dd { margin: 2px 0 0; font-weight: 600; word-break: break-word; }
+.certSigner { margin: 6px 0; font-size: 0.92rem; line-height: 1.5; }
+.certHash { display: block; margin: 10px 0 14px; color: var(--muted); font-size: 0.72rem; word-break: break-all; }
+
+@media (min-width: 700px) {
+  .choiceGrid { grid-template-columns: 1fr 1fr; }
+  .option { grid-template-columns: 1fr; }
+}
+@media (min-width: 1000px) {
+  .readBand { grid-template-columns: minmax(0, 58fr) minmax(0, 42fr); gap: var(--space-xl); }
+  .contractPane { position: sticky; top: var(--space-lg); align-self: start; }
+  .signBand { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--rule); align-items: start; }
+  .detailsPane .choiceGrid { grid-template-columns: 1fr; }
+  .detailsPane .option { grid-template-columns: auto 1fr; }
+  .done, .verify { max-width: 640px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ringFill, .option { transition: none; }
+  .pulse { animation: none; opacity: 1; }
+}
+@media print {
+  .card { border: 0; box-shadow: none; padding: 0; }
+  .stepper, .secondary { display: none; }
+}
+
+/* Verify and problem screens put content straight after the title. */
+.card > h1 + * { margin-top: var(--space-lg); }
+
+/* Heading rhythm: Thread headings are set tight (1.04) for display sizes, so every heading inside the card
+   gets a looser line height and a deliberate gap before the content that follows it. */
+.card h2, .card h3 { line-height: 1.2; }
+.card h1 { line-height: 1.1; }
+.reference { margin-top: var(--space-md); }
+.eyebrow { margin-bottom: var(--space-md); }
+.groupHeading { margin: var(--space-xl) 0 var(--space-md); }
+.groupHeading:first-child { margin-top: var(--space-md); }
+.fees h3 { margin-bottom: var(--space-md); }
+.waiting h3 { margin-bottom: var(--space-xs); }
+.detailsPane > h2, .signPane > h2, .contractPane > h2 { margin-bottom: var(--space-xs); }
+.certificate h2, .done h2 { margin-bottom: var(--space-sm); }
+.certGrid { margin-top: var(--space-md); }
+.formField label + small { margin-bottom: 2px; }

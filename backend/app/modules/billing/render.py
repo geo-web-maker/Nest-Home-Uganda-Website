@@ -14,7 +14,8 @@ NEST_MARK = block_renderer.MARK_SVG.replace("<svg ", '<svg width="36" height="40
 def qr_svg(url: str) -> str:
     import segno
 
-    return segno.make(url, error="m").svg_inline(scale=3, border=1, dark="#0B2E2A", light="#ffffff")
+    # No fixed width/height (CSS sizes it) so the code can be centred by its wrapper in both layouts.
+    return segno.make(url, error="m").svg_inline(scale=3, border=1, dark="#0B2E2A", light="#ffffff", omitsize=True)
 
 
 def money(value: int) -> str:
@@ -56,27 +57,30 @@ def service_label(text: Any) -> tuple[str, str]:
 
 
 LEDGER_CSS = """\
-@page{size:A4;margin:14mm 14mm 12mm}
+@page{size:A4;margin:14mm 14mm 50mm;@bottom-center{content:element(pagefoot);width:182mm;vertical-align:top}@top-right{content:"Page " counter(page) " of " counter(pages);font:7.5pt Arial,Helvetica,sans-serif;color:#47615E;vertical-align:top;padding-top:5mm}}
 *{box-sizing:border-box}body{font:10pt/1.45 Arial,Helvetica,sans-serif;color:#0B2E2A;margin:0}
+.sheet{position:relative;display:flex;flex-direction:column;min-height:231mm}.grow{position:relative;flex:1 1 auto;min-height:8mm}
 .top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #F8991E;box-shadow:0 4px 0 #0B2E2A;padding-bottom:12px;position:relative}
 .brand{border-collapse:collapse}.brand td{vertical-align:middle;padding:0 8px 0 0}.bn{font:700 17pt Georgia,serif}.bs{font-size:9pt;color:#9a7420;font-weight:700}
-.dochead{text-align:right;padding-right:118pt}h1{font:700 21pt Georgia,serif;margin:0;text-align:right}.no{text-align:right;font-size:9pt;letter-spacing:.14em;font-weight:700;color:#9a7420;margin-top:3px}
-.stamp{position:absolute;right:0;top:3pt;border:3px solid;padding:2px 10px;font:700 12pt Arial;letter-spacing:.12em;transform:rotate(-8deg);max-width:112pt;text-align:center}
-.stamp.ok{color:#08675F}.stamp.due{color:#9a7420}.stamp.void,.stamp.practice{color:#a21d24}
-.meta{display:flex;margin:22px 0 14px;border:1px solid #CAD9D5;border-top:3px solid #F8991E}.meta>div{flex:1;padding:6px 9px;border-right:1px solid #CAD9D5}.meta>div:last-child{border:0}
+.dochead{text-align:right}h1{font:700 21pt Georgia,serif;margin:0;text-align:right}.no{text-align:right;font-size:9pt;letter-spacing:.14em;font-weight:700;color:#9a7420;margin-top:3px}
+.stamp{position:fixed;left:50%;top:69%;width:90mm;text-align:center;transform:translate(-50%,-50%) rotate(-12deg);opacity:.3;z-index:5;padding:3.2mm 4mm;border:2.4pt solid;outline:1pt solid;outline-offset:1.6pt;border-radius:3mm;font-family:Arial,Helvetica,sans-serif;pointer-events:none}
+.stamp .st{display:block;font-weight:700;font-size:25pt;line-height:1.1;letter-spacing:.16em;text-transform:uppercase;padding-left:.16em}
+.stamp .ss{display:block;margin-top:1.6mm;padding-top:1.4mm;border-top:1pt solid;font-weight:700;font-size:8pt;letter-spacing:.2em;text-transform:uppercase}
+.stamp.ok{color:#08675F}.stamp.due{color:#B3261E}.stamp.void,.stamp.practice{color:#8E1B22}.stamp.part{color:#B26A00}
+.meta{display:flex;margin:18px 0 12px;border:1px solid #CAD9D5;border-top:3px solid #F8991E}.meta>div{flex:1;padding:6px 9px;border-right:1px solid #CAD9D5}.meta>div:last-child{border:0}
 .lab{display:block;font-size:7.5pt;letter-spacing:.1em;text-transform:uppercase;color:#47615E;font-weight:700}
 .two{display:flex;gap:24px;margin-bottom:14px}.two>div{flex:1}
 .got{display:flex;margin:0 0 14px;border:1px solid #CAD9D5;border-left:4px solid #08675F;background:#F2F8F4}.got>div{flex:1;padding:8px 10px;border-right:1px solid #CAD9D5}.got>div:last-child{border:0}
 .got .big{display:block;font:700 15pt Georgia,serif;color:#08675F}
 h2.sec{font:700 9pt Arial;letter-spacing:.1em;text-transform:uppercase;color:#47615E;margin:0 0 4px}
-table.it{width:100%;border-collapse:collapse}.it thead{display:table-header-group}.it th{text-align:left;background:#EEF4EC;color:#2A736C;padding:7px;border-bottom:1px solid #CAD9D5}.it td{padding:8px 7px;border-bottom:1px solid #CAD9D5;vertical-align:top}.it tr{break-inside:avoid}.r{text-align:right}
+table.it{width:100%;border-collapse:collapse}.it thead{display:table-header-group}.it th{text-align:left;background:#EEF4EC;color:#2A736C;padding:7px;border-bottom:1px solid #CAD9D5}.it td{padding:6px 7px;border-bottom:1px solid #CAD9D5;vertical-align:top}.it tr{break-inside:avoid}.it th.r,.it td.r,.tot td.r{text-align:right}
 .svc{display:block;margin-top:2px;font-size:8pt;color:#47615E}
 table.tot{width:52%;margin:10px 0 0 auto;border-collapse:collapse}.tot td{padding:3px 7px}.tot .g td{border-top:2px solid #0B2E2A;font-weight:700;font-size:11.5pt;padding-top:6px}.tot .v td{color:#08675F;font-weight:700}
-.foot{display:flex;justify-content:space-between;align-items:flex-end;gap:14pt;margin-top:26px;break-inside:avoid}.pay{background:#FDEBD0;border-left:4px solid #F8991E;padding:9px 11px;width:62%}.pay.ok{background:#E6F2EE;border-left-color:#08675F}
+.foot{display:flex;justify-content:space-between;align-items:flex-end;gap:14pt;margin:0 0 18px;break-inside:avoid}.pay{background:#FDEBD0;border-left:4px solid #F8991E;padding:9px 11px;width:62%}.pay.ok{background:#E6F2EE;border-left-color:#08675F}
 .pay small{display:block;margin-top:3px}
-.vq{text-align:center;font-size:7.5pt;color:#47615E;width:30%}.qr{width:26mm;height:26mm;display:block;margin:0 auto 3px}
-.notes{margin:0 0 12px;padding:8px 10px;border:1px solid #CAD9D5;border-radius:3px;font-size:9pt}
-.last-block{break-inside:avoid}.legal{margin-top:16px;padding-top:7px;border-top:1px solid #FCE6C4;font-size:7.5pt;color:#47615E;display:flex;justify-content:space-between}
+.vq{text-align:center;font-size:7.5pt;line-height:1.35;color:#47615E;width:34%;overflow-wrap:anywhere}.qrbox{width:30mm;height:30mm;margin:0 auto 5px;padding:1.5mm;border:1px solid #CAD9D5;background:#fff}.qrbox svg{display:block;width:100%;height:100%}.vq small{display:block;font-size:6.5pt;margin-top:3px}
+.notes{margin:14px 0 0;padding:8px 10px;border:1px solid #CAD9D5;border-radius:3px;font-size:9pt}
+.pagefoot{position:running(pagefoot);width:182mm;padding-top:3mm;border-top:2px solid #F8991E}.pf{display:flex;align-items:center;gap:5mm;margin-bottom:3mm}.pf .qrbox{margin:0;width:26mm;height:26mm;flex:none}.pf .vt{font-size:7.5pt;line-height:1.4;color:#47615E;overflow-wrap:anywhere}.pf .vt b{font-size:8.5pt;color:#0B2E2A}.last-block{break-inside:avoid}.legal{margin-top:0;border-top:0;padding-top:8px;border-top:2px solid #F8991E;font-size:7.5pt;color:#47615E;display:flex;justify-content:space-between;break-inside:avoid}.thanks{margin:0 0 10px;font-size:8.5pt;color:#47615E}
 small{font-size:8pt}p{margin:4pt 0}.totals-wrap{break-inside:avoid}
 """
 
@@ -87,7 +91,7 @@ h3{margin:4px 0;font:700 11pt Arial;text-align:center;letter-spacing:.08em;text-
 hr{border:0;border-top:1px dashed #0B2E2A;margin:7px 0}.row{display:flex;justify-content:space-between;gap:4px}.row>span:last-child,.row>b:last-child{text-align:right}.c{text-align:center}
 .sp{border:2px solid;text-align:center;margin:8px 0;font:700 11pt Arial;letter-spacing:.14em;padding:2px}.itemdesc,.itemrow{font-size:__ITEM_FONT__;line-height:1.05;margin:0}.itemdesc{margin-top:3px}.isvc{font-size:7pt;color:#47615E;margin:0}.ok{color:#08675F}.due{color:#9a7420}.void,.practice{color:#a21d24}
 .head{font:700 8pt Arial;letter-spacing:.1em;text-transform:uppercase;margin:0 0 2px}
-.qr{width:24mm;height:24mm;display:block;margin:8px auto 3px}.sm{font-size:7.5pt;overflow-wrap:anywhere}
+.qrbox{width:30mm;height:30mm;margin:8px auto 4px;padding:1.5mm;border:1px solid #CAD9D5;background:#fff}.qrbox svg{display:block;width:100%;height:100%}.sm{font-size:7.5pt;overflow-wrap:anywhere}
 """
 
 
@@ -197,19 +201,24 @@ def document_html(
                 + "</div>"
             )
         bill_lines = "<br>".join(_e(part) for part in (bill.get("address"), bill.get("phone"), bill.get("email")) if part)
-        stamp = f'<div class="stamp {stamp_class}">{_e(stamp_text)}</div>'
+        stamp_sub = _e(nice_date(snapshot.get("paid_on") or snapshot.get("document_date")))
+        stamp_cls = "part" if stamp_text == "PART PAID" else stamp_class
+        stamp = f'<div class="stamp {stamp_cls}"><span class="st">{_e(stamp_text)}</span><span class="ss">Bloomwell Home Care &middot; {stamp_sub}</span></div>'
         markup = f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><title>{_e(title)} {reference}</title>
 <style>
-{LEDGER_CSS}</style></head><body>
+{LEDGER_CSS}</style></head><body><div class="sheet">
 <div class="top"><table class="brand"><tr><td>{NEST_MARK}</td><td><b class="bn">Bloomwell</b><br><span class="bs">Home Care Uganda</span></td></tr></table>
-<div class="dochead"><h1>{_e(title)}</h1><div class="no">{reference}</div></div>{stamp}</div>
+<div class="dochead"><h1>{_e(title)}</h1><div class="no">{reference}</div></div></div>
 <div class="meta">{meta}</div>
 <div class="two"><div><span class="lab">{"Received from" if is_receipt else "Bill to"}</span><b>{_e(bill.get("name"))}</b><br>{bill_lines}</div>{care_text}</div>
 {received}{items_heading}
 <table class="it"><thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Amount</th></tr></thead><tbody>{item_rows()}</tbody></table>
-<div class="last-block"><div class="totals-wrap"><table class="tot">{totals}</table></div>
-{notes_html}<div class="foot">{payment_box}<div class="vq">{qr}<b>Check this document is genuine.</b><br>Scan the code or open the link below.<br><small>{_e(url)}</small></div></div></div>
-<div class="legal"><span>Bloomwell Home Care Uganda Limited</span><span>Bombo Road, Matugga, Wakiso District</span><span>info@bhcug.com | 0787 499 988</span></div>
+<div class="totals-wrap"><table class="tot">{totals}</table></div>{notes_html}
+<div class="grow"></div>
+<div class="last-block"><div class="foot">{payment_box}</div></div>
+</div>{stamp}
+<div class="pagefoot"><div class="pf"><div class="qrbox">{qr}</div><div class="vt"><b>Check this document is genuine</b><br>Scan the code or open the link: {_e(url)}<br>Reference {reference}</div></div>
+<div class="legal"><span><b>Bloomwell Home Care Uganda Limited</b></span><span>Bombo Road, Matugga, Wakiso District</span><span>info@bhcug.com | 0787 499 988</span></div></div>
 </body></html>"""
         return markup
 
@@ -278,7 +287,7 @@ def document_html(
 <div class="lg">{NEST_MARK}<span class="bn">Bloomwell</span><br><span class="bs">Home Care Uganda</span></div>
 <h3>{_e(title)}</h3><hr>
 {"".join(head_rows)}{received_block}<hr>{items_head}{slip_items}<hr>{totals_block}{stamp_slip}{closing}
-{qr}<div class="c sm">{_e(url)}</div><hr>
+<div class="qrbox">{qr}</div><div class="c sm">Scan to check this document is genuine<br>{_e(url)}</div><hr>
 <div class="c sm">Bloomwell Home Care Uganda Limited<br>Bombo Road, Matugga, Wakiso District<br>info@bhcug.com | 0787 499 988</div>
 </body></html>"""
 

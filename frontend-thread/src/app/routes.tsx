@@ -3,6 +3,8 @@ import { aboutRoute } from '../features/public/about';
 import { areasRoute } from '../features/public/areas';
 import { contactRoute } from '../features/public/contact';
 import { careersRoute, jobDetailRoute } from '../features/public/careers';
+import { AgreementPublicPage } from '../features/public/agreements/AgreementPublicPage';
+import { VerifyAgreementPage } from '../features/public/agreements/VerifyAgreementPage';
 import { articleRoute, faqRoute } from '../features/public/faq';
 import { homeRoute } from '../features/public/home';
 import { howItWorksRoute } from '../features/public/how-it-works';
@@ -47,6 +49,12 @@ export const routes: RouteRecord[] = [
           { path: '*', Component: NotFoundPage },
         ],
       },
+      // Public agreement flow is separate from the marketing layout and contains private client data.
+      { path: 'a/:token', Component: AgreementPublicPage },
+      { path: 'agreement/:token', Component: AgreementPublicPage },
+      { path: 'agreement/:token/review', Component: AgreementPublicPage },
+      // Public authenticity check for a sealed PDF (opened from the QR code / link printed on it).
+      { path: 'verify/:reference/:code', Component: VerifyAgreementPage },
       ...devRoutes,
     ],
   },
