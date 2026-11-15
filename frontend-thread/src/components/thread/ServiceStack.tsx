@@ -87,7 +87,7 @@ export function StackCard({
   tone?: 'f' | 's' | 'l' | 'w';
 }) {
   return (
-    <li className={cx(styles.card, styles[`tone-${tone}`])} style={{ ['--i' as string]: index }}>
+    <li className={cx(styles.card, styles[`tone-${tone}`])} style={{ ['--i' as string]: index, ['--row' as string]: Math.floor(index / 2) }}>
       <span className={cx(styles.photo, !photo && styles.photoNone)} aria-hidden="true">
         {photo && <img src={photo} alt="" loading="lazy" decoding="async" />}
       </span>
