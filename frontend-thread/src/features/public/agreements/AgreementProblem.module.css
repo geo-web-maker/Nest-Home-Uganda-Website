@@ -1,4 +1,4 @@
-.page { min-height: 100vh; padding: 24px 14px 40px; font-family: Figtree, Arial, sans-serif; color: var(--ink); background: radial-gradient(900px 340px at 50% -80px, color-mix(in srgb, var(--straw) 70%, transparent), transparent), var(--bg); }
+.page { min-height: 100vh; padding: 24px 14px 40px; font-family: var(--font-body, Figtree, Arial, sans-serif); color: var(--ink); background: radial-gradient(900px 340px at 50% -80px, color-mix(in srgb, var(--straw) 70%, transparent), transparent), var(--bg); }
 .brand { width: min(100%, 520px); margin: 0 auto 18px; display: flex; align-items: center; gap: 11px; }
 .brand strong, .brand small { display: block; }
 .brand strong { font-family: var(--serif); font-size: 17px; letter-spacing: -.01em; }

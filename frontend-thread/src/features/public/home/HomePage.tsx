@@ -4,7 +4,8 @@ import { CtaBand } from '../../../components/site/CtaBand';
 import { Seo } from '../../../components/site/Seo';
 import { Button } from '../../../components/ui/Button';
 import { Reveal } from '../../../components/ui/Reveal';
-import { Arch, FillWords, Hang, HeroWords, Rail, RailCard, ShapeField, Story, Tape } from '../../../components/thread/ThreadParts';
+import { Arch, FillWords, Hang, HeroWords, ShapeField, Story, Tape } from '../../../components/thread/ThreadParts';
+import { ServiceStack, StackCard } from '../../../components/thread/ServiceStack';
 import { apiClient } from '../../../lib/api/client';
 import { normaliseUgPhone } from '../../../lib/phone';
 import { useServices } from '../../../lib/queries/services';
@@ -59,14 +60,11 @@ export function HomePage() {
       {services.data?.length ? <Tape items={services.data.map((item) => item.name)} /> : null}
       <section id="home-services" className={styles.railSection}>
         {services.isError ? <div className="container"><p role="alert">{t('services.error')}</p></div> : services.data?.length ? (
-          <Rail
-            label={t('services.listLabel')}
-            previousLabel={t('thread.previousServices')}
-            nextLabel={t('thread.nextServices')}
+          <ServiceStack
             head={<Reveal className={styles.railIntro}><h2>{t('home.servicesTitleBefore')} {t('home.servicesTitleAccent')} {t('home.servicesTitleAfter')}</h2><p>{t('home.servicesLead')}</p></Reveal>}
           >
-            {services.data.map((service, index) => <RailCard key={service.id} number={service.number} title={service.name} summary={service.summary} href={`/services/${service.slug}`} photo={servicePhotoUrl(service)} readLabel={t('thread.readAboutCare')} tone={(['f', 's', 'l', 'w'] as const)[index % 4]} />)}
-          </Rail>
+            {services.data.map((service, index) => <StackCard key={service.id} index={index} number={service.number} title={service.name} summary={service.summary} href={`/services/${service.slug}`} photo={servicePhotoUrl(service)} tone={(['f', 's', 'l', 'w'] as const)[index % 4]} />)}
+          </ServiceStack>
         ) : <div className="container"><p aria-busy="true">{t('services.loading')}</p></div>}
       </section>
       <section className={styles.hangSection}>

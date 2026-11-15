@@ -4,7 +4,7 @@
   padding: 3px 10px;
   background: var(--mint);
   color: var(--ink);
-  font: 700 0.72rem var(--sans);
+  font: 700 0.72rem var(--font-sub);
 }
 .new { background: var(--straw); color: var(--on-straw); }
 .blue { background: color-mix(in srgb, var(--leaf) 16%, var(--surf)); color: var(--ink); }

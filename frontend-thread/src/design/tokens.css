@@ -14,7 +14,8 @@
   --arch: 999px 999px 0 0; --leaf-shape: 0 72% 0 72%;
   --tracking-display: -0.018em;
   --font-display: "Fraunces", Georgia, ui-serif, serif;
-  --font-body: "Figtree", system-ui, ui-sans-serif, sans-serif;
+  --font-body: "Hanken Grotesk", "Figtree", system-ui, ui-sans-serif, sans-serif;
+  --font-sub: "Bricolage Grotesque", "Hanken Grotesk", "Figtree", system-ui, ui-sans-serif, sans-serif;
   --color-wa: #25D366; --color-wa-hover: #3BE07A; --color-on-wa: #06260F;
 }
 /* Light: mint paper, forest ink, deep gold, leaf green */

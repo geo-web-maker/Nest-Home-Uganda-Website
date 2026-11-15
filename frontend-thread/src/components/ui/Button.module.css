@@ -2,7 +2,7 @@
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
   min-height: 54px; padding: 0 24px; border: 2px solid var(--accent);
   border-radius: var(--radius-pill); background: var(--accent); color: var(--accent-ink);
-  font: 700 var(--text-md) var(--font-body); text-align: center; text-decoration: none;
+  font: 700 var(--text-md) var(--font-sub); text-align: center; text-decoration: none;
   cursor: pointer; white-space: nowrap; position: relative; overflow: hidden; isolation: isolate;
   transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), transform var(--dur-short) var(--ease-out);
 }

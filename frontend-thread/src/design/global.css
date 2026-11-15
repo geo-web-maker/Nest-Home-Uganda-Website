@@ -24,6 +24,7 @@ ul, ol { margin: 0; padding: 0; }
 main h1 { font-size: var(--text-page); }
 main h2 { font-size: var(--text-section); }
 main h3 { font-size: var(--text-title); }
+main h3, main h4 { font-family: var(--font-sub); letter-spacing: -0.005em; line-height: 1.15; }
 main p { line-height: 1.65; }
 main section { min-width: 0; }
 main [class*="title"], main [class*="heading"] { text-wrap: balance; }

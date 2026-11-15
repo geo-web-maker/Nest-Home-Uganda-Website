@@ -8,7 +8,7 @@
 .cue::after { content: ''; width: 2px; height: 40px; background: var(--hero-accent); transform-origin: top; animation: cue 1.8s var(--ease-in-out) infinite; }
 @keyframes cue { 0% { transform: scaleY(0); opacity: 1; } 70% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
 .railSection, .hangSection, .promiseSection, .teamSection, .testimonials { padding-block: var(--section-gap); }
-.railIntro h2 { max-width: 14ch; font-size: var(--text-section); }
+.railIntro h2 { max-width: 18ch; font-size: var(--text-section); }
 .railIntro p { max-width: 30ch; margin-top: var(--space-md); color: var(--muted); font-size: var(--text-lead); }
 .hangSection { background: var(--paper-2); }
 .whoGrid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: var(--space-2xl); align-items: start; }
