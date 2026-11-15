@@ -24,3 +24,7 @@ Rules
 2026-11-14: standalone-admin backend changes (`admin_url`, root-path staff links, passkey RP/origins) and the sandbox/test-accounts + pin-first-places work are both in this copy and in Multi-Site-Hosting `projects/nest`; parity check passes.
 
 2026-11-15: agreement "ask Bloomwell to fill in" assistance flow (fill mode, assistance-requested email, staff-entered fields, "details ready" notify), billing A4 invoice/receipt render changes (stamp, per-page verify block/footer, centred QR) applied to both copies; billing modules brought to the same formatting; test_agreement_assistance.py added to both; parity check passes ("In sync.").
+
+2026-11-15 (later): billing Delete (issued/void invoice, receipt) with released numbers, `billing_deletions` record and `POST /admin/billing/{invoices,payments}/{id}/delete`, `GET /admin/billing/deletions`; `storage_ref`/`number_generation` on invoices and receipts; new `BillingDeletion` model registered; test_billing_delete.py added to both copies; parity check passes ("In sync.").
+
+2026-11-15 (evening): agreement field autosave limit raised to 240 per 15 minutes per session; a refused field no longer blocks the others (response carries `rejected`); test_agreement_partial_save.py added to both copies; parity check passes ("In sync.").

@@ -18,7 +18,7 @@ from app.modules.applications import router as applications_router
 from app.modules.applications.models import Application
 from app.modules.areas import router as areas_router
 from app.modules.areas.models import Area
-from app.modules.billing.models import Invoice, Payment
+from app.modules.billing.models import BillingDeletion, Invoice, Payment
 from app.modules.billing.router import admin_router as billing_admin_router, public_router as billing_public_router
 from app.modules.articles import router as articles_router
 from app.modules.articles.models import Article
@@ -113,6 +113,7 @@ DOCUMENT_MODELS: list[type[Document]] = [
     AgreementTemplate,
     AgreementMessageTemplate,
     Invoice,
+    BillingDeletion,
     Payment,
 ]
 

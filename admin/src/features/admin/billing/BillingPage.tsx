@@ -23,6 +23,13 @@ import {
   serviceProblem,
   type ServiceValue,
 } from './serviceDate';
+import {
+  billingBase,
+  canDeleteRecord,
+  downloadOptions,
+  type DocKind,
+  type DocRef,
+} from './downloadOptions';
 import styles from './BillingPage.module.css';
 
 type Item = {
@@ -152,6 +159,9 @@ export function BillingPage() {
   const [showVoidInvoice, setShowVoidInvoice] = useState(false);
   const [showVoidPayment, setShowVoidPayment] = useState(false);
   const [voidReason, setVoidReason] = useState('');
+  const [downloadTarget, setDownloadTarget] = useState<{ kind: DocKind; doc: DocRef } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ kind: DocKind; doc: DocRef } | null>(null);
+  const [deleteReason, setDeleteReason] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -471,6 +481,40 @@ export function BillingPage() {
     }
   }
 
+  function openDownload(kind: DocKind, doc: DocRef) {
+    setDownloadTarget({ kind, doc });
+  }
+
+  function openDelete(kind: DocKind, doc: DocRef) {
+    setDeleteReason('');
+    setDeleteTarget({ kind, doc });
+  }
+
+  /** Deletes an issued invoice or a receipt. The server frees its number and records who did it. */
+  async function deleteRecord() {
+    if (!deleteTarget) return;
+    const { kind, doc } = deleteTarget;
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      await apiClient.post(`${billingBase(kind, doc.id)}/delete`, { reason: deleteReason });
+      setDeleteTarget(null);
+      setDeleteReason('');
+      setMessage(t('billing.deleted', { reference: doc.reference || '' }));
+      if (kind === 'invoice') {
+        setSelected(null);
+      } else if (selected) {
+        await openInvoice(selected.id);
+      }
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : t('billing.deleteRecordError'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function voidInvoice() {
     if (!selected) return;
     setBusy(true);
@@ -651,58 +695,10 @@ export function BillingPage() {
                     <Button
                       variant="outline"
                       size="compact"
-                      onClick={() =>
-                        void download(
-                          `/admin/billing/payments/${row.id}/pdf?layout=ledger`,
-                          `${row.reference}${row.status === 'void' ? '-VOID' : ''}-ledger.pdf`,
-                        )
-                      }
+                      onClick={() => openDownload('receipt', row)}
                     >
-                      {row.status === 'void'
-                        ? t('billing.downloadVoid')
-                        : t('billing.downloadReceipt')}
+                      {t('billing.download')}
                     </Button>
-                    {row.status === 'void' ? (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="compact"
-                          onClick={() =>
-                            void download(
-                              `/admin/billing/payments/${row.id}/pdf?layout=ledger&original=true`,
-                              `${row.reference}-original-ledger.pdf`,
-                            )
-                          }
-                        >
-                          {t('billing.originalReceipt')}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="compact"
-                          onClick={() =>
-                            void download(
-                              `/admin/billing/payments/${row.id}/pdf?layout=slip&original=true`,
-                              `${row.reference}-original-slip.pdf`,
-                            )
-                          }
-                        >
-                          {t('billing.originalSlip')}
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="compact"
-                        onClick={() =>
-                          void download(
-                            `/admin/billing/payments/${row.id}/pdf?layout=slip`,
-                            `${row.reference}-slip.pdf`,
-                          )
-                        }
-                      >
-                        {t('billing.slip')}
-                      </Button>
-                    )}
                     {canWrite ? (
                       <Button
                         variant="outline"
@@ -725,6 +721,15 @@ export function BillingPage() {
                         }}
                       >
                         {t('billing.voidReceipt')}
+                      </Button>
+                    ) : null}
+                    {canVoid ? (
+                      <Button
+                        variant="outline"
+                        size="compact"
+                        onClick={() => openDelete('receipt', row)}
+                      >
+                        {t('billing.deleteRecord')}
                       </Button>
                     ) : null}
                   </div>
@@ -1027,55 +1032,9 @@ export function BillingPage() {
           ) : null}
           {selected.sealed?.content_hash ? (
             <div className={styles.actions}>
-              <Button
-                variant="outline"
-                onClick={() =>
-                  void download(
-                    `/admin/billing/invoices/${selected.id}/pdf?layout=ledger`,
-                    `${selected.reference}${selected.status === 'void' ? '-VOID' : ''}-ledger.pdf`,
-                  )
-                }
-              >
-                {selected.status === 'void' ? t('billing.downloadVoid') : t('billing.ledger')}
+              <Button variant="outline" onClick={() => openDownload('invoice', selected)}>
+                {t('billing.download')}
               </Button>
-              {selected.status === 'void' ? (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      void download(
-                        `/admin/billing/invoices/${selected.id}/pdf?layout=ledger&original=true`,
-                        `${selected.reference}-original-ledger.pdf`,
-                      )
-                    }
-                  >
-                    {t('billing.originalLedger')}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      void download(
-                        `/admin/billing/invoices/${selected.id}/pdf?layout=slip&original=true`,
-                        `${selected.reference}-original-slip.pdf`,
-                      )
-                    }
-                  >
-                    {t('billing.originalSlip')}
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    void download(
-                      `/admin/billing/invoices/${selected.id}/pdf?layout=slip`,
-                      `${selected.reference}-slip.pdf`,
-                    )
-                  }
-                >
-                  {t('billing.slip')}
-                </Button>
-              )}
               {canWrite && selected.status !== 'void' ? (
                 <Button
                   variant="outline"
@@ -1084,12 +1043,6 @@ export function BillingPage() {
                   {t('billing.email')}
                 </Button>
               ) : null}
-              <Button
-                variant="outline"
-                onClick={() => void copyWhatsApp(`/admin/billing/invoices/${selected.id}/whatsapp`)}
-              >
-                {t('billing.copyWhatsApp')}
-              </Button>
             </div>
           ) : null}
           {['issued', 'part_paid'].includes(selected.status) && canWrite ? (
@@ -1117,6 +1070,15 @@ export function BillingPage() {
                       {t('billing.voidReceipt')}
                     </Button>
                   ) : null}
+                  {canVoid ? (
+                    <Button
+                      variant="outline"
+                      size="compact"
+                      onClick={() => openDelete('receipt', payment)}
+                    >
+                      {t('billing.deleteRecord')}
+                    </Button>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -1137,7 +1099,76 @@ export function BillingPage() {
               {t('billing.void')}
             </Button>
           ) : null}
+          {canVoid && canDeleteRecord('invoice', selected.status) ? (
+            <Button variant="outline" onClick={() => openDelete('invoice', selected)}>
+              {t('billing.deleteRecord')}
+            </Button>
+          ) : null}
         </div>
+      ) : null}
+      {downloadTarget ? (
+        <Modal
+          id="billing-download-dialog"
+          title={t('billing.downloadTitle')}
+          subtitle={downloadTarget.doc.reference || ''}
+          closeLabel={t('billing.close')}
+          onClose={() => setDownloadTarget(null)}
+        >
+          <div className={styles.downloadList}>
+            {downloadOptions(downloadTarget.kind, downloadTarget.doc).map((option) => (
+              <Button
+                key={option.labelKey}
+                variant="outline"
+                onClick={() => {
+                  setDownloadTarget(null);
+                  if (option.type === 'pdf') void download(option.path, option.filename);
+                  else void copyWhatsApp(option.path);
+                }}
+              >
+                {t(option.labelKey)}
+              </Button>
+            ))}
+          </div>
+        </Modal>
+      ) : null}
+      {deleteTarget ? (
+        <Modal
+          id="billing-delete-dialog"
+          title={t(
+            deleteTarget.kind === 'invoice'
+              ? 'billing.deleteInvoiceTitle'
+              : 'billing.deleteReceiptTitle',
+          )}
+          subtitle={deleteTarget.doc.reference || ''}
+          closeLabel={t('billing.close')}
+          onClose={() => setDeleteTarget(null)}
+          role="alertdialog"
+        >
+          <div className={styles.modalBody}>
+            <TotpGate>
+              <p>
+                {t(
+                  deleteTarget.kind === 'invoice'
+                    ? 'billing.deleteInvoiceWarning'
+                    : 'billing.deleteReceiptWarning',
+                )}
+              </p>
+              <Field
+                label={t('billing.deleteReason')}
+                value={deleteReason}
+                onChange={(event) => setDeleteReason(event.target.value)}
+                maxLength={300}
+              />
+              <Button
+                variant="outline"
+                disabled={busy || deleteReason.trim().length < 5}
+                onClick={() => void deleteRecord()}
+              >
+                {t('billing.confirmDelete')}
+              </Button>
+            </TotpGate>
+          </div>
+        </Modal>
       ) : null}
       {showPayment && selected ? (
         <Modal

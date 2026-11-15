@@ -11,6 +11,8 @@ export class ApiError extends Error {
     public readonly fields: Record<string, string> = {},
     public readonly requestId?: string,
     public readonly endpoint?: string,
+    /** Seconds the server asked us to wait (HTTP 429 Retry-After). */
+    public readonly retryAfter?: number,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -68,6 +70,7 @@ async function toApiError(response: Response, endpoint: string): Promise<ApiErro
     error?.fields ?? {},
     error?.request_id ?? response.headers.get('X-Request-ID') ?? undefined,
     endpoint,
+    Number(response.headers.get('Retry-After')) || undefined,
   );
 }
 

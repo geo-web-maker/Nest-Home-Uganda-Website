@@ -127,35 +127,67 @@ describe('BillingPage', () => {
     expect(body.items[0]?.service_date_text).toBe('2026-11-20 to 2026-11-25');
   });
 
-  it('offers the 80 mm slip for a receipt as well as the A4 ledger', async () => {
-    api.get.mockImplementation(async () => ({
-      items: [
-        {
-          id: 'pay1',
-          reference: 'BHC-RCT-2026-0001',
-          invoice_reference: 'BHC-INV-2026-0001',
-          status: 'valid',
-          amount_ugx: 10000,
-          method: 'mtn_momo',
-          paid_on: '2026-11-14',
-          balance_after_ugx: 190000,
-        },
-      ],
-      total: 1,
-      page: 1,
-      page_size: 25,
-    }));
+  const receiptRow = {
+    id: 'pay1',
+    reference: 'BHC-RCT-2026-0001',
+    invoice_reference: 'BHC-INV-2026-0001',
+    status: 'valid',
+    amount_ugx: 10000,
+    method: 'mtn_momo',
+    paid_on: '2026-11-14',
+    balance_after_ugx: 190000,
+  };
+  const mockReceipts = () =>
+    api.get.mockImplementation(async (path: string) =>
+      path === '/mail/totp/status'
+        ? { enabled: true, verified: true }
+        : { items: [receiptRow], total: 1, page: 1, page_size: 25 },
+    );
+
+  it('has one Download button per receipt that opens a pop-up of options', async () => {
+    mockReceipts();
     api.getBlob.mockResolvedValue(new Blob(['x']));
     render(
       <MemoryRouter initialEntries={['/billing/receipts']}>
         <BillingPage />
       </MemoryRouter>,
     );
-    const slip = (await screen.findAllByText('billing.slip'))[0] as HTMLElement;
-    expect(screen.getAllByText('billing.downloadReceipt').length).toBeGreaterThan(0);
-    fireEvent.click(slip);
+    const download = await screen.findByText('billing.download');
+    expect(screen.queryByText('billing.slip')).toBeNull();
+    fireEvent.click(download);
+    expect(screen.getByText('billing.downloadTitle')).toBeTruthy();
+    expect(screen.getByText('billing.ledger')).toBeTruthy();
+    expect(screen.getByText('billing.copyWhatsApp')).toBeTruthy();
+    fireEvent.click(screen.getByText('billing.slip'));
     await waitFor(() =>
       expect(api.getBlob).toHaveBeenCalledWith('/admin/billing/payments/pay1/pdf?layout=slip'),
+    );
+    expect(screen.queryByText('billing.downloadTitle')).toBeNull();
+  });
+
+  it('deletes a receipt with a reason through the delete dialog', async () => {
+    mockReceipts();
+    api.post.mockResolvedValue({ deleted: true, reference: 'BHC-RCT-2026-0001' });
+    render(
+      <MemoryRouter initialEntries={['/billing/receipts']}>
+        <BillingPage />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByText('billing.deleteRecord'));
+    expect(screen.getByText('billing.deleteReceiptTitle')).toBeTruthy();
+    const confirm = (await screen.findByText('billing.confirmDelete')).closest(
+      'button',
+    ) as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText('billing.deleteReason'), {
+      target: { value: 'Entered on the wrong invoice' },
+    });
+    expect(confirm.disabled).toBe(false);
+    fireEvent.click(confirm);
+    await waitFor(() =>
+      expect(api.post).toHaveBeenCalledWith('/admin/billing/payments/pay1/delete', {
+        reason: 'Entered on the wrong invoice',
+      }),
     );
   });
 });

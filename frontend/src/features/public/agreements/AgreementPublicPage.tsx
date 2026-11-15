@@ -239,11 +239,15 @@ function AgreementPublicPageInner() {
   });
 
   /** Saves every unsaved edit in one request, one save at a time. Resolves to the latest agreement, or null if a save failed. */
+  const flushRef = useRef<() => Promise<PublicAgreement | null>>();
+  const pausedUntil = useRef(0);
   const flushDrafts = useCallback((): Promise<PublicAgreement | null> => {
     const run = async (): Promise<PublicAgreement | null> => {
       const changes = dirtyChanges();
       if (!changes.length) return viewRef.current;
       const paths = changes.map((change) => change.path);
+      // While the server has asked us to slow down, keep the edits and wait instead of sending more requests.
+      if (Date.now() < pausedUntil.current) { markSaves(paths, 'error'); return null; }
       markSaves(paths, 'saving');
       try {
         const updated = await apiClient.patch<PublicAgreement>('/public/agreements/session/fields', { changes });
@@ -251,6 +255,13 @@ function AgreementPublicPageInner() {
         setView(updated);
         setError('');
         markSaves(paths, 'saved');
+        // The server saves what it can; a refused value is flagged on its own field and the rest stay saved.
+        const refused = (updated as { rejected?: Record<string, string> }).rejected ?? {};
+        const refusedPaths = Object.keys(refused);
+        if (refusedPaths.length) {
+          markSaves(refusedPaths, 'error');
+          setError(Object.entries(refused).map(([path, message]) => `${fieldLabel(path)}: ${message}`).join(' '));
+        }
         window.setTimeout(() => setSaveState((old) => {
           const next = { ...old };
           for (const path of paths) if (next[path] === 'saved') delete next[path];
@@ -264,6 +275,13 @@ function AgreementPublicPageInner() {
             await loadReview('sign');
             setError('Someone updated this agreement while you were editing. The latest saved version is now shown; please review it and re-enter any change.');
           } catch { setError('This review session expired. Verify again to continue.'); }
+        } else if (cause instanceof ApiError && cause.status === 429) {
+          // Too many saves in a short time: wait the time the server asked for, then save again by itself.
+          const wait = Math.min(Math.max(cause.retryAfter ?? 20, 3), 120);
+          pausedUntil.current = Date.now() + wait * 1000;
+          markSaves(paths, 'error');
+          setError(`Saving is paused for ${wait} seconds because of many quick saves. Your changes are kept here and will save automatically.`);
+          window.setTimeout(() => { void flushRef.current?.(); }, (wait + 1) * 1000);
         } else {
           markSaves(paths, 'error');
           setError(cause instanceof Error ? cause.message : 'Some changes could not be saved.');
@@ -275,6 +293,7 @@ function AgreementPublicPageInner() {
     saveQueue.current = next;
     return next;
   }, [loadReview]);
+  flushRef.current = flushDrafts;
 
   /** Called when the client leaves a field: save straight away. */
   const saveField = (path: string, value: string) => {

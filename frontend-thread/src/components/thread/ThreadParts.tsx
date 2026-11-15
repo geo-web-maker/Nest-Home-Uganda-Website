@@ -291,12 +291,36 @@ export function RailCard({
  * ------------------------------------------------------------------------------------------- */
 export function Hang({ items, label }: { items: Array<{ title: string; caption: string; href: string; photo?: string | null; alt?: string }>; label: string }) {
   const [ref, state] = useInViewOnce<HTMLDivElement>(0.3);
+  const listRef = useRef<HTMLUListElement>(null);
+  const [line, setLine] = useState<{ w: number; d: string } | null>(null);
+
+  // Draw the wave through the real hanger positions. The columns have gaps, so a fixed 0-1000 curve
+  // drifts off the hangers (they sat on the slope, not on the line). Measured again on resize.
+  useEffect(() => {
+    const wrap = ref.current;
+    const list = listRef.current;
+    if (!wrap || !list || typeof ResizeObserver === 'undefined') return;
+    const measure = () => {
+      const stops = Array.from(list.children).map((li) => list.offsetLeft + (li as HTMLElement).offsetLeft + (li as HTMLElement).offsetWidth / 2);
+      if (stops.length < 2 || !wrap.clientWidth) return;
+      const half = (stops[1] - stops[0]) / 2;
+      const x0 = stops[0] - half;
+      let d = `M${x0.toFixed(1)} 60 Q ${(x0 + half / 2).toFixed(1)} 20 ${(x0 + half).toFixed(1)} 60`;
+      for (let k = 2; k <= stops.length * 2; k += 1) d += ` T ${(x0 + k * half).toFixed(1)} 60`;
+      setLine((current) => (current && current.d === d ? current : { w: wrap.clientWidth, d }));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(wrap);
+    return () => observer.disconnect();
+  }, [ref, items.length]);
+
   return (
     <div ref={ref} className={styles.hang} data-state={state}>
-      <svg className={styles.hangLine} viewBox="0 0 1000 120" preserveAspectRatio="none" aria-hidden="true">
-        <path pathLength="1" d="M0 60 Q 83 20 167 60 T 333 60 T 500 60 T 667 60 T 833 60 T 1000 60" />
+      <svg className={styles.hangLine} viewBox={line ? `0 0 ${line.w} 120` : '0 0 1000 120'} preserveAspectRatio="none" aria-hidden="true">
+        <path pathLength="1" d={line ? line.d : 'M0 60 Q 83 20 167 60 T 333 60 T 500 60 T 667 60 T 833 60 T 1000 60'} />
       </svg>
-      <ul className={styles.hangList} aria-label={label}>
+      <ul ref={listRef} className={styles.hangList} aria-label={label}>
         {items.map((item, index) => (
           <li key={`${item.title}-${index}`} className={cx(styles.hg, styles[`hg${index + 1}`])} style={{ '--i': index } as CSSProperties}>
             <Link to={item.href}>
@@ -356,8 +380,18 @@ export function Story({
   const baseRef = useRef<SVGPathElement>(null);
   const sizeRef = useRef({ w: 0, h: 0, len: 1 });
 
+  // Pinning needs room. On a short window (a phone on its side) the pinned scene would be clipped,
+  // so it falls back to the plain section where every step is visible.
   useEffect(() => {
-    setEnhanced(!reduce && typeof window.matchMedia === 'function');
+    if (reduce || typeof window.matchMedia !== 'function') {
+      setEnhanced(false);
+      return;
+    }
+    const tall = window.matchMedia('(min-height: 600px)');
+    const apply = () => setEnhanced(tall.matches);
+    apply();
+    tall.addEventListener?.('change', apply);
+    return () => tall.removeEventListener?.('change', apply);
   }, [reduce]);
 
   const update = useCallback((section: HTMLElement) => {

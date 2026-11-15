@@ -18,7 +18,7 @@ from app.core.storage import content_disposition
 from app.core.totp_guard import assert_totp_session
 from app.modules.audit import service as audit
 from app.modules.billing import service
-from app.modules.billing.models import Invoice, Payment
+from app.modules.billing.models import BillingDeletion, Invoice, Payment
 from app.modules.billing.schemas import InvoiceIn, PaymentIn, VoidIn
 
 admin_router = APIRouter(prefix="/admin/billing", tags=["admin-billing"])
@@ -151,6 +151,62 @@ async def void_payment(
     await service.void_payment(payment, body.reason, principal, _ip(request))
     response.headers["Cache-Control"] = "no-store"
     return service.payment_data(payment)
+
+
+@admin_router.post("/invoices/{invoice_id}/delete")
+async def delete_issued_invoice(
+    invoice_id: str,
+    body: VoidIn,
+    principal: CanVoid,
+    request: Request,
+    response: Response,
+    mail_totp: str | None = Cookie(default=None),
+):
+    await assert_totp_session(principal, mail_totp)
+    doc = await service.get_invoice(invoice_id)
+    result = await service.delete_invoice(doc, body.reason, principal, _ip(request))
+    response.headers["Cache-Control"] = "no-store"
+    return result
+
+
+@admin_router.post("/payments/{payment_id}/delete")
+async def delete_receipt(
+    payment_id: str,
+    body: VoidIn,
+    principal: CanVoid,
+    request: Request,
+    response: Response,
+    mail_totp: str | None = Cookie(default=None),
+):
+    await assert_totp_session(principal, mail_totp)
+    payment = await service.get_payment(payment_id)
+    result = await service.delete_payment(payment, body.reason, principal, _ip(request))
+    response.headers["Cache-Control"] = "no-store"
+    return result
+
+
+@admin_router.get("/deletions")
+async def list_deletions(
+    _: CanVoid,
+    pagination: Annotated[PageParams, Depends(page_params)],
+    include_test: bool = False,
+):
+    page, page_size = pagination.page, pagination.page_size
+    filters: dict = {} if include_test else {"is_test": False}
+    total = await BillingDeletion.find(filters).count()
+    rows = (
+        await BillingDeletion.find(filters)
+        .sort("-deleted_at")
+        .skip((page - 1) * page_size)
+        .limit(page_size)
+        .to_list()
+    )
+    return {
+        "items": [service.deletion_data(x) for x in rows],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }
 
 
 @admin_router.get("/payments")

@@ -60,6 +60,9 @@ class Invoice(TimestampedDocument):
     notes: str = ""
     supersedes: str | None = None
     superseded_by: str | None = None
+    # Reused numbers (after a delete) get a new storage folder; see repository.storage_ref.
+    number_generation: int = 0
+    storage_ref: str | None = None
     sealed: dict[str, Any] = Field(default_factory=dict)
     void: dict[str, Any] | None = None
     events: list[BillingEvent] = Field(default_factory=list)
@@ -98,6 +101,8 @@ class Payment(TimestampedDocument):
     invoice_total_ugx: int
     paid_before_ugx: int
     balance_after_ugx: int
+    number_generation: int = 0
+    storage_ref: str | None = None
     sealed: dict[str, Any] = Field(default_factory=dict)
     void: dict[str, Any] | None = None
     events: list[BillingEvent] = Field(default_factory=list)
@@ -123,4 +128,30 @@ class Payment(TimestampedDocument):
                 name="uq_billing_valid_payer_reference",
                 partialFilterExpression={"payer_reference": {"$gt": ""}, "status": "valid"},
             ),
+        ]
+
+
+class BillingDeletion(TimestampedDocument):
+    """Permanent record of an invoice or receipt that was deleted and its number released."""
+
+    kind: Literal["invoice", "receipt"]
+    reference: str
+    document_id: str
+    is_test: bool = False
+    status_at_delete: str
+    invoice_reference: str = ""
+    amount_ugx: int = 0
+    reason: str
+    deleted_by: str
+    deleted_at: datetime = Field(default_factory=utcnow)
+    number_released: bool = False
+    pdfs_removed: int = 0
+    pdfs_retained: int = 0
+    snapshot: dict[str, Any] = Field(default_factory=dict)
+
+    class Settings:
+        name = "billing_deletions"
+        indexes = [
+            IndexModel([("deleted_at", DESCENDING)], name="ix_billing_deletion_when"),
+            IndexModel([("reference", ASCENDING)], name="ix_billing_deletion_reference"),
         ]

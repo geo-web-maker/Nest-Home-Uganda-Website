@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from app.core.deps import Principal, require_scopes
-from app.core.errors import Conflict, NotFound
+from app.core.errors import Conflict, NotFound, ValidationFailed
 from app.core.rate_limit import client_ip, limiter
 from app.core.security import hash_ip
 from app.core.totp_guard import assert_totp_session
@@ -482,14 +482,33 @@ async def public_view_otp_verify(token: str, body: OtpVerify, request: Request, 
     return {"verified": True, "reference": doc.reference, "next": "signed"}
 
 
-@public_router.patch("/session/fields", dependencies=[Depends(_session_rate_limit("agreement_fields", 20, 900))])
+# Autosave sends a request after every pause in typing and again when a field is left, so a long form
+# needs far more than a handful of saves per window. Abuse is still capped per session and address.
+@public_router.patch("/session/fields", dependencies=[Depends(_session_rate_limit("agreement_fields", 240, 900))])
 async def public_patch(body: AgreementPatch, request: Request, response: Response,
                        agreement_session: str | None = Cookie(default=None)):
     doc, _ = await service.session_agreement(agreement_session, "sign")
-    doc = await service.patch_fields(doc, body.changes, actor="client", ip=hash_ip(client_ip(request)),
-                                     user_agent=request.headers.get("user-agent"))
+    kwargs = {"actor": "client", "ip": hash_ip(client_ip(request)), "user_agent": request.headers.get("user-agent")}
+    rejected: dict[str, str] = {}
+    try:
+        doc = await service.patch_fields(doc, body.changes, **kwargs)
+    except ValidationFailed:
+        if len(body.changes) < 2:
+            raise
+        # One bad value must not stop the others from saving: apply each change on its own and report
+        # the ones the server refused. (Validation runs before anything is written, so nothing was applied.)
+        for change in body.changes:
+            try:
+                doc = await service.patch_fields(doc, [change], **kwargs)
+            except ValidationFailed as exc:
+                rejected[change.path] = exc.message
+        if len(rejected) == len(body.changes):
+            raise
     response.headers["Cache-Control"] = "no-store"
-    return await service.public_view(doc)
+    view = await service.public_view(doc)
+    if rejected:
+        view = {**view, "rejected": rejected}
+    return view
 
 
 @public_router.post("/session/fill-mode", dependencies=[Depends(_session_rate_limit("agreement_fill_mode", 10, 900))])

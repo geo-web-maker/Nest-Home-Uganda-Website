@@ -191,3 +191,13 @@
   margin: 5px 0 0;
   overflow-wrap: anywhere;
 }
+
+.downloadList {
+  display: grid;
+  gap: 8px;
+  padding: 8px 0;
+}
+.downloadList > * {
+  width: 100%;
+  justify-content: center;
+}

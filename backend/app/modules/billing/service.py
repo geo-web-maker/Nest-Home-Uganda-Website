@@ -18,6 +18,7 @@ from app.modules.agreements import render as agreement_render
 from app.modules.audit import service as audit
 from app.modules.billing import render, repository, rules
 from app.modules.billing.models import (
+    BillingDeletion,
     BillingEvent,
     BillTo,
     CareRecipient,
@@ -361,7 +362,8 @@ async def issue_invoice(doc: Invoice, principal: Principal, ip_hash: str | None)
     doc.total_ugx = total
     doc.balance_ugx = max(0, total - doc.paid_ugx)
     year = doc.issue_date.year
-    reference = await repository.next_reference("invoice", year, doc.is_test)
+    reference, generation = await repository.allocate_reference("invoice", year, doc.is_test)
+    folder = repository.storage_ref(reference, generation)
     stored: dict[str, Any] | None = None
     committed = False
     try:
@@ -369,7 +371,7 @@ async def issue_invoice(doc: Invoice, principal: Principal, ip_hash: str | None)
         snapshot = _snapshot_invoice(doc)
         canonical = rules.canonical_snapshot(snapshot)
         digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-        stored = await _store_renditions("invoice", year, reference, snapshot, digest, doc.is_test)
+        stored = await _store_renditions("invoice", year, folder, snapshot, digest, doc.is_test)
         sealed = {
             "schema_version": 1,
             "content_hash": digest,
@@ -385,6 +387,8 @@ async def issue_invoice(doc: Invoice, principal: Principal, ip_hash: str | None)
             {
                 "$set": {
                     "reference": reference,
+                    "number_generation": generation,
+                    "storage_ref": folder,
                     "status": "issued",
                     "items": computed,
                     "total_ugx": total,
@@ -496,9 +500,12 @@ async def record_payment(
     inserted = False
     try:
         year = body.paid_on.year
-        reference = await repository.next_reference("receipt", year, doc.is_test)
+        reference, generation = await repository.allocate_reference("receipt", year, doc.is_test)
+        folder = repository.storage_ref(reference, generation)
         payment = Payment(
             reference=reference,
+            number_generation=generation,
+            storage_ref=folder,
             invoice_id=doc.id,
             invoice_reference=doc.reference or "",
             is_test=doc.is_test,
@@ -515,7 +522,7 @@ async def record_payment(
         snapshot = _snapshot_payment(payment, doc)
         canonical = rules.canonical_snapshot(snapshot)
         digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-        stored = await _store_renditions("receipt", year, reference, snapshot, digest, doc.is_test)
+        stored = await _store_renditions("receipt", year, folder, snapshot, digest, doc.is_test)
         payment.sealed = {
             "schema_version": 1,
             "content_hash": digest,
@@ -629,7 +636,10 @@ async def void_payment(
     void_pdf = render.render_pdf(
         snapshot, payment.sealed["content_hash"], "ledger", voided_at=voided_at
     )
-    key = f"billing/receipts/{payment.paid_on.year}/{payment.reference}/void.pdf"
+    key = (
+        f"billing/receipts/{payment.paid_on.year}/"
+        f"{payment.storage_ref or payment.reference}/void.pdf"
+    )
     bucket, locked = await _store_pdf(key, void_pdf, practice=payment.is_test)
     void_data = {
         "voided_at": voided_at,
@@ -740,7 +750,7 @@ async def void_invoice(
     except (TypeError, ValueError, json.JSONDecodeError) as exc:
         raise Conflict("The sealed invoice snapshot failed its integrity check.") from exc
     pdf = render.render_pdf(snapshot, doc.sealed["content_hash"], "ledger", voided_at=voided_at)
-    key = f"billing/invoices/{doc.issue_date.year}/{doc.reference}/void.pdf"
+    key = f"billing/invoices/{doc.issue_date.year}/{doc.storage_ref or doc.reference}/void.pdf"
     bucket, locked = await _store_pdf(key, pdf, practice=doc.is_test)
     void_data = {
         "voided_at": voided_at,
@@ -779,6 +789,211 @@ async def void_invoice(
         after={"status": "void"},
         ip_hash=ip_hash,
     )
+
+
+# --- Deleting issued documents -------------------------------------------------------------------
+
+
+def _pdf_locations(doc: Invoice | Payment) -> list[tuple[str, str]]:
+    sealed = doc.sealed or {}
+    found: list[tuple[str, str]] = []
+    for rendition in (sealed.get("renditions") or {}).values():
+        found.append((sealed.get("bucket") or "private", rendition["key"]))
+    void_rendition = (doc.void or {}).get("rendition")
+    if void_rendition:
+        found.append(
+            (void_rendition.get("bucket") or sealed.get("bucket") or "private", void_rendition["key"])
+        )
+    return found
+
+
+async def _remove_pdfs(doc: Invoice | Payment) -> tuple[int, int]:
+    """Best-effort delete of stored PDFs. Files under an Object Lock retention stay until it ends."""
+    removed = retained = 0
+    for bucket, key in _pdf_locations(doc):
+        try:
+            await get_storage().delete(Bucket(bucket), key)
+            removed += 1
+        except Exception:
+            retained += 1
+            log.info("billing PDF kept (retention lock or storage refusal) during delete")
+    return removed, retained
+
+
+async def _record_deletion(
+    kind: str,
+    doc: Invoice | Payment,
+    reason: str,
+    principal: Principal,
+    snapshot: dict[str, Any],
+) -> BillingDeletion:
+    record = BillingDeletion(
+        kind=kind,  # type: ignore[arg-type]
+        reference=doc.reference or "",
+        document_id=str(doc.id),
+        is_test=doc.is_test,
+        status_at_delete=doc.status,
+        invoice_reference=doc.invoice_reference if isinstance(doc, Payment) else "",
+        amount_ugx=doc.amount_ugx if isinstance(doc, Payment) else doc.total_ugx,
+        reason=reason,
+        deleted_by=principal.user_id,
+        snapshot=snapshot,
+    )
+    await record.insert()
+    return record
+
+
+def deletion_data(row: BillingDeletion) -> dict[str, Any]:
+    return {
+        "id": str(row.id),
+        "kind": row.kind,
+        "reference": row.reference,
+        "is_test": row.is_test,
+        "status_at_delete": row.status_at_delete,
+        "invoice_reference": row.invoice_reference,
+        "amount_ugx": row.amount_ugx,
+        "reason": row.reason,
+        "deleted_by": row.deleted_by,
+        "deleted_at": row.deleted_at.isoformat(),
+        "number_released": row.number_released,
+        "pdfs_removed": row.pdfs_removed,
+        "pdfs_retained": row.pdfs_retained,
+    }
+
+
+async def _finish_deletion(
+    record: BillingDeletion,
+    doc: Invoice | Payment,
+    kind: str,
+    principal: Principal,
+    ip_hash: str | None,
+) -> dict[str, Any]:
+    released = False
+    if doc.reference:
+        try:
+            await repository.release_reference(doc.reference, doc.number_generation)
+            released = True
+        except Exception:
+            log.exception("could not release billing number after delete")
+    removed, retained = await _remove_pdfs(doc)
+    await BillingDeletion.get_pymongo_collection().update_one(
+        {"_id": record.id},
+        {"$set": {"number_released": released, "pdfs_removed": removed, "pdfs_retained": retained}},
+    )
+    await audit.record(
+        principal,
+        f"{'invoice' if kind == 'invoice' else 'payment'}.deleted",
+        "invoice" if kind == "invoice" else "payment",
+        str(doc.id),
+        doc.reference,
+        before={"status": record.status_at_delete, "amount_ugx": record.amount_ugx},
+        after={
+            "reason": record.reason,
+            "number_released": released,
+            "pdfs_retained": retained,
+        },
+        ip_hash=ip_hash,
+    )
+    return {
+        "deleted": True,
+        "reference": doc.reference,
+        "number_released": released,
+        "pdfs_retained": retained,
+    }
+
+
+async def delete_payment(
+    payment: Payment, reason: str, principal: Principal, ip_hash: str | None
+) -> dict[str, Any]:
+    """Delete a receipt, give its number back and keep a permanent record of the deletion."""
+    invoice = await Invoice.get(payment.invoice_id)
+    was_valid = payment.status == "valid"
+    if was_valid:
+        latest = (
+            await Payment.find(Payment.invoice_id == payment.invoice_id, Payment.status == "valid")
+            .sort([("created_at", -1), ("_id", -1)])
+            .first_or_none()
+        )
+        if latest is None or latest.id != payment.id:
+            raise Conflict(
+                "Only the most recent valid receipt can be deleted. Delete later receipts first."
+            )
+        if invoice is None:
+            raise NotFound("Invoice not found.")
+    record = await _record_deletion("receipt", payment, reason, principal, payment_data(payment))
+    removed = await Payment.get_pymongo_collection().delete_one(
+        {"_id": payment.id, "status": payment.status}
+    )
+    if removed.deleted_count != 1:
+        await record.delete()
+        raise Conflict("This receipt changed while it was being deleted. Reload and try again.")
+
+    if was_valid and invoice is not None:
+        event = BillingEvent(
+            type="payment_deleted",
+            actor=principal.user_id,
+            detail={"amount_ugx": payment.amount_ugx, "reference": payment.reference},
+        ).model_dump()
+        updated = await Invoice.get_pymongo_collection().update_one(
+            {
+                "_id": invoice.id,
+                "status": {"$in": ["issued", "part_paid", "paid"]},
+                "paid_ugx": {"$gte": payment.amount_ugx},
+            },
+            [
+                {
+                    "$set": {
+                        "paid_ugx": {"$subtract": ["$paid_ugx", payment.amount_ugx]},
+                        "balance_ugx": {"$add": ["$balance_ugx", payment.amount_ugx]},
+                        "status": {
+                            "$cond": [
+                                {"$eq": [{"$subtract": ["$paid_ugx", payment.amount_ugx]}, 0]},
+                                "issued",
+                                "part_paid",
+                            ]
+                        },
+                        "events": {
+                            "$concatArrays": [{"$ifNull": ["$events", []]}, [event]]
+                        },
+                        "updated_at": datetime.now(UTC),
+                    }
+                }
+            ],
+        )
+        if updated.modified_count != 1:
+            await payment.insert()
+            await record.delete()
+            raise Conflict(
+                "The invoice changed while the receipt was being deleted. Reload and try again."
+            )
+    return await _finish_deletion(record, payment, "receipt", principal, ip_hash)
+
+
+async def delete_invoice(
+    doc: Invoice, reason: str, principal: Principal, ip_hash: str | None
+) -> dict[str, Any]:
+    """Delete an issued or void invoice, give its number back and keep a permanent record."""
+    if doc.status == "draft":
+        raise Conflict("Drafts have no number. Use Delete draft instead.")
+    if doc.status in {"part_paid", "paid"}:
+        raise Conflict("This invoice has payments. Delete its receipts first.")
+    if doc.superseded_by:
+        raise Conflict("This invoice has a replacement. Delete the replacement first.")
+    if await Payment.find(Payment.invoice_id == doc.id).count():
+        raise Conflict("This invoice still has receipts. Delete its receipts first.")
+    record = await _record_deletion("invoice", doc, reason, principal, invoice_data(doc))
+    removed = await Invoice.get_pymongo_collection().delete_one(
+        {"_id": doc.id, "status": doc.status, "paid_ugx": 0, "superseded_by": None}
+    )
+    if removed.deleted_count != 1:
+        await record.delete()
+        raise Conflict("This invoice changed while it was being deleted. Reload and try again.")
+    if doc.supersedes:
+        await Invoice.get_pymongo_collection().update_one(
+            {"reference": doc.supersedes, "superseded_by": doc.reference},
+            {"$set": {"superseded_by": None, "updated_at": datetime.now(UTC)}},
+        )
+    return await _finish_deletion(record, doc, "invoice", principal, ip_hash)
 
 
 async def get_pdf(doc: Invoice | Payment, layout: str, original: bool = False) -> bytes:

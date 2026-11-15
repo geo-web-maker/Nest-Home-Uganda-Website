@@ -42,3 +42,19 @@ Validation: written, not run. CI and owner-controlled deployment checks have not
 - Extended OpenAPI mail paths/schemas, mail scope route tests, and added focused unit tests. Added the Phase 2–5 implementation audit and deployment guardrails.
 
 Validation: 16 isolated mail unit tests passed; Python compilation, B2 shell syntax, OpenAPI JSON, backend/Worker TOML parsing and mail-route/OpenAPI path parity passed. Full backend/frontend suites, authoritative type regeneration, Ruff, real Postgres/Neon, R2, Cloudflare, provider and B2 restore checks were not run because required packages, tools and owner credentials were unavailable. This is substantial implementation, not production acceptance; see `docs/MAIL_PHASE2_TO_5_IMPLEMENTATION_AUDIT.md`.
+
+## 2026-11-15 - Public site (frontend-thread): arch text, thread marker, hanging arches
+
+- "First call to first visit": the words inside the arch are now sized from the arch width (container query units), so all three lines fit from small phones to large desktops; before, tablet and short windows used the desktop font size and the third line was clipped. Text colour is set explicitly on the arch.
+- The pinned scene is switched off on windows shorter than 600px (phones on their side) and shows the plain section instead of a clipped one; on short portrait phones the arch shrinks to fit.
+- The progress marker (logo) is now centred on the end of the thread; before it sat offset below and right of the line.
+- "Hang" arches: the gold wave is now drawn through the measured hanger positions (and re-measured on resize), so each stem meets the line exactly instead of landing on the slope.
+- Checked in Chromium on a test page with the real stylesheets at 390, 820, 1440 and 800x360. Not run: the full unit/e2e suites (dependencies not installed here).
+
+## 2026-11-15 - Agreement form: "Not saved. Retry" fix
+
+- Autosave limit raised from 20 to 240 saves per 15 minutes per session (typing pauses and leaving a field each save).
+- One refused value (for example a bad phone number) no longer fails the whole batch: the other fields save and the refused one is flagged on its own field with the server's reason.
+- When the server still asks to slow down (HTTP 429), the form keeps the edits, shows how long saving is paused and saves again by itself; it no longer sends more requests during the pause.
+- Applied to `frontend-thread` and `frontend`; backend applied to both copies.
+- Not run: test suites and type-check (dependencies not installed here).
