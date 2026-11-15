@@ -25,7 +25,8 @@ export function ServiceStack({ head, children }: { head: ReactNode; children: Re
           if (!entry.isIntersecting) return;
           const card = entry.target as HTMLElement;
           const index = cards.indexOf(card);
-          window.setTimeout(() => card.classList.add(styles.in), (index % 2) * 90);
+          const shown = styles.in;
+          window.setTimeout(() => { if (shown) card.classList.add(shown); }, (index % 2) * 90);
           io.unobserve(card);
         });
       },
