@@ -772,6 +772,23 @@ export interface paths {
         patch: operations["admin_update_api_v1_admin_articles__item_id__patch"];
         trace?: never;
     };
+    "/api/v1/admin/billing/deletions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Deletions */
+        get: operations["list_deletions_api_v1_admin_billing_deletions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/billing/invoices": {
         parameters: {
             query?: never;
@@ -807,6 +824,23 @@ export interface paths {
         head?: never;
         /** Patch Invoice */
         patch: operations["patch_invoice_api_v1_admin_billing_invoices__invoice_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/billing/invoices/{invoice_id}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Delete Issued Invoice */
+        post: operations["delete_issued_invoice_api_v1_admin_billing_invoices__invoice_id__delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/admin/billing/invoices/{invoice_id}/email": {
@@ -939,6 +973,23 @@ export interface paths {
         get: operations["list_payments_api_v1_admin_billing_payments_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/payments/{payment_id}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Delete Receipt */
+        post: operations["delete_receipt_api_v1_admin_billing_payments__payment_id__delete_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10203,6 +10254,39 @@ export interface operations {
             };
         };
     };
+    list_deletions_api_v1_admin_billing_deletions_get: {
+        parameters: {
+            query?: {
+                include_test?: boolean;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_invoices_api_v1_admin_billing_invoices_get: {
         parameters: {
             query?: {
@@ -10345,6 +10429,43 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["InvoiceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_issued_invoice_api_v1_admin_billing_invoices__invoice_id__delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoice_id: string;
+            };
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidIn"];
             };
         };
         responses: {
@@ -10615,6 +10736,43 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_receipt_api_v1_admin_billing_payments__payment_id__delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: string;
+            };
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

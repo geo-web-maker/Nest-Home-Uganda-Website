@@ -12074,6 +12074,76 @@
         ]
       }
     },
+    "/api/v1/admin/billing/deletions": {
+      "get": {
+        "operationId": "list_deletions_api_v1_admin_billing_deletions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "include_test",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Test",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 10000,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Deletions",
+        "tags": [
+          "admin-billing"
+        ]
+      }
+    },
     "/api/v1/admin/billing/invoices": {
       "get": {
         "operationId": "list_invoices_api_v1_admin_billing_invoices_get",
@@ -12385,6 +12455,77 @@
           }
         ],
         "summary": "Patch Invoice",
+        "tags": [
+          "admin-billing"
+        ]
+      }
+    },
+    "/api/v1/admin/billing/invoices/{invoice_id}/delete": {
+      "post": {
+        "operationId": "delete_issued_invoice_api_v1_admin_billing_invoices__invoice_id__delete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invoice_id",
+            "required": true,
+            "schema": {
+              "title": "Invoice Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoidIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Issued Invoice",
         "tags": [
           "admin-billing"
         ]
@@ -12913,6 +13054,77 @@
           }
         ],
         "summary": "List Payments",
+        "tags": [
+          "admin-billing"
+        ]
+      }
+    },
+    "/api/v1/admin/billing/payments/{payment_id}/delete": {
+      "post": {
+        "operationId": "delete_receipt_api_v1_admin_billing_payments__payment_id__delete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "payment_id",
+            "required": true,
+            "schema": {
+              "title": "Payment Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoidIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Receipt",
         "tags": [
           "admin-billing"
         ]
