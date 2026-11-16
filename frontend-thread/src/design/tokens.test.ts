@@ -58,7 +58,7 @@ describe('Dark theme separation', () => {
     expect(ratio(hex('--card'), hex('--paper'))).toBeGreaterThanOrEqual(1.7);
     expect(ratio(hex('--paper-2'), hex('--paper'))).toBeGreaterThanOrEqual(1.3);
     expect(ratio(hex('--paper-3'), hex('--paper-2'))).toBeGreaterThanOrEqual(1.1);
-    expect(ratio(hex('--hero-bg'), hex('--paper'))).toBeGreaterThanOrEqual(1.5);
+    expect(ratio(hex('--hero-bg'), hex('--paper'))).toBeGreaterThanOrEqual(2);
     expect(ratio(hex('--cta-bg'), hex('--paper'))).toBeGreaterThanOrEqual(1.5);
   });
   it('keeps card edges at 3:1 on the card and on every band', () => {
