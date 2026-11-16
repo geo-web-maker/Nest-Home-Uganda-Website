@@ -14,6 +14,8 @@
   --gold-text: #8A4B00; /* orange is for shapes; use this for text on light backgrounds */
   --straw: #FCE6C4;
   --line: #CAD9D5;
+  --line-strong: #7E9893; /* 3:1 on white: use for input, select and button outlines */
+  --raised: #FFFFFF; /* menus, popovers, dialogs: one step above --surf */
   --onf: #F2F8F6;
   --wa: #25D366;
   --on-wa: #06260F;
@@ -32,23 +34,29 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0A1C1A;
-  --mint: #0F2523;
-  --surf: #112826;
+  /* Elevation ladder, each step lighter: bg < mint < surf < raised. Edges use --line (3:1 on every step). */
+  --bg: #07130F;
+  --mint: #0F2623;
+  --surf: #163430;
+  --raised: #1D423D;
   --ink: #E6F0EE;
-  --mut: #9DB8B2;
-  --forest: #071F1C;
+  --mut: #A9C4BE;
+  --forest: #0E3B36;
   --leaf: #5CC5B8;
-  --moss: #2A736C;
+  --moss: #3F8F86;
   --gold: #FBA94A;
   --gold-text: #FBA94A;
-  --straw: #3A3620;
-  --line: #1F4140;
+  --straw: #4A4426;
+  --line: #52857D;
+  --line-strong: #6A9E96;
   --onf: #F2F8F6;
   --on-gold: #1B1706;
   --on-straw: #F0E7C9;
   --on-leaf: #06260F;
   --danger: #F28B82;
+  /* Shadows are black here: the light theme's forest-tinted shadow is invisible on a dark page. */
+  --shadow-1: 0 1px 2px rgb(0 0 0 / .55), 0 2px 8px rgb(0 0 0 / .4);
+  --shadow-2: 0 2px 4px rgb(0 0 0 / .55), 0 12px 32px rgb(0 0 0 / .5);
 }
 
 /* Breakpoints: tablet @700px, desktop @1040px. */

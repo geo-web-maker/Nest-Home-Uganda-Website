@@ -11,7 +11,7 @@
 .mr-more { position: relative; margin-inline-start: auto; }
 .mr-more-trigger { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 999px; background: transparent; font-size: 1.35rem; line-height: 1; color: var(--mr-muted, #666); cursor: pointer; }
 .mr-more-trigger:hover, .mr-more-trigger[aria-expanded="true"] { background: color-mix(in srgb, currentColor 10%, transparent); }
-.mr-menu { position: absolute; inset-inline-end: 0; top: calc(100% + 4px); z-index: 20; min-width: 230px; max-width: calc(100vw - 2rem); margin: 0; padding: 6px; list-style: none; border: 1px solid var(--mr-line, #ddd); border-radius: 14px; background: var(--surf, Canvas); color: var(--mr-fg); box-shadow: 0 10px 28px rgba(0,0,0,.16); }
+.mr-menu { position: absolute; inset-inline-end: 0; top: calc(100% + 4px); z-index: 130; box-sizing: border-box; overflow-y: auto; min-width: min(230px, calc(100vw - 16px)); max-width: calc(100vw - 16px); margin: 0; padding: 6px; list-style: none; border: 1px solid var(--mr-line, #ddd); border-radius: 14px; background: var(--raised, var(--surf, Canvas)); color: var(--mr-fg); box-shadow: 0 10px 28px rgba(0,0,0,.16); }
 .mr-menu li { margin: 0; }
 .mr-menu button { width: 100%; display: flex; align-items: center; gap: 8px; padding: 11px 12px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: .95rem; color: inherit; text-align: start; cursor: pointer; }
 .mr-menu button:disabled { opacity: .45; cursor: default; }

@@ -34,20 +34,20 @@
   --cta-bg: #F8991E; --cta-ink: #1B1706; --cta-btn: #0B2E2A; --cta-btn-ink: #F2F8F6; --cta-btn-hover: #164A45;
   --photo-filter: none; --shadow-card: 0 1px 2px rgb(11 46 42 / 0.08), 0 14px 32px rgb(11 46 42 / 0.14);
 }
-/* Dark: lamplit forest, not an inversion. Gold stays the signal, mint replaces leaf for text */
+/* Dark: lamplit forest, not an inversion. Surfaces climb in clear steps (page < section < card) and rules are >=3:1, so panels never melt into the page. Gold stays the signal, mint replaces leaf for text */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --paper: #0A201E; --paper-2: #071A18; --paper-3: #12332F; --card: #0E2A28;
+  --paper: #0A201E; --paper-2: #133733; --paper-3: #1B413C; --card: #1F4F49;
   --ink: #F2F8F6; --ink-2: #D6E4E0; --muted: #A7C2BC;
-  --rule: #1F4440; --rule-strong: #5B7F79; --line-field: #5B7F79;
+  --rule: #7A9E97; --rule-strong: #8FB0A9; --line-field: #7FA39C;
   --accent: #FBA94A; --accent-hover: #FDC87A; --accent-ink: #1B1706; --accent-text: #FBA94A;
   --num: #6FD3C5; --link: #6FD3C5; --focus: #FBA94A; --danger: #FF9A8F;
-  --door-leaf: #164A45;
+  --door-leaf: #1F6B62;
   --card-ink: #F2F8F6; --card-muted: #A7C2BC; --card-num: #6FD3C5; --link-tint: #6FD3C5;
-  --hero-bg: #0B2E2A; --hero-ink: #F2F8F6; --hero-muted: #BFD4CF; --hero-accent: #FBA94A;
-  --shape-1: #143733; --shape-2: #FBA94A; --shape-3: #BFD4CF; --shape-4: #071A18;
-  --strong-bg: #05100F; --strong-ink: #F2F8F6; --strong-muted: #A7C2BC; --strong-rule: #1C3A2A; --strong-surface: #0E2A28; --strong-accent: #FBA94A;
-  --cta-bg: #103430; --cta-ink: #F2F8F6; --cta-btn: #FBA94A; --cta-btn-ink: #1B1706; --cta-btn-hover: #FDC87A;
+  --hero-bg: #0E4A43; --hero-ink: #F2F8F6; --hero-muted: #BFD4CF; --hero-accent: #FBA94A;
+  --shape-1: #1F4F49; --shape-2: #FBA94A; --shape-3: #BFD4CF; --shape-4: #030C0B;
+  --strong-bg: #030C0B; --strong-ink: #F2F8F6; --strong-muted: #A7C2BC; --strong-rule: #4A7068; --strong-surface: #12332F; --strong-accent: #FBA94A;
+  --cta-bg: #1A4F48; --cta-ink: #F2F8F6; --cta-btn: #FBA94A; --cta-btn-ink: #1B1706; --cta-btn-hover: #FDC87A;
   --photo-filter: brightness(0.9) contrast(1.04); --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 14px 32px rgb(0 0 0 / 0.5);
 }
 .on-hero { --ink: var(--hero-ink); --muted: var(--hero-muted); --focus: var(--strong-accent); --num: var(--hero-ink); --accent-text: var(--hero-ink); }
