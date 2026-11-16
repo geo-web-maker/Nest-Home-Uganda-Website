@@ -1042,7 +1042,7 @@ export function CareScreenRouter() {
   if (tail.startsWith('visits/') && tail !== 'visits/')
     return (
       <RequireScopes scopes={CARE_SCREEN_SCOPES.visits}>
-        <TotpGate><VisitReviewPage /></TotpGate>
+        <VisitReviewPage />
       </RequireScopes>
     );
   const screen = (Object.entries(CARE_SCREEN_PATHS).find(

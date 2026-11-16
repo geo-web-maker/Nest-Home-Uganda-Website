@@ -84,9 +84,8 @@ async def _record_totp_event(principal: Principal, action: str, outcome: str, me
 @router.get("/settings")
 async def get_mail_settings(
     principal: Principal = Depends(require_scopes("mail:settings:manage")),
-    mail_totp: str | None = Cookie(default=None),
 ):
-    await _require_sensitive_totp(principal, mail_totp, "mail:settings:manage")
+    # Read-only and secrets are masked (is_set only), so no TOTP. Changing settings still needs it.
     return await service.settings_list()
 
 
@@ -170,9 +169,9 @@ async def messages(
 
 @router.get("/messages/{mailbox_message_id}")
 async def read_message(mailbox_message_id: str, principal: Principal = Depends(require_scopes("mail:use")), mail_totp: str | None = Cookie(default=None)):
-    show_diagnostics = principal.has("mail:audit:read")
-    if show_diagnostics:
-        await assert_totp_session(principal, mail_totp)
+    # Reading mail is ordinary use and never needs TOTP. Transport diagnostics are
+    # only attached when the holder of mail:audit:read has a current TOTP session.
+    show_diagnostics = principal.has("mail:audit:read") and await is_current_totp_session(principal.user_id, mail_totp)
     return await core_service.read_message(principal.user_id, mailbox_message_id, include_admin_diagnostics=show_diagnostics)
 
 
@@ -368,12 +367,11 @@ async def create_shared(body: SharedMailboxBody, principal: Principal = Depends(
     return await mailbox_admin.create_shared(principal.user_id, body.local_part, body.display_name)
 
 @router.get("/shared")
-async def list_shared(principal: Principal = Depends(require_scopes("mail:shared:manage")), mail_totp: str | None = Cookie(default=None)):
+async def list_shared(principal: Principal = Depends(require_scopes("mail:shared:manage"))):
     """Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.
 
     Members carry the person's current name and email, and `missing: true` when that user no
-    longer exists, so the screen never shows a bare id it cannot act on."""
-    await _require_sensitive_totp(principal,mail_totp,"mail:shared:manage")
+    longer exists, so the screen never shows a bare id it cannot act on. Read-only, so no TOTP."""
     from app.modules.mail import mailbox_admin
     from app.modules.mail.settings_service import get_value
     domain=str(await get_value('mail.domain') or '')

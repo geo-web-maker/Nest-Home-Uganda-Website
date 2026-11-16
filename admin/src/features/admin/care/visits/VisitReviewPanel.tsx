@@ -2,13 +2,14 @@ import { Field } from '@shared/components/ui/Field';
 import type { FormEvent, Dispatch, SetStateAction } from 'react';
 import { Button } from '@shared/components/ui/Button';
 type Row = Record<string, unknown>;
-type VisitReview = { visit?: Row; events?: Row[]; notes?: Row[]; flags?: Row[]; photos?: Row[]; annotations?: Row[]; audit?: Row[] };
+type VisitReview = { visit?: Row; events?: Row[]; notes?: Row[]; flags?: Row[]; photos?: Row[]; annotations?: Row[]; audit?: Row[]; audit_locked?: boolean };
 type Props = {
   visitId: string; review: VisitReview | null; loading: boolean; busy: boolean;
   photoPanelOpen: boolean; setPhotoPanelOpen: Dispatch<SetStateAction<boolean>>;
   annotation: string; setAnnotation: (value: string) => void;
   onClose: () => void;
   onResolveFlag: (flagId: string) => void;
+  onUnlockAudit: () => void;
   onSaveAnnotation: (event: FormEvent<HTMLFormElement>) => void;
   printable: (value: unknown) => string;
 };
@@ -55,7 +56,7 @@ export function VisitReviewPanel(props: Props) {
         </form>
       </section>
       <section aria-labelledby="visit-audit-title"><h3 id="visit-audit-title">Audit trail</h3>
-        {(review.audit ?? []).length ? <ol>{review.audit?.map((item, index) => <li key={String(item.id ?? index)}>{String(item.action ?? item.event ?? 'Recorded action')} · {printable(item.at ?? item.created_at)} · {printable(item.actor_id ?? item.user_id)}</li>)}</ol> : <p>No audit entries are attached to this visit.</p>}
+        {review.audit_locked ? <p>The audit trail is locked. <Button variant="outline" size="compact" onClick={props.onUnlockAudit}>Verify authenticator to view</Button></p> : (review.audit ?? []).length ? <ol>{review.audit?.map((item, index) => <li key={String(item.id ?? index)}>{String(item.action ?? item.event ?? 'Recorded action')} · {printable(item.at ?? item.created_at)} · {printable(item.actor_id ?? item.user_id)}</li>)}</ol> : <p>No audit entries are attached to this visit.</p>}
       </section>
     </>}
   </section>;

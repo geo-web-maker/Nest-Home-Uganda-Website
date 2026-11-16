@@ -94,7 +94,7 @@ def test_every_audit_read_route_uses_the_totp_guard():
         "activity/router.py": ("activity_list", "require_totp_session"),
         "field/router.py": ("field_audit", "require_totp_session"),
         "mail/router.py": ("mail_audit", "require_totp_session"),
-        "care_admin/router.py": ("visit_detail", "require_totp_session"),
+        "care_admin/router.py": ("visit_detail", "is_current_totp_session"),
         "care_ops/router.py": ("list_sos_drills", "require_totp_session"),
         "reports/router.py": ("report_export", "assert_totp_session"),
     }

@@ -7,14 +7,14 @@ from typing import Literal
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
 from app.core.db import get_care_database, start_session
 from app.core.deps import Principal, ReachContext, get_care_actor, require_scopes
-from app.core.totp_guard import require_totp_session
+from app.core.totp_guard import is_current_totp_session
 from app.core.errors import Conflict
 from app.modules.audit.models import AuditLog
 from app.modules.care_clients.models import CareClient
@@ -581,14 +581,19 @@ async def create_visit(
 async def visit_detail(
     visit_id: str,
     _: Principal = Depends(require_scopes("visits:read")),
-    _totp: Principal = Depends(require_totp_session),
     ctx: ReachContext = Depends(get_care_actor),
+    mail_totp: str | None = Cookie(default=None),
 ):
     row = await Visit.find_one(Visit.id == visit_id)
     if not row or not await _visit_reachable(row, ctx):
         raise HTTPException(404, detail="Visit not found")
-    from app.modules.audit.service import record_system_event
-    await record_system_event(action="audit.view.visit", message="A permitted administrator viewed visit audit details.", severity="info", source="audit", user_id=_.user_id, outcome="success", event_type="activity", details={"visit_id": visit_id})
+    # Reviewing a visit is ordinary admin work. Only the audit trail needs a TOTP session.
+    audit_unlocked = await is_current_totp_session(_.user_id, mail_totp)
+    audit_rows = []
+    if audit_unlocked:
+        from app.modules.audit.service import record_system_event
+        await record_system_event(action="audit.view.visit", message="A permitted administrator viewed visit audit details.", severity="info", source="audit", user_id=_.user_id, outcome="success", event_type="activity", details={"visit_id": visit_id})
+        audit_rows = await AuditLog.find(AuditLog.item_id == visit_id).sort("-at").to_list()
     return {
         "visit": row,
         "events": await VisitEvent.find(VisitEvent.visit_id == visit_id).to_list(),
@@ -609,7 +614,8 @@ async def visit_detail(
             for photo in await VisitPhoto.find(VisitPhoto.visit_id == visit_id).to_list()
         ],
         "annotations": await VisitAnnotation.find(VisitAnnotation.visit_id == visit_id).to_list(),
-        "audit": await AuditLog.find(AuditLog.item_id == visit_id).sort("-at").to_list(),
+        "audit": audit_rows,
+        "audit_locked": not audit_unlocked,
     }
 
 

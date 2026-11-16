@@ -92,7 +92,7 @@ async def test_list_shared_groups_members_and_hides_no_reply_filter_in_sql(monke
     monkeypatch.setattr("app.modules.mail.settings_service.get_value", value)
     monkeypatch.setattr("app.modules.mail.mailbox_admin._users_by_id", users)
     monkeypatch.setattr("app.modules.mail.mailbox_admin.assignable_people", people)
-    result = await router.list_shared(principal=Principal.__new__(Principal), mail_totp=None)
+    result = await router.list_shared(principal=Principal.__new__(Principal))
     assert result["assignable_users"] == [{"id": "u1", "name": "Amina", "email": "amina@bhcug.com"}]
     assert result["items"] == [
         {

@@ -14,6 +14,7 @@ import { CreateClientPanel } from './clients/CreateClientPanel';
 import { ResolveFlagPanel } from './flags/ResolveFlagPanel';
 import { DataToolsPanel } from './data/DataToolsPanel';
 import { ButtonGroup } from '@shared/components/dialogs/ButtonGroup';
+import { requestTotp } from '@shared/lib/totpPrompt';
 
 type CareTab =
   | 'nurses'
@@ -503,6 +504,7 @@ export function CareWorkspace() {
           annotation={annotation} setAnnotation={setAnnotation}
           onClose={() => { setReviewVisitId(''); setVisitReview(null); setReviewPhotoPanelOpen(false); }}
           onResolveFlag={(flagId) => void resolveReviewFlag(flagId)}
+          onUnlockAudit={() => { void requestTotp().then((ok) => { if (ok) void openVisitReview(reviewVisitId); }); }}
           onSaveAnnotation={saveAnnotation}
           printable={printable}
         />
