@@ -4381,7 +4381,7 @@ export interface paths {
          * @description Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.
          *
          *     Members carry the person's current name and email, and `missing: true` when that user no
-         *     longer exists, so the screen never shows a bare id it cannot act on.
+         *     longer exists, so the screen never shows a bare id it cannot act on. Read-only, so no TOTP.
          */
         get: operations["list_shared_api_v1_mail_shared_get"];
         put?: never;
@@ -18169,9 +18169,7 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: {
-                mail_totp?: string | null;
-            };
+            cookie?: never;
         };
         requestBody?: never;
         responses: {
@@ -18182,15 +18180,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -18338,9 +18327,7 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: {
-                mail_totp?: string | null;
-            };
+            cookie?: never;
         };
         requestBody?: never;
         responses: {
@@ -18351,15 +18338,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
