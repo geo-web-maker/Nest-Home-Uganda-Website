@@ -11,7 +11,7 @@
         try { var saved = window.localStorage.getItem('nest-theme'); if (saved === 'light' || saved === 'dark') theme = saved; } catch (_) {}
         document.documentElement.dataset.theme = theme;
         var meta = document.querySelector('meta[name=theme-color]');
-        if (meta) meta.setAttribute('content', theme === 'dark' ? '#071F1C' : '#0B2E2A');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#123524' : '#0B2E2A');
       })();
     </script>
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />

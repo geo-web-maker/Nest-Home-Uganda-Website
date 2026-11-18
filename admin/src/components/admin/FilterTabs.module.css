@@ -25,3 +25,10 @@
   border-color: var(--forest);
   color: var(--onf);
 }
+
+/* Dark: --forest is now the same green as the page, so the selected pill takes the bright leaf green. */
+:global(:root[data-theme='dark']) .selected {
+  background: var(--leaf);
+  border-color: var(--leaf);
+  color: var(--on-leaf);
+}

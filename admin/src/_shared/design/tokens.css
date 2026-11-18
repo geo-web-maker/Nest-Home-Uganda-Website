@@ -34,26 +34,26 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  /* Elevation ladder, each step lighter: bg < mint < surf < raised. Edges use --line (3:1 on every step). */
-  --bg: #07130F;
-  --mint: #0F2623;
-  --surf: #163430;
-  --raised: #1D423D;
-  --ink: #E6F0EE;
-  --mut: #A9C4BE;
-  --forest: #0E3B36;
-  --leaf: #5CC5B8;
-  --moss: #3F8F86;
+  /* Dark forest green, from the reference palette (#123524). Ladder, each step lighter: bg < mint < surf < raised. Edges use --line (3:1 on every step). */
+  --bg: #14301F;
+  --mint: #1A3B28;
+  --surf: #214A33;
+  --raised: #274F38;
+  --ink: #EAF3EC;
+  --mut: #BCD5C4;
+  --forest: #123524;
+  --leaf: #7FD6A8;
+  --moss: #4E9C78;
   --gold: #FBA94A;
   --gold-text: #FBA94A;
   --straw: #4A4426;
-  --line: #52857D;
-  --line-strong: #6A9E96;
+  --line: #88B59A;
+  --line-strong: #95BFA6;
   --onf: #F2F8F6;
   --on-gold: #1B1706;
   --on-straw: #F0E7C9;
   --on-leaf: #06260F;
-  --danger: #F28B82;
+  --danger: #F9A199;
   /* Shadows are black here: the light theme's forest-tinted shadow is invisible on a dark page. */
   --shadow-1: 0 1px 2px rgb(0 0 0 / .55), 0 2px 8px rgb(0 0 0 / .4);
   --shadow-2: 0 2px 4px rgb(0 0 0 / .55), 0 12px 32px rgb(0 0 0 / .5);

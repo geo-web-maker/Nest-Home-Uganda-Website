@@ -50,3 +50,5 @@
   .panel { padding: 1.5rem; }
   .fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+:global(:root[data-theme='dark']) .pillOn { border-color: var(--leaf); background: var(--leaf); color: var(--on-leaf); }

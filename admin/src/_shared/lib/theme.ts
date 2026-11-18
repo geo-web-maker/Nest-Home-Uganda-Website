@@ -4,7 +4,7 @@ export type Theme = 'light' | 'dark';
 const STORAGE_KEY = 'nest-theme';
 const THEME_COLORS: Record<Theme, string> = {
   light: '#0B2E2A',
-  dark: '#071F1C',
+  dark: '#123524',
 };
 
 function isTheme(value: string | null): value is Theme {
