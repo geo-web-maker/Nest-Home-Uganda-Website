@@ -31,6 +31,11 @@ Generated from `backend/app/modules/settings/care_keys.py`. Empty values use the
 | `CARE_MODULE_B_ENABLED` | `care.module_b_enabled` | boolean | `False` | No | care |
 | `CARE_MODULE_C_ENABLED` | `care.module_c_enabled` | boolean | `False` | No | care |
 | `CARE_MODULE_D_ENABLED` | `care.module_d_enabled` | boolean | `False` | No | care |
+| `CARE_CARE_FORMS_AUTO_EMAIL_COPY` | `care_forms.auto_email_copy` | boolean | `False` | No | care_forms |
+| `CARE_CARE_FORMS_GATES_ENABLED` | `care_forms.gates_enabled` | boolean | `False` | No | care_forms |
+| `CARE_CARE_FORMS_ORG_PHONE` | `care_forms.org_phone` | text | `''` | No | care_forms |
+| `CARE_CARE_FORMS_PDPO_REF` | `care_forms.pdpo_ref` | text | `''` | No | care_forms |
+| `CARE_CARE_FORMS_PRIVACY_EMAIL` | `care_forms.privacy_email` | text | `'privacy@bhcug.com'` | No | care_forms |
 | `CARE_FIELD_ADHOC_ALLOWED` | `field.adhoc_allowed` | boolean | `False` | No | field |
 | `CARE_FIELD_CHECKIN_FIX_WAIT_S` | `field.checkin_fix_wait_s` | integer | `10` | No | field |
 | `CARE_FIELD_GEO_SNAP_WAIT_S` | `field.geo_snap_wait_s` | integer | `3` | No | field |
