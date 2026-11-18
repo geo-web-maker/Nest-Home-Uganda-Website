@@ -302,9 +302,11 @@ export function Hang({ items, label }: { items: Array<{ title: string; caption: 
     if (!wrap || !list || typeof ResizeObserver === 'undefined') return;
     const measure = () => {
       const stops = Array.from(list.children).map((li) => list.offsetLeft + (li as HTMLElement).offsetLeft + (li as HTMLElement).offsetWidth / 2);
-      if (stops.length < 2 || !wrap.clientWidth) return;
-      const half = (stops[1] - stops[0]) / 2;
-      const x0 = stops[0] - half;
+      const first = stops[0];
+      const second = stops[1];
+      if (first === undefined || second === undefined || !wrap.clientWidth) return;
+      const half = (second - first) / 2;
+      const x0 = first - half;
       let d = `M${x0.toFixed(1)} 60 Q ${(x0 + half / 2).toFixed(1)} 20 ${(x0 + half).toFixed(1)} 60`;
       for (let k = 2; k <= stops.length * 2; k += 1) d += ` T ${(x0 + k * half).toFixed(1)} 60`;
       setLine((current) => (current && current.d === d ? current : { w: wrap.clientWidth, d }));
