@@ -44,6 +44,7 @@ function endpointFor(operation: OutboxOperation): { path: string; body: Record<s
   if (operation.kind === 'visit_note') return { path: `/field/visits/${operation.visitId}/notes`, body: operation.payload };
   if (operation.kind === 'visit_create_adhoc') return { path: '/field/visits/adhoc', body: operation.payload };
   if (operation.kind === 'sos') return { path: '/field/sos', body: operation.payload };
+  if (operation.kind === 'care_form') return { path: '/field/care-forms/submit', body: operation.payload };
   return null;
 }
 
@@ -113,7 +114,7 @@ async function executeSync(deps: SyncEngineDeps): Promise<SyncEngineResult> {
       continue;
     }
     const endpoint = endpointFor(operation);
-    if (!endpoint || !operation.visitId && operation.kind !== 'visit_create_adhoc' && operation.kind !== 'sos') {
+    if (!endpoint || !operation.visitId && operation.kind !== 'visit_create_adhoc' && operation.kind !== 'sos' && operation.kind !== 'care_form') {
       await table.update(operation.id, { state: 'needs_attention', lastError: copy.sync.failures.missingVisitReference, retryAfter: undefined });
       needsAttention += 1;
       continue;

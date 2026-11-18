@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BillingPage } from './BillingPage';
 
 const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), patch: vi.fn(), getBlob: vi.fn() }));
@@ -16,6 +16,8 @@ const i18n = vi.hoisted(() => ({ t: (key: string) => key }));
 vi.mock('react-i18next', () => ({ useTranslation: () => i18n }));
 
 describe('BillingPage', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
   beforeEach(() => {
     vi.clearAllMocks();
     api.get.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 25 });
@@ -189,5 +191,83 @@ describe('BillingPage', () => {
         reason: 'Entered on the wrong invoice',
       }),
     );
+  });
+
+  it('applies status, date and practice filters to the server query', async () => {
+    render(
+      <MemoryRouter>
+        <BillingPage />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole('tab', { name: 'billing.statuses.issued' }));
+    fireEvent.change(screen.getByLabelText('billing.fromDate'), {
+      target: { value: '2026-11-01' },
+    });
+    fireEvent.change(screen.getByLabelText('billing.toDate'), {
+      target: { value: '2026-11-18' },
+    });
+    fireEvent.click(screen.getByLabelText('billing.includePractice'));
+
+    await waitFor(() => {
+      const calls = api.get.mock.calls.filter((call) => call[0] === '/admin/billing/invoices');
+      expect(calls.at(-1)?.[1]).toEqual({
+        params: {
+          q: undefined,
+          status: 'issued',
+          from: '2026-11-01',
+          to: '2026-11-18',
+          include_test: true,
+          page: 1,
+          page_size: 25,
+        },
+      });
+    });
+  });
+
+  it('keeps the same idempotency key when a payment request is retried', async () => {
+    const invoice = {
+      id: 'inv-1',
+      reference: 'BHC-INV-2026-0001',
+      status: 'issued',
+      bill_to: { name: 'Amina N.', address: '', phone: '', email: '' },
+      items: [{ description: 'Home care', quantity: 1, unit_price_ugx: 200000 }],
+      total_ugx: 200000,
+      paid_ugx: 0,
+      balance_ugx: 200000,
+      issue_date: '2026-11-14',
+      due_date: '2026-11-18',
+      payment_instructions: '',
+      notes: '',
+      payments: [],
+      sealed: { content_hash: 'a'.repeat(64) },
+    };
+    api.get.mockImplementation(async (path: string) =>
+      path === '/admin/billing/invoices/inv-1'
+        ? invoice
+        : { items: [], total: 0, page: 1, page_size: 25 },
+    );
+    api.post.mockRejectedValueOnce(new Error('Temporary payment service failure'));
+    api.post.mockResolvedValueOnce({ id: 'pay-1' });
+    vi.stubGlobal('crypto', { randomUUID: () => 'retry-key-0001' });
+    render(
+      <MemoryRouter initialEntries={['/billing?invoice=inv-1']}>
+        <BillingPage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByText('billing.recordPayment'));
+    fireEvent.change(screen.getByLabelText('billing.payerReference'), {
+      target: { value: 'MOMO-12345' },
+    });
+    const submit = screen.getByRole('button', { name: 'billing.submitPayment' });
+    fireEvent.click(submit);
+    await screen.findByText('Temporary payment service failure');
+    const firstRequest = api.post.mock.calls[0]?.[1] as { idempotency_key: string };
+    expect(firstRequest.idempotency_key).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'billing.submitPayment' }));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(2));
+    const retryRequest = api.post.mock.calls[1]?.[1] as { idempotency_key: string };
+    expect(retryRequest.idempotency_key).toBe(firstRequest.idempotency_key);
   });
 });

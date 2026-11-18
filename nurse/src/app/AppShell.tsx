@@ -24,6 +24,7 @@ const NAV = [
   { to: '/', label: copy.tabs.today, icon: 'today' },
   { to: '/history', label: copy.tabs.history, icon: 'hist' },
   { to: '/timesheets', label: copy.tabs.timesheets, icon: 'doc' },
+  { to: '/documents', label: 'Documents', icon: 'doc' },
   { to: '/mail', label: copy.mail.title, icon: 'mail' },
   { to: '/audit', label: 'Activity', icon: 'hist' },
   { to: '/profile', label: copy.tabs.profile, icon: 'user' },

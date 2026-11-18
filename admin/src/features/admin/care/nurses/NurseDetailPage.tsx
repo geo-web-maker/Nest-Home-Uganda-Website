@@ -17,6 +17,8 @@ type NurseDetails = {
     user_id: string; staff_number: string; supervisor_id?: string | null; team_id?: string | null;
     active: boolean; phone_e164?: string | null; last_seen_at?: string | null; app_version?: string | null;
     battery_pct?: number | null; adhoc_override?: boolean | null; consent_versions?: Record<string, string>;
+    unmc_number?: string | null; unmc_category?: string | null; unmc_licence_expiry?: string | null;
+    unmc_verified_by?: string | null; unmc_verified_at?: string | null;
   };
   devices: Array<{ device_id: string; platform: string; registered_at: string; revoked_at?: string | null; push_token_updated_at?: string | null; has_push_token: boolean }>;
   consents: Array<{ type: string; version: string; source: string; accepted_at: string }>;
@@ -74,6 +76,13 @@ export function NurseDetailPage() {
   if (!details) return <section className="admin-page"><p role="alert">{error || 'Nurse not found.'}</p><Button variant="outline" onClick={() => navigate('/care/nurses')}>Back to nurses</Button></section>;
 
   const nurse = details.profile;
+  const licenceExpiry = nurse.unmc_licence_expiry;
+  const licenceExpiryDate = licenceExpiry && /^\d{4}-\d{2}-\d{2}$/.test(licenceExpiry)
+    ? new Date(`${licenceExpiry}T00:00:00Z`)
+    : null;
+  const licenceDateIsReal = Boolean(licenceExpiryDate && !Number.isNaN(licenceExpiryDate.getTime()) && licenceExpiryDate.toISOString().slice(0, 10) === licenceExpiry);
+  const licenceCurrent = Boolean(licenceDateIsReal && licenceExpiry && licenceExpiry >= new Date().toISOString().slice(0, 10));
+  const canVerifyUnmc = canWriteNurse && Boolean(nurse.unmc_number) && licenceCurrent && !nurse.unmc_verified_by && user?.id !== userId;
   return (
     <section className="admin-page nurse-detail" aria-labelledby="nurse-detail-title">
       <header className="page-header">
@@ -113,6 +122,21 @@ export function NurseDetailPage() {
             <Button type="button" variant="outline" disabled={busy} onClick={() => void runAction(() => apiClient.patch(`/admin/care/nurses/${encodeURIComponent(userId)}/adhoc-override`, { enabled: null }), 'Nurse now follows the organisation setting.')}>Use organisation setting</Button>
           </div> : <p>Editing this override requires carecfg:write.</p>}
         </article>
+      </section>
+
+      <section className="care-form" aria-labelledby="nurse-unmc-title">
+        <h2 id="nurse-unmc-title">UNMC registration</h2>
+        <dl className="nurse-facts">
+          <div><dt>Registration number</dt><dd>{nurse.unmc_number || 'Not supplied'}</dd></div>
+          <div><dt>Category</dt><dd>{nurse.unmc_category || 'Not supplied'}</dd></div>
+          <div><dt>Licence expiry</dt><dd>{nurse.unmc_licence_expiry || 'Not supplied'}</dd></div>
+          <div><dt>Verification status</dt><dd>{nurse.unmc_verified_by ? `Verified · ${dateTime(nurse.unmc_verified_at)}` : nurse.unmc_number ? 'Self-declared — not verified' : 'Incomplete'}</dd></div>
+          {nurse.unmc_verified_by && <div><dt>Verified by account</dt><dd>{nurse.unmc_verified_by}</dd></div>}
+        </dl>
+        {canVerifyUnmc && <Button type="button" disabled={busy} onClick={() => void runAction(() => apiClient.post(`/admin/care/nurses/${encodeURIComponent(userId)}/unmc/verify`, {}), 'UNMC details verified and recorded.')}>Verify registration details</Button>}
+        {nurse.unmc_verified_by && <p>Any subsequent nurse edit clears this verification and returns the details to self-declared status.</p>}
+        {(!nurse.unmc_number || !licenceCurrent) && <p>The nurse must enter a UNMC number and a current licence expiry date in the nurse app profile before an administrator can verify these details.</p>}
+        {canWriteNurse && nurse.unmc_number && !nurse.unmc_verified_by && user?.id === userId && <p>You cannot verify your own registration details.</p>}
       </section>
 
       <section className="care-form">

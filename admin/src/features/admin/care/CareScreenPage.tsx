@@ -27,6 +27,7 @@ import './care-screen.css';
 import { Notice } from '@shared/components/dialogs/Notice';
 import { ButtonGroup } from '@shared/components/dialogs/ButtonGroup';
 import { TotpGate } from '@shared/components/security/TotpGate';
+import { CareFormsCopyLog } from './settings/CareFormsCopyLog';
 
 type Row = Record<string, any>;
 type ScreenKey =
@@ -127,6 +128,7 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
   const [mapTileUrl, setMapTileUrl] = useState('');
   const [coords, setCoords] = useState({ lat: '', lng: '', radius: '150' });
   const [clientOptions, setClientOptions] = useState<Row[]>([]);
+  const [agreementOptions, setAgreementOptions] = useState<Row[]>([]);
   const [nurseOptions, setNurseOptions] = useState<Row[]>([]);
   const [placeOptions, setPlaceOptions] = useState<Row[]>([]);
   const [reportFrom, setReportFrom] = useState('');
@@ -198,6 +200,12 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
       setRows(Array.isArray(result) ? result : (result.items ?? []));
       setNextCursor(result.next_cursor ?? '');
       if (screen === 'settings') setSettings(result.items ?? []);
+      if (screen === 'clients' && hasScopes(user, ['clients:write']) && hasScopes(user, ['agreements:read'])) {
+        try {
+          const agreements: any = await apiClient.get('/admin/agreements', { params: { status: 'completed', limit: 100 } });
+          setAgreementOptions(agreements.items ?? []);
+        } catch { setAgreementOptions([]); }
+      }
       if (screen === 'readiness') setReadiness(result);
       if (screen === 'visits') {
         const c: any = await apiClient.get('/admin/care/clients');
@@ -559,12 +567,21 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
               id: crypto.randomUUID(),
               display_name: String(data.get('name') || ''),
               notes_for_nurse: String(data.get('notes') || ''),
+              patient_type: String(data.get('patient_type') || 'General'),
+              agreement_id: String(data.get('agreement_id') || '') || null,
             });
             f.reset();
           }}
         >
           <Field label={t('care.clientName')} name="name" required requiredLabel="required" />
           <Field label={t('care.clientNotes')} name="notes" kind="textarea" />
+          <Field kind="select" label="Patient type" name="patient_type" defaultValue="General">
+            <option value="Mama">Mama</option><option value="Baby">Baby</option><option value="General">General</option>
+          </Field>
+          {hasScopes(user, ['agreements:read']) && <Field kind="select" label="Completed agreement" name="agreement_id" defaultValue="">
+            <option value="">No linked agreement</option>
+            {agreementOptions.map((agreement) => <option key={agreement.id} value={agreement.id}>{agreement.reference ?? agreement.id}{agreement.patient_name || agreement.client_name ? ` · ${agreement.patient_name ?? agreement.client_name}` : ''}</option>)}
+          </Field>}
           <Button type="submit">Create client</Button>
         </form>
       );
@@ -893,6 +910,7 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
               {hasScopes(user, ['carecfg:write']) && <Button type="submit">Save</Button>}
             </form>
           ))}
+          {hasScopes(user, ['carecfg:read']) && <CareFormsCopyLog />}
         </div>
       );
     if (screen === 'readiness')

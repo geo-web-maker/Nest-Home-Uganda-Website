@@ -8,6 +8,7 @@ import { PillButton } from '../ui/PillButton';
 import { Icon } from '../ui/Icon';
 import { Timer } from '../ui/Timer';
 import { statusKind, statusText } from '../ui/statusChip';
+import { CareFormsCard } from '../features/careforms/CareFormsCard';
 
 type Props = { visit: CachedVisit; onNote: (visit: CachedVisit) => void; onPhoto: (visit: CachedVisit) => void; onLeave: (visit: CachedVisit) => void; photosEnabled: boolean; embedded?: boolean };
 export function ActiveVisit({ visit, onNote, onPhoto, onLeave, photosEnabled, embedded = false }: Props) {
@@ -32,6 +33,7 @@ export function ActiveVisit({ visit, onNote, onPhoto, onLeave, photosEnabled, em
         {photoCount < 5 && <button type="button" className="photo-add mk-photo-add" onClick={() => onPhoto(visit)}><Icon name="plus" /><span>{copy.active.addPhoto}</span></button>}
       </div>
     </Card>}
+    <CareFormsCard visit={visit} />
     <Card className="active-section mk-active-section">
       <p className="eyebrow">{copy.active.quickNoteTitle}</p>
       <button type="button" className="quick-note-input mk-quick-note" onClick={() => onNote(visit)}>{copy.active.quickNotePlaceholder}</button>

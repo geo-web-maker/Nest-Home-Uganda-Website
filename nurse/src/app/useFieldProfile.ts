@@ -12,6 +12,8 @@ export type FieldProfile = {
   staff_number?: string;
   team_id?: string | null;
   supervisor_phone?: string | null;
+  can_switch_app?: boolean;
+  admin_app_url?: string;
   consents_required: FieldConsentRequirement[];
   settings?: { min_app_version?: string; adhoc_allowed?: boolean; photos_enabled?: boolean; photo_max_mb?: number; photo_guidance_text?: string; photo_required?: 'none' | 'arrival' | 'departure' | 'either' | 'both'; sos_enabled?: boolean; sos_disabled_reason?: string; emergency_numbers?: string[]; sos_hold_seconds?: number; sos_cancel_window_s?: number; live_follow_enabled?: boolean; live_follow_minutes?: number; live_follow_interval_seconds?: number };
 };

@@ -1,0 +1,6 @@
+.admin-profile { display: grid; gap: 18px; }
+.admin-profile .eyebrow { margin: 0 0 6px; color: var(--mut); font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.admin-profile .care-form > p { color: var(--mut); }
+.admin-profile ul { columns: 2; padding-left: 20px; }
+.admin-profile li { margin: 4px 0; overflow-wrap: anywhere; }
+@media (max-width: 600px) { .admin-profile ul { columns: 1; } }

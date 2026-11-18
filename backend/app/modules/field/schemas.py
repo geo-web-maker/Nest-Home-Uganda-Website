@@ -39,6 +39,7 @@ class HeartbeatIn(BaseModel):
 
 class FieldVisitResponse(BaseModel):
     id: str
+    client_id: str | None = None
     client_display_name: str
     place_address_text: str
     lat: float | None

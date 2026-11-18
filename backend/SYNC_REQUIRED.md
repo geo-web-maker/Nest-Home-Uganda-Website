@@ -28,3 +28,5 @@ Rules
 2026-11-15 (later): billing Delete (issued/void invoice, receipt) with released numbers, `billing_deletions` record and `POST /admin/billing/{invoices,payments}/{id}/delete`, `GET /admin/billing/deletions`; `storage_ref`/`number_generation` on invoices and receipts; new `BillingDeletion` model registered; test_billing_delete.py added to both copies; parity check passes ("In sync.").
 
 2026-11-15 (evening): agreement field autosave limit raised to 240 per 15 minutes per session; a refused field no longer blocks the others (response carries `rejected`); test_agreement_partial_save.py added to both copies; parity check passes ("In sync.").
+
+2026-11-18: care forms backend (P1-P3): `modules/care_forms` (models, rules, context, render, service, router, templates), UNMC fields on `NurseProfile`, `patient_type`/`agreement_id`/`patient_overrides` on `CareClient`, `care_forms.*` care settings, check-in/check-out gates in `field/service.py`, new models registered, `jinja2` added; care_forms tests added to both copies.

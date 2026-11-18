@@ -48,6 +48,8 @@ import { isForcedUpdate } from '../lib/version';
 import { UpdateNotice } from '../features/update/UpdateNotice';
 import { SafetyTimerPrompt } from '../screens/SafetyTimerPrompt';
 import { Card } from '../ui/Card';
+import { CareFormsProvider, useCareForms } from '../features/careforms/useCareForms';
+import { DocumentsScreen } from '../features/careforms/DocumentsScreen';
 import { PillButton } from '../ui/PillButton';
 
 type ConsentRequirement = FieldConsentRequirement;
@@ -113,6 +115,9 @@ function NurseWorkspace() {
   const [logoutPendingCount, setLogoutPendingCount] = useState(0);
   const [noteVisitId, setNoteVisitId] = useState('');
   const [noteBody, setNoteBody] = useState('');
+  const careForms = useCareForms({ userId: currentUserId, token, online, onQueued: () => { void refreshLocalRef.current(); void syncRef.current(); } });
+  const refreshLocalRef = useRef<() => Promise<void>>(async () => undefined);
+  const syncRef = useRef<() => Promise<void>>(async () => undefined);
   const refreshLocal = useCallback(async () => {
     const cachedVisits = await listCachedVisits();
     const today = kampalaDateKey(new Date());
@@ -562,6 +567,7 @@ function NurseWorkspace() {
   }
 
   function requestVisitAction(visit: CachedVisit, kind: 'check_in' | 'check_out') {
+    if (kind === 'check_in' && careForms.arriveBlocked(visit.client_id)) { setMessage('Form 03 (consent to care) must be signed before you can arrive. Open Care forms on this visit.'); return; }
     setPendingAction({ visit, kind });
     if (!locationDisclosureAccepted) {
       navigate('/onboarding');
@@ -814,6 +820,7 @@ function NurseWorkspace() {
     history: <HistoryScreen history={history} loading={historyLoading} hasMore={historyHasMore} onLoadMore={() => void loadMoreHistory()} pendingVisitIds={pendingHistoryVisitIds} />,
     timesheets: <TimesheetsScreen online={online} />,
     profile: <ProfileScreen profile={fieldProfile} appVersion={APP_VERSION} versionInfo={versionInfo} remindersEnabled={visitRemindersEnabled} inboxEnabled={inboxEnabled} inbox={inbox} inboxMessage={inboxMessage} visits={visits} busy={busy} onSync={() => void sync()} onEnableReminders={() => void enableReminders()} onDisableReminders={() => void disableReminders()} onCheckUpdate={() => void checkForUpdate()} onLogout={() => void requestSignOut()} />,
+    documents: <DocumentsScreen />,
     mail: <MailScreen />,
     audit: <AuditScreen />,
     sync: <SyncScreen operations={allOperations} photos={localPhotos} userId={currentUserId} online={online} busy={busy} wifiOnly={wifiOnlyUpload} onSync={() => void sync()} onRetry={(id) => void retrySavedOperation(id)} onDiscard={(id) => void discardSavedOperation(id)} onApplyAgain={(operation) => void applySavedOperationAgain(operation)} onRetryPhoto={(id) => void retrySavedPhoto(id)} onUploadPhotoNow={(id) => { void uploadPhotoNow(id); }} onDiscardPhoto={(id) => void discardSavedPhoto(id)} />,
@@ -822,7 +829,8 @@ function NurseWorkspace() {
   };
   const updateBlocked = Boolean(versionInfo && isForcedUpdate(APP_VERSION, versionInfo.min_supported));
 
-  return <AppShell online={online} queued={queued} authenticated={Boolean(token)} message={message} syncing={busy} sosEnabled={sosEnabled} smsHref={sosSmsHref} emergencyNumbers={fieldProfile?.settings?.emergency_numbers ?? []} supervisorPhone={fieldProfile?.supervisor_phone} liveFollowEnabled={Boolean(fieldProfile?.settings?.live_follow_enabled)} liveFollowMinutes={fieldProfile?.settings?.live_follow_minutes ?? 30} liveFollowIntervalSeconds={fieldProfile?.settings?.live_follow_interval_seconds ?? 30} sosHoldSeconds={fieldProfile?.settings?.sos_hold_seconds ?? 2} sosCancelWindowSeconds={fieldProfile?.settings?.sos_cancel_window_s ?? 5} onSendSos={sendSos} onStartSosFollow={startSosFollow} onPingSosFollow={pingSosFollow} onSafeNow={reportSafeNow}>
+  refreshLocalRef.current = refreshLocal; syncRef.current = sync;
+  return <CareFormsProvider value={careForms}><AppShell online={online} queued={queued} authenticated={Boolean(token)} message={message} syncing={busy} sosEnabled={sosEnabled} smsHref={sosSmsHref} emergencyNumbers={fieldProfile?.settings?.emergency_numbers ?? []} supervisorPhone={fieldProfile?.supervisor_phone} liveFollowEnabled={Boolean(fieldProfile?.settings?.live_follow_enabled)} liveFollowMinutes={fieldProfile?.settings?.live_follow_minutes ?? 30} liveFollowIntervalSeconds={fieldProfile?.settings?.live_follow_interval_seconds ?? 30} sosHoldSeconds={fieldProfile?.settings?.sos_hold_seconds ?? 2} sosCancelWindowSeconds={fieldProfile?.settings?.sos_cancel_window_s ?? 5} onSendSos={sendSos} onStartSosFollow={startSosFollow} onPingSosFollow={pingSosFollow} onSafeNow={reportSafeNow}>
     {token && updateBlocked && versionInfo ? <Card className="update-gate"><UpdateNotice currentVersion={APP_VERSION} latestVersion={versionInfo.latest} minimumVersion={versionInfo.min_supported} downloadPath={versionInfo.download_path} /><PillButton type="button" tone="ghost" showArrow={false} onClick={() => void checkForUpdate()}>{copy.update.checkAgain}</PillButton></Card> : token && consentsRequired.length > 0 ? <Card className="consent-gate"><h2>{copy.consent.heading}</h2><p>{copy.consent.explanation}</p>{consentsRequired.map((requirement) => <Card className="consent-requirement" key={`${requirement.type}:${requirement.version}`}><h3>{requirement.type.replaceAll('_', ' ')}</h3><p>{requirement.text}</p><p>{copy.consent.version} {requirement.version}</p><PillButton type="button" tone="forest" onClick={() => void acceptConsent(requirement)}>{copy.consent.accept}</PillButton></Card>)}</Card> : <NurseRoutes views={views} authenticated={Boolean(token)} />}
     {token && actionVisit && actionKind === 'check_in' && <ArriveSheet visit={actionVisit} location={actionLocation} locationState={actionLocationState} busy={actionBusy} safetyTimerEnabled={safetyTimerEnabled} canEnableSafetyTimer={sosEnabled} onSafetyTimerChange={setSafetyTimerEnabled} onConfirm={() => void confirmVisitAction()} onCancel={() => { setActionVisit(null); setActionKind(null); setSafetyTimerEnabled(false); }} />}
     {token && actionVisit && actionKind === 'check_out' && <LeaveSheet visit={actionVisit} finalNote={actionFinalNote} busy={actionBusy} onFinalNote={setActionFinalNote} onConfirm={() => void confirmVisitAction()} onCancel={() => { setActionVisit(null); setActionKind(null); }} onAddPhoto={() => { const visit = actionVisit; setActionVisit(null); setActionKind(null); if (visit) openPhoto(visit); }} canAddRequiredPhoto={canAddRequiredPhoto} requiredPhotoMissing={requiredPhotoMissing} />}
@@ -830,5 +838,5 @@ function NurseWorkspace() {
     {token && photoVisitId && selectedVisit(photoVisitId) && <PhotoSheet visit={selectedVisit(photoVisitId)!} file={photoFile} onFile={setPhotoFile} onSubmit={savePhoto} onDiscardLocalPhoto={(id) => void discardSavedPhoto(id)} onRetakeLocalPhoto={(id) => void retakeSavedPhoto(id)} onCancel={() => { setPhotoVisitId(''); setPhotoFile(null); setServerPhotos([]); }} pendingPhotos={localPhotos.filter((photo) => photo.visitId === photoVisitId)} pendingCount={pendingPhotoCount} serverPhotos={serverPhotos} serverPhotosLoading={serverPhotosLoading} photosEnabled={photosEnabled} guidanceText={selectedVisit(photoVisitId)?.photo_rules?.guidance_text != null ? selectedVisit(photoVisitId)?.photo_rules?.guidance_text?.trim() ?? '' : fieldProfile?.settings?.photo_guidance_text || ''} wifiOnly={wifiOnlyUpload} onWifiOnly={(value) => { setWifiOnlyUpload(value); localStorage.setItem('nest.nurse.wifi-only-photos', String(value)); }} busy={busy} />}
     {token && <SafetyTimerPrompt visit={safetyPromptVisit} onOpenVisit={(visit) => navigate(`/active/${encodeURIComponent(visit.id)}`)} />}
     <LogoutGuard open={logoutGuardOpen} pendingItems={logoutPendingCount} onCancel={() => setLogoutGuardOpen(false)} onConfirm={() => { setLogoutGuardOpen(false); void signOut(); }} />
-  </AppShell>;
+  </AppShell></CareFormsProvider>;
 }

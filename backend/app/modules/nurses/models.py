@@ -15,6 +15,12 @@ class NurseProfile(Document):
     team_id: str | None = None
     active: bool = True
     phone_e164: str | None = None
+    # UNMC registration: optional, nurse-edited, self-declared until a different admin verifies it.
+    unmc_number: str | None = None
+    unmc_category: str | None = None
+    unmc_licence_expiry: str | None = None  # ISO date
+    unmc_verified_by: str | None = None
+    unmc_verified_at: datetime | None = None
     last_seen_at: datetime | None = None
     app_version: str | None = None
     battery_pct: int | None = None

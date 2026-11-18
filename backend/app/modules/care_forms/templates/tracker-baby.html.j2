@@ -1,0 +1,9 @@
+{% extends "tracker-base.html.j2" %}{% block title %}Baby weekly tracker{% endblock %}{% block notes_h %}16mm{% endblock %}
+{% block body %}<div class="tt"><b>BABY WEEKLY TRACKER</b><div>One page per week for Baby only · two readings a day, morning and evening</div></div>
+<table class="nm"><tr><td><i>Baby name:</i> <b>{{ patient.name }}</b></td><td><i>Mama name:</i> <b>{{ partner.name }}</b></td></tr><tr><td><i>Nurse:</i> <b>{{ author.name }}</b> · {{ author.registration_line }}</td><td><i>Week:</i> <b>{{ week.label }}</b></td></tr></table>
+<h3>1. Daily log · one row for the morning and one for the evening</h3>
+<table class="g"><thead><tr><th style="width:24mm">DAY</th><th style="width:15mm">TEMP C</th><th style="width:22mm">FED?</th><th style="width:16mm">BATHED?</th><th style="width:46mm">MASSAGED? + OIL</th><th style="width:24mm">SLEEP</th><th style="width:24mm">NAPPY</th><th style="width:11mm">INIT.</th></tr></thead><tbody>
+{% for r in rows %}<tr style="height:8.6mm"><td class="d{% if r.highlight %} fd{% endif %}"><b>{{ r.day }}</b> {{ r.slot }}</td>{% for c in r.cells %}<td{% if r.filled %} class="f"{% endif %}>{{ c }}</td>{% endfor %}</tr>{% endfor %}
+</tbody></table>
+<h3>2. Notes / concerns</h3><div class="nt">{% for n in notes %}<div><b>{{ n.day|upper }}</b> &nbsp;{{ n.text }}</div>{% endfor %}</div>
+<div class="call"><b>CALL {{ org.short_name|upper }} IF:</b><br>Temp above 37.5 C or below 36.5 C · Baby not feeding, very sleepy or few wet nappies<br>Cord red or smelly, skin rash or yellow eyes · Crying non-stop or breathing fast</div>{% endblock %}

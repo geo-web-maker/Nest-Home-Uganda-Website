@@ -1,0 +1,233 @@
+@01|Registration and contact arrangements|Identify the patient and record contact, referral and initial safety information. Completed by BLOOMWELL staff at intake.|staff
+H:Patient details and contact arrangements
+W:Home / service address and directions
+F:Patient telephone|Preferred language
+W:Communication / accessibility support required
+W:Referring clinician / facility and contact
+W:Reason for referral and documents received
+F:Primary caregiver|Caregiver relationship|Caregiver telephone|Available care hours
+F:Emergency contact|Emergency contact relationship|Emergency contact telephone|Alternative contact
+F:Payer / client name and Service Agreement reference
+N:Being a payer, relative or emergency contact does not by itself authorise treatment decisions or access to clinical information. Record lawful authority on Form 03.
+H:Initial safety information
+C:Allergies / reactions|Known/None known/Not yet established
+W:Substance, reaction and severity
+W:Urgent concerns or immediate referral action
+C:Identity checked using two identifiers|Yes
+SIG:staff
+@02|Initial nursing assessment|Record baseline findings, care needs and whether home care is suitable. Completed by a registered nurse within professional competence before care commences. This form does not prescribe treatment.|nurse
+F:Consent to this assessment obtained (Form 03 reference)
+W:Presenting concerns and patient priorities
+W:Relevant diagnoses / history, recent surgery / admission and discharge instructions
+W:Medicines including non-prescription / herbal products, and source checked
+F:Allergies and reactions|Verified with
+H:Baseline observations (where clinically indicated)
+F:Time|Temperature C|Pulse /min|Respirations /min
+F:BP mmHg|SpO2 %|Room air / oxygen device and flow|Pain score / tool
+F:Glucose mmol/L if indicated|Weight kg
+W:Consciousness, breathing / circulation, symptoms and action on abnormal findings
+H:Function and care needs
+W:Mobility / falls; skin / pressure risk; nutrition / swallowing; hydration and elimination
+W:Cognition / communication; emotional needs; safeguarding; cultural preferences
+W:Devices, wounds, infection precautions and specialist assessments needed
+N:Maternal / newborn care: record relevant delivery / gestation, feeding, maternal or baby concerns and attach the appropriate clinical assessment. Mother and baby remain separate patients.
+H:Home safety and suitability
+W:Caregiver capacity; safe access; water / hygiene; equipment; sharps / waste arrangements
+W:Risks identified, safeguards and responsible person
+C:Home care suitable|Yes/Yes with conditions/Referral required
+W:Conditions / referral, responsible clinician and review time
+SIG:nurse
+@03|Consent to the agreed nursing care|Record informed consent to the overall care plan and who is lawfully entitled to decide. Completed before care starts and again on any material change. This is not consent to every future procedure; use Form 04 for specific procedures.|client
+H:The care being agreed
+W:Care plan reference / version and proposed care
+W:Expected benefits, material risks and limitations discussed
+W:Reasonable alternatives, including no care, and likely consequences
+W:Questions, answers, patient preferences and limits on consent
+H:Who makes this decision
+C:Decision maker|Patient decides for themselves/Parent or person with lawful authority
+F:Decision-specific capacity assessed by|Date / time
+W:Support / interpreter provided and findings
+W:If the patient is under 18: parent or legal guardian, relationship and evidence of authority
+W:If another person signs: name, relationship, legal basis and evidence of authority
+W:Patient involvement or child assent where appropriate; concerns / disagreement
+N:Do not assume incapacity from disability, age or difficulty speaking. If authority or capacity is unclear, obtain clinical or legal guidance before non-urgent treatment. An emergency exception, if relied on, must be separately documented on Form 10.
+H:Patient or authorised representative declaration
+T:The proposed care, its benefits, important risks, limitations and reasonable alternatives have been explained in a language I understand. I have had an opportunity to ask questions and received answers. I voluntarily agree only to the care recorded above and in the identified care plan. Material changes or additional procedures require a further consent discussion.
+T:I may refuse a proposed intervention or withdraw consent at any time. The clinician will explain the consequences and discuss safe alternatives. No particular outcome is guaranteed. My signature does not waive legal rights or release BLOOMWELL or its personnel from responsibility for negligent care. This is not consent for research, publicity or every future procedure.
+SIG:client,interpreter,witness,nurse
+F:Copy given on|Sent by (auto-email / paper)|Sent to (email)
+@04|Specific procedure consent|Record consent to an identified procedure or a clearly described course of repeated care. Completed by the practitioner before the procedure. A signature does not replace the discussion. Reconfirm consent before each attendance.|client
+W:Procedure and clinical reason; site / side where applicable
+W:Practitioner and required clinical order / prescription reference
+F:Proposed date, or course duration and frequency
+W:Expected benefits and patient-specific material risks
+W:Alternatives and consequences of delaying or declining
+W:Preparation, pain management, aftercare and warning signs explained
+W:Questions, answers and restrictions requested by the patient
+C:Capacity / authority|Patient/Verified representative (or parent / guardian of a patient under 18)
+W:If representative: name and authority evidence / reference
+F:Interpreter / support used
+H:Declaration
+T:I understand the procedure described above and voluntarily agree to it, subject to my recorded restrictions. I may ask for it to stop or withdraw consent. Any necessary safe stopping steps will be explained. This consent does not authorise unrelated procedures or waive my rights.
+SIG:client,interpreter,witness,nurse
+H:Confirmation immediately before the procedure
+C:Identity and site checked|Yes
+C:Current consent confirmed|Yes
+C:Relevant order, allergies, equipment and safety checks completed|Yes
+W:Changes since discussion and action taken
+C:Proceed|Yes/No
+F:Practitioner initials|Date / time|Visit sheet (Form 07) reference
+@05|Privacy notice and communication choices|Give the privacy notice required by the Data Protection and Privacy Act, and record choices on who may receive information, by which channel, and on optional clinical photographs. Read with Schedule C of the Service Agreement.|client
+H:Part A. Privacy notice
+T:Who we are. BLOOMWELL HOME CARE UGANDA LIMITED is the data controller for your information.
+F:Personal Data Protection Office registration reference (if applicable)
+T:What we collect and why. BLOOMWELL uses necessary patient information, including health information (special personal data), for assessment, treatment, coordination, billing, safety and legal recordkeeping, under an appropriate lawful basis. We collect only what is reasonably necessary. Where the patient is a child, information is collected with the consent of a parent or guardian.
+T:Who may see it. Access is limited to authorised persons. Necessary information may be shared lawfully with treating or receiving professionals, authorised service providers and competent authorities. Paying for care does not automatically entitle a person to clinical information. Particularly sensitive information, such as HIV status, is disclosed only as the law permits.
+T:Messaging and transfers outside Uganda. Messages on shared phones or accounts may be seen by others, and some messaging platforms store information outside Uganda. BLOOMWELL will explain the privacy risks of the proposed channel and offer a reasonable alternative.
+T:How long we keep it, and your rights. Records are protected and retained only as justified by applicable clinical and legal requirements. You may request access to or correction of your information, object to processing where the law allows, or raise concerns through BLOOMWELL on [[org.phone]] or the privacy contact [[org.privacy_email]], and you may complain to Uganda's Personal Data Protection Office.
+H:Part B. People permitted to receive updates
+TBL:Recipient and contact|Information permitted and purpose|Expiry or limits|4
+H:Part C. Communication preferences
+C:Channel|Telephone/SMS/WhatsApp/Email/In person / paper
+F:Verified number / email|Safe time to contact and restrictions
+H:Part D. Optional clinical photographs
+C:Photographs|I agree to the specific clinical photographs described below/I decline
+W:Purpose / body area, authorised recipients and storage
+T:Clinical images are restricted to the stated care purpose. No publicity, testimonials, social media or advertising use is authorised by this form. Unselected optional choices mean no permission has been given.
+H:Part E. Acknowledgment and recorded choice
+T:I received this explanation and made the choices above voluntarily. I may change optional permissions by contacting BLOOMWELL; changes take effect prospectively, subject to lawful processing and retention obligations.
+F:Authority reference
+SIG:client,interpreter,witness,nurse
+@06|Individual nursing care plan|Record the agreed goals, interventions, responsibilities and escalation plan. Completed by the lead clinician before care starts and reviewed when due or when needs change.|client
+F:Plan reference / version|Effective from|Review due|Lead clinician
+W:Patient goals and agreed service scope
+F:Visits / shifts and duration|Responsible nurse / team|Consent form reference (Form 03)
+W:Clinical orders attached
+W:Supplies, equipment, medicines and who provides each
+W:Caregiver tasks and training required; tasks reserved for qualified staff
+TBL:Need or problem|Agreed intervention and frequency|Responsible person|Goal and review date|6
+H:Escalation and continuity plan
+W:Individual warning signs or observation limits set by the responsible clinician
+W:Action / contact for deterioration
+F:BLOOMWELL clinical contact|Clinical contact tel
+F:Treating clinician / facility|Treating clinician tel
+F:Emergency transport arrangement / contact
+N:Urgent deterioration requires prompt emergency assistance; do not wait for a routine BLOOMWELL callback or a reply by messaging. BLOOMWELL's general contact is not a guaranteed ambulance or emergency-response line.
+W:Patient / representative involvement and agreement
+SIG:client,nurse
+@07|Nursing visit and observation record|Record each visit, the observations made, care provided and any action taken. Completed by the attending nurse at every visit.|nurse
+F:Visit date|Arrival time|Departure
+F:Location|Nurse name / UNMC number
+F:Care plan version|Allergies checked
+C:Two patient identifiers checked|Yes
+C:Current consent confirmed|Yes
+W:Patient concerns and change since last visit
+TBL:Time|Observations with units and relevant symptoms|Action and response|6
+N:Record relevant temperature, pulse, respirations, BP, oxygen saturation and oxygen support, pain / tool, glucose or other observations only as indicated. Document abnormal findings and escalation; do not leave an abnormal result without an action entry.
+H:Care provided and response
+W:Interventions, patient response and deviations from the care plan
+F:Medicines recorded on Form 08 / reference|Wound / procedure record reference
+H:Education and ongoing needs
+W:Advice given, understanding checked and caregiver tasks
+W:Concern reported to whom / when; advice received and follow-up responsibility
+F:Next visit / review|Handover to
+SIG:nurse,client
+N:Attendance acknowledgment confirms the visit only. It is not a waiver of complaints, proof that every intervention was consented to, or acceptance of additional fees.
+@08|Medication administration record|Record each verified medicine order and every dose given or not given. One sheet per medicine / order. This is a record, not a prescription. Never pre-sign.|nurse
+F:Allergy status and reaction|Patient identifiers verified|Care plan reference
+H:Verified medicine order
+F:Medicine name|Form / strength|Dose and unit|Route
+F:Frequency / times|Start date|Stop / review|Indication
+F:Prescriber name / contact|Signed order reference / date and location
+W:If as needed: indication, minimum interval and maximum dose in 24 hours per the order
+W:Special instructions / monitoring
+F:Order checked by|Date / time
+TBL:Date and due time|Actual time|Dose and route given|Given or code|Initials|Response or action reference|10
+N:Codes: R = refused; H = withheld on clinical instruction; U = unavailable; A = absent. For every non-administration record the reason, advice sought, prescriber contacted and action below. A code alone is insufficient.
+W:Omission, reaction, clinical instruction or response details
+F:Order changed / stopped by|Change date / time|New verified order reference
+SIG:nurse
+@09|Wound and dressing care record|Record the assessment of a wound and the dressing care delivered. Complete only for assessed wound care within competence and the agreed care plan. Separate sheet for each wound.|nurse
+F:Wound ID / site / side|Onset / surgery date
+F:Diagnosis / type as documented|Order / care plan reference
+F:Consent confirmed|Allergies checked|Assessment time
+H:Wound assessment
+F:Length cm|Width cm|Depth cm|Measurement method / position
+W:Wound bed; edges; surrounding skin; undermining / tunnelling if assessed
+W:Exudate amount / type, odour after cleansing and signs of infection or deterioration
+F:Pain score / tool before|After care
+W:Other relevant observations
+H:Care delivered
+W:Cleansing, dressing / products, technique and applicable clinical order
+W:Tolerance, response, concerns and escalation
+W:Advice, protection / offloading, caregiver role and understanding checked
+C:Photograph taken|No/Yes, with separate clinical permission (Form 05, Part D)
+F:Image reference and secure location
+F:Next dressing / review date|Responsible clinician
+W:Referral / contact and time if indicated
+SIG:nurse
+@10|Incident, emergency and referral record|Record facts promptly after an incident or emergency, the action taken, any referral or transfer, and any required reporting. This form does not replace emergency action or required reporting.|nurse
+F:Event date / time|Place
+C:Type|Deterioration/Medication/Fall / injury/Safeguarding/Other
+W:What happened, observed findings and information source
+W:Immediate action, time, response and persons involved
+F:Emergency / clinical assistance contacted|Time
+W:Advice / instructions, source and action taken
+W:Patient or authorised representative informed; consent / refusal and time
+N:If urgent treatment without prior consent was necessary, record the specific circumstances, why consent could not be obtained, the lawful basis relied on and the later explanation. This is not a standing emergency consent or a resuscitation limitation.
+W:Basis and circumstances if applicable
+H:Required reporting
+C:Reportable event|Death (certified by a registered medical practitioner, never by the nurse)/Notifiable disease/Suspected abuse / safeguarding concern/Other legal or professional duty/None identified
+W:Reported to (authority, professional body or facility), by whom, and when
+W:Patient / family told what happened and what is being done
+C:Privacy incident (lost record, misdirected message)|No/Yes, reported under Service Agreement clause 12.5
+F:Privacy incident reported on
+H:Referral and handover
+F:Receiving facility / clinician|Contact
+F:Acceptance confirmed by / at
+F:Transport / escort and departure time
+W:Condition at transfer, medicines last given and documents sent
+F:Handover received by / time
+W:If transfer delayed or declined: actions and safety plan
+F:BLOOMWELL notified by / to / time|Follow-up owner and deadline
+SIG:nurse
+@11|Refusal or withdrawal of consent|Record that a patient or lawful representative has declined or withdrawn consent to specific care, referral or information sharing. Continue other accepted, appropriate care. Do not pressure the person to sign or treat refusal as a waiver of responsibility.|client
+F:Decision recorded at date / time|Person deciding and role
+W:Care / procedure / referral / permission declined or withdrawn
+W:Reason in the person's own words, if they wish to give one
+W:Decision-specific capacity, communication support and authority if represented
+W:Benefits, material risks of refusal, alternatives and questions discussed
+W:Understanding checked; remaining concerns; further advice obtained
+H:Agreed next steps
+W:Care still accepted, alternatives, safe stopping / handover and follow-up
+W:Warning signs and how / where to obtain urgent assistance
+H:Patient or representative statement
+T:I have had an explanation and opportunity to ask questions. I decline or withdraw consent only as recorded above. I understand I may reconsider and request further advice. Signing this record does not waive my legal rights or release anyone from responsibility for their own conduct.
+C:Signing|Signed/Declined to sign/Unable to sign/Verbal decision recorded
+W:Reason and witness details where appropriate
+SIG:client,interpreter,witness,nurse
+@12|Discharge, transfer and care handover|Record the end of a care episode, or a transfer to another provider or caregiver, and hand over the information needed for safe continuing care. Completed by the sending clinician.|client
+F:Care episode from|To
+F:Reason for ending / transfer
+F:Receiving provider or caregiver|Contact
+W:Summary of condition, care provided and progress against goals
+W:Outstanding problems and current care needs
+H:Medicines and continuing treatment
+C:Current verified medication list / order attached|Yes/Not applicable
+F:Reference / date|Allergies / reactions
+W:Changes, last doses, next doses due and responsibility for administration
+W:Ongoing wound / device care, equipment and supplies
+H:Follow-up and safety
+F:Review appointment|Provider / contact
+W:Pending results / actions and named responsible person
+W:Warning signs, emergency action and contact arrangements explained
+W:Patient / caregiver understanding and ability to continue care checked
+W:Documents / care summary supplied
+W:Equipment / property returned or transferred
+H:Handover confirmation
+F:Receiving person name and role
+SIG:nurse,receiver,client
+F:Copy supplied to patient / authorised recipient on
+N:Necessary clinical information must not be withheld because fees are disputed. Handover acknowledgment records receipt of information, not a waiver of rights.
+H:Document control
+F:Form pack version|Effective from|Next review due|Approved by (BLOOMWELL clinical lead)

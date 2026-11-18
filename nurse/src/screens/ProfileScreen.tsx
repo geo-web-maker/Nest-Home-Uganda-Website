@@ -1,3 +1,4 @@
+import { ProfileCareSection } from '../features/careforms/ProfileCareSection';
 import { Link } from 'react-router-dom';
 import type { FieldProfile } from '../app/useFieldProfile';
 import type { CachedVisit } from '../offline/db';
@@ -77,6 +78,7 @@ export function ProfileScreen(props: Props) {
     </Card>
 
     <Card className="mk-profile-section"><h3>{copy.profile.savedWork}</h3><Row icon={<Icon name="clock" />} label={copy.profile.cachedActiveLabel} value={`${activeVisits} ${copy.profile.activeCached}`} /><PillButton tone="ghost" onClick={props.onSync} disabled={props.busy}>{props.busy ? copy.today.syncing : copy.profile.syncNow}</PillButton></Card>
+    <ProfileCareSection profile={props.profile} />
     <ThemeSwitch />
     <Card className="mk-profile-section mk-profile-logout"><h3>{copy.profile.signOutHeading}</h3><p>{copy.profile.signOutHint}</p><PillButton tone="ghost" size="full" onClick={props.onLogout} showArrow={false}>{copy.profile.signOut}</PillButton></Card>
   </section>;

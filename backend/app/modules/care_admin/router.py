@@ -7,6 +7,7 @@ from typing import Literal
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
+from beanie import PydanticObjectId
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -16,6 +17,7 @@ from app.core.db import get_care_database, start_session
 from app.core.deps import Principal, ReachContext, get_care_actor, require_scopes
 from app.core.totp_guard import is_current_totp_session
 from app.core.errors import Conflict
+from app.modules.agreements.models import Agreement
 from app.modules.audit.models import AuditLog
 from app.modules.care_clients.models import CareClient
 from app.modules.care_ops.procedure import approved_procedure_error
@@ -54,6 +56,8 @@ class ClientIn(BaseModel):
         default=None, pattern=r"^(none|arrival|departure|either|both)$"
     )
     photo_guidance_text: str | None = Field(default=None, max_length=2000)
+    patient_type: Literal["Mama", "Baby", "General"] = "General"
+    agreement_id: str | None = Field(default=None, max_length=40)
 
 
 class PlaceIn(BaseModel):
@@ -104,6 +108,19 @@ async def _audit(actor, action, kind, item_id, before=None, after=None):
         scope=",".join(getattr(actor, "authorised_by", ()) or ()),
         action=action, item_type=kind, item_id=item_id, before=before, after=after,
     ).insert()
+
+
+
+
+async def _require_completed_agreement(agreement_id: str | None) -> None:
+    """Care forms may only take their patient source record from a completed agreement."""
+    if not agreement_id:
+        return
+    if not PydanticObjectId.is_valid(agreement_id):
+        raise HTTPException(422, detail="agreement_id must identify a completed agreement")
+    agreement = await Agreement.get(PydanticObjectId(agreement_id))
+    if agreement is None or agreement.status != "completed":
+        raise HTTPException(422, detail="Only a completed agreement can be linked to a care client")
 
 
 async def _client_reachable(client, ctx):
@@ -279,6 +296,7 @@ async def clients(
 async def create_client(
     body: ClientIn, principal: Principal = Depends(require_scopes("clients:write"))
 ):
+    await _require_completed_agreement(body.agreement_id)
     row = CareClient(**body.model_dump(), created_by=principal.user_id)
     await row.insert()
     await _audit(principal, "care.client.create", "care_client", row.id, None, body.model_dump())
@@ -308,6 +326,8 @@ async def patch_client(
     if not row or not await _client_reachable(row, ctx):
         raise HTTPException(404, detail="Client not found")
     before = row.model_dump()
+    if "agreement_id" in body:
+        await _require_completed_agreement(body.get("agreement_id"))
     allowed = {
         "display_name",
         "notes_for_nurse",
@@ -317,10 +337,36 @@ async def patch_client(
         "photo_allowed",
         "photo_required",
         "photo_guidance_text",
+        "patient_type",
+        "agreement_id",
+        "patient_overrides",
     }
     for key, value in body.items():
         if key not in allowed:
             continue
+        if key == "patient_type" and value not in {"Mama", "Baby", "General"}:
+            raise HTTPException(422, detail="patient_type must be Mama, Baby or General")
+        if key == "patient_overrides":
+            if not isinstance(value, dict):
+                raise HTTPException(422, detail="patient_overrides must be an object")
+            allowed_overrides = {
+                "name", "dob", "language", "phone", "email", "address", "directions",
+                "client_contact", "caregiver", "emergency", "practitioner", "facility",
+                "allergies", "accessibility", "alt_contact",
+            }
+            unknown = set(value) - allowed_overrides
+            if unknown:
+                raise HTTPException(422, detail=f"Unsupported patient override fields: {', '.join(sorted(unknown))}")
+            for override_key, override_value in value.items():
+                if isinstance(override_value, dict):
+                    if override_key not in {"caregiver", "emergency"}:
+                        raise HTTPException(422, detail=f"{override_key} must be text")
+                    if set(override_value) - {"name", "relationship", "phone", "hours", "text"}:
+                        raise HTTPException(422, detail=f"Unsupported nested {override_key} fields")
+                    if any(not isinstance(part, str) or len(part) > 1000 for part in override_value.values()):
+                        raise HTTPException(422, detail=f"{override_key} values must be text up to 1000 characters")
+                elif not isinstance(override_value, str) or len(override_value) > 1000:
+                    raise HTTPException(422, detail=f"{override_key} must be text up to 1000 characters")
         if key == "photo_guidance_text" and value is not None:
             if not isinstance(value, str) or len(value) > 2000:
                 raise HTTPException(

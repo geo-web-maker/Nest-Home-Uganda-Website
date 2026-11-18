@@ -1,5 +1,19 @@
 # Nurse Module implementation status
 
+## Current continuation — 18 November 2026
+
+The admin photo review path has advanced beyond the earlier Phase 11 note: the backend now issues short-lived signed thumbnail and original paths, streams private images through the server, excludes hidden/expired records, records each image view in the audit log, and the admin gallery displays the thumbnail. See Phase 15 in `NURSE_BUILD_LOG.md`. The care-forms continuation also adds the missing admin document/copy-log controls and keeps the admin document index metadata-only.
+
+The nurse package now contains a committed `package-lock.json` and the Phase 14 Android override merge script/tests; this does **not** mean a generated Android Gradle project, APK, or real-device acceptance has been produced. The Android project remains generated locally by the owner workflow.
+
+Still requiring implementation or owner/CI acceptance: the full WO-17C push catalogue and channel-planning rules, mutable notification preferences, admin push status/test controls, protected allowlisted deep-link routing, and end-to-end acceptance with the owner's Firebase registrations and credentials. Track C5 already supplies device token replacement/revocation, durable delivery records with scheduled retry, a nurse-scoped inbox GET, and per-item mark-read API; the nurse UI currently only lists inbox items and remains disabled by `VITE_NURSE_INBOX_ENABLED` until staging acceptance. The full push specification is therefore **partially implemented**, not complete. Visit-specific safety-timer schedule data, full real-backend field E2E, responsive/accessibility browser runs, native device lifecycle checks, and real provider/database credentials also remain open and are not represented as passing.
+
+## Status interpretation
+
+This file preserves several dated implementation notes below. Where older notes conflict with this 18 November 2026 continuation, the dated continuation and later phase entries take precedence. In particular, the current package includes `nurse/package-lock.json`, the Android override script/tests, audited private photo streaming plus signed gallery thumbnails, and the Track C5 inbox/device-token baseline. Those older entries remain useful as history, not as a current statement that those files or routes are absent.
+
+The following items are still distinct release gates: (a) implementation gaps listed above, (b) automated tests/build/type checks that have been authored but intentionally not run in this handoff, (c) owner-controlled credentials/deployments/migrations, and (d) real-device, browser, clinical, or operational acceptance. Source presence does not imply those gates have passed. WO-18 / Module D is not approved and remains skipped; do not implement its clinical logging scopes or data model.
+
 ## Current delivery summary
 
 This ZIP contains the existing Bloomwell Home Care website plus a growing additive Nurse Module implementation. It includes care settings/readiness endpoints, care clients/places/stays/visits, field operations, scope/reach scaffolding, alerts/timesheets/SOS, push-dispatch scaffolding, owner-run B2 backup tooling, and the nurse PWA. The latest continuations add real nurse-side note capture, local history, assigned-client caching, queued photo capture/upload, a needs-attention panel, user-bound local queues and cache isolation for shared devices, best-effort server token revocation on sign-out, native session restoration, push-listener cleanup, the first end-to-end unscheduled-visit route, server-side Cloudinary upload completion verification, a scheduled care-retention job, additional nurse reach/device-ownership safeguards, guarded logout with periodic sync, and shared sync-failure classification with a single-flight guard.

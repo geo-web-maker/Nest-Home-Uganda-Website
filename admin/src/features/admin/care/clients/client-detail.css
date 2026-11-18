@@ -14,3 +14,5 @@
 .client-stay-dot.is-current { border-color: var(--forest); background: var(--leaf); }
 @media (max-width: 700px) { .client-place-card { flex-direction: column; } }
 .client-stay-now { margin: 0 0 8px; padding: 10px 12px; border: 1px solid var(--forest); border-radius: 10px; background: color-mix(in srgb, var(--leaf) 14%, transparent); }
+
+.client-form-help { margin: -6px 0 10px; color: var(--mut); font-size: .86rem; }

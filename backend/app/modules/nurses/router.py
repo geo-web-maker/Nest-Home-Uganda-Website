@@ -222,6 +222,11 @@ async def get_nurse_details(
             "battery_pct": profile.battery_pct,
             "adhoc_override": profile.adhoc_override,
             "consent_versions": profile.consent_versions,
+            "unmc_number": profile.unmc_number,
+            "unmc_category": profile.unmc_category,
+            "unmc_licence_expiry": profile.unmc_licence_expiry,
+            "unmc_verified_by": profile.unmc_verified_by,
+            "unmc_verified_at": profile.unmc_verified_at,
         },
         "devices": [
             {

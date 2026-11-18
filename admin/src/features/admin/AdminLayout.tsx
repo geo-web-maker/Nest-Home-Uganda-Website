@@ -124,12 +124,12 @@ export function AdminLayout() {
             darkLabel={t('layout.dark')}
           />
           <div className={styles.user}>
-            <span className={styles.userText}>
+            <Link to="/profile" className={styles.userText} aria-label="Open my profile">
               <span className={styles.userName}>{user?.name}</span>
               {user?.is_superadmin && (
                 <span className={styles.userNote}>{t('layout.superadmin')}</span>
               )}
-            </span>
+            </Link>
             <span className={styles.initial} aria-hidden="true">
               {initial}
             </span>

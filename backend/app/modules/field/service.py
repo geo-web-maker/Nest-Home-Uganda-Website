@@ -57,6 +57,12 @@ async def record_event(
             return {"status": "rejected", "reason": "photo_requirement_invalid"}
         if photo_missing:
             return {"status": "rejected", "reason": "photo_required_on_checkout"}
+    from app.modules.care_forms import service as care_forms
+
+    if event_type == "check_in" and await care_forms.arrive_blocked(visit.client_id):
+        return {"status": "rejected", "reason": "form_03_required"}
+    if event_type == "check_out" and await care_forms.visit_sign_blocked(visit_id, visit.client_id):
+        return {"status": "rejected", "reason": "temperature_action_required"}
     offset = clock_offset_s(received_at, payload.sent_at_device)
     snapshot = visit.place_snapshot or {"lat": 0, "lng": 0, "radius_m": 150}
     verification, distance = verify(

@@ -224,7 +224,7 @@ export const copy = {
   sync: {
     title: 'Sync', now: 'Sync now', queued: 'Waiting to send', deferred: 'Waiting for retry time', attention: 'Needs attention',
     waitingStatus: 'Waiting', deferredStatus: 'Deferred', lastSynced: 'Sync overview', lastSyncStatus: 'Saved changes on this device are protected until sent.',
-    operationKinds: { check_in: 'Arrival', check_out: 'Departure', visit_note: 'Visit note', consent: 'Required notice', visit_create_adhoc: 'Unscheduled visit', sos: 'Safety alert' },
+    operationKinds: { check_in: 'Arrival', check_out: 'Departure', visit_note: 'Visit note', consent: 'Required notice', visit_create_adhoc: 'Unscheduled visit', sos: 'Safety alert', care_form: 'Care form' },
     unknownOperation: 'Saved action',
     eyebrow: 'Offline queue', heading: 'Sync status', offline: 'You are offline. Saved work stays on this device and will retry when a connection returns.',
     noQueued: 'No actions are waiting to send.', noDeferred: 'No actions are deferred.', noAttention: 'No saved actions need review.',

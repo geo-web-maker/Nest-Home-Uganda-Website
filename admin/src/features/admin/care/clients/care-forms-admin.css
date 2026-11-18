@@ -1,0 +1,22 @@
+.cf-admin-documents, .cf-copy-log { display: grid; gap: 14px; }
+.cf-admin-head, .cf-admin-viewer__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.cf-admin-head h2, .cf-admin-viewer__header h3 { margin: 0 0 6px; }
+.cf-admin-head p, .cf-admin-viewer__header p { margin: 0; color: var(--mut); }
+.cf-admin-doc-list { display: grid; gap: 10px; }
+.cf-admin-doc { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surf); }
+.cf-admin-doc p { margin: 4px 0; color: var(--mut); }
+.cf-admin-signatures { margin-top: 12px; }
+.cf-admin-signatures code { display: block; max-width: min(100%, 680px); margin-top: 4px; overflow-wrap: anywhere; font-size: .72rem; }
+.cf-admin-viewer { position: fixed; z-index: 1000; inset: 4vh 3vw; display: grid; grid-template-rows: auto auto minmax(0,1fr); gap: 10px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surf); box-shadow: 0 20px 80px #0005; }
+.cf-admin-viewer iframe { width: 100%; height: 100%; min-height: 300px; border: 1px solid var(--line); border-radius: 8px; background: white; }
+.cf-admin-viewer__actions { display: flex; justify-content: flex-end; }
+.cf-admin-viewer__actions a { color: var(--accent, var(--forest)); font-weight: 650; }
+.cf-copy-log__table-wrap { max-width: 100%; overflow-x: auto; }
+.cf-copy-log table { width: 100%; border-collapse: collapse; }
+.cf-copy-log th, .cf-copy-log td { padding: 9px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+.cf-copy-log th { color: var(--mut); font-size: .8rem; }
+.cf-copy-log td code { overflow-wrap: anywhere; font-size: .75rem; }
+.cf-copy-status { display: inline-block; padding: 3px 8px; border-radius: 999px; background: var(--surface-2, var(--surf)); text-transform: capitalize; }
+.cf-copy-status.is-sent { color: var(--success, #176b42); }
+.cf-copy-status.is-failed { color: var(--danger, #a42d2d); }
+@media (max-width: 700px) { .cf-admin-doc { flex-direction: column; } .cf-admin-viewer { inset: 1vh 1vw; padding: 10px; } }

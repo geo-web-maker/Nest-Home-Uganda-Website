@@ -6,16 +6,16 @@ import { apiClient } from '@shared/lib/api/client';
 import { NurseDetailPage } from './NurseDetailPage';
 
 vi.mock('../../auth/useAuth', () => ({
-  useAuth: () => ({ user: { scopes: ['nurses:read', 'nurses:write', 'carecfg:write'], is_superadmin: false }, status: 'signedIn' }),
+  useAuth: () => ({ user: { id: 'admin-000001', scopes: ['nurses:read', 'nurses:write', 'carecfg:write'], is_superadmin: false }, status: 'signedIn' }),
 }));
-vi.mock('../../../../lib/api/client', async (importOriginal) => {
+vi.mock('@shared/lib/api/client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shared/lib/api/client')>();
   return { ...actual, apiClient: { get: vi.fn(), patch: vi.fn(), post: vi.fn() } };
 });
 
 const details = {
   person: { name: 'Grace N.', email: 'grace@example.test', phone_e164: '+256700000000', is_active: true },
-  profile: { user_id: 'nurse-000001', staff_number: 'N-001', supervisor_id: 'supervisor-0001', team_id: 'team-1', active: true, phone_e164: '+256700000000', last_seen_at: '2026-10-28T09:00:00Z', app_version: '1.2.0', battery_pct: 80, adhoc_override: null, consent_versions: { privacy_notice: 'v3' } },
+  profile: { user_id: 'nurse-000001', staff_number: 'N-001', supervisor_id: 'supervisor-0001', team_id: 'team-1', active: true, phone_e164: '+256700000000', last_seen_at: '2026-10-28T09:00:00Z', app_version: '1.2.0', battery_pct: 80, adhoc_override: null, consent_versions: { privacy_notice: 'v3' }, unmc_number: 'UNMC-12345', unmc_category: 'Registered nurse', unmc_licence_expiry: '2027-05-01' },
   devices: [{ device_id: 'device-000001', platform: 'android', registered_at: '2026-10-28T08:00:00Z', revoked_at: null, push_token_updated_at: null, has_push_token: true }],
   consents: [{ type: 'privacy_notice', version: 'v3', source: 'field_app', accepted_at: '2026-10-28T08:01:00Z' }],
 };
@@ -41,6 +41,16 @@ describe('NurseDetailPage', () => {
     expect(screen.getByText(/token present/)).toBeInTheDocument();
     expect(screen.getByText(/privacy notice/)).toBeInTheDocument();
     expect(screen.queryByText(/push_token/i)).not.toBeInTheDocument();
+    expect(screen.getByText('UNMC-12345')).toBeInTheDocument();
+    expect(screen.getByText('Self-declared — not verified')).toBeInTheDocument();
+  });
+
+  it('verifies a nurse registration only through the separate-admin endpoint', async () => {
+    const user = userEvent.setup();
+    setup();
+    await screen.findByRole('heading', { name: 'Grace N.' });
+    await user.click(screen.getByRole('button', { name: 'Verify registration details' }));
+    await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/admin/care/nurses/nurse-000001/unmc/verify', {}));
   });
 
   it('sends supervisor assignment to the audited endpoint', async () => {

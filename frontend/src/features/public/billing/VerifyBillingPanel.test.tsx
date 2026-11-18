@@ -1,9 +1,11 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../../lib/api/client';
 import { VerifyBillingPanel } from './VerifyBillingPanel';
 
 const api = vi.hoisted(() => ({ get: vi.fn() }));
+const hash = vi.hoisted(() => ({ sha256Hex: vi.fn() }));
+vi.mock('../verify/hash', () => ({ sha256Hex: hash.sha256Hex }));
 vi.mock('../../../lib/api/client', async (importOriginal) => {
   const original = await importOriginal<typeof import('../../../lib/api/client')>();
   return { ...original, apiClient: api };
@@ -13,6 +15,7 @@ describe('VerifyBillingPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     document.head.innerHTML = '';
+    hash.sha256Hex.mockResolvedValue('b'.repeat(64));
   });
 
   const valid = {
@@ -63,5 +66,34 @@ describe('VerifyBillingPanel', () => {
     api.get.mockRejectedValue(new ApiError(404, 'not_found', 'No document matches this link.'));
     render(<VerifyBillingPanel reference="BHC-INV-2026-9999" code="aaaaaaaaaaaaaaaa" />);
     expect(await screen.findByText('We could not match this document')).toBeTruthy();
+  });
+
+  it('compares an uploaded PDF against the published sealed rendition hashes', async () => {
+    api.get.mockResolvedValue(valid);
+    render(<VerifyBillingPanel reference={valid.reference} code="aaaaaaaaaaaaaaaa" />);
+    await screen.findByText('Genuine and valid document');
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['sealed pdf'], 'invoice.pdf', { type: 'application/pdf' });
+    fireEvent.change(input, { target: { files: [file] } });
+    expect(await screen.findByText('billingVerify.identical')).toBeTruthy();
+    expect(hash.sha256Hex).toHaveBeenCalledWith(file);
+  });
+
+  it('reports a PDF whose content hash differs from both published renditions', async () => {
+    api.get.mockResolvedValue(valid);
+    hash.sha256Hex.mockResolvedValue('d'.repeat(64));
+    render(<VerifyBillingPanel reference={valid.reference} code="aaaaaaaaaaaaaaaa" />);
+    await screen.findByText('Genuine and valid document');
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, {
+      target: { files: [new File(['altered pdf'], 'changed.pdf', { type: 'application/pdf' })] },
+    });
+    expect(await screen.findByText('billingVerify.different')).toBeTruthy();
+  });
+
+  it('shows the retry-later state when public verification is rate limited', async () => {
+    api.get.mockRejectedValue(new ApiError(429, 'rate_limited', 'Try again later.'));
+    render(<VerifyBillingPanel reference={valid.reference} code="aaaaaaaaaaaaaaaa" />);
+    expect(await screen.findByText('billingVerify.busy')).toBeTruthy();
   });
 });

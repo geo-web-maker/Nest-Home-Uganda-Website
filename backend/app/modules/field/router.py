@@ -112,6 +112,7 @@ def _field_visit(v, client=None, organisation_photo_required="none", registered_
     photo_types = list(registered_photo_types or [])
     return {
         "id": v.id,
+        "client_id": v.client_id,
         "client_display_name": client.display_name if client else "Client",
         "place_address_text": snap.get("address_text", ""),
         "lat": snap.get("lat"),
@@ -263,6 +264,9 @@ async def me(principal: Principal = CanUseBasic):
             supervisor.name if supervisor is not None and supervisor.is_active else None
         ),
         "supervisor_phone": supervisor_phone,
+        # Dual-scope accounts get a "Switch app" link; the apps stay separate sessions (scopes only, no roles).
+        "can_switch_app": bool(principal.is_superadmin or any(sc.endswith(":write") and not sc.startswith("field") for sc in principal.scopes)),
+        "admin_app_url": get_settings().admin_url,
         "settings": {
             "sos_enabled": sos_enabled,
             "sos_disabled_reason": reason,

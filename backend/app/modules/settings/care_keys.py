@@ -114,6 +114,12 @@ for row in [
     ("timesheets.rounding_minutes", "integer", 1, False, ("org",), "timesheets", 1, 60),
     ("timesheets.auto_submit", "boolean", False),
     ("timesheets.export_approved_only", "boolean", True),
+    # Care forms. auto_email_copy is one org-wide admin switch, never a nurse-side setting.
+    ("care_forms.auto_email_copy", "boolean", False),
+    ("care_forms.gates_enabled", "boolean", False),  # switch on at go-live: Form 03 before Arrive, temperature gate
+    ("care_forms.privacy_email", "text", "privacy@bhcug.com"),
+    ("care_forms.pdpo_ref", "text", ""),
+    ("care_forms.org_phone", "text", ""),
 ]:
     key, kind, default, *rest = row
     required = rest[0] if len(rest) > 0 else False

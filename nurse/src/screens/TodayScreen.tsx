@@ -1,3 +1,4 @@
+import { HomeSummaryCard } from '../features/careforms/HomeSummaryCard';
 import type { FormEvent } from 'react';
 import type { CachedClient, CachedVisit } from '../offline/db';
 import { formatKampalaTime } from '../lib/time';
@@ -46,6 +47,7 @@ export function TodayScreen(props: Props) {
           <Avatar initials={initials(props.displayName, props.staffNumber)} label={props.displayName || undefined} />
         </div>
       </header>
+      <HomeSummaryCard visits={props.visits} />
 
       <div className="mk-schedule-heading">
         <h2>{copy.today.scheduleHeading}</h2>

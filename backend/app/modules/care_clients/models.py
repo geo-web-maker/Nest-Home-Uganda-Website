@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import Any
 
 from beanie import Document
 from pydantic import Field
@@ -15,6 +16,10 @@ class CareClient(Document):
     assigned_nurse_ids: list[str] = Field(default_factory=list)
     created_by: str | None = None  # user id of the creator; lets test-account data be removed
     photo_allowed: bool = False
+    # Care forms: set by admin only (nurses have no clients:write). Patient details come from the agreement.
+    patient_type: str = Field(default="General", pattern=r"^(Mama|Baby|General)$")
+    agreement_id: str | None = None
+    patient_overrides: dict[str, Any] = Field(default_factory=dict)
     photo_required: str | None = Field(
         default=None, pattern=r"^(none|arrival|departure|either|both)$"
     )

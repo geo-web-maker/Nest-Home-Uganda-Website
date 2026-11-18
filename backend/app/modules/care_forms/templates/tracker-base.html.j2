@@ -1,0 +1,16 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>{% block title %}{% endblock %}</title><style>
+@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#0B2E2A;font-size:8.5pt}
+.page{width:210mm;height:296mm;position:relative;overflow:hidden;background:#fff}
+.hd{background:#08675F;color:#fff;height:26mm;padding:5mm 12mm}.hd table{width:100%}.hd td{vertical-align:middle}.hd .n{font-size:15pt;font-weight:bold;letter-spacing:.5pt}.hd .s{font-size:8pt;color:#CFEAE5}.hd .r{text-align:right;font-size:8pt;color:#CFEAE5}
+.bar{height:1.6mm;background:#F8991E}.in{padding:4mm 12mm 0}
+.tt{border:.3mm solid #08675F;background:#DDF0EC;text-align:center;padding:2.5mm;margin-bottom:3mm}.tt b{font-size:14pt;color:#08675F;letter-spacing:.5pt}.tt div{font-size:8pt;color:#47615E}
+.nm{width:100%;border-collapse:separate;border-spacing:2mm 1.5mm;margin:0 -2mm 1mm}.nm td{border:.25mm solid #CAD9D5;padding:1.8mm 2.5mm;font-size:8.5pt;width:50%}.nm i{font-style:normal;color:#47615E}
+h3{font-size:9.5pt;margin:2.5mm 0 1.5mm;color:#08675F;break-after:avoid}
+table.g{width:100%;border-collapse:collapse;table-layout:fixed}.g th{background:#08675F;color:#fff;font-size:7pt;letter-spacing:.3pt;padding:1.5mm 1mm;text-align:center;height:8mm}.g td{border:.25mm solid #CAD9D5;font-size:7.5pt;padding:0 1.2mm;text-align:center;vertical-align:middle}.g tbody tr:nth-child(even) td{background:#F2F8F6}
+.g td.d{text-align:left;background:#E8F2F0;font-size:7.5pt}.g td.fd{border-left:1.2mm solid #F8991E}.g td.f{font-weight:bold;background:#FFF6E3}
+.nt{border:.25mm solid #CAD9D5;padding:1.5mm 2.5mm;font-size:8pt;min-height:{% block notes_h %}14mm{% endblock %}}.nt b{color:#47615E;font-size:7pt;letter-spacing:.4pt}
+.call{border:.3mm solid #E0B25A;background:#FFF6E3;padding:2.5mm 4mm;margin-top:3mm;font-size:8pt;line-height:1.5}.call b{font-size:9pt}.call.m{border-color:#E39A93;background:#FDECEA}
+.ft{position:absolute;left:0;right:0;bottom:0;height:13mm;background:#08675F;color:#DDF0EC;font-size:7.5pt;padding:2.5mm 12mm;line-height:1.5}
+</style></head><body><div class="page"><div class="hd"><table><tr><td style="width:17mm">{{ org.mark_svg|safe }}</td><td><div class="n">{{ org.name|upper }}</div><div class="s">Nest Mama Program · You rest, we care</div></td><td class="r">{{{ org.city }}}, Uganda<br>{{{ org.phone }}}</td></tr></table></div><div class="bar"></div>
+<div class="in">{% block body %}{% endblock %}</div>
+<div class="ft">{{ org.name }} · Bring this sheet to every visit · Call if temp is above 37.5 C or below 36.5 C<br>{% if signature and signature.stamp %}{{ signature.stamp }}{% else %}Nurse signature: ____________________ &nbsp; Date: ____________{% endif %} &nbsp;&nbsp; Reviewed by: ____________</div></div></body></html>

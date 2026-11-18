@@ -11,6 +11,7 @@ import { useAuth } from '../../auth/useAuth';
 import '../care.css';
 import './client-detail.css';
 import { Notice } from '@shared/components/dialogs/Notice';
+import { CareFormsAdminPanel } from './CareFormsAdminPanel';
 
 type Client = {
   id: string;
@@ -22,7 +23,11 @@ type Client = {
   photo_allowed?: boolean;
   photo_required?: 'none' | 'arrival' | 'departure' | 'either' | 'both' | null;
   photo_guidance_text?: string | null;
+  patient_type?: 'Mama' | 'Baby' | 'General';
+  agreement_id?: string | null;
+  patient_overrides?: Record<string, unknown>;
 };
+type AgreementOption = { id: string; reference?: string; status?: string; client_name?: string | null; patient_name?: string | null };
 type Place = {
   id: string;
   label?: string;
@@ -83,6 +88,7 @@ export function ClientDetailPage() {
   const canEditPlace = canEditClient;
   const canMoveClient = canEditClient;
   const canReadMapConfig = hasScopes(user, ['carecfg:read']);
+  const canReadAgreements = hasScopes(user, ['agreements:read']);
   const [client, setClient] = useState<Client | null>(null);
   const [places, setPlaces] = useState<Place[]>([]);
   const [stays, setStays] = useState<Stay[]>([]);
@@ -92,6 +98,10 @@ export function ClientDetailPage() {
   const [photoAllowed, setPhotoAllowed] = useState(false);
   const [photoRequired, setPhotoRequired] = useState('none');
   const [photoGuidance, setPhotoGuidance] = useState('');
+  const [patientType, setPatientType] = useState<'Mama' | 'Baby' | 'General'>('General');
+  const [agreementId, setAgreementId] = useState('');
+  const [patientOverrides, setPatientOverrides] = useState('{}');
+  const [agreementOptions, setAgreementOptions] = useState<AgreementOption[]>([]);
   const [editingPlaceId, setEditingPlaceId] = useState('');
   const [placeLabel, setPlaceLabel] = useState('Home');
   const [placeAddress, setPlaceAddress] = useState('');
@@ -118,6 +128,19 @@ export function ClientDetailPage() {
       setPhotoAllowed(Boolean(value.photo_allowed));
       setPhotoRequired(value.photo_required ?? 'none');
       setPhotoGuidance(value.photo_guidance_text ?? '');
+      setPatientType(value.patient_type ?? 'General');
+      setAgreementId(value.agreement_id ?? '');
+      setPatientOverrides(JSON.stringify(value.patient_overrides ?? {}, null, 2));
+      if (canReadAgreements) {
+        try {
+          const agreementResult = await apiClient.get<{ items?: AgreementOption[] }>('/admin/agreements', { params: { status: 'completed', limit: 100 } });
+          setAgreementOptions(agreementResult.items ?? []);
+        } catch {
+          setAgreementOptions([]);
+        }
+      } else {
+        setAgreementOptions([]);
+      }
       if (canReadPlaces) {
         try {
           const [placeResult, stayResult] = await Promise.all([
@@ -150,7 +173,7 @@ export function ClientDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [id, canReadPlaces, canReadMapConfig]);
+  }, [id, canReadPlaces, canReadMapConfig, canReadAgreements]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -175,12 +198,25 @@ export function ClientDetailPage() {
     event.preventDefault();
     setBusy(true); setError(''); setNotice('');
     try {
+      let parsedOverrides: Record<string, unknown>;
+      try {
+        const parsed = JSON.parse(patientOverrides || '{}');
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Patient overrides must be a JSON object.');
+        parsedOverrides = parsed as Record<string, unknown>;
+      } catch (reason) {
+        setError(reason instanceof Error ? reason.message : 'Patient overrides must be valid JSON.');
+        setBusy(false);
+        return;
+      }
       await apiClient.patch(`/admin/care/clients/${encodeURIComponent(id)}`, {
         display_name: displayName.trim(),
         notes_for_nurse: notes.trim(),
         photo_allowed: photoAllowed,
         photo_required: photoRequired,
         photo_guidance_text: photoGuidance.trim() || null,
+        patient_type: patientType,
+        agreement_id: agreementId || null,
+        patient_overrides: parsedOverrides,
       });
       setNotice('Client details saved and audited.');
       await load();
@@ -255,6 +291,16 @@ export function ClientDetailPage() {
         <h2>Profile and care notes</h2>
         <Field label="Client display name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} required requiredLabel="required" maxLength={120} disabled={!canEditClient} />
         <Field kind="textarea" label="Notes for nurse" value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={280} disabled={!canEditClient} />
+        <h3>Patient form configuration</h3>
+        <Field kind="select" label="Patient type" value={patientType} onChange={(event) => setPatientType(event.target.value as 'Mama' | 'Baby' | 'General')} disabled={!canEditClient}>
+          <option value="Mama">Mama</option><option value="Baby">Baby</option><option value="General">General</option>
+        </Field>
+        {canReadAgreements ? <Field kind="select" label="Completed agreement (source of patient details)" value={agreementId} onChange={(event) => setAgreementId(event.target.value)} disabled={!canEditClient}>
+          <option value="">No linked agreement</option>
+          {agreementOptions.map((agreement) => <option key={agreement.id} value={agreement.id}>{agreement.reference ?? agreement.id}{agreement.patient_name || agreement.client_name ? ` · ${agreement.patient_name ?? agreement.client_name}` : ''}</option>)}
+        </Field> : <p>Agreement linking is visible to staff with agreements:read.</p>}
+        <Field kind="textarea" label="Patient detail overrides (JSON object)" value={patientOverrides} onChange={(event) => setPatientOverrides(event.target.value)} disabled={!canEditClient} />
+        <p className="client-form-help">Use overrides only for corrections or details not present in the agreement. Keep the agreement as the source record; supported fields include name, date of birth, contact, address, caregiver, emergency contact, allergies and accessibility.</p>
         <Checkbox label="Photo evidence is permitted for this client" checked={photoAllowed} onChange={(event) => setPhotoAllowed(event.target.checked)} disabled={!canEditClient} />
         <Field kind="select" label="Required photo evidence" value={photoRequired} onChange={(event) => setPhotoRequired(event.target.value)} disabled={!canEditClient}>
           {PHOTO_REQUIREMENTS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
@@ -262,6 +308,8 @@ export function ClientDetailPage() {
         <Field kind="textarea" label="Photo guidance for nurse" value={photoGuidance} onChange={(event) => setPhotoGuidance(event.target.value)} maxLength={2000} disabled={!canEditClient} />
         {canEditClient && <Button type="submit" disabled={busy}>Save client details</Button>}
       </form>
+
+      <CareFormsAdminPanel clientId={id} />
 
       <section className="care-form" aria-labelledby="client-places-title">
         <div className="client-section-heading"><h2 id="client-places-title">Places and stays</h2>{canMoveClient && canReadPlaces && <Button variant="outline" onClick={() => { setMovePlaceId(places[0]?.id ?? ''); setMoveOpen(true); }}>Move client</Button>}</div>

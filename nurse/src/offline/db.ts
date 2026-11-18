@@ -3,7 +3,7 @@ import Dexie, { type EntityTable } from 'dexie';
 
 export type OutboxOperation = {
   id: string;
-  kind: 'check_in' | 'check_out' | 'visit_note' | 'consent' | 'visit_create_adhoc' | 'sos';
+  kind: 'check_in' | 'check_out' | 'visit_note' | 'consent' | 'visit_create_adhoc' | 'sos' | 'care_form';
   visitId?: string;
   ownerUserId?: string;
   payload: Record<string, unknown>;
@@ -15,6 +15,7 @@ export type OutboxOperation = {
 };
 export type CachedVisit = {
   id: string;
+  client_id?: string | null;
   client_display_name: string;
   place_address_text: string;
   lat?: number | null;

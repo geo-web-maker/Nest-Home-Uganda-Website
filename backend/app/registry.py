@@ -27,6 +27,8 @@ from app.modules.auth import router as auth_router
 from app.modules.auth.models import PasswordReset, RefreshToken, User
 from app.modules.care_admin import router as care_admin_router
 from app.modules.care_clients.models import CareClient
+from app.modules.care_forms import router as care_forms_router
+from app.modules.care_forms.models import CareFormCopyLog, CareFormInstance, CareFormSignature
 from app.modules.care_ops import router as care_ops_router
 from app.modules.care_ops.models import (
     CareAlert,
@@ -121,6 +123,9 @@ CARE_DOCUMENT_MODELS: list[type[Document]] = [
     NurseProfile,
     Device,
     CareClient,
+    CareFormInstance,
+    CareFormSignature,
+    CareFormCopyLog,
     CarePlace,
     PlaceStay,
     Visit,
@@ -184,6 +189,8 @@ ROUTERS: list[APIRouter] = [
     field_router.router,
     field_ops_router.router,
     care_admin_router.router,
+    care_forms_router.router,
+    care_forms_router.admin_router,
     care_ops_router.router,
     mail_router.router,
     agreements_admin_router,

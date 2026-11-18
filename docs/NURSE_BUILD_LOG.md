@@ -199,3 +199,24 @@ Known CI integration gaps intentionally not represented as passing: the reposito
 - Android: override merge script plus tests; `nurse/android/` git-ignored.
 
 Validation status: **Written, not run. CI will run it.**
+
+
+## Phase 15: signed photo thumbnails and audit-safe gallery polish (2026-11-18)
+
+- `backend/app/modules/care_ops/router.py`: the admin photo-list response now includes a short-lived HMAC-signed thumbnail path for each photo in the caller's permitted reach. The response still contains no permanent Cloudinary identifier or provider URL. The existing stream endpoint verifies the signature, rejects hidden/expired records, fetches the private asset through the server, audits each delivery, and returns `private, no-store` image bytes.
+- `admin/src/features/admin/care/VisitListAndPhotosPages.tsx`: the photo gallery now displays the signed thumbnail in each card. Opening a photo continues to request a fresh signed original path; stale thumbnail paths are never reused as the full-resolution viewer URL.
+- `admin/src/features/admin/care/stage30-38.css`: added responsive gallery/card/thumbnail styling.
+- Updated the Bloomwell admin forms list to return document metadata and signature evidence only; full clinical form payloads are no longer included in the list response and remain available only through the reach-checked signed-PDF route.
+- Expanded billing UI test sources for server-side status/date/practice filtering, preservation of the payment idempotency key after a failed request, PDF hash match/mismatch feedback, and public verification rate-limit handling.
+
+Validation status: **Written, not run.** No backend/frontend tests, typecheck, build, browser session, PDF render, or device command was executed in this continuation. Remaining nurse release work includes live provider/database acceptance, push-token lifecycle and inbox/deep-link integration, safety-timer reminder data, and full device/browser acceptance.
+
+
+## Bloomwell care forms: P5 admin completion update (2026-11-18)
+
+- Added admin client create/edit controls for patient type, completed-agreement linkage, and constrained patient-detail overrides. Override values are used for care-form rendering and do not mutate the signed agreement.
+- Added reach-scoped UNMC verification by a different admin. Verification rejects missing, invalid, or expired licence dates; nurse edits to registration details clear the prior verification. The nurse signing gate now also requires a present and unexpired licence expiry.
+- Added the per-client read-only signed-form viewer, signature evidence, and copy-delivery log. The document list exposes metadata only; clinical payloads are not returned in its index response. Signed PDFs remain behind a client-reach check and private/no-store delivery.
+- Added the admin profile and nurse-app switch for authenticated dual-scope users. A single-scope account does not receive the switch action.
+
+Validation: source and regression-test updates are authored but not run. Clinical wording approval, PDPO reference confirmation, WeasyPrint visual inspection, CI, and operational sign-off remain P6 gates.

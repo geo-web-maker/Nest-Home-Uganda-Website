@@ -7,6 +7,7 @@ import { Chip } from '../ui/Chip';
 import { PillButton } from '../ui/PillButton';
 import { Icon } from '../ui/Icon';
 import { statusKind, statusText } from '../ui/statusChip';
+import { CareFormsCard } from '../features/careforms/CareFormsCard';
 
 type Props = {
   visit: CachedVisit; photosEnabled: boolean; embedded?: boolean;
@@ -34,6 +35,7 @@ export function VisitDetail({ visit, photosEnabled, embedded = false, onArrive, 
     <Card className="detail-card mk-detail-card">
       <p className="eyebrow">{copy.visit.instructions}</p><p>{visit.instructions || copy.address.noInstructions}</p>
     </Card>
+    <CareFormsCard visit={visit} />
     <div className="detail-primary-action mk-detail-actions">
       {visit.status === 'scheduled' && <PillButton size="full" onClick={() => onArrive(visit)}>{copy.visit.arrive}</PillButton>}
       {visit.status === 'in_progress' && <PillButton onClick={() => onLeave(visit)} tone="forest" size="full">{copy.visit.leave}</PillButton>}

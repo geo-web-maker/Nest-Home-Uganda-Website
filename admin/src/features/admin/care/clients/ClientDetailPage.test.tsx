@@ -6,9 +6,9 @@ import { apiClient } from '@shared/lib/api/client';
 import { ClientDetailPage } from './ClientDetailPage';
 
 vi.mock('../../auth/useAuth', () => ({
-  useAuth: () => ({ user: { scopes: ['clients:read', 'clients:write', 'places:read', 'places:write', 'carecfg:read'], is_superadmin: false } }),
+  useAuth: () => ({ user: { scopes: ['clients:read', 'clients:write', 'places:read', 'places:write', 'carecfg:read', 'agreements:read'], is_superadmin: false } }),
 }));
-vi.mock('../../../../lib/api/client', async (importOriginal) => {
+vi.mock('@shared/lib/api/client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shared/lib/api/client')>();
   return { ...actual, apiClient: { get: vi.fn(), patch: vi.fn(), post: vi.fn() } };
 });
@@ -19,7 +19,7 @@ function setup() {
   </MemoryRouter>);
 }
 
-const client = { id: 'client-000001', display_name: 'Amina N.', notes_for_nurse: 'Call on arrival', photo_allowed: true, photo_required: 'departure', photo_guidance_text: 'Avoid faces of visitors.' };
+const client = { id: 'client-000001', display_name: 'Amina N.', notes_for_nurse: 'Call on arrival', photo_allowed: true, photo_required: 'departure', photo_guidance_text: 'Avoid faces of visitors.', patient_type: 'Mama' as const, agreement_id: 'agreement-000001', patient_overrides: { language: 'Luganda' } };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -28,6 +28,7 @@ beforeEach(() => {
     if (path.endsWith('/places')) return { items: [{ id: 'place-000001', label: 'Home', address_text: 'Kampala', lat: 0.31, lng: 32.58, radius_m: 150 }] } as never;
     if (path.endsWith('/stays')) return { items: [{ id: 'stay-000001', place_id: 'place-000001', starts_on: '2026-10-01', ends_on: null }] } as never;
     if (path === '/admin/care/settings') return { items: [{ id: 'care.map_tile_url', value: '' }] } as never;
+    if (path === '/admin/agreements') return { items: [{ id: 'agreement-000001', reference: 'AGR-001', status: 'completed', patient_name: 'Amina N.' }] } as never;
     return { items: [] } as never;
   });
   vi.mocked(apiClient.patch).mockResolvedValue({} as never);
@@ -41,6 +42,9 @@ describe('ClientDetailPage', () => {
     expect(screen.getByLabelText('Notes for nurse')).toHaveValue('Call on arrival');
     expect(screen.getByLabelText('Required photo evidence')).toHaveValue('departure');
     expect(screen.getByText('Avoid faces of visitors.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Patient type')).toHaveValue('Mama');
+    expect(screen.getByLabelText('Completed agreement (source of patient details)')).toHaveValue('agreement-000001');
+    expect(screen.getByLabelText('Patient detail overrides (JSON object)')).toHaveValue(JSON.stringify({ language: 'Luganda' }, null, 2));
     expect(await screen.findByText('Kampala')).toBeInTheDocument();
     expect(screen.getByText(/2026-10-01/)).toBeInTheDocument();
   });
@@ -52,6 +56,6 @@ describe('ClientDetailPage', () => {
     await user.clear(screen.getByLabelText('Notes for nurse'));
     await user.type(screen.getByLabelText('Notes for nurse'), 'Ring the bell');
     await user.click(screen.getByRole('button', { name: 'Save client details' }));
-    await waitFor(() => expect(apiClient.patch).toHaveBeenCalledWith('/admin/care/clients/client-000001', expect.objectContaining({ notes_for_nurse: 'Ring the bell', photo_required: 'departure' })));
+    await waitFor(() => expect(apiClient.patch).toHaveBeenCalledWith('/admin/care/clients/client-000001', expect.objectContaining({ notes_for_nurse: 'Ring the bell', photo_required: 'departure', patient_type: 'Mama', agreement_id: 'agreement-000001', patient_overrides: { language: 'Luganda' } })));
   });
 });

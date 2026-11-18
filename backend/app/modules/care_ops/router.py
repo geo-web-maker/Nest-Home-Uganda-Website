@@ -363,6 +363,10 @@ async def list_photos(
             "photo_type": x.photo_type,
             "status": x.status,
             "created_at": x.created_at,
+            # Short-lived thumbnail capability; no permanent provider URL leaves the server.
+            "thumbnail_path": _signed_photo_path(
+                principal.user_id, x.visit_id, x.id, "thumbnail"
+            ),
         }
         for x in rows
         if allowed(x)

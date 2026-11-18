@@ -62,6 +62,11 @@ class NurseProfileResponse(BaseModel):
     phone_e164: str | None = None
     last_seen_at: datetime | None = None
     app_version: str | None = None
+    unmc_number: str | None = None
+    unmc_category: str | None = None
+    unmc_licence_expiry: str | None = None
+    unmc_verified_by: str | None = None
+    unmc_verified_at: datetime | None = None
 
 
 class DeviceRevocation(BaseModel):
@@ -87,6 +92,11 @@ class NurseDetailsProfile(BaseModel):
     battery_pct: int | None = None
     adhoc_override: bool | None = None
     consent_versions: dict[str, str]
+    unmc_number: str | None = None
+    unmc_category: str | None = None
+    unmc_licence_expiry: str | None = None
+    unmc_verified_by: str | None = None
+    unmc_verified_at: datetime | None = None
 
 
 class NurseDetailsDevice(BaseModel):
