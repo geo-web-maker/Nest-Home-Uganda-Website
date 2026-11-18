@@ -1115,6 +1115,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/care/care-forms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin List */
+        get: operations["admin_list_api_v1_admin_care_care_forms_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/care/care-forms/08-orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set Order */
+        put: operations["set_order_api_v1_admin_care_care_forms_08_orders_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/care/care-forms/copy-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Copy Log */
+        get: operations["copy_log_api_v1_admin_care_care_forms_copy_log_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/care/care-forms/{instance_id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin Care Form Pdf
+         * @description Admin read-only access to a client's sealed care document; enforce the same reach boundary as the client page.
+         */
+        get: operations["admin_care_form_pdf_api_v1_admin_care_care_forms__instance_id__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/care/clients": {
         parameters: {
             query?: never;
@@ -1550,6 +1621,23 @@ export interface paths {
         patch: operations["change_supervisor_api_v1_admin_care_nurses__user_id__supervisor_patch"];
         trace?: never;
     };
+    "/api/v1/admin/care/nurses/{user_id}/unmc/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify Unmc */
+        post: operations["verify_unmc_api_v1_admin_care_nurses__user_id__unmc_verify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/care/ops/status": {
         parameters: {
             query?: never;
@@ -1834,6 +1922,26 @@ export interface paths {
         put?: never;
         /** Resolve Sos Case */
         post: operations["resolve_sos_case_api_v1_admin_care_sos__case_id__resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/care/switch-app": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Switch To Nurse App
+         * @description Only dual-scope staff can obtain the nurse app URL from the admin session.
+         */
+        get: operations["switch_to_nurse_app_api_v1_admin_care_switch_app_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3066,6 +3174,180 @@ export interface paths {
         get: operations["field_audit_api_v1_field_audit_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/care-forms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Documents */
+        get: operations["list_documents_api_v1_field_care_forms_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/care-forms/bootstrap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bootstrap */
+        get: operations["bootstrap_api_v1_field_care_forms_bootstrap_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/care-forms/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save Draft */
+        put: operations["save_draft_api_v1_field_care_forms_drafts_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/care-forms/me/registration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Registration */
+        get: operations["my_registration_api_v1_field_care_forms_me_registration_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update My Registration */
+        patch: operations["update_my_registration_api_v1_field_care_forms_me_registration_patch"];
+        trace?: never;
+    };
+    "/api/v1/field/care-forms/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit
+         * @description Offline-safe: the app queues one op that saves the draft and applies whichever signatures were captured.
+         */
+        post: operations["submit_api_v1_field_care_forms_submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/care-forms/trackers/{client_id}/week": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tracker Week */
+        get: operations["tracker_week_api_v1_field_care_forms_trackers__client_id__week_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/care-forms/{instance_id}/countersign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Countersign */
+        post: operations["countersign_api_v1_field_care_forms__instance_id__countersign_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/care-forms/{instance_id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Pdf */
+        get: operations["get_pdf_api_v1_field_care_forms__instance_id__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/care-forms/{instance_id}/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resend */
+        post: operations["resend_api_v1_field_care_forms__instance_id__resend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/care-forms/{instance_id}/signatures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Client Sign */
+        post: operations["client_sign_api_v1_field_care_forms__instance_id__signatures_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5763,6 +6045,8 @@ export interface components {
         };
         /** ClientIn */
         ClientIn: {
+            /** Agreement Id */
+            agreement_id?: string | null;
             /** Assigned Nurse Ids */
             assigned_nurse_ids?: string[];
             /** Display Name */
@@ -5775,6 +6059,12 @@ export interface components {
              */
             notes_for_nurse: string;
             /**
+             * Patient Type
+             * @default General
+             * @enum {string}
+             */
+            patient_type: "Mama" | "Baby" | "General";
+            /**
              * Photo Allowed
              * @default false
              */
@@ -5785,6 +6075,32 @@ export interface components {
             photo_required?: string | null;
             /** Supervisor Id */
             supervisor_id?: string | null;
+        };
+        /** ClientSignIn */
+        ClientSignIn: {
+            /** Detail */
+            detail?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Esign Consent
+             * @default false
+             */
+            esign_consent: boolean;
+            /** Evidence */
+            evidence?: {
+                [key: string]: unknown;
+            };
+            /** Image */
+            image?: string | null;
+            /** Method */
+            method: string;
+            /** Name */
+            name: string;
+            /** Role */
+            role: string;
+            /** Signer Email */
+            signer_email?: string | null;
         };
         /** ConfigBody */
         ConfigBody: {
@@ -5970,6 +6286,19 @@ export interface components {
         Done: {
             /** Status */
             status: string;
+        };
+        /** DraftIn */
+        DraftIn: {
+            /** Client Id */
+            client_id: string;
+            /** Data */
+            data?: {
+                [key: string]: unknown;
+            };
+            /** Form Id */
+            form_id: string;
+            /** Visit Id */
+            visit_id?: string | null;
         };
         /** EnquiriesPerDay */
         EnquiriesPerDay: {
@@ -6970,6 +7299,16 @@ export interface components {
             supervisor_id?: string | null;
             /** Team Id */
             team_id?: string | null;
+            /** Unmc Category */
+            unmc_category?: string | null;
+            /** Unmc Licence Expiry */
+            unmc_licence_expiry?: string | null;
+            /** Unmc Number */
+            unmc_number?: string | null;
+            /** Unmc Verified At */
+            unmc_verified_at?: string | null;
+            /** Unmc Verified By */
+            unmc_verified_by?: string | null;
             /** User Id */
             user_id: string;
         };
@@ -7060,8 +7399,40 @@ export interface components {
             supervisor_name?: string | null;
             /** Team Id */
             team_id: string | null;
+            /** Unmc Category */
+            unmc_category?: string | null;
+            /** Unmc Licence Expiry */
+            unmc_licence_expiry?: string | null;
+            /** Unmc Number */
+            unmc_number?: string | null;
+            /** Unmc Verified At */
+            unmc_verified_at?: string | null;
+            /** Unmc Verified By */
+            unmc_verified_by?: string | null;
             /** User Id */
             user_id: string;
+        };
+        /** NurseSignIn */
+        NurseSignIn: {
+            /** Evidence */
+            evidence?: {
+                [key: string]: unknown;
+            };
+            /** Image */
+            image?: string | null;
+            /** Method */
+            method: string;
+        };
+        /** OrderIn */
+        OrderIn: {
+            /** Client Id */
+            client_id: string;
+            /** Nurse Id */
+            nurse_id: string;
+            /** Order */
+            order?: {
+                [key: string]: string;
+            };
         };
         /** OtpRequest */
         OtpRequest: {
@@ -7547,6 +7918,15 @@ export interface components {
         ReasonIn: {
             /** Reason */
             reason: string;
+        };
+        /** RegistrationIn */
+        RegistrationIn: {
+            /** Unmc Category */
+            unmc_category?: string | null;
+            /** Unmc Licence Expiry */
+            unmc_licence_expiry?: string | null;
+            /** Unmc Number */
+            unmc_number?: string | null;
         };
         /** ReportsSummary */
         ReportsSummary: {
@@ -8055,6 +8435,23 @@ export interface components {
              * Format: date
              */
             starts_on: string;
+        };
+        /** SubmitIn */
+        SubmitIn: {
+            /** Client Id */
+            client_id: string;
+            client_signature?: components["schemas"]["ClientSignIn"] | null;
+            /** Data */
+            data?: {
+                [key: string]: unknown;
+            };
+            /** Form Id */
+            form_id: string;
+            nurse_signature?: components["schemas"]["NurseSignIn"] | null;
+            /** Op Id */
+            op_id: string;
+            /** Visit Id */
+            visit_id?: string | null;
         };
         /** SupervisorPatch */
         SupervisorPatch: {
@@ -11024,6 +11421,132 @@ export interface operations {
             };
         };
     };
+    admin_list_api_v1_admin_care_care_forms_get: {
+        parameters: {
+            query: {
+                client_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_order_api_v1_admin_care_care_forms_08_orders_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    copy_log_api_v1_admin_care_care_forms_copy_log_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    admin_care_form_pdf_api_v1_admin_care_care_forms__instance_id__pdf_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                instance_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     clients_api_v1_admin_care_clients_get: {
         parameters: {
             query?: never;
@@ -12013,6 +12536,37 @@ export interface operations {
             };
         };
     };
+    verify_unmc_api_v1_admin_care_nurses__user_id__unmc_verify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     ops_status_api_v1_admin_care_ops_status_get: {
         parameters: {
             query?: never;
@@ -12538,6 +13092,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    switch_to_nurse_app_api_v1_admin_care_switch_app_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
@@ -15704,6 +16278,341 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_documents_api_v1_field_care_forms_get: {
+        parameters: {
+            query?: {
+                client_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bootstrap_api_v1_field_care_forms_bootstrap_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    save_draft_api_v1_field_care_forms_drafts_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_registration_api_v1_field_care_forms_me_registration_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    update_my_registration_api_v1_field_care_forms_me_registration_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrationIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_api_v1_field_care_forms_submit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tracker_week_api_v1_field_care_forms_trackers__client_id__week_get: {
+        parameters: {
+            query: {
+                start: string;
+            };
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    countersign_api_v1_field_care_forms__instance_id__countersign_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                instance_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NurseSignIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_pdf_api_v1_field_care_forms__instance_id__pdf_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                instance_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resend_api_v1_field_care_forms__instance_id__resend_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                instance_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    client_sign_api_v1_field_care_forms__instance_id__signatures_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                instance_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientSignIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

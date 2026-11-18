@@ -1629,6 +1629,18 @@
       },
       "ClientIn": {
         "properties": {
+          "agreement_id": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agreement Id"
+          },
           "assigned_nurse_ids": {
             "items": {
               "type": "string"
@@ -1652,6 +1664,16 @@
             "default": "",
             "maxLength": 280,
             "title": "Notes For Nurse",
+            "type": "string"
+          },
+          "patient_type": {
+            "default": "General",
+            "enum": [
+              "Mama",
+              "Baby",
+              "General"
+            ],
+            "title": "Patient Type",
             "type": "string"
           },
           "photo_allowed": {
@@ -1700,6 +1722,69 @@
           "display_name"
         ],
         "title": "ClientIn",
+        "type": "object"
+      },
+      "ClientSignIn": {
+        "properties": {
+          "detail": {
+            "additionalProperties": true,
+            "title": "Detail",
+            "type": "object"
+          },
+          "esign_consent": {
+            "default": false,
+            "title": "Esign Consent",
+            "type": "boolean"
+          },
+          "evidence": {
+            "additionalProperties": true,
+            "title": "Evidence",
+            "type": "object"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "signer_email": {
+            "anyOf": [
+              {
+                "maxLength": 254,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signer Email"
+          }
+        },
+        "required": [
+          "role",
+          "method",
+          "name"
+        ],
+        "title": "ClientSignIn",
         "type": "object"
       },
       "ConfigBody": {
@@ -2197,6 +2282,42 @@
           "status"
         ],
         "title": "Done",
+        "type": "object"
+      },
+      "DraftIn": {
+        "properties": {
+          "client_id": {
+            "title": "Client Id",
+            "type": "string"
+          },
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          },
+          "form_id": {
+            "maxLength": 8,
+            "minLength": 1,
+            "title": "Form Id",
+            "type": "string"
+          },
+          "visit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visit Id"
+          }
+        },
+        "required": [
+          "form_id",
+          "client_id"
+        ],
+        "title": "DraftIn",
         "type": "object"
       },
       "EnquiriesPerDay": {
@@ -4918,6 +5039,62 @@
             ],
             "title": "Team Id"
           },
+          "unmc_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unmc Category"
+          },
+          "unmc_licence_expiry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unmc Licence Expiry"
+          },
+          "unmc_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unmc Number"
+          },
+          "unmc_verified_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unmc Verified At"
+          },
+          "unmc_verified_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unmc Verified By"
+          },
           "user_id": {
             "title": "User Id",
             "type": "string"
@@ -5231,6 +5408,62 @@
             ],
             "title": "Team Id"
           },
+          "unmc_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unmc Category"
+          },
+          "unmc_licence_expiry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unmc Licence Expiry"
+          },
+          "unmc_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unmc Number"
+          },
+          "unmc_verified_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unmc Verified At"
+          },
+          "unmc_verified_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unmc Verified By"
+          },
           "user_id": {
             "title": "User Id",
             "type": "string"
@@ -5244,6 +5477,60 @@
           "active"
         ],
         "title": "NurseProfileResponse",
+        "type": "object"
+      },
+      "NurseSignIn": {
+        "properties": {
+          "evidence": {
+            "additionalProperties": true,
+            "title": "Evidence",
+            "type": "object"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          }
+        },
+        "required": [
+          "method"
+        ],
+        "title": "NurseSignIn",
+        "type": "object"
+      },
+      "OrderIn": {
+        "properties": {
+          "client_id": {
+            "title": "Client Id",
+            "type": "string"
+          },
+          "nurse_id": {
+            "title": "Nurse Id",
+            "type": "string"
+          },
+          "order": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Order",
+            "type": "object"
+          }
+        },
+        "required": [
+          "client_id",
+          "nurse_id"
+        ],
+        "title": "OrderIn",
         "type": "object"
       },
       "OtpRequest": {
@@ -6398,6 +6685,48 @@
           "reason"
         ],
         "title": "ReasonIn",
+        "type": "object"
+      },
+      "RegistrationIn": {
+        "properties": {
+          "unmc_category": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unmc Category"
+          },
+          "unmc_licence_expiry": {
+            "anyOf": [
+              {
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unmc Licence Expiry"
+          },
+          "unmc_number": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unmc Number"
+          }
+        },
+        "title": "RegistrationIn",
         "type": "object"
       },
       "ReportsSummary": {
@@ -7819,6 +8148,69 @@
           "starts_on"
         ],
         "title": "StayIn",
+        "type": "object"
+      },
+      "SubmitIn": {
+        "properties": {
+          "client_id": {
+            "title": "Client Id",
+            "type": "string"
+          },
+          "client_signature": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientSignIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          },
+          "form_id": {
+            "maxLength": 8,
+            "minLength": 1,
+            "title": "Form Id",
+            "type": "string"
+          },
+          "nurse_signature": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NurseSignIn"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "op_id": {
+            "maxLength": 80,
+            "minLength": 8,
+            "title": "Op Id",
+            "type": "string"
+          },
+          "visit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visit Id"
+          }
+        },
+        "required": [
+          "op_id",
+          "form_id",
+          "client_id"
+        ],
+        "title": "SubmitIn",
         "type": "object"
       },
       "SupervisorPatch": {
@@ -13506,6 +13898,187 @@
         ]
       }
     },
+    "/api/v1/admin/care/care-forms": {
+      "get": {
+        "operationId": "admin_list_api_v1_admin_care_care_forms_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin List",
+        "tags": [
+          "care-forms-admin"
+        ]
+      }
+    },
+    "/api/v1/admin/care/care-forms/08-orders": {
+      "put": {
+        "operationId": "set_order_api_v1_admin_care_care_forms_08_orders_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Order",
+        "tags": [
+          "care-forms-admin"
+        ]
+      }
+    },
+    "/api/v1/admin/care/care-forms/copy-log": {
+      "get": {
+        "operationId": "copy_log_api_v1_admin_care_care_forms_copy_log_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Copy Log",
+        "tags": [
+          "care-forms-admin"
+        ]
+      }
+    },
+    "/api/v1/admin/care/care-forms/{instance_id}/pdf": {
+      "get": {
+        "description": "Admin read-only access to a client's sealed care document; enforce the same reach boundary as the client page.",
+        "operationId": "admin_care_form_pdf_api_v1_admin_care_care_forms__instance_id__pdf_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "instance_id",
+            "required": true,
+            "schema": {
+              "title": "Instance Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Admin Care Form Pdf",
+        "tags": [
+          "care-forms-admin"
+        ]
+      }
+    },
     "/api/v1/admin/care/clients": {
       "get": {
         "operationId": "clients_api_v1_admin_care_clients_get",
@@ -14927,6 +15500,51 @@
         ]
       }
     },
+    "/api/v1/admin/care/nurses/{user_id}/unmc/verify": {
+      "post": {
+        "operationId": "verify_unmc_api_v1_admin_care_nurses__user_id__unmc_verify_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Verify Unmc",
+        "tags": [
+          "care-forms-admin"
+        ]
+      }
+    },
     "/api/v1/admin/care/ops/status": {
       "get": {
         "operationId": "ops_status_api_v1_admin_care_ops_status_get",
@@ -15756,6 +16374,31 @@
         "summary": "Resolve Sos Case",
         "tags": [
           "care-operations"
+        ]
+      }
+    },
+    "/api/v1/admin/care/switch-app": {
+      "get": {
+        "description": "Only dual-scope staff can obtain the nurse app URL from the admin session.",
+        "operationId": "switch_to_nurse_app_api_v1_admin_care_switch_app_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Switch To Nurse App",
+        "tags": [
+          "care-forms-admin"
         ]
       }
     },
@@ -21276,6 +21919,492 @@
         "summary": "Field Audit",
         "tags": [
           "field"
+        ]
+      }
+    },
+    "/api/v1/field/care-forms": {
+      "get": {
+        "operationId": "list_documents_api_v1_field_care_forms_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "client_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Documents",
+        "tags": [
+          "care-forms"
+        ]
+      }
+    },
+    "/api/v1/field/care-forms/bootstrap": {
+      "get": {
+        "operationId": "bootstrap_api_v1_field_care_forms_bootstrap_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Bootstrap",
+        "tags": [
+          "care-forms"
+        ]
+      }
+    },
+    "/api/v1/field/care-forms/drafts": {
+      "put": {
+        "operationId": "save_draft_api_v1_field_care_forms_drafts_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Save Draft",
+        "tags": [
+          "care-forms"
+        ]
+      }
+    },
+    "/api/v1/field/care-forms/me/registration": {
+      "get": {
+        "operationId": "my_registration_api_v1_field_care_forms_me_registration_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "My Registration",
+        "tags": [
+          "care-forms"
+        ]
+      },
+      "patch": {
+        "operationId": "update_my_registration_api_v1_field_care_forms_me_registration_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update My Registration",
+        "tags": [
+          "care-forms"
+        ]
+      }
+    },
+    "/api/v1/field/care-forms/submit": {
+      "post": {
+        "description": "Offline-safe: the app queues one op that saves the draft and applies whichever signatures were captured.",
+        "operationId": "submit_api_v1_field_care_forms_submit_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Submit",
+        "tags": [
+          "care-forms"
+        ]
+      }
+    },
+    "/api/v1/field/care-forms/trackers/{client_id}/week": {
+      "get": {
+        "operationId": "tracker_week_api_v1_field_care_forms_trackers__client_id__week_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "start",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "Start",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Tracker Week",
+        "tags": [
+          "care-forms"
+        ]
+      }
+    },
+    "/api/v1/field/care-forms/{instance_id}/countersign": {
+      "post": {
+        "operationId": "countersign_api_v1_field_care_forms__instance_id__countersign_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "instance_id",
+            "required": true,
+            "schema": {
+              "title": "Instance Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NurseSignIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Countersign",
+        "tags": [
+          "care-forms"
+        ]
+      }
+    },
+    "/api/v1/field/care-forms/{instance_id}/pdf": {
+      "get": {
+        "operationId": "get_pdf_api_v1_field_care_forms__instance_id__pdf_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "instance_id",
+            "required": true,
+            "schema": {
+              "title": "Instance Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Pdf",
+        "tags": [
+          "care-forms"
+        ]
+      }
+    },
+    "/api/v1/field/care-forms/{instance_id}/resend": {
+      "post": {
+        "operationId": "resend_api_v1_field_care_forms__instance_id__resend_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "instance_id",
+            "required": true,
+            "schema": {
+              "title": "Instance Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Resend",
+        "tags": [
+          "care-forms"
+        ]
+      }
+    },
+    "/api/v1/field/care-forms/{instance_id}/signatures": {
+      "post": {
+        "operationId": "client_sign_api_v1_field_care_forms__instance_id__signatures_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "instance_id",
+            "required": true,
+            "schema": {
+              "title": "Instance Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientSignIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Client Sign",
+        "tags": [
+          "care-forms"
         ]
       }
     },
