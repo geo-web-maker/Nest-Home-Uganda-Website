@@ -77,6 +77,7 @@ from app.modules.team.models import TeamMember
 from app.modules.testimonials import router as testimonials_router
 from app.modules.testimonials.models import Testimonial
 from app.modules.users import router as users_router
+from app.modules.mail.unread_counter import MailUnread
 from app.modules.visits.models import (
     Visit,
     VisitAnnotation,
@@ -89,6 +90,7 @@ from app.modules.visits.models import (
 API_PREFIX = "/api/v1"
 
 DOCUMENT_MODELS: list[type[Document]] = [
+    MailUnread,
     User,
     RefreshToken,
     PasswordReset,

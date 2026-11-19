@@ -20,6 +20,7 @@ from app.modules.mail import service, core_service
 from app.modules.mail import db as mail_db
 from app.modules.mail.schemas import MailSettingsPatch
 from app.modules.mail.settings_service import get_value, _fernet
+from app.modules.mail import unread_counter
 
 router = APIRouter(prefix="/mail", tags=["mail"])
 
@@ -153,6 +154,27 @@ async def mailboxes(principal: Principal = Depends(require_scopes("mail:use"))):
         "items": await core_service.list_mailboxes(principal.user_id),
         "limits": {"scan_enabled": bool(await get_value("mail.scan_enabled")), "rich_text_enabled": bool(await get_value("mail.rich_text_enabled")), "external_send_enabled": bool(await get_value("mail.external_enabled")), "domain": str(await get_value("mail.domain") or "").lower()},
     }
+
+
+@router.get("/unread")
+async def unread(principal: Principal = Depends(require_scopes("mail:use"))):
+    """Total unread for the sidebar badge. Reads MongoDB only, so polling it never wakes Neon.
+
+    The first call for a person (or one that finds MongoDB unreadable) counts in Postgres once
+    and stores the result; every later call is Mongo only.
+    """
+    total = await unread_counter.get_total(principal.user_id)
+    if total is None:
+        try:
+            items = await core_service.list_mailboxes(principal.user_id)  # also stores the total
+            total = sum(int(item.get("unread_count") or 0) for item in items)
+        except Exception:
+            # Mail is switched off or Neon is unavailable. Store 0 so later badge polls stay on
+            # MongoDB instead of retrying Neon every minute; opening the mail screen or the
+            # nightly recount replaces it with the real figure.
+            await unread_counter.set_total(principal.user_id, 0)
+            total = 0
+    return {"unread": total}
 
 
 @router.get("/mailboxes/{mailbox_id}/messages")
@@ -345,6 +367,7 @@ async def patch_message(mailbox_message_id: str, body: MessagePatch, principal: 
         changes=body.model_dump(exclude_unset=True)
         if changes:
             await conn.execute("UPDATE mailbox_message SET folder=COALESCE($2,folder),is_read=COALESCE($3,is_read),is_starred=COALESCE($4,is_starred),trashed_at=CASE WHEN $2='trash' THEN now() ELSE trashed_at END WHERE id=$1",mailbox_message_id,changes.get('folder'),changes.get('is_read'),changes.get('is_starred'))
+            if {'folder','is_read'} & changes.keys(): await unread_counter.refresh_for_mailboxes(conn, [row['mailbox_id']])
     return {"updated": True}
 
 @router.delete("/messages/{mailbox_message_id}")
@@ -356,6 +379,7 @@ async def delete_message(mailbox_message_id: str, principal: Principal = Depends
         if not row: raise Forbidden("Message is not available to this mailbox.")
         if row['folder']=='trash': await conn.execute("DELETE FROM mailbox_message WHERE id=$1",mailbox_message_id)
         else: await conn.execute("UPDATE mailbox_message SET folder='trash',trashed_at=now() WHERE id=$1",mailbox_message_id)
+        await unread_counter.refresh_for_mailboxes(conn, [row['mailbox_id']])
     return {"deleted": True}
 
 @router.post("/shared")

@@ -245,7 +245,9 @@ async def ingest(payload: dict[str, Any], timestamp: str, signature: str) -> dic
                 )
                 if folder == "inbox" and notify_ids:
                     from app.modules.mail.notify import notify_new_mail
+                    from app.modules.mail.unread_counter import refresh_for_mailboxes
 
+                    await refresh_for_mailboxes(conn, notify_ids)
                     notify_new_mail(notify_ids, sender=parsed.from_address or "", subject=parsed.subject or "")
                 return {"delivered": delivered, "folder": folder, "message_id": str(message_id), "routing": routing}
     except Exception:

@@ -348,6 +348,9 @@ async def run_mail_housekeeping() -> int:
                     removed+=1
         async with pool.acquire() as conn:
             await conn.execute("DELETE FROM send_counter WHERE window_start < current_date-62")
+        from app.modules.mail.unread_counter import recompute_all
+
+        await recompute_all(pool)  # nightly recount of the Mongo unread badge; Neon is awake anyway
         return removed
     except Exception:
         log.warning("mail housekeeping job unavailable; details omitted")

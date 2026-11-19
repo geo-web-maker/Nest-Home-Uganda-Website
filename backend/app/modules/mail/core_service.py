@@ -108,6 +108,9 @@ async def list_mailboxes(user_id: str):
       FROM mailbox b JOIN mailbox_member m ON m.mailbox_id=b.id
       WHERE m.user_id=$1 AND b.state='open' ORDER BY (b.kind='personal') DESC,b.display_name
     """, user_id)
+    from app.modules.mail.unread_counter import set_total
+
+    await set_total(user_id, sum(int(r["unread_count"] or 0) for r in rows))  # keeps the Mongo badge exact
     return [{**dict(r), "address": f"{r['local_part']}@{domain}"} for r in rows]
 
 
@@ -201,6 +204,10 @@ async def read_message(user_id: str, item_id: str, *, include_admin_diagnostics:
                 from app.core.errors import NotFound
                 raise NotFound("Message not found.")
             await conn.execute("UPDATE mailbox_message SET is_read=true WHERE id=$1", item_id)
+            if not row["is_read"]:
+                from app.modules.mail.unread_counter import refresh_for_mailboxes
+
+                await refresh_for_mailboxes(conn, [row["mailbox_id"]])
             await _audit(conn, user_id, "mail.read", row["mailbox_id"], row["message_id"])
             if row["folder"] in ("drafts", "sent"):
                 recipients = await conn.fetch(
@@ -1194,7 +1201,9 @@ async def send_draft(user_id: str, draft_id: str, mailbox_id: str):
                 )
             if local:
                 from app.modules.mail.notify import notify_new_mail
+                from app.modules.mail.unread_counter import refresh_for_mailboxes
 
+                await refresh_for_mailboxes(conn, [target for target, _address in local])
                 notify_new_mail(
                     [target for target, _address in local if str(target) != str(mailbox_id)],
                     sender=str(draft["from_address"] or ""),
