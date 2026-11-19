@@ -4965,6 +4965,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mail/unread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Unread
+         * @description Total unread for the sidebar badge. Reads MongoDB only, so polling it never wakes Neon.
+         *
+         *     The first call for a person (or one that finds MongoDB unreadable) counts in Postgres once
+         *     and stores the result; every later call is Mongo only.
+         */
+        get: operations["unread_api_v1_mail_unread_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/mail/usage": {
         parameters: {
             query?: never;
@@ -20093,6 +20116,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unread_api_v1_mail_unread_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };

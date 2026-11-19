@@ -27899,6 +27899,31 @@
         ]
       }
     },
+    "/api/v1/mail/unread": {
+      "get": {
+        "description": "Total unread for the sidebar badge. Reads MongoDB only, so polling it never wakes Neon.\n\nThe first call for a person (or one that finds MongoDB unreadable) counts in Postgres once\nand stores the result; every later call is Mongo only.",
+        "operationId": "unread_api_v1_mail_unread_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Unread",
+        "tags": [
+          "mail"
+        ]
+      }
+    },
     "/api/v1/mail/usage": {
       "get": {
         "operationId": "mail_usage_api_v1_mail_usage_get",
