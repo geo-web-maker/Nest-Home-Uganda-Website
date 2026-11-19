@@ -3279,6 +3279,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/field/app/apk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * App Apk Download
+         * @description Short-lived signed URL for the latest APK. Expires in 10 minutes.
+         */
+        get: operations["app_apk_download_api_v1_field_app_apk_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/field/app/version": {
         parameters: {
             query?: never;
@@ -5749,6 +5769,8 @@ export interface components {
              * @default true
              */
             active: boolean;
+            /** Apk Key */
+            apk_key?: string | null;
             /** Download Path */
             download_path?: string | null;
             /** Id */
@@ -5765,8 +5787,14 @@ export interface components {
              * @default
              */
             release_notes: string;
+            /** Sha256 */
+            sha256?: string | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
             /** Version */
             version: string;
+            /** Version Code */
+            version_code?: number | null;
         };
         /** ApplicationDetail */
         ApplicationDetail: {
@@ -16714,6 +16742,37 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    app_apk_download_api_v1_field_app_apk_get: {
+        parameters: {
+            query?: {
+                platform?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

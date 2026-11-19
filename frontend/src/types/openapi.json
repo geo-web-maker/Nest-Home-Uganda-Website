@@ -496,6 +496,18 @@
             "title": "Active",
             "type": "boolean"
           },
+          "apk_key": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Apk Key"
+          },
           "download_path": {
             "anyOf": [
               {
@@ -535,11 +547,47 @@
             "title": "Release Notes",
             "type": "string"
           },
+          "sha256": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
           "version": {
             "maxLength": 80,
             "minLength": 5,
             "title": "Version",
             "type": "string"
+          },
+          "version_code": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Code"
           }
         },
         "required": [
@@ -22432,6 +22480,54 @@
           }
         },
         "summary": "Receive Client Error"
+      }
+    },
+    "/api/v1/field/app/apk": {
+      "get": {
+        "description": "Short-lived signed URL for the latest APK. Expires in 10 minutes.",
+        "operationId": "app_apk_download_api_v1_field_app_apk_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "platform",
+            "required": false,
+            "schema": {
+              "default": "android",
+              "pattern": "^(android|ios|web)$",
+              "title": "Platform",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "App Apk Download",
+        "tags": [
+          "field"
+        ]
       }
     },
     "/api/v1/field/app/version": {
