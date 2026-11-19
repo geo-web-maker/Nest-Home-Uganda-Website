@@ -1,10 +1,10 @@
 /* GENERATED from shared/mail-rich. Edit there, then run: node scripts/sync-mail-rich.mjs */
 .mr-message { --mr-fg: var(--ink, #1a1a1a); --mr-line: var(--line, #ddd); --mr-muted: var(--mut, #666); color: var(--mr-fg); }
-.mr-paper { color: #1a1a1a; background: #fff; color-scheme: light; overflow-wrap: anywhere; padding: var(--mr-gap, 12px); border: 1px solid var(--mr-line, #ddd); border-radius: var(--mr-radius, 8px); }
+.mr-paper { color: #1a1a1a; background: #fff; color-scheme: light; overflow-wrap: break-word; padding: var(--mr-gap, 12px); border: 1px solid var(--mr-line, #ddd); border-radius: var(--mr-radius, 8px); }
 .mr-paper img { max-width: 100%; height: auto; }
 .mr-paper table { max-width: 100%; border-collapse: collapse; }
 /* Email HTML is written for a light page and carries its own colours, so quoted mail sits on the same light surface as the message body, in light and dark app themes. */
-.mr-quoted { color: #1a1a1a; background: #fff; color-scheme: light; margin-top: var(--mr-gap, 12px); border-left: 3px solid var(--mr-line, #ddd); padding: var(--mr-gap, 12px); border-radius: var(--mr-radius, 8px); overflow-wrap: anywhere; }
+.mr-quoted { color: #1a1a1a; background: #fff; color-scheme: light; margin-top: var(--mr-gap, 12px); border-left: 3px solid var(--mr-line, #ddd); padding: var(--mr-gap, 12px); border-radius: var(--mr-radius, 8px); overflow-wrap: break-word; }
 .mr-plain-body { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
 .mr-message-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; position: relative; min-height: 32px; }
 .mr-link-button { background: none; border: 0; padding: 4px 0; font: inherit; font-size: .85rem; font-weight: 600; color: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
@@ -53,7 +53,8 @@
 .mr-editor-content:focus { border-color: var(--mail-focus, #2563eb); box-shadow: 0 0 0 2px color-mix(in srgb, var(--mail-focus, #2563eb) 18%, transparent); }
 .mr-editor-content p.is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; color: #737b86; pointer-events: none; height: 0; }
 .mr-editor-content table, .mr-paper table, .mr-quoted table { border-collapse: collapse; width: 100%; max-width: 100%; }
-.mr-editor-content td, .mr-editor-content th, .mr-paper td, .mr-paper th, .mr-quoted td, .mr-quoted th { border: 1px solid #aeb7c2; padding: .35rem .5rem; vertical-align: top; }
+/* Grid lines and padding are for tables people draw in the composer only. Received mail is table-layout HTML that styles its own cells, so it gets none of this. */
+.mr-editor-content td, .mr-editor-content th { border: 1px solid #aeb7c2; padding: .35rem .5rem; vertical-align: top; }
 .mr-editor-quote { border-inline-start: 3px solid var(--mail-border, #9aa5b1); padding-inline-start: .75rem; }
 .mr-editor-quote-heading { display: flex; justify-content: space-between; gap: .75rem; align-items: center; margin-bottom: .5rem; }
 .mr-editor-quote-heading button, .mr-editor-confirm button { min-height: 2.5rem; padding: .4rem .7rem; }
@@ -98,7 +99,7 @@
 .mr-editor-content { box-sizing: border-box; max-width: 100%; overflow-x: auto; }
 .mr-editor-content table { display: block; overflow-x: auto; width: max-content; min-width: 100%; max-width: 100%; }
 .mr-quoted, .mr-paper { max-width: 100%; overflow-x: auto; }
-.mr-quoted table, .mr-paper table { display: block; overflow-x: auto; }
+/* Received mail keeps real table layout (display:block collapses its column widths); the paper itself scrolls sideways when a message is wider than the screen. */
 .mr-composer-mode, .mr-upload-actions { min-width: 0; }
 .mr-send-confirm { box-sizing: border-box; max-width: 100%; }
 @media (max-width: 560px) {
@@ -153,6 +154,7 @@
   .mr-bar-text { padding: 0 14px; }
   .mr-bar-back { display: none; }
 }
+.mr-bar.mr-bar-single .mr-bar-back { display: inline-flex; }
 .mr-bar-more { display: flex; align-items: center; }
 .mr-bar-more .mr-more { position: relative; }
 .mr-bar-more .mr-more-trigger { width: 44px; height: 44px; color: inherit; }

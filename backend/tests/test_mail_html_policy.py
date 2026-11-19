@@ -62,3 +62,23 @@ def test_backend_policy_matches_shared_policy_file():
         (repository_root / "backend/app/modules/mail/html_policy.json").read_text()
     )
     assert backend == shared
+
+
+def test_hidden_elements_are_dropped_with_their_children_and_layout_widths_survive():
+    result = sanitize_html(
+        '<div hidden>preview <div>nested</div> tail</div><p>after</p>'
+        '<table width="100%" bgcolor="#f1f1f1"><tr><td width="50%" bgcolor="javascript:x">Hi</td></tr></table>'
+        '<table width="abc%"><tr><td>b</td></tr></table>'
+    )
+    assert "preview" not in result.html and "nested" not in result.html
+    assert "<p>after</p>" in result.html
+    assert 'width="100%"' in result.html and 'width="50%"' in result.html
+    assert 'bgcolor="#f1f1f1"' in result.html
+    assert "javascript" not in result.html and "abc" not in result.html
+
+
+def test_preview_line_hiding_styles_survive_including_important():
+    result = sanitize_html('<div style="display:none !important;overflow:hidden;opacity:0;position:fixed">x</div>')
+    assert "display:none !important" in result.html
+    assert "overflow:hidden" in result.html and "opacity:0" in result.html
+    assert "position" not in result.html

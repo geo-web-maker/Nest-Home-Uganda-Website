@@ -10,7 +10,8 @@ export function filterMailStyle(value: string): Record<string, string> {
     const separator = declaration.indexOf(':');
     if (separator < 1) continue;
     const property = declaration.slice(0, separator).trim().toLowerCase();
-    const content = declaration.slice(separator + 1).trim();
+    // `!important` is not part of a value: setProperty() rejects "none !important", which un-hid preheaders.
+    const content = declaration.slice(separator + 1).replace(/\s*!important\s*$/i, '').trim();
     if (!ALLOWED.has(property) || !content || DANGEROUS.test(content)) continue;
     safe[property] = content.slice(0, 500);
   }

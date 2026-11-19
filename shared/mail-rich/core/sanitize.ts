@@ -39,6 +39,8 @@ function copyNode(source: Node, target: Node, depth: number, count: { value: num
   if (!(source instanceof Element)) return;
   const tag = source.tagName;
   if (DROP_CONTENT.has(tag)) return;
+  // The sender hid this element (usually a preview line); without the attribute it would show.
+  if (source.hasAttribute('hidden')) return;
   const destination = ALLOWED_TAGS.has(tag) ? document.createElement(tag.toLowerCase()) : null;
   const parent = destination ?? target;
   if (destination) {
@@ -63,6 +65,7 @@ function copyNode(source: Node, target: Node, depth: number, count: { value: num
         continue;
       }
       if (name === 'target' && attribute.value !== '_blank') continue;
+      if (name === 'bgcolor' && !/^(#[0-9a-f]{3,8}|[a-z]{3,20})$/i.test(attribute.value.trim())) continue;
       destination.setAttribute(name, attribute.value.replace(CONTROL, '').slice(0, 2048));
     }
     if (tag === 'A' && destination.hasAttribute('href')) {

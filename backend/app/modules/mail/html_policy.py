@@ -188,6 +188,7 @@ class _SafeHTMLParser(HTMLParser):
         self.output: list[str] = []
         self.stack: list[str] = []
         self.drop_stack: list[str] = []
+        self.drop_hidden = False  # the current drop is an element the sender hid, so nested tags are tracked too
         self.nodes = 0
         self.depth_exceeded = False
 
@@ -213,7 +214,7 @@ class _SafeHTMLParser(HTMLParser):
             self.depth_exceeded = True
             return
         if self.drop_stack:
-            if tag in _DROP_TAGS:
+            if (tag in _DROP_TAGS or self.drop_hidden) and tag not in _VOID_TAGS:
                 self.drop_stack.append(tag)
             return
         if tag in _DROP_TAGS:
@@ -225,6 +226,12 @@ class _SafeHTMLParser(HTMLParser):
             return
 
         attrs = {name.lower(): (value or "") for name, value in attrs_list}
+        if "hidden" in attrs and tag not in _VOID_TAGS:
+            # The sender hid this element (usually a preview line). Without the attribute it would show.
+            self._removed(tag)
+            self.drop_stack.append(tag)
+            self.drop_hidden = True
+            return
         safe_attrs: dict[str, str] = {}
         allowed_for_tag = _TAG_ATTRS.get(tag, frozenset())
         for name, value in attrs.items():
@@ -251,7 +258,16 @@ class _SafeHTMLParser(HTMLParser):
                         safe_attrs["data-remote-src"] = value
                         self.notes["blocked_remote_images"] += 1
                         continue
-            if name in {"width", "height", "border", "cellpadding", "cellspacing", "colspan", "rowspan", "size", "span"}:
+            if name == "bgcolor":
+                if not re.fullmatch(r"#[0-9a-fA-F]{3,8}|[a-zA-Z]{3,20}", value.strip()):
+                    self.notes["removed_attributes"] += 1
+                    continue
+            if name in {"width", "height"}:
+                # Email layouts lean on percentage widths (width="100%"); losing them shrinks tables to their content.
+                if not re.fullmatch(r"\d{1,5}%?", value.strip()):
+                    self.notes["removed_attributes"] += 1
+                    continue
+            if name in {"border", "cellpadding", "cellspacing", "colspan", "rowspan", "size", "span"}:
                 if not re.fullmatch(r"\d{1,5}", value.strip()):
                     self.notes["removed_attributes"] += 1
                     continue
@@ -303,6 +319,8 @@ class _SafeHTMLParser(HTMLParser):
                     removed = self.drop_stack.pop()
                     if removed == tag:
                         break
+            if not self.drop_stack:
+                self.drop_hidden = False
             return
         if tag not in _ALLOWED_TAGS or tag in _VOID_TAGS:
             return

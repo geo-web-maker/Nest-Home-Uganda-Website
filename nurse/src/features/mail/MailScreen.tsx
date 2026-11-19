@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { apiRequest, type ApiError } from '../../lib/api/client';
 import { copy } from '../../copy';
 import { Banner } from '../../ui/Banner';
@@ -109,6 +111,19 @@ export function MailScreen() {
   }, [ownerId, reloadDrafts]);
 
   useEffect(() => { void refresh(); }, [refresh, online]);
+
+  // The phone's own back button closes an open message instead of leaving Mail. The listener exists
+  // only while a message is open (and no composer is), so back behaves as before everywhere else.
+  const messageOpen = Boolean(selectedId) && !composer;
+  useEffect(() => {
+    if (!messageOpen || !Capacitor.isNativePlatform()) return;
+    let active = true;
+    let handle: { remove: () => Promise<void> } | undefined;
+    void CapacitorApp.addListener('backButton', () => setSelectedId(''))
+      .then((added) => { if (active) handle = added; else void added.remove(); })
+      .catch(() => undefined);
+    return () => { active = false; void handle?.remove(); };
+  }, [messageOpen]);
 
   useEffect(() => {
     if (boxes.length > 0) void writeMailCache({ boxes, boxId: activeBoxId, folder, messages });
@@ -468,6 +483,7 @@ export function MailScreen() {
         starred={Boolean(selected.is_starred)}
         restorable={inRestoreFolder}
         disabled={!online}
+        singlePane
         onBack={() => setSelectedId('')}
         onReply={startReply}
         onReplyAll={startReplyAll}

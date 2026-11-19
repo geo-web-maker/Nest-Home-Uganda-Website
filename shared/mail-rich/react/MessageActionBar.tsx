@@ -15,6 +15,8 @@ export type MessageActionBarProps = {
   restorable: boolean;
   /** Turns every action off, for example when a phone is offline. Back always works. */
   disabled?: boolean;
+  /** The message replaces the list (the phone app), so the back arrow stays at every width. Without it the arrow hides on wide screens where the list sits beside the message. */
+  singlePane?: boolean;
   onBack: () => void;
   onEditDraft?: () => void;
   onReply: () => void;
@@ -51,7 +53,7 @@ const ICON = {
 export function MessageActionBar(props: MessageActionBarProps) {
   const { labels, disabled } = props;
   return (
-    <div className="mr-bar" role="toolbar" aria-label={labels.actions}>
+    <div className={props.singlePane ? 'mr-bar mr-bar-single' : 'mr-bar'} role="toolbar" aria-label={labels.actions}>
       <button type="button" className="mr-bar-icon mr-bar-back" aria-label={labels.back} title={labels.back} onClick={props.onBack}>{ICON.back}</button>
       {props.isDraft ? (
         <button type="button" className="mr-bar-primary" disabled={disabled} onClick={props.onEditDraft}>{labels.editDraft}</button>

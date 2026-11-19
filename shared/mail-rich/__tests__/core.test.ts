@@ -4,6 +4,7 @@ import { formatBytes } from '../core/bytes';
 import { blockedExtension, safeFilename } from '../core/attachments';
 import { parseRecipients, replyRecipients } from '../core/recipients';
 import { sanitizeToString } from '../core/sanitize';
+import { filterMailStyle } from '../core/css';
 
 describe('shared mail-rich core', () => {
   it('normalises recipient lists and removes duplicates', () => {
@@ -33,5 +34,17 @@ describe('shared mail-rich core', () => {
     expect(clean).toContain('<p>Safe</p>');
     expect(clean).not.toContain('script');
     expect(clean).not.toContain('onclick');
+  });
+
+  it('keeps display:none when a sender writes it with !important, so hidden preheaders stay hidden', () => {
+    expect(filterMailStyle('display:none !important;max-width:0')).toEqual({ display: 'none', 'max-width': '0' });
+    expect(filterMailStyle('color:red!IMPORTANT')).toEqual({ color: 'red' });
+  });
+
+  it('drops elements the sender hid with the hidden attribute and keeps percentage widths', () => {
+    const html = sanitizeToString('<div hidden>preview line</div><table width="100%" bgcolor="#f1f1f1"><tr><td>Hi</td></tr></table>');
+    expect(html).not.toContain('preview line');
+    expect(html).toContain('width="100%"');
+    expect(html).toContain('bgcolor="#f1f1f1"');
   });
 });
