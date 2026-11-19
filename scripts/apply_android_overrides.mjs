@@ -113,6 +113,26 @@ export function applyAndroidOverrides({ androidDir, overridesDir, versionCode, v
   fs.writeFileSync(path.join(main, 'res', 'drawable', 'ic_stat_nest.xml'), NOTIFICATION_ICON);
   fs.writeFileSync(gradlePath, patchGradleVersion(fs.readFileSync(gradlePath, 'utf8'), versionCode, versionName));
 
+  // Copy FileProvider paths resource
+  const fileProviderPaths = path.join(overridesDir, 'update_file_paths.xml');
+  if (fs.existsSync(fileProviderPaths)) {
+    fs.copyFileSync(fileProviderPaths, path.join(main, 'res', 'xml', 'update_file_paths.xml'));
+  }
+
+  // Copy NativeUpdaterPlugin.kt into the generated Android project.
+  // The appId drives the package path; default is ug.nesthomecare.nurse.
+  const appId = process.env.CAP_APP_ID_NURSE ?? 'ug.nesthomecare.nurse';
+  const packagePath = appId.replace(/\./g, '/');
+  const kotlinDir = path.join(main, 'java', packagePath);
+  fs.mkdirSync(kotlinDir, { recursive: true });
+  const pluginSrc = path.join(overridesDir, 'NativeUpdaterPlugin.kt');
+  if (fs.existsSync(pluginSrc)) {
+    let kt = fs.readFileSync(pluginSrc, 'utf8');
+    kt = kt.replace('__PACKAGE__', appId);
+    kt = kt.replace('__APP_ID__', appId);
+    fs.writeFileSync(path.join(kotlinDir, 'NativeUpdaterPlugin.kt'), kt);
+  }
+
   return { manifestPath, gradlePath, versionCode, versionName };
 }
 

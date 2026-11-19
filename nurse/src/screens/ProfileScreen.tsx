@@ -14,7 +14,8 @@ import { Chip } from '../ui/Chip';
 import { initials } from '../ui/greeting';
 
 type InboxItem = { id: string; title: string; body: string; created_at?: string };
-type VersionInfo = { latest: string; min_supported: string; download_path?: string | null };
+type ApkInfo = { url: string; sha256?: string | null; version: string };
+type VersionInfo = { latest: string; min_supported: string; download_path?: string | null; apk_info?: ApkInfo | null };
 type Props = {
   profile: FieldProfile | null; appVersion: string; versionInfo: VersionInfo | null; remindersEnabled: boolean;
   sosEnabled?: boolean; inboxEnabled: boolean; inbox: InboxItem[]; inboxMessage: string; visits: CachedVisit[]; busy: boolean;
@@ -42,7 +43,7 @@ export function ProfileScreen(props: Props) {
     <Card className="mk-profile-section" id="profile-update">
       <h3>{copy.profile.updates}</h3>
       <Row label={copy.profile.appVersion} value={props.appVersion} />
-      {props.versionInfo && <UpdateNotice currentVersion={props.appVersion} latestVersion={props.versionInfo.latest} minimumVersion={props.versionInfo.min_supported} downloadPath={props.versionInfo.download_path} />}
+      {props.versionInfo && <UpdateNotice currentVersion={props.appVersion} latestVersion={props.versionInfo.latest} minimumVersion={props.versionInfo.min_supported} downloadPath={props.versionInfo.download_path} apkInfo={props.versionInfo.apk_info} />}
       <PillButton tone="ghost" onClick={props.onCheckUpdate}>{copy.profile.checkUpdate}</PillButton>
     </Card>
 

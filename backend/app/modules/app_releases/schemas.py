@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from typing import Literal
 
@@ -5,13 +6,19 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.modules.app_releases.rules import parse_version
 
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+
 
 class AppReleaseCreate(BaseModel):
     id: str = Field(min_length=8, max_length=160)
     platform: Literal["android", "ios", "web"]
     version: str = Field(min_length=5, max_length=80)
+    version_code: int | None = Field(default=None, ge=1)
     min_supported_version: str = Field(min_length=5, max_length=80)
     download_path: str | None = Field(default=None, max_length=1000)
+    apk_key: str | None = Field(default=None, max_length=500)
+    sha256: str | None = Field(default=None, max_length=64)
+    size_bytes: int | None = Field(default=None, ge=1)
     release_notes: str = Field(default="", max_length=2000)
     active: bool = True
 
@@ -30,13 +37,24 @@ class AppReleaseCreate(BaseModel):
             raise ValueError("download_path must begin with / or https://")
         return value
 
+    @field_validator("sha256")
+    @classmethod
+    def valid_sha256(cls, value: str | None) -> str | None:
+        if value and not _SHA256_RE.match(value):
+            raise ValueError("sha256 must be 64 lowercase hex characters")
+        return value
+
 
 class AppReleaseOut(BaseModel):
     id: str
     platform: str
     version: str
+    version_code: int | None
     min_supported_version: str
     download_path: str | None
+    apk_key: str | None
+    sha256: str | None
+    size_bytes: int | None
     release_notes: str
     active: bool
     published_at: datetime

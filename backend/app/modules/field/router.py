@@ -774,6 +774,50 @@ async def app_version(
     }
 
 
+@router.get("/app/apk")
+async def app_apk_download(
+    platform: str = Query("android", pattern="^(android|ios|web)$"),
+    _: Principal = CanUseBasic,
+):
+    """Short-lived signed URL for the latest APK. Expires in 10 minutes."""
+    from functools import cmp_to_key
+
+    from app.core.storage import Bucket, get_storage
+    from app.modules.app_releases.models import AppRelease
+    from app.modules.app_releases.rules import compare_versions
+
+    rows = [
+        row
+        for row in await AppRelease.find().to_list()
+        if row.platform == platform and row.active and row.apk_key
+    ]
+    if not rows:
+        raise HTTPException(status_code=404, detail="No APK available for this platform")
+
+    rows.sort(
+        key=cmp_to_key(lambda left, right: compare_versions(left.version, right.version)),
+        reverse=True,
+    )
+    latest = rows[0]
+    storage = get_storage()
+    url = await storage.signed_url(
+        Bucket.PRIVATE,
+        latest.apk_key,
+        expires_seconds=600,
+        download_filename=f"nest-nurse-{latest.version}.apk",
+        content_type="application/vnd.android.package-archive",
+    )
+    return {
+        "url": url,
+        "version": latest.version,
+        "version_code": latest.version_code,
+        "sha256": latest.sha256,
+        "size_bytes": latest.size_bytes,
+        "release_notes": latest.release_notes,
+        "published_at": latest.published_at,
+    }
+
+
 @router.get("/inbox")
 async def field_inbox(
     principal: Principal = CanUse,

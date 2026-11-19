@@ -97,7 +97,7 @@ function NurseWorkspace() {
   const [pendingAction, setPendingAction] = useState<{ visit: CachedVisit; kind: 'check_in' | 'check_out' } | null>(null);
   const [historyHasMore, setHistoryHasMore] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [versionInfo, setVersionInfo] = useState<{ latest: string; min_supported: string; download_path?: string | null } | null>(null);
+  const [versionInfo, setVersionInfo] = useState<{ latest: string; min_supported: string; download_path?: string | null; apk_info?: { url: string; sha256?: string | null; version: string } | null } | null>(null);
   const [inbox, setInbox] = useState<Array<{ id: string; title: string; body: string; created_at?: string }>>([]);
   const [inboxMessage, setInboxMessage] = useState('');
   const [sosSmsHref, setSosSmsHref] = useState(() => buildSosSmsHref(buildSosSmsBody()));
@@ -731,7 +731,15 @@ function NurseWorkspace() {
       const version = await apiRequest<{ latest: string; min_supported: string; download_path?: string | null }>(`/field/app/version?platform=${platform === 'ios' || platform === 'android' ? platform : 'web'}`);
       // A malformed reply must never reach render: compareVersions would throw and blank the app.
       if (typeof version?.latest !== 'string' || typeof version?.min_supported !== 'string') throw new Error('Invalid version response');
-      setVersionInfo(version);
+      // On Android, also try to get a signed APK download URL.
+      let apk_info = null;
+      if (platform === 'android') {
+        try {
+          const apk = await apiRequest<{ url: string; sha256?: string | null; version: string }>('/field/app/apk?platform=android');
+          if (apk?.url) apk_info = apk;
+        } catch { /* APK endpoint optional — no APK in bucket yet */ }
+      }
+      setVersionInfo({ ...version, apk_info });
       setMessage(copy.messages.versionRefreshed);
     } catch { setMessage(copy.messages.updateUnavailable); }
   }
@@ -837,7 +845,7 @@ function NurseWorkspace() {
 
   refreshLocalRef.current = refreshLocal; syncRef.current = sync;
   return <CareFormsProvider value={careForms}><AppShell onDismissMessage={() => setMessage('')} online={online} queued={queued} authenticated={Boolean(token)} message={message} syncing={busy} sosEnabled={sosEnabled} smsHref={sosSmsHref} emergencyNumbers={fieldProfile?.settings?.emergency_numbers ?? []} supervisorPhone={fieldProfile?.supervisor_phone} liveFollowEnabled={Boolean(fieldProfile?.settings?.live_follow_enabled)} liveFollowMinutes={fieldProfile?.settings?.live_follow_minutes ?? 30} liveFollowIntervalSeconds={fieldProfile?.settings?.live_follow_interval_seconds ?? 30} sosHoldSeconds={fieldProfile?.settings?.sos_hold_seconds ?? 2} sosCancelWindowSeconds={fieldProfile?.settings?.sos_cancel_window_s ?? 5} onSendSos={sendSos} onStartSosFollow={startSosFollow} onPingSosFollow={pingSosFollow} onSafeNow={reportSafeNow}>
-    {token && updateBlocked && versionInfo ? <Card className="update-gate"><UpdateNotice currentVersion={APP_VERSION} latestVersion={versionInfo.latest} minimumVersion={versionInfo.min_supported} downloadPath={versionInfo.download_path} /><PillButton type="button" tone="ghost" showArrow={false} onClick={() => void checkForUpdate()}>{copy.update.checkAgain}</PillButton></Card> : token && consentsRequired.length > 0 ? <Card className="consent-gate"><h2>{copy.consent.heading}</h2><p>{copy.consent.explanation}</p>{consentsRequired.map((requirement) => <Card className="consent-requirement" key={`${requirement.type}:${requirement.version}`}><h3>{requirement.type.replaceAll('_', ' ')}</h3><p>{requirement.text}</p><p>{copy.consent.version} {requirement.version}</p><PillButton type="button" tone="forest" onClick={() => void acceptConsent(requirement)}>{copy.consent.accept}</PillButton></Card>)}</Card> : <NurseRoutes views={views} authenticated={Boolean(token)} />}
+    {token && updateBlocked && versionInfo ? <Card className="update-gate"><UpdateNotice currentVersion={APP_VERSION} latestVersion={versionInfo.latest} minimumVersion={versionInfo.min_supported} downloadPath={versionInfo.download_path} apkInfo={versionInfo.apk_info} /><PillButton type="button" tone="ghost" showArrow={false} onClick={() => void checkForUpdate()}>{copy.update.checkAgain}</PillButton></Card> : token && consentsRequired.length > 0 ? <Card className="consent-gate"><h2>{copy.consent.heading}</h2><p>{copy.consent.explanation}</p>{consentsRequired.map((requirement) => <Card className="consent-requirement" key={`${requirement.type}:${requirement.version}`}><h3>{requirement.type.replaceAll('_', ' ')}</h3><p>{requirement.text}</p><p>{copy.consent.version} {requirement.version}</p><PillButton type="button" tone="forest" onClick={() => void acceptConsent(requirement)}>{copy.consent.accept}</PillButton></Card>)}</Card> : <NurseRoutes views={views} authenticated={Boolean(token)} />}
     {token && actionVisit && actionKind === 'check_in' && <ArriveSheet visit={actionVisit} location={actionLocation} locationState={actionLocationState} busy={actionBusy} safetyTimerEnabled={safetyTimerEnabled} canEnableSafetyTimer={sosEnabled} onSafetyTimerChange={setSafetyTimerEnabled} onConfirm={() => void confirmVisitAction()} onCancel={() => { setActionVisit(null); setActionKind(null); setSafetyTimerEnabled(false); }} />}
     {token && actionVisit && actionKind === 'check_out' && <LeaveSheet visit={actionVisit} finalNote={actionFinalNote} busy={actionBusy} onFinalNote={setActionFinalNote} onConfirm={() => void confirmVisitAction()} onCancel={() => { setActionVisit(null); setActionKind(null); }} onAddPhoto={() => { const visit = actionVisit; setActionVisit(null); setActionKind(null); if (visit) openPhoto(visit); }} canAddRequiredPhoto={canAddRequiredPhoto} requiredPhotoMissing={requiredPhotoMissing} />}
     {token && noteVisitId && selectedVisit(noteVisitId) && <NoteSheet visit={selectedVisit(noteVisitId)!} value={noteBody} onChange={setNoteBody} onSubmit={saveVisitNote} onCancel={() => { setNoteVisitId(''); setNoteBody(''); }} />}

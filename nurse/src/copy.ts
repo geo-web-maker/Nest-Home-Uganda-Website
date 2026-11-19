@@ -352,4 +352,18 @@ export function operationKindLabel(kind: string): string {
   return copy.sync.operationKinds[kind as keyof typeof copy.sync.operationKinds] ?? copy.sync.unknownOperation;
 }
 
-export const APP_VERSION = '0.1.0';
+import { App as _CapApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
+
+export const APP_VERSION = '0.1.0'; // build-time fallback; runtime value from getInstalledVersion()
+
+/** Returns the version installed on the device, falling back to the build-time constant on web. */
+export async function getInstalledVersion(): Promise<string> {
+  if (!Capacitor.isNativePlatform()) return APP_VERSION;
+  try {
+    const info = await _CapApp.getInfo();
+    return info.version ?? APP_VERSION;
+  } catch {
+    return APP_VERSION;
+  }
+}

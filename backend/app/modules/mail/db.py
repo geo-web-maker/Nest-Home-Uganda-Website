@@ -90,7 +90,7 @@ async def connect(database_url: str) -> None:
             pool = await asyncpg.create_pool(
                 dsn=database_url,
                 min_size=0,  # no standing connection while idle
-                max_inactive_connection_lifetime=30,  # seconds; asyncpg default is 300, equal to Neon's 5-minute suspend window
+                max_inactive_connection_lifetime=0,  # release connections immediately when idle so Neon can autosuspend
                 max_size=10,
                 command_timeout=30,
                 statement_cache_size=0,
