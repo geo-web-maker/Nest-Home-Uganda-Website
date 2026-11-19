@@ -30,3 +30,7 @@ Rules
 2026-11-15 (evening): agreement field autosave limit raised to 240 per 15 minutes per session; a refused field no longer blocks the others (response carries `rejected`); test_agreement_partial_save.py added to both copies; parity check passes ("In sync.").
 
 2026-11-18: care forms backend (P1-P3): `modules/care_forms` (models, rules, context, render, service, router, templates), UNMC fields on `NurseProfile`, `patient_type`/`agreement_id`/`patient_overrides` on `CareClient`, `care_forms.*` care settings, check-in/check-out gates in `field/service.py`, new models registered, `jinja2` added; care_forms tests added to both copies.
+
+2026-11-19: test client and day controls: `modules/test_accounts/client.py` (new), new config fields in `models.py`, `/admin/test-accounts/client/*` in `router.py`, purge and reset hooks in `service.py`, `core/sandbox.py` `acting_as`, `care_ops/dispatch.py`, and `jobs.py` (`run_care_alerts` / `run_timesheet_generation` take `nurse_ids`) applied to both copies; test_test_client.py and test_test_sandbox.py added to both copies; parity check passes ("In sync."). Hosting copy: the database tests there need the `mongo` fixture from the Nest repo's conftest, so they run in the Nest repo.
+
+2026-11-19 (mail 500 fix): bare `$n` parameters inside `jsonb_build_object` now cast (attachment download, original download, spam report, attachment-infected audit, reprocess, quota warning, purge, outbox render notes); test_mail_audit_sql_casts.py added to both copies; parity check passes ("In sync.").

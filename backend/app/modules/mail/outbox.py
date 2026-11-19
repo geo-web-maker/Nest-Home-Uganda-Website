@@ -372,7 +372,7 @@ async def drain(limit: int = 20) -> int:
                     async with pool.acquire() as conn:
                         await conn.execute(
                             "UPDATE message SET render_notes=coalesce(render_notes,'{}'::jsonb) || "
-                            "jsonb_build_object('provider_filename_simplifications',$2,'provider_inline_images_attached_separately',$3) WHERE id=$1",
+                            "jsonb_build_object('provider_filename_simplifications',$2::int,'provider_inline_images_attached_separately',$3::int) WHERE id=$1",
                             row["message_id"], simplified, inline_degraded,
                         )
             async with pool.acquire() as conn:

@@ -6,6 +6,7 @@ import { SectionHeader } from '@shared/components/dialogs/SectionHeader';
 import { apiClient } from '@shared/lib/api/client';
 import { dialogs } from '@shared/lib/dialogs';
 import { cx } from '@shared/lib/cx';
+import { TestClientPanel, type TestClientStatus } from './TestClientPanel';
 import styles from './Diagnostics.module.css';
 
 type TestAccount = { key: string; name: string; email: string; kind: string; active: boolean; scopes: string[]; preset: string; reach: string };
@@ -14,6 +15,7 @@ type Listing = {
   config: Config; items: TestAccount[]; linked: boolean; reaches: string[];
   presets: Record<string, string[]>; scenarios: Record<string, string>;
   catalogue: { id: string; group: string; label: string }[];
+  client?: TestClientStatus;
 };
 type Activated = { key: string; email: string; password: string };
 
@@ -174,6 +176,7 @@ export function TestAccountsSection() {
                   </Button>
                 </p>
               </div>
+              {data.client ? <TestClientPanel status={data.client} onChanged={() => void refresh()} /> : null}
               <div className={styles.block}>
                 <h3>Clean up</h3>
                 <p className={styles.help}>Deletes what the test accounts created. The accounts stay as they are.</p>

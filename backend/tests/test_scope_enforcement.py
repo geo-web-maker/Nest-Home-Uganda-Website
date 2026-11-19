@@ -22,6 +22,8 @@ SIGNED_PHOTO_STREAM = "/api/v1/admin/care/visits/{visit_id}/photos/{photo_id}/st
 SIGNED_FIELD_PHOTO_STREAM = "/api/v1/field/visits/{visit_id}/photos/{photo_id}/stream"
 SIGNED_PHOTO_STREAMS = {SIGNED_PHOTO_STREAM, SIGNED_FIELD_PHOTO_STREAM}
 SUPERADMIN_ONLY_PATHS = {"/api/v1/admin/app-releases"}
+# The test-account screen is superadmin plus verified authenticator session (a dependency, not a scope).
+SUPERADMIN_TOTP_PREFIX = "/api/v1/admin/test-accounts"
 # A GET that lists assignment candidates (users who could supervise a nurse). It is gated by
 # nurses:write on purpose, so read-only staff cannot enumerate accounts.
 WRITE_GATED_READS = {
@@ -163,7 +165,7 @@ async def test_exact_scopes_and_superadmin_pass_authorisation(
     # carry, so they answer 403 (or 422 first when a body is required). For them the check is that
     # authentication itself succeeded; scope rejection is covered by the unrelated-scope and
     # read-scope-cannot-write tests, and the TOTP check by test_audit_totp_guard.
-    totp_guarded = "totp" in inspect.getsource(route_for(method, path).endpoint).lower()
+    totp_guarded = path.startswith(SUPERADMIN_TOTP_PREFIX) or "totp" in inspect.getsource(route_for(method, path).endpoint).lower()
     superadmin_status = await call(client, method, path, auth(make_token([], superadmin=True)))
     if path in SUPERADMIN_ONLY_PATHS:
         assert scoped_status == 403, "a non-superadmin must not publish or list releases"
@@ -181,6 +183,8 @@ def test_signed_photo_stream_is_the_only_admin_path_without_a_scope_dependency()
     unscoped = [
         path
         for path, route in iter_api_routes()
-        if path.startswith("/api/v1/admin") and route_required_scopes(route) is None
+        if path.startswith("/api/v1/admin")
+        and not path.startswith(SUPERADMIN_TOTP_PREFIX)
+        and route_required_scopes(route) is None
     ]
     assert unscoped == [SIGNED_PHOTO_STREAM]

@@ -533,7 +533,7 @@ async def attachment_confirm(attachment_id: str,principal: Principal=Depends(req
                 await conn.execute("DELETE FROM attachment WHERE id=$1", attachment_id)
                 await conn.execute(
                     "INSERT INTO mail_audit(actor_user_id,action,mailbox_id,detail) "
-                    "VALUES($1,'mail.attachment.infected',$2,jsonb_build_object('attachment_id',$3))",
+                    "VALUES($1,'mail.attachment.infected',$2,jsonb_build_object('attachment_id',$3::text))",
                     principal.user_id, row["uploader_mailbox_id"], attachment_id,
                 )
             raise Forbidden("This file contains a virus and was not attached.")
@@ -579,7 +579,7 @@ async def original_download(
             raise NotFound("The original message file is not available.")
         await conn.execute(
             "INSERT INTO mail_audit(actor_user_id,action,mailbox_id,message_id,detail) "
-            "VALUES($1,'mail.original.download',$2,$3,jsonb_build_object('mailbox_message_id',$4))",
+            "VALUES($1,'mail.original.download',$2,$3,jsonb_build_object('mailbox_message_id',$4::text))",
             principal.user_id, row["mailbox_id"], row["message_id"], mailbox_message_id,
         )
     subject = re.sub(r"[\r\n\\/]+", "_", str(row["subject"] or "original"))[:180]
@@ -605,7 +605,7 @@ async def attachment_download(attachment_id: str,principal: Principal=Depends(re
             raise Forbidden("This attachment is not available for download.")
         if bool(await get_value("mail.scan_enabled")) and bool(await get_value("mail.scan_block_unscanned_download")) and row['scan_state'] != 'clean':
             raise Forbidden("This attachment is not available until security scanning is complete.")
-        await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id,message_id,detail) VALUES($1,'mail.attachment.download',$2,$3,jsonb_build_object('attachment_id',$4))",principal.user_id,row['uploader_mailbox_id'],row['message_id'],attachment_id)
+        await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id,message_id,detail) VALUES($1,'mail.attachment.download',$2,$3,jsonb_build_object('attachment_id',$4::text))",principal.user_id,row['uploader_mailbox_id'],row['message_id'],attachment_id)
     content_type = str(row['content_type'] or 'application/octet-stream').lower()
     if content_type in {'text/html', 'image/svg+xml', 'application/xhtml+xml'}:
         content_type = 'application/octet-stream'
@@ -741,7 +741,7 @@ async def report_spam(mailbox_message_id: str,principal: Principal=Depends(requi
             await conn.execute("UPDATE mailbox_message SET folder='spam',trashed_at=now() WHERE id=$1",mailbox_message_id)
             if row['from_address'] and '@' in row['from_address']:
                 await conn.execute("INSERT INTO mailbox_blocked_sender(mailbox_id,address) VALUES($1,$2) ON CONFLICT DO NOTHING",row['mailbox_id'],row['from_address'])
-            await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id,detail) VALUES($1,'mail.report_spam',$2,jsonb_build_object('mailbox_message_id',$3))",principal.user_id,row['mailbox_id'],mailbox_message_id)
+            await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id,detail) VALUES($1,'mail.report_spam',$2,jsonb_build_object('mailbox_message_id',$3::text))",principal.user_id,row['mailbox_id'],mailbox_message_id)
     return {"reported":True}
 
 @router.get("/usage")

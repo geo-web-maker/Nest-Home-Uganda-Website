@@ -26,7 +26,7 @@ function headersPlugin(apiUrl: string, mailStorageUrl: string): Plugin {
       const hashes = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)]
         .map((m) => `'sha256-${createHash('sha256').update(m[1] ?? '').digest('base64')}'`);
       const scriptSrc = ["'self'", ...hashes].join(' ');
-      const csp = `default-src 'self'; script-src ${scriptSrc}; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; connect-src ${connect}; frame-ancestors 'none'`;
+      const csp = `default-src 'self'; script-src ${scriptSrc}; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; connect-src ${connect}; frame-ancestors 'none'`;
       writeFileSync('dist/_headers', `/*\n  X-Robots-Tag: noindex, nofollow\n  Content-Security-Policy: ${csp}\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n  Cache-Control: no-cache\n\n/sw.js\n  Cache-Control: no-cache\n\n/index.html\n  Cache-Control: no-cache\n`);
     },
   };

@@ -75,12 +75,17 @@ async def run_photo_orphans(now: datetime | None = None) -> int:
         return 0
 
 
-async def run_care_alerts(now: datetime | None = None) -> int:
-    """Create idempotent late-visit and safety-timer alerts (no client details in messages)."""
+async def run_care_alerts(now: datetime | None = None, nurse_ids: set[str] | None = None) -> int:
+    """Create idempotent late-visit and safety-timer alerts (no client details in messages).
+
+    `nurse_ids` limits the run to those nurses' visits (the test-client "run checks now" uses it); None means everyone.
+    """
     now = now or datetime.now(UTC)
     created = 0
     try:
         visits = await Visit.find().to_list()
+        if nurse_ids is not None:
+            visits = [v for v in visits if v.nurse_id in nurse_ids]
         for visit in visits:
             if (
                 visit.status == "scheduled"
@@ -154,13 +159,18 @@ async def run_sos_escalation(now: datetime | None = None) -> int:
     return count
 
 
-async def run_timesheet_generation(today=None) -> int:
-    """Regenerate draft timesheets idempotently; submitted/approved ones never change."""
+async def run_timesheet_generation(today=None, nurse_ids: set[str] | None = None) -> int:
+    """Regenerate draft timesheets idempotently; submitted/approved ones never change.
+
+    `nurse_ids` limits the run to those nurses (the test-client "run checks now" uses it); None means every active nurse.
+    """
     day = today or datetime.now(UTC).date()
     start, end = period_bounds(day, "weekly")
     created = 0
     try:
         for profile in await NurseProfile.find(NurseProfile.active == True).to_list():  # noqa: E712
+            if nurse_ids is not None and profile.user_id not in nurse_ids:
+                continue
             visits = await Visit.find(
                 Visit.nurse_id == profile.user_id, Visit.status == "completed"
             ).to_list()
@@ -386,7 +396,7 @@ async def run_mail_retention() -> int:
                             await conn.execute("DELETE FROM attachment WHERE message_id=$1",mid)
                             await conn.execute("DELETE FROM message_recipient WHERE message_id=$1",mid)
                             await conn.execute("DELETE FROM message WHERE id=$1",mid)
-                    await conn.execute("INSERT INTO mail_audit(action,detail) VALUES('mail.purge',jsonb_build_object('mailbox_id',$1::text,'messages',$2))",box['id'],len(mids))
+                    await conn.execute("INSERT INTO mail_audit(action,detail) VALUES('mail.purge',jsonb_build_object('mailbox_id',$1::text,'messages',$2::int))",box['id'],len(mids))
                     purged+=1
         return purged
     except Exception:
@@ -408,7 +418,7 @@ async def run_mail_quota_check() -> int:
               FROM mailbox b WHERE b.state='open'""")
             for row in rows:
                 if row['used'] >= quota*0.9:
-                    await conn.execute("INSERT INTO mail_audit(action,mailbox_id,detail) VALUES('mail.quota.warning',$1,jsonb_build_object('used_bytes',$2))",row['id'],row['used'])
+                    await conn.execute("INSERT INTO mail_audit(action,mailbox_id,detail) VALUES('mail.quota.warning',$1,jsonb_build_object('used_bytes',$2::bigint))",row['id'],row['used'])
         return sum(1 for row in rows if row['used']>=quota*0.9)
     except Exception:
         log.warning("mail quota check unavailable; details omitted")

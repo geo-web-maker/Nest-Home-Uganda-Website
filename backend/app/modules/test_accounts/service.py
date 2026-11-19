@@ -193,6 +193,8 @@ async def _linked() -> bool:
 
 
 async def list_test_accounts() -> dict:
+    from app.modules.test_accounts import client as test_client
+
     await ensure_test_accounts()
     items = []
     for key, spec in _definitions().items():
@@ -203,7 +205,7 @@ async def list_test_accounts() -> dict:
                       "preset": _preset_name(scopes), "reach": user.reach if user else "own"})
     return {
         "config": _config_out(await get_config()),
-        "items": items, "linked": await _linked(), "reaches": list(REACHES),
+        "items": items, "linked": await _linked(), "reaches": list(REACHES), "client": await test_client.status(),
         "presets": {n: sorted(p) for n, p in SCOPE_PRESETS.items() if n != "super_admin"},
         "scenarios": {k: v["label"] for k, v in SCENARIOS.items()},
         "catalogue": [{"id": s.id, "group": s.group, "label": s.label} for s in SCOPES if s.id not in FORBIDDEN_SCOPES],
@@ -251,6 +253,9 @@ async def set_link(actor, supervises: bool) -> dict:
         raise NotFound("Test nurse profile not found.")
     profile.supervisor_id = str(admin.id) if supervises else None
     await profile.save()
+    from app.modules.test_accounts import client as test_client
+
+    await test_client.sync_supervisor(profile.supervisor_id)  # the test client's visits report to the same supervisor
     await audit.record(actor, "test_account.link", "user", str(admin.id), admin.email, after={"supervises": supervises})
     return {"linked": supervises}
 
@@ -293,6 +298,9 @@ async def activate(actor, key: str) -> dict:
     if profile is not None:
         profile.active = True
         await profile.save()
+    from app.modules.test_accounts import client as test_client
+
+    await test_client.ensure(actor)  # a wanted test client comes back with the accounts
     await audit.record(actor, "test_account.activate", "user", str(user.id), user.email)
     return {"key": key, "email": user.email, "password": password, "active": True}
 
@@ -358,6 +366,7 @@ async def purge_data(actor, *, keep_login: bool = True) -> dict:
     if not ids:
         return {}
     done: dict = {}
+    client_ids: list = []
     try:
         done["photo_files"] = await _delete_photo_files(ids)
         from app.modules.care_clients.models import CareClient
@@ -368,12 +377,24 @@ async def purge_data(actor, *, keep_login: bool = True) -> dict:
         places = await CarePlace.find({"$or": [{"created_by": {"$in": ids}}, {"client_id": {"$in": client_ids}}]}).to_list()
         place_ids = [p.id for p in places]
         await PlaceStay.find({"$or": [{"place_id": {"$in": place_ids}}, {"client_id": {"$in": client_ids}}]}).delete()
-        await CarePlace.find({"id": {"$in": place_ids}}).delete()
-        await CareClient.find({"id": {"$in": client_ids}}).delete()
+        await CarePlace.find({"_id": {"$in": place_ids}}).delete()
+        await CareClient.find({"_id": {"$in": client_ids}}).delete()
         done["clients"], done["places"] = len(client_ids), len(place_ids)
     except Exception:
         log.exception("test data purge failed for clients/places")
         done["clients"] = "failed"
+    try:
+        from app.modules.care_forms.models import CareFormCopyLog, CareFormInstance, CareFormSignature
+
+        mine = {"$or": [{"nurse_id": {"$in": ids}}, {"client_id": {"$in": client_ids}}]}
+        form_ids = [str(f.id) for f in await CareFormInstance.find(mine).to_list()]
+        await CareFormSignature.find({"instance_id": {"$in": form_ids}}).delete()
+        await CareFormCopyLog.find({"client_id": {"$in": client_ids}}).delete()
+        await CareFormInstance.find(mine).delete()
+        done["care_forms"] = len(form_ids)
+    except Exception:
+        log.exception("test data purge failed for care forms")
+        done["care_forms"] = "failed"
     by_nurse = [Visit, VisitSyncTombstone, VisitEvent, VisitNote, VisitPhoto, CareAlert, CareTimesheet, SOSCase, VisitFlag]
     by_user = [VisitAnnotation, CareInboxNotification, CareConsent, PushDelivery, SyncPushReceipt, Device]
     for model in by_nurse + by_user:
@@ -391,13 +412,23 @@ async def purge_data(actor, *, keep_login: bool = True) -> dict:
     except Exception:
         log.exception("test data purge failed for audit/visits")
     done.update(await _purge_mail(ids))
+    try:
+        from app.modules.test_accounts import client as test_client
+
+        await test_client.after_purge()
+    except Exception:
+        log.exception("test client state could not be reset after the purge")
     await audit.record(actor, "test_account.purge", "user", None, "test accounts", after={"counts": done})
     return done
 
 
 async def reset_data(actor) -> dict:
+    from app.modules.test_accounts import client as test_client
+
     await _get("nurse")
-    return {"deleted": await purge_data(actor)}
+    deleted = await purge_data(actor)
+    await test_client.ensure(actor)  # a wanted test client starts again from the default scenario
+    return {"deleted": deleted}
 
 
 async def deactivate(actor, key: str) -> dict:

@@ -193,7 +193,7 @@ async def reprocess_run(limit: int = 50, actor_user_id: str | None = None) -> di
 
                 await conn.execute(
                     "INSERT INTO mail_audit(actor_user_id,action,detail) "
-                    "VALUES($1,'mail.reprocess',jsonb_build_object('processed',$2,'skipped',$3))",
+                    "VALUES($1,'mail.reprocess',jsonb_build_object('processed',$2::int,'skipped',$3::int))",
                     actor_user_id,
                     processed,
                     skipped,

@@ -46,6 +46,14 @@ def _admin_link(path: str) -> str:
 
 
 async def notify_sos(case: SOSCase) -> dict:
+    """Deliver an SOS. A case raised by a test nurse stays inside the test sandbox even when the caller is a background job."""
+    from app.core import sandbox
+
+    async with sandbox.acting_as(case.nurse_id):
+        return await _notify_sos(case)
+
+
+async def _notify_sos(case: SOSCase) -> dict:
     values = await care_values()
     settings = get_settings()
     url = _admin_link(f"care/sos/{case.id}")
@@ -75,6 +83,14 @@ async def notify_sos(case: SOSCase) -> dict:
 
 
 async def notify_alert(alert: CareAlert) -> None:
+    """Deliver an alert. An alert about a test nurse stays inside the test sandbox even when raised by the scheduler."""
+    from app.core import sandbox
+
+    async with sandbox.acting_as(alert.nurse_id):
+        await _notify_alert(alert)
+
+
+async def _notify_alert(alert: CareAlert) -> None:
     profile = (
         await NurseProfile.find_one(NurseProfile.user_id == alert.nurse_id)
         if alert.nurse_id

@@ -6,6 +6,7 @@ superadmin's delivery allowlist (see `allowed_emails` / `allowed_phone`).
 """
 
 import time
+from contextlib import asynccontextmanager
 from contextvars import ContextVar
 
 _active: ContextVar[bool] = ContextVar("test_sandbox_active", default=False)
@@ -48,6 +49,24 @@ async def bind(user_id: str) -> None:
     _active.set(is_test)
     # Real staff never see what the test accounts created. A test account sees everything its reach allows.
     _hidden.set(() if is_test else tuple(sorted(_cache["ids"])))
+
+
+@asynccontextmanager
+async def acting_as(user_id: str | None):
+    """Treat the block as work done by this user, for background work that has no signed-in request.
+
+    If the user is a test account, SMS, push and email inside the block follow the sandbox rules (nothing reaches
+    real people unless the superadmin's allowlist says so). For anyone else it changes nothing.
+    """
+    await _load()
+    if not user_id or user_id not in _cache["ids"]:
+        yield
+        return
+    token = _active.set(True)
+    try:
+        yield
+    finally:
+        _active.reset(token)
 
 
 def reveal() -> None:
