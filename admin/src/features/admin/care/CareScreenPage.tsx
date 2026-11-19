@@ -588,14 +588,23 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
     if (screen === 'places' && (hasScopes(user, ['places:write']) || hasScopes(user, ['clients:write'])))
       return (
         <div className="care-form care-places">
-          <section className="care-places-pick">
+          <section className="care-places-pick" aria-labelledby="places-pin-title">
+          <h3 id="places-pin-title">1 · Pin the client’s location</h3>
           <Field
-            label="Client ID"
+            kind="select"
+            label="Client"
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
             required
             requiredLabel="required"
-          />
+          >
+            <option value="">Choose a client</option>
+            {rows.map((x) => (
+              <option key={String(x.id)} value={String(x.id)}>
+                {String(x.display_name ?? x.name ?? x.id)}
+              </option>
+            ))}
+          </Field>
           {hasScopes(user, ['places:write']) && (
             <>
               <MapPicker
@@ -625,7 +634,8 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
             </>
           )}
           </section>
-          <section className="care-places-stay">
+          <section className="care-places-stay" aria-labelledby="places-stay-title">
+          <h3 id="places-stay-title">2 · Record where the client is staying</h3>
           <Field
             label="Place ID for stay"
             value={stayPlaceId}
@@ -1004,6 +1014,7 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
       )}
       {screen !== 'settings' && screen !== 'readiness' && screen !== 'data' && (
         <>
+          {screen === 'places' && <h2 className="care-places-list-title">Clients and their places</h2>}
           <CareTable
             columns={columns}
             rows={visibleRows}

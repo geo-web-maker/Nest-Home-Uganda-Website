@@ -156,11 +156,12 @@ a.care-danger-button {
 /* On wide screens the canonical grouped admin sidebar replaces this compact route switcher. */
 @media (min-width: 1040px) { .care-subnav { display: none; } }
 
-/* Places & stays: pick a place and drop a pin on the left, record a client move on the right. */
+/* Places & stays: one full-width column, top to bottom — pin a location, then record a stay.
+   No side-by-side columns, so nothing is left empty beside the map and the table below lines up with both blocks. */
 .care-form.care-places {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 1.25rem 1.5rem;
+  gap: 1.25rem;
   align-items: start;
 }
 .care-places-pick,
@@ -169,20 +170,25 @@ a.care-danger-button {
   gap: 0.9rem;
   min-width: 0;
   align-content: start;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
 }
-.care-places-stay {
-  padding-top: 0;
-}
+.care-places-pick > h3,
+.care-places-stay > h3 { margin: 0; font-size: 1rem; }
 .care-places button {
   justify-self: start;
   min-width: min(100%, 14rem);
 }
-@media (min-width: 960px) {
-  .care-form.care-places {
-    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  }
-  .care-places-stay {
-    padding: 0 0 0 1.5rem;
-    border-inline-start: 1px solid var(--line);
-  }
+@media (min-width: 840px) {
+  /* Short inputs share a row instead of each stretching across the whole screen. */
+  .care-places-stay { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; }
+  .care-places-stay > h3,
+  .care-places-stay > button { grid-column: 1 / -1; }
+  .care-places-pick > :is(label, [class*="field"]):first-of-type { max-width: 28rem; }
 }
+/* A map picker, a client-form action row and a textarea always take a full row of a care form. */
+.care-form > [aria-label="Map location picker"],
+.care-form > .client-form-actions { flex: 1 1 100%; }
+
+.care-places-list-title { margin: 1.5rem 0 0.5rem; font-size: 1.1rem; }

@@ -663,6 +663,14 @@ async def approve_timesheet(
         None,
         {"status": row.status},
     )
+    if row.nurse_id != principal.user_id:
+        from app.modules.push.events import notify_staff
+
+        notify_staff(
+            [row.nurse_id], "timesheet", "Timesheet approved",
+            f"Your timesheet for {row.period_start} to {row.period_end} was approved.",
+            {"kind": "timesheet_approved", "deep_link": "/timesheets"},
+        )
     return row
 
 
@@ -688,6 +696,13 @@ async def send_back_timesheet(
         sheet_id,
         None,
         {"reason": body.note},
+    )
+    from app.modules.push.events import notify_staff
+
+    notify_staff(
+        [row.nurse_id], "timesheet", "Timesheet needs changes",
+        "Your supervisor sent a timesheet back. Open it to see why.",
+        {"kind": "timesheet_sent_back", "deep_link": "/timesheets"},
     )
     return row
 

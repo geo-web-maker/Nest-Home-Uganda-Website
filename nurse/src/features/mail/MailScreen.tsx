@@ -436,11 +436,14 @@ export function MailScreen() {
   return <section className="screen mail-screen" aria-labelledby="mail-heading">
     <header className="screen-heading">
       <div><p className="eyebrow">{copy.mail.eyebrow}</p><h2 id="mail-heading">{copy.mail.title}</h2></div>
-      <PillButton type="button" tone="gold" size="sm" showArrow={false} onClick={() => { setProblem(''); setComposer(blank(activeBoxId)); }} disabled={!activeBoxId || !ownerId}>{copy.mail.compose}</PillButton>
+      <div className="screen-heading__actions">
+        <PillButton type="button" tone="ghost" size="sm" showArrow={false} disabled={!online || loading} onClick={() => void refresh()}>{loading ? copy.today.syncing : copy.mail.refresh}</PillButton>
+        <PillButton type="button" tone="gold" size="sm" showArrow={false} onClick={() => { setProblem(''); setComposer(blank(activeBoxId)); }} disabled={!activeBoxId || !ownerId}>{copy.mail.compose}</PillButton>
+      </div>
     </header>
     {!online && <Banner tone="warn">{copy.mail.offline}</Banner>}
-    {error && <Banner tone="bad" role="alert" floating onDismiss={() => setError('')}>{error}</Banner>}
-    {notice && <Banner tone="ok" floating onDismiss={() => setNotice('')}>{notice}</Banner>}
+    {error && <Banner tone="bad" role="alert" floating className="mk-banner--inline" onDismiss={() => setError('')}>{error}</Banner>}
+    {notice && <Banner tone="ok" floating className="mk-banner--inline" onDismiss={() => setNotice('')}>{notice}</Banner>}
     {boxes.length === 0 && !loading && online && !error && <Banner tone="info">{copy.mail.noMailbox}</Banner>}
     {mailboxPicker}
 
@@ -516,7 +519,6 @@ export function MailScreen() {
     </Card> : <>
       <div className="mail-folders" role="group" aria-label={copy.mail.folder}>
         {FOLDERS.map((name) => <PillButton key={name} type="button" tone={folder === name ? 'forest' : 'ghost'} size="sm" showArrow={false} aria-pressed={folder === name} onClick={() => { setFolder(name); setSelectedId(''); }}>{copy.mail.folders[name]}</PillButton>)}
-        <PillButton type="button" tone="ghost" size="sm" showArrow={false} disabled={!online} onClick={() => void refresh()}>{copy.mail.refresh}</PillButton>
       </div>
       <Card>
         {loading && messages.length === 0 && <p role="status">{copy.mail.loading}</p>}

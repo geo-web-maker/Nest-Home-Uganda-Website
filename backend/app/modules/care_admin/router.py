@@ -620,6 +620,12 @@ async def create_visit(
     if clashes:  # a supervisor confirmed an overlap: keep who it overlapped with
         after["overlap_confirmed_with"] = clashes
     await _audit(principal, "care.visit.create", "visit", row.id, None, after)
+    from app.modules.push.events import notify_staff
+
+    notify_staff(
+        [row.nurse_id], "visit", "New visit scheduled", "A visit was added to your schedule.",
+        {"kind": "visit_assigned", "deep_link": f"/visit/{row.id}"},
+    )
     return row
 
 
@@ -716,6 +722,17 @@ async def patch_visit(
     else:
         await row.save()
     await _audit(principal, "care.visit.update", "visit", visit_id, before, row.model_dump())
+    if row.nurse_id != previous_nurse_id:
+        from app.modules.push.events import notify_staff
+
+        notify_staff(
+            [row.nurse_id], "visit", "Visit assigned to you", "A visit was added to your schedule.",
+            {"kind": "visit_assigned", "deep_link": f"/visit/{row.id}"},
+        )
+        notify_staff(
+            [previous_nurse_id], "visit", "Visit removed", "A visit was removed from your schedule.",
+            {"kind": "visit_removed", "deep_link": "/"},
+        )
     return row
 
 
@@ -753,6 +770,12 @@ async def cancel_visit(
         visit_id,
         before,
         {"status": "cancelled", "reason": body.reason},
+    )
+    from app.modules.push.events import notify_staff
+
+    notify_staff(
+        [row.nurse_id], "visit", "Visit cancelled", "A visit on your schedule was cancelled.",
+        {"kind": "visit_cancelled", "deep_link": "/"},
     )
     return {"id": visit_id, "status": "cancelled"}
 

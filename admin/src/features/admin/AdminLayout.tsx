@@ -14,6 +14,7 @@ import { ThemeSwitch } from '@shared/components/ui/ThemeSwitch';
 import { bottomNav, navItemFor, visibleNav, type AdminNavItem } from './nav';
 import styles from './AdminLayout.module.css';
 import { InstallHint } from '../../pwa/InstallHint';
+import { PushNotifier } from './PushNotifier';
 
 const GROUPS = ['website', 'careOperations', 'monitoring', 'safety', 'setup'] as const;
 
@@ -115,6 +116,7 @@ export function AdminLayout() {
 
       <div className={styles.body}>
         <InstallHint />
+        <PushNotifier />
         <header className={styles.topBar}>
           <p className={styles.title}>{title ? label(title) : ''}</p>
           <ThemeSwitch

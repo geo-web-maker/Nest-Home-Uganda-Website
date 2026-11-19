@@ -17,7 +17,7 @@ type InboxItem = { id: string; title: string; body: string; created_at?: string 
 type VersionInfo = { latest: string; min_supported: string; download_path?: string | null };
 type Props = {
   profile: FieldProfile | null; appVersion: string; versionInfo: VersionInfo | null; remindersEnabled: boolean;
-  inboxEnabled: boolean; inbox: InboxItem[]; inboxMessage: string; visits: CachedVisit[]; busy: boolean;
+  sosEnabled?: boolean; inboxEnabled: boolean; inbox: InboxItem[]; inboxMessage: string; visits: CachedVisit[]; busy: boolean;
   onSync: () => void; onEnableReminders: () => void; onDisableReminders: () => void; onCheckUpdate: () => void; onLogout: () => void;
 };
 
@@ -80,6 +80,7 @@ export function ProfileScreen(props: Props) {
     <Card className="mk-profile-section"><h3>{copy.profile.savedWork}</h3><Row icon={<Icon name="clock" />} label={copy.profile.cachedActiveLabel} value={`${activeVisits} ${copy.profile.activeCached}`} /><PillButton tone="ghost" onClick={props.onSync} disabled={props.busy}>{props.busy ? copy.today.syncing : copy.profile.syncNow}</PillButton></Card>
     <ProfileCareSection profile={props.profile} />
     <ThemeSwitch />
+    {props.sosEnabled === false && <Card className="mk-profile-section"><h3>{copy.shell.safetyAlert}</h3><p>{copy.shell.sosDisabled}</p></Card>}
     <Card className="mk-profile-section mk-profile-logout"><h3>{copy.profile.signOutHeading}</h3><p>{copy.profile.signOutHint}</p><PillButton tone="ghost" size="full" onClick={props.onLogout} showArrow={false}>{copy.profile.signOut}</PillButton></Card>
   </section>;
 }

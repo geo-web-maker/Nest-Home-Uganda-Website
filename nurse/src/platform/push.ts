@@ -1,6 +1,13 @@
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import { PushNotifications, type ActionPerformed, type PushNotificationSchema, type Token } from '@capacitor/push-notifications';
 
+/** The server names these channels in every push. Android drops to a silent default channel if they do not exist yet. */
+export async function ensurePushChannels(): Promise<void> {
+  try {
+    await PushNotifications.createChannel({ id: 'nest_normal', name: 'Updates', description: 'Mail, schedule and timesheet updates', importance: 3, visibility: 1, vibration: true });
+    await PushNotifications.createChannel({ id: 'nest_critical', name: 'Urgent safety alerts', description: 'Safety alerts and escalations', importance: 5, visibility: 1, vibration: true });
+  } catch { /* Channels only exist on Android 8 and later; other platforms ignore this. */ }
+}
 export type StopPushRegistration = () => Promise<void>;
 export type PushCallbacks = {
   onReceived?: (notification: PushNotificationSchema) => void;
@@ -15,6 +22,7 @@ export async function registerForPush(
   if (!Capacitor.isNativePlatform()) return undefined;
   const permission = await PushNotifications.requestPermissions();
   if (permission.receive !== 'granted') return undefined;
+  await ensurePushChannels();
 
   let registrationHandle: PluginListenerHandle | undefined;
   let errorHandle: PluginListenerHandle | undefined;

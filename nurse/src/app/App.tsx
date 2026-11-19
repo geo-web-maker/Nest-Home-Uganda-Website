@@ -56,6 +56,11 @@ type ConsentRequirement = FieldConsentRequirement;
 function makeId() { return globalThis.crypto?.randomUUID?.() ?? `op-${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 async function currentLocation(): Promise<LocationSnapshot> { return captureLocation(); }
 
+/** A tapped notification may only open one of the nurse app's own screens. */
+function safeNotificationPath(value: unknown): string | null {
+  return typeof value === 'string' && /^\/(visit\/[\w-]+|history|timesheets|documents|mail|audit|profile)?$/.test(value) ? value : null;
+}
+
 export function App() { return <BrowserRouter><NurseWorkspace /></BrowserRouter>; }
 
 function NurseWorkspace() {
@@ -311,11 +316,12 @@ function NurseWorkspace() {
       const stop = await registerForPush(async (pushToken) => {
         await apiRequest('/field/devices', { method: 'POST', body: JSON.stringify({ device_id: deviceId, platform: Capacitor.getPlatform(), push_token: pushToken }) });
       }, {
-        onReceived: () => { void sync(); setMessage(copy.messages.notificationReceived); },
+        onReceived: (notification) => { void sync(); setMessage([notification.title, notification.body].filter(Boolean).join(': ') || copy.messages.notificationReceived); },
         onAction: (action) => {
           void sync();
-          const deepLink = action.notification.data?.deep_link;
-          setMessage(typeof deepLink === 'string' ? copy.messages.notificationOpened : copy.messages.notificationOpenedSyncing);
+          const target = safeNotificationPath(action.notification.data?.deep_link);
+          if (target) navigate(target);
+          setMessage(target ? copy.messages.notificationOpened : copy.messages.notificationOpenedSyncing);
         },
       });
       stopPushRegistration.current = stop ?? null;
@@ -819,7 +825,7 @@ function NurseWorkspace() {
     onboarding: <Onboarding accepted={locationDisclosureAccepted} onAccept={acceptLocationDisclosure} onContinue={continueOnboarding} onEnableNotifications={() => void enableReminders()} showNotifications={Capacitor.isNativePlatform()} notificationsEnabled={visitRemindersEnabled} />,
     history: <HistoryScreen history={history} loading={historyLoading} hasMore={historyHasMore} onLoadMore={() => void loadMoreHistory()} pendingVisitIds={pendingHistoryVisitIds} />,
     timesheets: <TimesheetsScreen online={online} />,
-    profile: <ProfileScreen profile={fieldProfile} appVersion={APP_VERSION} versionInfo={versionInfo} remindersEnabled={visitRemindersEnabled} inboxEnabled={inboxEnabled} inbox={inbox} inboxMessage={inboxMessage} visits={visits} busy={busy} onSync={() => void sync()} onEnableReminders={() => void enableReminders()} onDisableReminders={() => void disableReminders()} onCheckUpdate={() => void checkForUpdate()} onLogout={() => void requestSignOut()} />,
+    profile: <ProfileScreen sosEnabled={sosEnabled} profile={fieldProfile} appVersion={APP_VERSION} versionInfo={versionInfo} remindersEnabled={visitRemindersEnabled} inboxEnabled={inboxEnabled} inbox={inbox} inboxMessage={inboxMessage} visits={visits} busy={busy} onSync={() => void sync()} onEnableReminders={() => void enableReminders()} onDisableReminders={() => void disableReminders()} onCheckUpdate={() => void checkForUpdate()} onLogout={() => void requestSignOut()} />,
     documents: <DocumentsScreen />,
     mail: <MailScreen />,
     audit: <AuditScreen />,
@@ -830,7 +836,7 @@ function NurseWorkspace() {
   const updateBlocked = Boolean(versionInfo && isForcedUpdate(APP_VERSION, versionInfo.min_supported));
 
   refreshLocalRef.current = refreshLocal; syncRef.current = sync;
-  return <CareFormsProvider value={careForms}><AppShell online={online} queued={queued} authenticated={Boolean(token)} message={message} syncing={busy} sosEnabled={sosEnabled} smsHref={sosSmsHref} emergencyNumbers={fieldProfile?.settings?.emergency_numbers ?? []} supervisorPhone={fieldProfile?.supervisor_phone} liveFollowEnabled={Boolean(fieldProfile?.settings?.live_follow_enabled)} liveFollowMinutes={fieldProfile?.settings?.live_follow_minutes ?? 30} liveFollowIntervalSeconds={fieldProfile?.settings?.live_follow_interval_seconds ?? 30} sosHoldSeconds={fieldProfile?.settings?.sos_hold_seconds ?? 2} sosCancelWindowSeconds={fieldProfile?.settings?.sos_cancel_window_s ?? 5} onSendSos={sendSos} onStartSosFollow={startSosFollow} onPingSosFollow={pingSosFollow} onSafeNow={reportSafeNow}>
+  return <CareFormsProvider value={careForms}><AppShell onDismissMessage={() => setMessage('')} online={online} queued={queued} authenticated={Boolean(token)} message={message} syncing={busy} sosEnabled={sosEnabled} smsHref={sosSmsHref} emergencyNumbers={fieldProfile?.settings?.emergency_numbers ?? []} supervisorPhone={fieldProfile?.supervisor_phone} liveFollowEnabled={Boolean(fieldProfile?.settings?.live_follow_enabled)} liveFollowMinutes={fieldProfile?.settings?.live_follow_minutes ?? 30} liveFollowIntervalSeconds={fieldProfile?.settings?.live_follow_interval_seconds ?? 30} sosHoldSeconds={fieldProfile?.settings?.sos_hold_seconds ?? 2} sosCancelWindowSeconds={fieldProfile?.settings?.sos_cancel_window_s ?? 5} onSendSos={sendSos} onStartSosFollow={startSosFollow} onPingSosFollow={pingSosFollow} onSafeNow={reportSafeNow}>
     {token && updateBlocked && versionInfo ? <Card className="update-gate"><UpdateNotice currentVersion={APP_VERSION} latestVersion={versionInfo.latest} minimumVersion={versionInfo.min_supported} downloadPath={versionInfo.download_path} /><PillButton type="button" tone="ghost" showArrow={false} onClick={() => void checkForUpdate()}>{copy.update.checkAgain}</PillButton></Card> : token && consentsRequired.length > 0 ? <Card className="consent-gate"><h2>{copy.consent.heading}</h2><p>{copy.consent.explanation}</p>{consentsRequired.map((requirement) => <Card className="consent-requirement" key={`${requirement.type}:${requirement.version}`}><h3>{requirement.type.replaceAll('_', ' ')}</h3><p>{requirement.text}</p><p>{copy.consent.version} {requirement.version}</p><PillButton type="button" tone="forest" onClick={() => void acceptConsent(requirement)}>{copy.consent.accept}</PillButton></Card>)}</Card> : <NurseRoutes views={views} authenticated={Boolean(token)} />}
     {token && actionVisit && actionKind === 'check_in' && <ArriveSheet visit={actionVisit} location={actionLocation} locationState={actionLocationState} busy={actionBusy} safetyTimerEnabled={safetyTimerEnabled} canEnableSafetyTimer={sosEnabled} onSafetyTimerChange={setSafetyTimerEnabled} onConfirm={() => void confirmVisitAction()} onCancel={() => { setActionVisit(null); setActionKind(null); setSafetyTimerEnabled(false); }} />}
     {token && actionVisit && actionKind === 'check_out' && <LeaveSheet visit={actionVisit} finalNote={actionFinalNote} busy={actionBusy} onFinalNote={setActionFinalNote} onConfirm={() => void confirmVisitAction()} onCancel={() => { setActionVisit(null); setActionKind(null); }} onAddPhoto={() => { const visit = actionVisit; setActionVisit(null); setActionKind(null); if (visit) openPhoto(visit); }} canAddRequiredPhoto={canAddRequiredPhoto} requiredPhotoMissing={requiredPhotoMissing} />}

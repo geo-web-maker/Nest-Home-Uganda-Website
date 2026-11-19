@@ -47,7 +47,6 @@ export function TodayScreen(props: Props) {
           <Avatar initials={initials(props.displayName, props.staffNumber)} label={props.displayName || undefined} />
         </div>
       </header>
-      <HomeSummaryCard visits={props.visits} />
 
       <div className="mk-schedule-heading">
         <h2>{copy.today.scheduleHeading}</h2>
@@ -63,6 +62,7 @@ export function TodayScreen(props: Props) {
         <PillButton onClick={props.onSync} disabled={props.loading} size="full">{copy.generic.syncSchedule}</PillButton>
       </Card> : <div className="visit-list mk-visit-list">{ordered.map((visit) => <VisitCard key={visit.id} visit={visit} selected={paneVisit?.id === visit.id} photosEnabled={props.photosEnabled} onArrive={props.onArrive} onLeave={props.onLeave} onNote={props.onNote} onPhoto={props.onPhoto} />)}</div>}
       {props.adhocAllowed && <div className="adhoc-launch mk-adhoc-launch"><PillButton type="button" tone="ghost" size="sm" onClick={props.onAdhocOpen} aria-expanded={props.adhocOpen}>{copy.today.adhocOpen}</PillButton></div>}
+      <HomeSummaryCard visits={props.visits} />
       <p className="privacy-hint">{copy.visit.locationHint}</p>
     </div>
 

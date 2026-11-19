@@ -59,8 +59,34 @@ def _send_one(row: dict[str, Any], payload: str, private_key: str, subject: str)
         return 0
 
 
+async def _notify_devices(
+    mailbox_ids: list[str], exclude_user_id: str | None, sender: str, subject: str
+) -> None:
+    """Push to the Android apps (Firebase). Independent of the browser web-push settings below."""
+    from app.modules.push.events import notify_staff
+
+    rows = await db.get_pool().fetch(
+        "SELECT DISTINCT user_id FROM mailbox_member WHERE mailbox_id=ANY($1::uuid[])", mailbox_ids
+    )
+    user_ids = [str(r["user_id"]) for r in rows if str(r["user_id"]) != str(exclude_user_id or "")]
+    preview = bool(await get_value("mail.push_show_preview"))
+    notify_staff(
+        user_ids,
+        "mail",
+        (sender or "New mail") if preview else "New mail",
+        ((subject or "(no subject)")[:120]) if preview else "You have a new message.",
+        {"kind": "mail", "deep_link": "/mail"},
+    )
+
+
 async def _notify(mailbox_ids: list[str], exclude_user_id: str | None, sender: str, subject: str) -> None:
-    if not mailbox_ids or not bool(await get_value("mail.push_enabled")):
+    if not mailbox_ids:
+        return
+    try:
+        await _notify_devices(mailbox_ids, exclude_user_id, sender, subject)
+    except Exception:
+        log.warning("mail device push failed", exc_info=True)
+    if not bool(await get_value("mail.push_enabled")):
         return
     private_key = str(await get_value("mail.push_vapid_private") or "").strip()
     if not private_key or not await public_key():

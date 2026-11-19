@@ -1,15 +1,19 @@
 .prompt {
+  position: sticky;
+  top: 0;
+  z-index: 40;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.65rem 1rem;
-  border-bottom: 1px solid var(--line, #d8dfd9);
-  background: var(--surface, #fff);
-  color: var(--text, #173b2b);
-  font-size: 0.875rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--surf);
+  color: var(--ink);
+  font-size: var(--fs-small);
+  box-shadow: var(--shadow-1);
 }
-.actions { display: flex; align-items: center; gap: 0.5rem; }
-.actions button { border: 0; border-radius: 999px; padding: 0.45rem 0.75rem; background: #0B2E2A; color: white; font: inherit; cursor: pointer; }
-.actions button:last-child { background: transparent; color: inherit; text-decoration: underline; }
+.actions { display: flex; flex: none; align-items: center; gap: 0.5rem; }
+.actions button { min-height: 40px; padding: 0 16px; border: 2px solid var(--forest); border-radius: var(--r-pill); background: var(--forest); color: var(--onf); font: 600 0.88rem var(--sans); cursor: pointer; }
+.actions button:last-child { border-color: transparent; background: transparent; color: var(--ink); text-decoration: underline; }
 @media (max-width: 560px) { .prompt { align-items: flex-start; flex-direction: column; } }

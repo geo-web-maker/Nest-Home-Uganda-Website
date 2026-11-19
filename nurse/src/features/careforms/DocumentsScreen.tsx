@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Card } from '../../ui/Card';
 import { Chip } from '../../ui/Chip';
+import { PillButton } from '../../ui/PillButton';
 import { FormLauncher, type Launch } from './FormLauncher';
 import { formTitle, statusChip, statusLabel } from './rules';
 import { useCareFormsContext } from './useCareForms';
@@ -11,12 +12,15 @@ export function DocumentsScreen() {
   const care = useCareFormsContext();
   const [filter, setFilter] = useState<(typeof FILTERS)[number][0]>('all');
   const [launch, setLaunch] = useState<Launch | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const refresh = async () => { setRefreshing(true); try { await care?.refresh(); } finally { setRefreshing(false); } };
   const groups = useMemo(() => {
     const docs = (care?.boot?.documents ?? []).filter((d) => filter === 'all' || d.status === filter);
     return (care?.boot?.clients ?? []).map((c) => ({ client: c, docs: docs.filter((d) => d.client_id === c.id).sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? '')) })).filter((g) => g.docs.length);
   }, [care?.boot, filter]);
   return <section className="screen cf-documents" aria-labelledby="documents-heading">
-    <header className="screen-heading"><div><p className="eyebrow">Care forms</p><h2 id="documents-heading">Documents</h2></div></header>
+    <header className="screen-heading"><div><p className="eyebrow">Care forms</p><h2 id="documents-heading">Documents</h2></div>
+      <PillButton type="button" tone="ghost" size="sm" showArrow={false} disabled={!care?.online || refreshing} onClick={() => void refresh()}>{refreshing ? 'Syncing…' : 'Refresh'}</PillButton></header>
     <div className="cf-tabs" role="group" aria-label="Filter documents">{FILTERS.map(([id, label]) => <button key={id} type="button" aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</button>)}</div>
     {!care?.ready && <Card><p>Documents will appear here once they have loaded. They stay available offline after the first load.</p></Card>}
     {care?.ready && groups.length === 0 && <Card><p>No documents match.</p></Card>}

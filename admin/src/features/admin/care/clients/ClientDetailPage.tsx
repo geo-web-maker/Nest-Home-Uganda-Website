@@ -335,8 +335,8 @@ export function ClientDetailPage() {
               <form className="care-form client-location-editor" onSubmit={savePlace}>
                 <h3>{editingPlaceId ? 'Edit location' : 'Add location'}</h3>
                 <Field label="Place label" value={placeLabel} onChange={(event) => setPlaceLabel(event.target.value)} required requiredLabel="required" maxLength={80} />
-                <MapPicker tileUrl={mapTileUrl} lat={coords.lat} lng={coords.lng} radius={coords.radius} onChange={(value) => setCoords((previous) => ({ ...previous, ...value }))} />
                 <Field kind="textarea" label="Landmark or directions (optional)" value={placeAddress} onChange={(event) => setPlaceAddress(event.target.value)} maxLength={300} placeholder="For example, behind the church, blue gate, second house on the left" />
+                <MapPicker tileUrl={mapTileUrl} lat={coords.lat} lng={coords.lng} radius={coords.radius} onChange={(value) => setCoords((previous) => ({ ...previous, ...value }))} />
                 <div className="client-form-actions"><Button type="submit" disabled={busy || (!canCreatePlace && !editingPlaceId)}>Save location</Button>{editingPlaceId && <Button type="button" variant="outline" onClick={resetPlaceEditor}>Cancel edit</Button>}</div>
               </form>
             )}
