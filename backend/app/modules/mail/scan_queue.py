@@ -5,12 +5,14 @@ import asyncio
 import logging
 from datetime import UTC, datetime
 
-from app.modules.mail import db
+from app.core import wake_state
+from app.modules.mail import db, wake_rules
 from app.modules.mail.scanner import scan_object
 from app.modules.mail.settings_service import get_value
 
 log = logging.getLogger("app.mail.scan_queue")
 _kick_handle = None
+WAKE_KEY = "mail_scan"
 
 
 def kick(delay: float = 1.5) -> bool:
@@ -28,6 +30,8 @@ def kick(delay: float = 1.5) -> bool:
         task = loop.create_task(_safe_drain())
         task.add_done_callback(lambda item: item.cancelled() or item.exception())
 
+    mark = loop.create_task(wake_state.mark_due(WAKE_KEY))  # so the poll sees it even if this process dies first
+    mark.add_done_callback(lambda item: item.cancelled() or item.exception())
     _kick_handle = loop.call_later(delay, run)
     return True
 
@@ -41,8 +45,35 @@ async def _safe_drain() -> int:
 
 
 async def drain(limit: int = 20) -> int:
-    if not bool(await get_value("mail.scan_enabled")):
+    """Scan queued attachments, then record when Neon is next needed so idle polls can skip it."""
+    processed = await _drain_inner(limit)
+    if processed is None:  # scanning is switched off
+        await wake_state.set_next_due(WAKE_KEY, datetime.now(UTC) + wake_rules.DISABLED_RECHECK)
         return 0
+    await _record_next_due()
+    return processed
+
+
+async def _record_next_due() -> None:
+    try:
+        row = await db.get_pool().fetchrow(
+            "SELECT bool_or(scan_state='unscanned' AND object_key IS NOT NULL) AS has_unscanned, "
+            "min(coalesce(scanned_at, created_at)) FILTER (WHERE scan_state='scan_error' AND object_key IS NOT NULL) AS oldest_error, "
+            "min(created_at) FILTER (WHERE scan_state='pending') AS oldest_pending "
+            "FROM attachment WHERE message_id IS NOT NULL AND scan_state IN ('unscanned','scan_error','pending')"
+        )
+        due = wake_rules.scan_next_due(
+            bool(row["has_unscanned"]), row["oldest_error"], row["oldest_pending"], datetime.now(UTC)
+        )
+    except Exception:
+        log.warning("mail scan wake marker not updated; details omitted")
+        return
+    await wake_state.set_next_due(WAKE_KEY, due)
+
+
+async def _drain_inner(limit: int) -> int | None:
+    if not bool(await get_value("mail.scan_enabled")):
+        return None
     pool = db.get_pool()
     processed = 0
     async with pool.acquire() as conn:

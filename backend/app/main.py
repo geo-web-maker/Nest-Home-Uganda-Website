@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from app.core import db, site_rebuild
 from app.core.config import get_settings
 from app.core.errors import error_body, install_error_handlers
+from app.core import audit_throttle
 from app.core.rate_limit import client_ip, rate_limit
 from app.core.security import hash_ip
 from app.jobs import build_scheduler
@@ -23,7 +24,6 @@ from app.registry import API_PREFIX, CARE_DOCUMENT_MODELS, DOCUMENT_MODELS, ROUT
 _AUDIT_SAMPLE: OrderedDict[str, float] = OrderedDict()
 _AUDIT_SAMPLE_WINDOW = 60.0
 _AUDIT_SAMPLE_MAX = 20_000
-_LAST_AUDIT_THROTTLE_CLEANUP = 0.0
 
 
 def _local_should_audit_4xx(request: Request, status: int) -> bool:
@@ -51,8 +51,8 @@ def _local_should_audit_4xx(request: Request, status: int) -> bool:
 async def _should_audit_4xx(request: Request, status: int) -> bool:
     """Sample repeated 4xx events once per route/status/IP/minute.
 
-    PostgreSQL provides a cross-worker throttle when mail DB is configured; the
-    bounded local sampler is a fail-safe fallback for deployments without it.
+    MongoDB provides the cross-worker throttle (a Neon write per error would let bots keep the
+    mail database awake); the bounded local sampler is the fallback if Mongo is unavailable.
     """
     if status == 404:
         return False
@@ -64,27 +64,9 @@ async def _should_audit_4xx(request: Request, status: int) -> bool:
     source = f"{request.method}:{path}:{status}:{hash_ip(client_ip(request))}"
     key = __import__("hashlib").sha256(source.encode()).hexdigest()
     try:
-        pool = mail_db.get_pool()
-        async with pool.acquire() as conn:
-            row = await conn.fetchrow(
-                "INSERT INTO security_rate_limit(bucket_key,window_start,hits) "
-                "VALUES($1,to_timestamp(floor(extract(epoch from now())/60)*60),1) "
-                "ON CONFLICT(bucket_key) DO UPDATE SET "
-                "hits=CASE WHEN security_rate_limit.window_start=EXCLUDED.window_start "
-                "THEN security_rate_limit.hits+1 ELSE 1 END, "
-                "window_start=EXCLUDED.window_start RETURNING hits",
-                f"api4xx:{key}",
-            )
-            global _LAST_AUDIT_THROTTLE_CLEANUP
-            now = time.monotonic()
-            if now - _LAST_AUDIT_THROTTLE_CLEANUP > 300:
-                _LAST_AUDIT_THROTTLE_CLEANUP = now
-                await conn.execute(
-                    "DELETE FROM security_rate_limit WHERE window_start < now()-interval '2 days'"
-                )
-            return int(row["hits"]) == 1
+        return await audit_throttle.first_in_window(key)
     except Exception:
-        # A missing/unavailable optional mail DB must not prevent API responses.
+        # An unavailable store must not prevent API responses.
         return _local_should_audit_4xx(request, status)
 
 

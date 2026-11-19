@@ -249,6 +249,10 @@ async def ingest(payload: dict[str, Any], timestamp: str, signature: str) -> dic
 
                     await refresh_for_mailboxes(conn, notify_ids)
                     notify_new_mail(notify_ids, sender=parsed.from_address or "", subject=parsed.subject or "")
+                if any(not attachment.blocked_reason for attachment, _ in stored):
+                    from app.modules.mail.scan_queue import kick as kick_scan
+
+                    kick_scan()  # marks the scan queue due so the quiet poll picks these up
                 return {"delivered": delivered, "folder": folder, "message_id": str(message_id), "routing": routing}
     except Exception:
         for object_key in stored_keys:

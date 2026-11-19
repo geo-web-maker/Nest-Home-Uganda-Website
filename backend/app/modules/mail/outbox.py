@@ -8,14 +8,16 @@ import hashlib
 import logging
 from datetime import UTC, datetime, timedelta
 
+from app.core import wake_state
 from app.core.storage import Bucket, get_storage
-from app.modules.mail import db
+from app.modules.mail import db, wake_rules
 from app.modules.mail.providers import MailProvider, OutboundAttachment, OutboundMessage, get_provider
 from app.modules.mail.settings_service import get_value
 
 log = logging.getLogger("app.mail.outbox")
 BACKOFF = (60, 300, 1800, 7200, 21600)
 KICK_DELAY_SECONDS = 2.0
+WAKE_KEY = "mail_outbox"
 _kick_handle = None
 
 
@@ -43,6 +45,8 @@ def kick(delay: float = KICK_DELAY_SECONDS) -> bool:
         task = loop.create_task(_safe_drain())
         task.add_done_callback(lambda item: item.cancelled() or item.exception())
 
+    mark = loop.create_task(wake_state.mark_due(WAKE_KEY))  # so the poll sees it even if this process dies first
+    mark.add_done_callback(lambda item: item.cancelled() or item.exception())
     _kick_handle = loop.call_later(delay, _run)
     return True
 
@@ -127,8 +131,31 @@ async def _load_outbound_attachments(message_id) -> list[OutboundAttachment]:
 
 
 async def drain(limit: int = 20) -> int:
-    if not bool(await get_value("mail.enabled")) or bool(await get_value("mail.suspend_all_sending")):
+    """Run one drain, then record when Neon is next needed so idle polls can skip it."""
+    sent = await _drain_inner(limit)
+    if sent is None:  # mail disabled or sending suspended: nothing was looked at
+        await wake_state.set_next_due(WAKE_KEY, datetime.now(UTC) + wake_rules.DISABLED_RECHECK)
         return 0
+    await _record_next_due()
+    return sent
+
+
+async def _record_next_due() -> None:
+    try:
+        row = await db.get_pool().fetchrow(
+            "SELECT min(next_attempt_at) FILTER (WHERE state IN ('queued','deferred')) AS next_retry, "
+            "bool_or(state='sending') AS has_sending FROM outbox WHERE state IN ('queued','deferred','sending')"
+        )
+        due = wake_rules.outbox_next_due(row["next_retry"], bool(row["has_sending"]), datetime.now(UTC))
+    except Exception:
+        log.warning("mail outbox wake marker not updated; details omitted")
+        return
+    await wake_state.set_next_due(WAKE_KEY, due)
+
+
+async def _drain_inner(limit: int) -> int | None:
+    if not bool(await get_value("mail.enabled")) or bool(await get_value("mail.suspend_all_sending")):
+        return None
     pool = db.get_pool()
     sent = 0
     async with pool.acquire() as conn:

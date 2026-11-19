@@ -1319,6 +1319,8 @@ async def mailbox_policy(mailbox_id: str,body: MailboxPolicyBody,principal: Prin
         row=await conn.fetchrow("UPDATE mailbox SET external_allowed=CASE WHEN $4 THEN NULL WHEN $2::boolean IS NULL THEN external_allowed ELSE $2 END,sending_suspended=COALESCE($3,sending_suspended) WHERE id=$1 RETURNING id,external_allowed,sending_suspended",mailbox_id,values.get('external_allowed'),values.get('sending_suspended'),bool(values.get('follow_global',False)))
         if not row: raise Forbidden("Mailbox not found.")
         await conn.execute("INSERT INTO mail_audit(actor_user_id,action,mailbox_id,detail) VALUES($1,'mail.suspend',$2,$3::jsonb)",principal.user_id,mailbox_id,__import__('json').dumps(values))
+    from app.modules.mail.outbox import kick  # un-suspending a mailbox queues nothing new, so wake the outbox
+    kick()
     return dict(row)
 
 

@@ -41,11 +41,12 @@ async def test_kick_swallows_drain_errors(monkeypatch):
     assert await outbox._safe_drain() == 0
 
 
-def test_outbox_poll_is_slow_enough_for_neon_to_sleep():
+def test_outbox_poll_checks_the_mongo_marker_before_neon():
     source = inspect.getsource(jobs)
-    assert 'id="mail_outbox_drain"' in source
     line = next(item for item in source.splitlines() if 'id="mail_outbox_drain"' in item)
-    assert "minutes=5" in line and "seconds=15" not in line
+    assert '"interval"' in line and "minutes=1" in line and "seconds=" not in line
+    body = inspect.getsource(jobs.run_mail_outbox)
+    assert body.index("should_run") < body.index("await drain()")
 
 
 def test_authenticator_cookie_uses_the_multi_site_module_path():

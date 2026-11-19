@@ -290,19 +290,24 @@ def build_scheduler() -> AsyncIOScheduler:
     )
     # Mail workers are persisted in Neon and claim with SKIP LOCKED, so overlapping
     # instances cannot process the same outbox row concurrently.
-    # Sends are triggered by outbox.kick(); this slow poll only picks up retries so Neon can suspend.
-    scheduler.add_job(run_mail_outbox, "interval", minutes=5, id="mail_outbox_drain", max_instances=1, coalesce=True)
-    scheduler.add_job(run_mail_scan_queue, "interval", minutes=10, id="mail_scan_queue", max_instances=1, coalesce=True)
+    # Sends are triggered by outbox.kick(). These ticks only read a Mongo marker (wake_state) and
+    # open a Neon connection when a retry or scan is actually due, so an idle Neon can suspend.
+    scheduler.add_job(run_mail_outbox, "interval", minutes=1, id="mail_outbox_drain", max_instances=1, coalesce=True)
+    scheduler.add_job(run_mail_scan_queue, "interval", minutes=1, id="mail_scan_queue", max_instances=1, coalesce=True)
     scheduler.add_job(run_mail_housekeeping, "cron", hour=0, minute=5, id="mail_housekeeping", max_instances=1, coalesce=True)
     scheduler.add_job(run_mail_retention, "cron", hour=0, minute=25, id="mail_retention_purge", max_instances=1, coalesce=True)
-    scheduler.add_job(run_mail_quota_check, "interval", hours=1, id="mail_quota_check", max_instances=1, coalesce=True)
+    # Once a day at 00:05, sharing the wake with mail_housekeeping.
+    scheduler.add_job(run_mail_quota_check, "cron", hour=0, minute=5, id="mail_quota_check", max_instances=1, coalesce=True)
     scheduler.add_job(run_agreement_sweep, "interval", minutes=5, id="agreement_lifecycle", max_instances=1, coalesce=True)
     return scheduler
 
 
 async def run_mail_outbox() -> int:
     try:
-        from app.modules.mail.outbox import drain
+        from app.core import wake_state
+        from app.modules.mail.outbox import WAKE_KEY, drain
+        if not await wake_state.should_run(WAKE_KEY):
+            return 0  # nothing due: do not wake Neon
         return await drain()
     except Exception:
         log.warning("mail outbox job unavailable; details omitted")
@@ -312,7 +317,10 @@ async def run_mail_outbox() -> int:
 
 async def run_mail_scan_queue() -> int:
     try:
-        from app.modules.mail.scan_queue import drain
+        from app.core import wake_state
+        from app.modules.mail.scan_queue import WAKE_KEY, drain
+        if not await wake_state.should_run(WAKE_KEY):
+            return 0  # nothing due: do not wake Neon
         return await drain(limit=10)
     except Exception:
         log.warning("mail attachment scan job unavailable; details omitted")

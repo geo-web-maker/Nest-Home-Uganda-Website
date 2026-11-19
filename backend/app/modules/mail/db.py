@@ -89,7 +89,8 @@ async def connect(database_url: str) -> None:
             asyncpg = importlib.import_module("asyncpg")
             pool = await asyncpg.create_pool(
                 dsn=database_url,
-                min_size=1,
+                min_size=0,  # no standing connection while idle
+                max_inactive_connection_lifetime=30,  # seconds; asyncpg default is 300, equal to Neon's 5-minute suspend window
                 max_size=10,
                 command_timeout=30,
                 statement_cache_size=0,
@@ -147,19 +148,15 @@ async def health_hook(database_url: str = "") -> None:
     global _health_task
     if _pool is None and not database_url.strip():
         return
+    if _pool is not None:
+        return  # pool is up: no ping/drain, so health polling cannot wake Neon
     if _health_task is not None and not _health_task.done():
         return
 
     async def check() -> None:
         try:
-            if _pool is None:
-                await connect(database_url)
+            await connect(database_url)
             await ping()
-            try:
-                from app.modules.mail.outbox import drain
-                await drain(limit=5)
-            except Exception:
-                log.warning("mail opportunistic outbox drain failed; details omitted")
         except Exception:
             log.warning("mail database health probe/reconnect failed; details omitted")
 

@@ -231,6 +231,26 @@ async def get_value(key: str, *, pool: Any | None = None, use_cache: bool = True
     return result
 
 
+_OUTBOX_KEYS = {"mail.enabled", "mail.external_enabled", "mail.suspend_all_sending"}
+
+
+def _kick_workers(keys: Any) -> None:
+    """Turning sending or scanning back on queues nothing new, so wake the workers explicitly;
+    otherwise mail queued while it was off waits for the slow Neon recheck."""
+    try:
+        keys = set(keys)
+        if keys & _OUTBOX_KEYS:
+            from app.modules.mail.outbox import kick
+
+            kick()
+        if "mail.scan_enabled" in keys:
+            from app.modules.mail.scan_queue import kick as kick_scan
+
+            kick_scan()
+    except Exception:
+        pass  # the safety-net recheck still picks the work up
+
+
 async def set_values(
     values: dict[str, Any], actor_user_id: str, *, pool: Any | None = None
 ) -> None:
@@ -273,6 +293,7 @@ async def set_values(
                     json.dumps({"key": key, "changed": True}),
                 )
     clear_cache()
+    _kick_workers(values)
 
 
 async def set_value(
@@ -296,6 +317,7 @@ async def reset_value(key: str, actor_user_id: str, *, pool: Any | None = None) 
                 json.dumps({"key": key, "reset": True}),
             )
     clear_cache()
+    _kick_workers({key})
 
 
 async def settings_for_api(*, pool: Any | None = None) -> list[dict[str, Any]]:
