@@ -1564,6 +1564,46 @@
         "title": "ClientConsentBody",
         "type": "object"
       },
+      "ClientDaysBody": {
+        "properties": {
+          "back_to_today": {
+            "default": false,
+            "title": "Back To Today",
+            "type": "boolean"
+          },
+          "days": {
+            "default": 0,
+            "maximum": 14.0,
+            "minimum": -14.0,
+            "title": "Days",
+            "type": "integer"
+          }
+        },
+        "title": "ClientDaysBody",
+        "type": "object"
+      },
+      "ClientEnableBody": {
+        "properties": {
+          "patient_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "General",
+                  "Mama",
+                  "Baby"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Patient Type"
+          }
+        },
+        "title": "ClientEnableBody",
+        "type": "object"
+      },
       "ClientErrorPayload": {
         "properties": {
           "message": {
@@ -1724,6 +1764,48 @@
         "title": "ClientIn",
         "type": "object"
       },
+      "ClientLocationBody": {
+        "properties": {
+          "lat": {
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Lat",
+            "type": "number"
+          },
+          "lng": {
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Lng",
+            "type": "number"
+          },
+          "radius_m": {
+            "default": 150,
+            "maximum": 1000.0,
+            "minimum": 50.0,
+            "title": "Radius M",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "lat",
+          "lng"
+        ],
+        "title": "ClientLocationBody",
+        "type": "object"
+      },
+      "ClientScenarioBody": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ClientScenarioBody",
+        "type": "object"
+      },
       "ClientSignIn": {
         "properties": {
           "detail": {
@@ -1785,6 +1867,60 @@
           "name"
         ],
         "title": "ClientSignIn",
+        "type": "object"
+      },
+      "ClientTypeBody": {
+        "properties": {
+          "patient_type": {
+            "enum": [
+              "General",
+              "Mama",
+              "Baby"
+            ],
+            "title": "Patient Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "patient_type"
+        ],
+        "title": "ClientTypeBody",
+        "type": "object"
+      },
+      "ClientVisitBody": {
+        "properties": {
+          "at": {
+            "default": "09:00",
+            "title": "At",
+            "type": "string"
+          },
+          "day": {
+            "default": 0,
+            "maximum": 21.0,
+            "minimum": -14.0,
+            "title": "Day",
+            "type": "integer"
+          },
+          "length": {
+            "default": 60,
+            "maximum": 480.0,
+            "minimum": 15.0,
+            "title": "Length",
+            "type": "integer"
+          },
+          "state": {
+            "default": "scheduled",
+            "enum": [
+              "scheduled",
+              "in_progress",
+              "completed",
+              "overdue_checkout"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "title": "ClientVisitBody",
         "type": "object"
       },
       "ConfigBody": {
@@ -20148,6 +20284,482 @@
           }
         ],
         "summary": "List Accounts",
+        "tags": [
+          "test-accounts"
+        ]
+      }
+    },
+    "/api/v1/admin/test-accounts/client/checks": {
+      "post": {
+        "operationId": "client_checks_api_v1_admin_test_accounts_client_checks_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Client Checks",
+        "tags": [
+          "test-accounts"
+        ]
+      }
+    },
+    "/api/v1/admin/test-accounts/client/days": {
+      "post": {
+        "operationId": "client_days_api_v1_admin_test_accounts_client_days_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientDaysBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Client Days",
+        "tags": [
+          "test-accounts"
+        ]
+      }
+    },
+    "/api/v1/admin/test-accounts/client/disable": {
+      "post": {
+        "operationId": "client_disable_api_v1_admin_test_accounts_client_disable_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Client Disable",
+        "tags": [
+          "test-accounts"
+        ]
+      }
+    },
+    "/api/v1/admin/test-accounts/client/enable": {
+      "post": {
+        "operationId": "client_enable_api_v1_admin_test_accounts_client_enable_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientEnableBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Client Enable",
+        "tags": [
+          "test-accounts"
+        ]
+      }
+    },
+    "/api/v1/admin/test-accounts/client/location": {
+      "post": {
+        "operationId": "client_location_api_v1_admin_test_accounts_client_location_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientLocationBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Client Location",
+        "tags": [
+          "test-accounts"
+        ]
+      }
+    },
+    "/api/v1/admin/test-accounts/client/scenario": {
+      "post": {
+        "operationId": "client_scenario_api_v1_admin_test_accounts_client_scenario_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientScenarioBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Client Scenario",
+        "tags": [
+          "test-accounts"
+        ]
+      }
+    },
+    "/api/v1/admin/test-accounts/client/type": {
+      "post": {
+        "operationId": "client_type_api_v1_admin_test_accounts_client_type_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientTypeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Client Type",
+        "tags": [
+          "test-accounts"
+        ]
+      }
+    },
+    "/api/v1/admin/test-accounts/client/visits": {
+      "post": {
+        "operationId": "client_add_visit_api_v1_admin_test_accounts_client_visits_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientVisitBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Client Add Visit",
         "tags": [
           "test-accounts"
         ]
