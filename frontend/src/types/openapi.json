@@ -508,6 +508,27 @@
             ],
             "title": "Apk Key"
           },
+          "app": {
+            "default": "nurse",
+            "enum": [
+              "nurse",
+              "admin"
+            ],
+            "title": "App",
+            "type": "string"
+          },
+          "bundle_key": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bundle Key"
+          },
           "download_path": {
             "anyOf": [
               {
@@ -525,6 +546,18 @@
             "minLength": 8,
             "title": "Id",
             "type": "string"
+          },
+          "min_native_version_code": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Native Version Code"
           },
           "min_supported_version": {
             "maxLength": 80,
@@ -21911,6 +21944,184 @@
         "summary": "Admin Sign Out",
         "tags": [
           "admin-users"
+        ]
+      }
+    },
+    "/api/v1/app-bundles/releases": {
+      "post": {
+        "description": "CI publishes a release with a long-lived key that can do nothing else.\n\nDisabled (404) unless NEST_RELEASE_PUBLISH_KEY is set to a value of at least 32 characters.",
+        "operationId": "publish_release_with_key_api_v1_app_bundles_releases_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Release-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Release-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppReleaseCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Publish Release With Key",
+        "tags": [
+          "app-releases"
+        ]
+      }
+    },
+    "/api/v1/app-bundles/{app}/apk": {
+      "get": {
+        "description": "Newest active APK for an app when it is newer than the installed versionName, else {\"update\": false}.",
+        "operationId": "latest_apk_api_v1_app_bundles__app__apk_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "enum": [
+                "nurse",
+                "admin"
+              ],
+              "title": "App",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "current",
+            "required": true,
+            "schema": {
+              "maxLength": 80,
+              "title": "Current",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Latest Apk",
+        "tags": [
+          "app-releases"
+        ]
+      }
+    },
+    "/api/v1/app-bundles/{app}/latest": {
+      "get": {
+        "description": "Newest active web bundle this installed APK can run, or {\"update\": false}.",
+        "operationId": "latest_web_bundle_api_v1_app_bundles__app__latest_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "enum": [
+                "nurse",
+                "admin"
+              ],
+              "title": "App",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "native_code",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Native Code",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "current",
+            "required": true,
+            "schema": {
+              "maxLength": 80,
+              "title": "Current",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Latest Web Bundle",
+        "tags": [
+          "app-releases"
         ]
       }
     },

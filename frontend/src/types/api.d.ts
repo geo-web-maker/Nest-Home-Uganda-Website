@@ -3089,6 +3089,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/app-bundles/releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish Release With Key
+         * @description CI publishes a release with a long-lived key that can do nothing else.
+         *
+         *     Disabled (404) unless NEST_RELEASE_PUBLISH_KEY is set to a value of at least 32 characters.
+         */
+        post: operations["publish_release_with_key_api_v1_app_bundles_releases_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/app-bundles/{app}/apk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Latest Apk
+         * @description Newest active APK for an app when it is newer than the installed versionName, else {"update": false}.
+         */
+        get: operations["latest_apk_api_v1_app_bundles__app__apk_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/app-bundles/{app}/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Latest Web Bundle
+         * @description Newest active web bundle this installed APK can run, or {"update": false}.
+         */
+        get: operations["latest_web_bundle_api_v1_app_bundles__app__latest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/accept-invite": {
         parameters: {
             query?: never;
@@ -5771,10 +5833,20 @@ export interface components {
             active: boolean;
             /** Apk Key */
             apk_key?: string | null;
+            /**
+             * App
+             * @default nurse
+             * @enum {string}
+             */
+            app: "nurse" | "admin";
+            /** Bundle Key */
+            bundle_key?: string | null;
             /** Download Path */
             download_path?: string | null;
             /** Id */
             id: string;
+            /** Min Native Version Code */
+            min_native_version_code?: number | null;
             /** Min Supported Version */
             min_supported_version: string;
             /**
@@ -16393,6 +16465,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Done"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_release_with_key_api_v1_app_bundles_releases_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Release-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppReleaseCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    latest_apk_api_v1_app_bundles__app__apk_get: {
+        parameters: {
+            query: {
+                current: string;
+            };
+            header?: never;
+            path: {
+                app: "nurse" | "admin";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    latest_web_bundle_api_v1_app_bundles__app__latest_get: {
+        parameters: {
+            query: {
+                native_code: number;
+                current: string;
+            };
+            header?: never;
+            path: {
+                app: "nurse" | "admin";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
