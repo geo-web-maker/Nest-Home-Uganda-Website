@@ -3,6 +3,8 @@ import { Button } from '@shared/components/ui/Button';
 import { NativeUpdater } from '../../admin-native/nativeUpdater';
 import { WebBundle } from '../../admin-native/webBundle';
 import { formatSize, useAppCenter, type AppCenterPlugins } from '../../admin-native/appCenter';
+import { useUpgradeRequired } from '../../admin-native/useUpgradeRequired';
+import { CLIENT_BUILD } from '@shared/lib/api/clientBuild';
 
 const CHANNEL_LABEL = { native: 'Android app', pwa: 'Installed web app', browser: 'Web browser' } as const;
 
@@ -11,13 +13,16 @@ export function AppCenterPanel() {
   const plugins = useMemo<AppCenterPlugins>(() => ({ nativeUpdater: NativeUpdater, webBundle: WebBundle }), []);
   const { channel, installed, apk, apkIsNewer, bundle, pwa, phase, checkedAt, check, installApk, installBundle, updatePwa } = useAppCenter('admin', plugins);
   const busy = phase.kind === 'checking' || phase.kind === 'downloading' || phase.kind === 'installing';
-  const nothingNew = channel === 'native' ? !apkIsNewer && !bundle : !pwa.updateReady;
+  const upgradeRequired = useUpgradeRequired();
+  const nothingNew = !upgradeRequired && (channel === 'native' ? !apkIsNewer && !bundle : !pwa.updateReady);
 
   return <article className="care-form" aria-labelledby="app-center-title">
     <h2 id="app-center-title">App Center</h2>
+    {upgradeRequired && <p role="alert">The server needs a newer version of this app. Install the update below, then open the app again.</p>}
     <dl className="nurse-facts">
       <div><dt>Running as</dt><dd>{CHANNEL_LABEL[channel]}</dd></div>
       <div><dt>App version</dt><dd>{installed.nativeVersion ?? installed.webVersion}</dd></div>
+      <div><dt>Client build</dt><dd>{CLIENT_BUILD}</dd></div>
       {channel === 'native' && <div><dt>Web content</dt><dd>{installed.runningBundle ?? installed.webVersion}</dd></div>}
       {channel === 'native' && installed.stagedBundle && <div><dt>Waiting for next launch</dt><dd>{installed.stagedBundle}</dd></div>}
       {checkedAt && <div><dt>Last checked</dt><dd>{checkedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</dd></div>}

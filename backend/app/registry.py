@@ -79,6 +79,7 @@ from app.modules.testimonials import router as testimonials_router
 from app.modules.testimonials.models import Testimonial
 from app.modules.users import router as users_router
 from app.core.audit_throttle import AuditThrottle
+from app.core.client_guard import ClientPolicy
 from app.core.wake_state import WakeState
 from app.modules.mail.unread_counter import MailUnread
 from app.modules.visits.models import (
@@ -95,6 +96,7 @@ API_PREFIX = "/api/v1"
 DOCUMENT_MODELS: list[type[Document]] = [
     WakeState,
     AuditThrottle,
+    ClientPolicy,
     MailUnread,
     User,
     RefreshToken,

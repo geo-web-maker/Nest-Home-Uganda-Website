@@ -223,7 +223,7 @@ def create_app() -> FastAPI:
         allow_origins=settings.cors_origin_list,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"],
-        allow_headers=["Authorization", "Content-Type", "X-CSRF-Token", "X-Client", "X-Device-ID", "X-Request-ID"],
+        allow_headers=["Authorization", "Content-Type", "X-CSRF-Token", "X-Client", "X-Client-Build", "X-Device-ID", "X-Request-ID"],
         expose_headers=["X-Request-ID"],
     )
 

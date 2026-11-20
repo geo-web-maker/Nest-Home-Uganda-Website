@@ -68,6 +68,7 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { path: '/backups', labelKey: 'backupsHealth', scopes: ['system:manage'], icon: 'backup', group: 'setup' },
   { path: '/mail/shared', labelKey: 'mailShared', scopes: ['mail:shared:manage'], icon: 'sharedMail', group: 'setup' },
   { path: '/mail/settings', labelKey: 'mailSettings', scopes: ['mail:settings:manage'], icon: 'mailSettings', group: 'setup' },
+  { path: '/mail/clients', labelKey: 'clientControl', scopes: ['mail:settings:manage'], icon: 'clientControl', group: 'setup' },
   { path: '/diagnostics', labelKey: 'diagnostics', scopes: ['system:manage'], icon: 'diagnostics', group: 'setup' },
 ];
 

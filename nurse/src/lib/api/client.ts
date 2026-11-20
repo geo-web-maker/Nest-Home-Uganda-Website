@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { clearRefreshToken, readRefreshToken, saveRefreshToken } from '../../platform/secureTokenStorage';
+import { BUILD_HEADER, CLIENT_BUILD, markUpgradeRequired } from '../clientBuild';
 const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 
 /** Resolve short-lived API asset paths against the configured API origin (including native builds). */
@@ -44,6 +45,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   headers.set('Accept', 'application/json');
   if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   if (token) headers.set('Authorization', `Bearer ${token}`);
+  if (token) headers.set(BUILD_HEADER, String(CLIENT_BUILD));
   if (Capacitor.isNativePlatform() && path.startsWith('/auth/native/')) headers.set('X-Client','native');
   assertApiConfigured();
   let response: Response;
@@ -63,6 +65,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
       } catch { /* The outbox remains local until the network returns. */ }
     }
   }
+  if (response.status === 426) markUpgradeRequired(); // this app is older than the server allows
   if (!response.ok) {
     let detail = `The API returned HTTP ${response.status} for ${init.method ?? 'GET'} ${path}.`;
     let code: string | undefined;

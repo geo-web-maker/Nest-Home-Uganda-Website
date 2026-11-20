@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Fragment, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@shared/components/ui/Button';
 import { Field } from '@shared/components/ui/Field';
 import { Checkbox } from '@shared/components/ui/Checkbox';
@@ -78,6 +79,7 @@ export function AppReleasesPage() {
       {allowed && releases.isPending ? <p role="status">Loading release records…</p> : null}
       {allowed && releases.isError ? <div role="alert"><p>Release records could not be loaded. Check your access and API connection.</p><Button variant="outline" onClick={() => void releases.refetch()}>Retry</Button></div> : null}
       {allowed ? <AppBuildsPanel /> : null}
+      {allowed ? <p>Need to slow down, update-lock or pause an old app? <Link to="/mail/clients">Open Client control</Link>.</p> : null}
       {allowed ? <form className={styles.card} onSubmit={submit}>
         <h2>Publish a release policy by hand</h2>
         <p>Publishing changes the version policy consumed by field apps. Confirm the minimum version before publishing.</p>

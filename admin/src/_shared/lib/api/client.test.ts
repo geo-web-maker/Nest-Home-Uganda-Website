@@ -1,5 +1,6 @@
 /* GENERATED from frontend/src. Edit there, then run: node scripts/sync-admin-shared.mjs */
 import { ApiError, apiClient, createApiClient, setAuthHooks } from './client';
+import { CLIENT_BUILD, isUpgradeRequired, resetUpgradeRequired } from './clientBuild';
 
 const json = (status: number, body: unknown) =>
   new Response(body === null ? null : JSON.stringify(body), { status });
@@ -151,3 +152,34 @@ describe('default apiClient auth hooks', () => {
     });
   });
 });
+
+describe('client build header and upgrade signal', () => {
+  beforeEach(() => resetUpgradeRequired());
+
+  it('sends X-Client-Build on signed-in requests only', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(json(200, {}));
+    await createApiClient({ baseUrl: BASE, fetchImpl, getAccessToken: () => 'tok' }).get('/mail/unread');
+    await createApiClient({ baseUrl: BASE, fetchImpl }).get('/public/services');
+    expect(fetchImpl.mock.calls[0]?.[1]?.headers).toMatchObject({ 'X-Client-Build': String(CLIENT_BUILD) });
+    expect(fetchImpl.mock.calls[1]?.[1]?.headers).not.toHaveProperty('X-Client-Build');
+  });
+
+  it('raises the upgrade signal and a typed error on a 426', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      json(426, { error: { code: 'upgrade_required', message: 'Please update.' } }),
+    );
+    const client = createApiClient({ baseUrl: BASE, fetchImpl, getAccessToken: () => 'tok' });
+    await expect(client.get('/mail/mailboxes')).rejects.toMatchObject({ status: 426, code: 'upgrade_required' });
+    expect(isUpgradeRequired()).toBe(true);
+  });
+
+  it('shows a pause as an error without asking for an update', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      json(403, { error: { code: 'client_blocked', message: 'Paused.' } }),
+    );
+    const client = createApiClient({ baseUrl: BASE, fetchImpl, getAccessToken: () => 'tok' });
+    await expect(client.get('/mail/unread')).rejects.toMatchObject({ status: 403, code: 'client_blocked' });
+    expect(isUpgradeRequired()).toBe(false);
+  });
+});
+

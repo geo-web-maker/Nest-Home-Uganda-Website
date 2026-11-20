@@ -14,6 +14,7 @@ import { AgreementsPage } from './agreements/AgreementsPage';
 import { BillingPage } from './billing/BillingPage';
 import { MailPage } from './mail/MailPage';
 import { MailSettingsPage } from './mail/MailSettingsPage';
+import { ClientControlPage } from './mail/ClientControlPage';
 import { SharedMailboxesPage } from './mail/SharedMailboxesPage';
 import { ApplicationsPage } from './applications';
 import { ContentPage } from './content';
@@ -39,6 +40,7 @@ export const adminScreens: Partial<Record<string, ComponentType>> = {
   '/billing/receipts': BillingPage,
   '/mail/shared': SharedMailboxesPage,
   '/mail/settings': MailSettingsPage,
+  '/mail/clients': ClientControlPage,
   '/diagnostics': DiagnosticsPage,
   '/activity': ActivityPage,
   '/enquiries': EnquiriesPage,

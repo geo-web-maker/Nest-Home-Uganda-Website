@@ -58,6 +58,21 @@ class TotpRequired(Forbidden):
         self.code = "totp_required"
 
 
+class ClientBlocked(Forbidden):
+    """403 with a stable code: this person's app is paused on the guarded routes (the rest of their account works)."""
+
+    def __init__(self, message: str = "This app is paused for your account. Please contact the administrator.") -> None:
+        super().__init__(message)
+        self.code = "client_blocked"
+
+
+class UpgradeRequired(AppError):
+    """426 with a stable code so old apps can tell the person to update instead of showing a raw error."""
+
+    def __init__(self, message: str = "This version of the app is out of date. Please update it to continue.") -> None:
+        super().__init__("upgrade_required", message, 426)
+
+
 class NotFound(AppError):
     def __init__(self, message: str = "Not found.") -> None:
         super().__init__("not_found", message, 404)

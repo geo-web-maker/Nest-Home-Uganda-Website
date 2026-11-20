@@ -21,6 +21,7 @@ from app.modules.mail import db as mail_db
 from app.modules.mail.schemas import MailSettingsPatch
 from app.modules.mail.settings_service import get_value, _fernet
 from app.modules.mail import unread_counter
+from app.core import client_guard
 
 router = APIRouter(prefix="/mail", tags=["mail"])
 
@@ -148,8 +149,48 @@ class SendDraftBody(BaseModel):
     mailbox_id: str
 
 
+async def _guarded_principal(request: Request, principal: Principal = Depends(require_scopes("mail:use"))) -> Principal:
+    """mail:use plus the client guard (MongoDB and memory only), for the routes that can reach Neon."""
+    await client_guard.enforce(request, principal.user_id)
+    return principal
+
+
+class ClientPolicyBody(BaseModel):
+    """Only the fields sent are changed."""
+
+    model_config = ConfigDict(extra="forbid")
+    legacy_min_interval_seconds: int | None = Field(default=None, ge=0, le=86_400)
+    min_build: int | None = Field(default=None, ge=0, le=1_000_000)
+    block_unversioned: bool | None = None
+    blocked_user_ids: list[str] | None = Field(default=None, max_length=client_guard.MAX_BLOCKED_USERS)
+
+
+@router.get("/admin/client-policy")
+async def get_client_policy(principal: Principal = Depends(require_scopes("mail:settings:manage"))):
+    # Read-only and holds no secrets, so no TOTP (like GET /settings). Changing it needs the code.
+    return (await client_guard.get_policy(fresh=True)).as_dict()
+
+
+@router.put("/admin/client-policy")
+async def put_client_policy(
+    body: ClientPolicyBody,
+    principal: Principal = Depends(require_scopes("mail:settings:manage")),
+    mail_totp: str | None = Cookie(default=None),
+):
+    await _require_sensitive_totp(principal, mail_totp, "mail:settings:manage")
+    values = body.model_dump(exclude_unset=True, exclude_none=True)
+    if "blocked_user_ids" in values:
+        values["blocked_user_ids"] = client_guard.clean_user_ids(values["blocked_user_ids"])
+    return (await client_guard.save_policy(values, principal.user_id)).as_dict()
+
+
+@router.get("/admin/client-traffic")
+async def get_client_traffic(principal: Principal = Depends(require_scopes("mail:settings:manage"))):
+    return await client_guard.traffic_report()
+
+
 @router.get("/mailboxes")
-async def mailboxes(principal: Principal = Depends(require_scopes("mail:use"))):
+async def mailboxes(principal: Principal = Depends(_guarded_principal)):
     return {
         "items": await core_service.list_mailboxes(principal.user_id),
         "limits": {"scan_enabled": bool(await get_value("mail.scan_enabled")), "rich_text_enabled": bool(await get_value("mail.rich_text_enabled")), "external_send_enabled": bool(await get_value("mail.external_enabled")), "domain": str(await get_value("mail.domain") or "").lower()},
@@ -157,7 +198,7 @@ async def mailboxes(principal: Principal = Depends(require_scopes("mail:use"))):
 
 
 @router.get("/unread")
-async def unread(principal: Principal = Depends(require_scopes("mail:use"))):
+async def unread(principal: Principal = Depends(_guarded_principal)):
     """Total unread for the sidebar badge. Reads MongoDB only, so polling it never wakes Neon.
 
     The first call for a person (or one that finds MongoDB unreadable) counts in Postgres once

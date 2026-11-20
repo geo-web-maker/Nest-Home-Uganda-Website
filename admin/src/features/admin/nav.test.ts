@@ -24,9 +24,9 @@ describe('mockup-aligned admin navigation', () => {
   });
 
   it('declares implemented screens in the reference information architecture', () => {
-    expect(ADMIN_NAV).toHaveLength(42);
-    expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 11, careOperations: 8, monitoring: 8, safety: 4, setup: 11 });
-    expect(paths(visibleNav(user([], true)))).toHaveLength(42);
+    expect(ADMIN_NAV).toHaveLength(43);
+    expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 11, careOperations: 8, monitoring: 8, safety: 4, setup: 12 });
+    expect(paths(visibleNav(user([], true)))).toHaveLength(43);
     expect(visibleNav(user([], true)).some((item) => item.path.includes('/care/patients'))).toBe(false);
   });
 
@@ -143,6 +143,7 @@ describe('mail navigation', () => {
     expect(scopesFor('/mail')).toEqual(['mail:use']);
     expect(scopesFor('/mail/settings')).toEqual(['mail:settings:manage']);
     expect(scopesFor('/mail/shared')).toEqual(['mail:shared:manage']);
+    expect(scopesFor('/mail/clients')).toEqual(['mail:settings:manage']);
     expect(scopesFor('/agreements')).toEqual(['agreements:read']);
     expect(scopesFor('/billing')).toEqual(['billing:read']);
     expect(scopesFor('/billing/receipts')).toEqual(['billing:read']);

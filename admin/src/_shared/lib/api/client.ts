@@ -1,5 +1,6 @@
 /* GENERATED from frontend/src. Edit there, then run: node scripts/sync-admin-shared.mjs */
 import { requestTotp } from '../totpPrompt';
+import { BUILD_HEADER, CLIENT_BUILD, markUpgradeRequired } from './clientBuild';
 
 export const API_PREFIX = '/api/v1';
 
@@ -103,7 +104,11 @@ export function createApiClient({
     const headers: Record<string, string> = { Accept: 'application/json', ...options.headers };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     const token = getAccessToken?.();
-    if (token) headers.Authorization = `Bearer ${token}`;
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+      // Only signed-in calls carry it, so public pages never trigger an extra CORS preflight.
+      headers[BUILD_HEADER] = String(CLIENT_BUILD);
+    }
 
     let response: Response;
     try {
@@ -122,6 +127,10 @@ export function createApiClient({
         {}, undefined, endpoint);
     }
 
+    if (response.status === 426) {
+      // This copy of the app is older than the server allows. The admin shell reacts to this signal.
+      markUpgradeRequired();
+    }
     const canRetry = response.status === 401 && !isRetry && options.retryOn401 !== false;
     if (canRetry && onUnauthorized && (await onUnauthorized())) {
       return send(method, path, body, options, true, totpAsked);

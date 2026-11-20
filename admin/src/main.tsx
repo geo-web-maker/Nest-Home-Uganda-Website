@@ -14,8 +14,10 @@ import '@shared/design/fonts.css';
 import '@shared/design/global.css';
 import '@shared/design/motion.css';
 import { startWebBundleUpdates } from './admin-native/webBundle';
+import { installUpgradeRequiredHandler } from './admin-native/upgradeRequired';
 
 initTheme();
+installUpgradeRequiredHandler();
 if (typeof window !== 'undefined') installClientErrorCapture();
 const queryClient = createQueryClient();
 
