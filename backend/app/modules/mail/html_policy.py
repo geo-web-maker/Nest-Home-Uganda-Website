@@ -108,6 +108,39 @@ def _safe_url(value: str, *, image: bool) -> bool:
     return scheme in _LINK_SCHEMES
 
 
+_ZERO_SIZE = re.compile(r"0+(?:\.0+)?(?:px|pt|em|rem|%|ex|ch|vh|vw)?")
+# Invisible filler senders append to the preview line (joiner, zero-width space, soft hyphen, BOM, runs of ZWNJ).
+_INVISIBLE_FILLER = re.compile("[\u034f\u200b\u2060\ufeff\u00ad]|\u200c{2,}")
+
+
+def _is_hidden_style(value: str) -> bool:
+    """True when the declarations hide the element: display:none, visibility:hidden, opacity:0,
+    mso-hide:all, or a clipped box (overflow:hidden with a zero height or width). font-size:0 is not
+    counted because layouts use it on wrappers whose children set their own size."""
+    props: dict[str, str] = {}
+    for declaration in value.split(";"):
+        if ":" not in declaration:
+            continue
+        name, raw = declaration.split(":", 1)
+        content = re.sub(r"\s*!important\s*$", "", raw.strip(), flags=re.IGNORECASE).strip().lower()
+        if content:
+            props[name.strip().lower()] = content
+    if props.get("display") == "none" or props.get("mso-hide") == "all":
+        return True
+    if props.get("visibility") in {"hidden", "collapse"}:
+        return True
+    opacity = props.get("opacity")
+    if opacity is not None and _ZERO_SIZE.fullmatch(opacity):
+        return True
+    overflow = props.get("overflow") or props.get("overflow-x") or props.get("overflow-y")
+    if overflow in {"hidden", "clip"}:
+        return any(
+            (size := props.get(name)) is not None and _ZERO_SIZE.fullmatch(size)
+            for name in ("max-height", "max-width", "height", "width")
+        )
+    return False
+
+
 def _style_declarations(value: str, notes: dict[str, Any]) -> str:
     kept: list[str] = []
     for declaration in value.split(";"):
@@ -140,6 +173,9 @@ def _parse_css_rules(source: str, notes: dict[str, Any]) -> dict[str, list[str]]
     for match in re.finditer(r"([^{}]+)\{([^{}]*)\}", source):
         selectors, declarations = match.groups()
         safe_declarations = _style_declarations(declarations, notes)
+        if _is_hidden_style(declarations):
+            # mso-hide is not a kept property, so record the hiding in a form the element check understands.
+            safe_declarations = ";".join(filter(None, [safe_declarations, "display:none"]))
         if not safe_declarations:
             continue
         for selector in selectors.split(","):
@@ -228,6 +264,14 @@ class _SafeHTMLParser(HTMLParser):
         attrs = {name.lower(): (value or "") for name, value in attrs_list}
         if "hidden" in attrs and tag not in _VOID_TAGS:
             # The sender hid this element (usually a preview line). Without the attribute it would show.
+            self._removed(tag)
+            self.drop_stack.append(tag)
+            self.drop_hidden = True
+            return
+        if tag not in _VOID_TAGS and _is_hidden_style(
+            ";".join(filter(None, [self._matching_styles(tag, attrs), attrs.get("style", "")]))
+        ):
+            # Hidden by a class rule or an inline style (display:none, opacity:0, clipped box, mso-hide).
             self._removed(tag)
             self.drop_stack.append(tag)
             self.drop_hidden = True
@@ -338,7 +382,7 @@ class _SafeHTMLParser(HTMLParser):
             self.depth_exceeded = True
             return
         if not self.drop_stack:
-            self.output.append(html.escape(data, quote=False))
+            self.output.append(html.escape(_INVISIBLE_FILLER.sub("", data), quote=False))
 
     def handle_entityref(self, name: str) -> None:
         self.handle_data(html.unescape(f"&{name};"))

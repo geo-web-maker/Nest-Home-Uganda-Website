@@ -77,8 +77,14 @@ def test_hidden_elements_are_dropped_with_their_children_and_layout_widths_survi
     assert "javascript" not in result.html and "abc" not in result.html
 
 
-def test_preview_line_hiding_styles_survive_including_important():
-    result = sanitize_html('<div style="display:none !important;overflow:hidden;opacity:0;position:fixed">x</div>')
-    assert "display:none !important" in result.html
-    assert "overflow:hidden" in result.html and "opacity:0" in result.html
-    assert "position" not in result.html
+def test_preview_lines_hidden_by_style_or_class_are_dropped_with_their_filler():
+    result = sanitize_html(
+        '<style>.pre{display:none !important}.sr{mso-hide:all}</style>'
+        '<div style="display:none !important;overflow:hidden;opacity:0;position:fixed">inline preview</div>'
+        '<div class="pre">class preview</div><div class="sr">outlook preview</div>'
+        '<div style="max-height:0;overflow:hidden">clipped preview</div>'
+        '<table><tr><td style="font-size:0"><span>kept</span></td></tr></table>'
+        "<p>Real\u034f\u200b text</p>"
+    )
+    assert "preview" not in result.html
+    assert "kept" in result.html and "<p>Real text</p>" in result.html

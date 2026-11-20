@@ -1,6 +1,6 @@
 /* GENERATED from shared/mail-rich. Edit there, then run: node scripts/sync-mail-rich.mjs */
 import policy from '../policy/mail-html-policy.json';
-import { filterMailStyle } from './css';
+import { filterMailStyle, INVISIBLE_FILLER, isHiddenStyle } from './css';
 
 const ALLOWED_TAGS = new Set(policy.allowed_tags.map((item) => item.toUpperCase()));
 const DROP_CONTENT = new Set(policy.drop_content_tags.map((item) => item.toUpperCase()));
@@ -33,7 +33,7 @@ function copyNode(source: Node, target: Node, depth: number, count: { value: num
     return;
   }
   if (source.nodeType === Node.TEXT_NODE) {
-    target.appendChild(document.createTextNode(source.textContent ?? ''));
+    target.appendChild(document.createTextNode((source.textContent ?? '').replace(INVISIBLE_FILLER, '')));
     count.value += 1;
     return;
   }
@@ -42,6 +42,8 @@ function copyNode(source: Node, target: Node, depth: number, count: { value: num
   if (DROP_CONTENT.has(tag)) return;
   // The sender hid this element (usually a preview line); without the attribute it would show.
   if (source.hasAttribute('hidden')) return;
+  // Same for an inline style that hides it (display:none, opacity:0, a clipped zero-height box, ...).
+  if (isHiddenStyle(source.getAttribute('style') ?? '')) return;
   const destination = ALLOWED_TAGS.has(tag) ? document.createElement(tag.toLowerCase()) : null;
   const parent = destination ?? target;
   if (destination) {

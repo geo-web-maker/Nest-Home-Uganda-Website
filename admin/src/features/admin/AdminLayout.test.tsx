@@ -143,10 +143,11 @@ describe('AdminLayout top bar', () => {
     expect(window.localStorage.getItem('nest-theme')).toBe('dark');
   });
 
-  it('shows the page title and the user initial, with no role label for a scoped user', () => {
+  it('shows the brand (not a second page title) and the user initial, with no role label for a scoped user', () => {
     setup('/enquiries', ['enquiries:read']);
     const header = screen.getByRole('banner');
-    expect(within(header).getByText('Enquiries')).toBeInTheDocument();
+    expect(within(header).getByRole('link', { name: 'Bloomwell Admin, home' })).toBeInTheDocument();
+    expect(within(header).queryByText('Enquiries')).not.toBeInTheDocument();
     expect(within(header).getByText('Ada Nsubuga')).toBeInTheDocument();
     expect(within(header).getByText('A')).toBeInTheDocument();
     expect(within(header).queryByText('Superadmin')).not.toBeInTheDocument();

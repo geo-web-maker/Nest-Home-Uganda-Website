@@ -11,6 +11,7 @@ import { useAdminPwa } from './mail/useMailPush';
 import { AdminIcon } from './icons';
 import { ButtonSizeProvider } from '@shared/components/ui/Button';
 import { ThemeSwitch } from '@shared/components/ui/ThemeSwitch';
+import { LogoMark } from '@shared/components/brand/Logo';
 import { bottomNav, navItemFor, visibleNav, type AdminNavItem } from './nav';
 import styles from './AdminLayout.module.css';
 import { InstallHint } from '../../pwa/InstallHint';
@@ -120,7 +121,11 @@ export function AdminLayout() {
         <ApkUpdateBanner />
         <PushNotifier />
         <header className={styles.topBar}>
-          <p className={styles.title}>{title ? label(title) : ''}</p>
+          {/* The page heading lives in the page itself; the bar carries the brand so the title is not shown twice. */}
+          <Link to="/" className={styles.brand} aria-label="Bloomwell Admin, home">
+            <LogoMark variant="admin" />
+            <span className={styles.brandName}>Bloomwell</span>
+          </Link>
           <ThemeSwitch
             compact
             label={t('layout.themeLabel')}

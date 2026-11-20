@@ -41,6 +41,18 @@ describe('shared mail-rich core', () => {
     expect(filterMailStyle('color:red!IMPORTANT')).toEqual({ color: 'red' });
   });
 
+  it('drops preview lines hidden by inline style, and invisible filler characters', () => {
+    const html = sanitizeToString(
+      '<div style="display:none !important">Welcome preview</div>'
+      + '<div style="max-height:0;overflow:hidden;opacity:0">more preview</div>'
+      + '<div style="mso-hide:all">outlook preview</div>'
+      + '<p>Real\u034f\u200b text</p><td style="font-size:0"><span>kept</span></td>',
+    );
+    expect(html).not.toContain('preview');
+    expect(html).toContain('<p>Real text</p>');
+    expect(html).toContain('kept');
+  });
+
   it('drops elements the sender hid with the hidden attribute and keeps percentage widths', () => {
     const html = sanitizeToString('<div hidden>preview line</div><table width="100%" bgcolor="#f1f1f1"><tr><td>Hi</td></tr></table>');
     expect(html).not.toContain('preview line');

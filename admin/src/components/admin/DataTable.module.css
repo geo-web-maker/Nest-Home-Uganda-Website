@@ -92,15 +92,7 @@
     border-collapse: collapse;
   }
 
-  .caption {
-    text-align: left;
-    padding: 0 0 0.75rem;
-    position: static;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    clip-path: none;
-  }
+  /* The caption is the table's accessible name only. Showing it printed a second, misplaced title above every table. */
 
   .head {
     position: static;

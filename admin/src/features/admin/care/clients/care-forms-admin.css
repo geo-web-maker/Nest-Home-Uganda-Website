@@ -16,7 +16,7 @@
 .cf-copy-log th, .cf-copy-log td { padding: 9px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
 .cf-copy-log th { color: var(--mut); font-size: .8rem; }
 .cf-copy-log td code { overflow-wrap: anywhere; font-size: .75rem; }
-.cf-copy-status { display: inline-block; padding: 3px 8px; border-radius: 999px; background: var(--surface-2, var(--surf)); text-transform: capitalize; }
+.cf-copy-status { display: inline-block; padding: 3px 8px; border-radius: 999px; background: var(--mint); text-transform: capitalize; }
 .cf-copy-status.is-sent { color: var(--success, #176b42); }
 .cf-copy-status.is-failed { color: var(--danger, #a42d2d); }
 @media (max-width: 700px) { .cf-admin-doc { flex-direction: column; } .cf-admin-viewer { inset: 1vh 1vw; padding: 10px; } }
