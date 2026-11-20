@@ -1,6 +1,7 @@
 /* Below 1040px each row is a card (spec 4.19). From 1040px it is a real table. */
 .wrap {
   min-width: 0;
+  max-width: 100%;
 }
 
 .table,
@@ -21,6 +22,8 @@
 
 .row {
   display: block;
+  min-width: 0;
+  overflow-wrap: anywhere; /* long values (device strings, emails, ids) wrap inside the card */
   margin-bottom: 10px;
   padding: 12px 14px;
   background: var(--surf);
@@ -30,7 +33,9 @@
 
 .cell {
   display: block;
+  min-width: 0;
   padding: 2px 0;
+  overflow-wrap: anywhere;
   font-size: 0.9rem;
 }
 
@@ -81,6 +86,7 @@
 
 @media (min-width: 1040px) {
   .wrap {
+    overflow-x: auto; /* last resort: a very wide table scrolls inside its box, never past the page edge */
     padding: 6px 10px;
     background: var(--surf);
     border: 1px solid var(--line);
@@ -89,6 +95,7 @@
 
   .table {
     display: table;
+    width: 100%;
     border-collapse: collapse;
   }
 
@@ -119,6 +126,7 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+    overflow-wrap: break-word;
   }
 
   .row {
@@ -139,6 +147,7 @@
     border-top: 1px solid var(--line);
     font-size: 0.9rem;
     vertical-align: middle;
+    overflow-wrap: anywhere; /* lets columns shrink so the row fits the page instead of overflowing it */
   }
 
   .cell[data-label]::before {
