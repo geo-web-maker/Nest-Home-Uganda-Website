@@ -629,6 +629,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/app-releases/builds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Builds */
+        get: operations["list_builds_api_v1_admin_app_releases_builds_get"];
+        put?: never;
+        /** Start Build */
+        post: operations["start_build_api_v1_admin_app_releases_builds_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/app-releases/preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release Preflight
+         * @description Check what a release needs before a build (superadmin with a verified authenticator).
+         */
+        post: operations["release_preflight_api_v1_admin_app_releases_preflight_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/applications": {
         parameters: {
             query?: never;
@@ -3341,6 +3379,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/field/app/apk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * App Apk Download
+         * @description Short-lived signed URL for the latest APK. Expires in 10 minutes.
+         */
+        get: operations["app_apk_download_api_v1_field_app_apk_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/field/app/version": {
         parameters: {
             query?: never;
@@ -5811,7 +5869,6 @@ export interface components {
              * @default true
              */
             active: boolean;
-<<<<<<< HEAD
             /** Apk Key */
             apk_key?: string | null;
             /**
@@ -5822,8 +5879,6 @@ export interface components {
             app: "nurse" | "admin";
             /** Bundle Key */
             bundle_key?: string | null;
-=======
->>>>>>> 81f5627 (finalizing app installation)
             /** Download Path */
             download_path?: string | null;
             /** Id */
@@ -5842,8 +5897,14 @@ export interface components {
              * @default
              */
             release_notes: string;
+            /** Sha256 */
+            sha256?: string | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
             /** Version */
             version: string;
+            /** Version Code */
+            version_code?: number | null;
         };
         /** ApplicationDetail */
         ApplicationDetail: {
@@ -6224,6 +6285,16 @@ export interface components {
              * @default
              */
             website: string;
+        };
+        /** BuildStart */
+        BuildStart: {
+            /**
+             * Target
+             * @enum {string}
+             */
+            target: "nurse-apk" | "admin-apk" | "nurse-web" | "admin-web";
+            /** Version */
+            version: string;
         };
         /** CareRecipientIn */
         CareRecipientIn: {
@@ -10446,6 +10517,90 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_builds_api_v1_admin_app_releases_builds_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    start_build_api_v1_admin_app_releases_builds_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuildStart"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    release_preflight_api_v1_admin_app_releases_preflight_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16893,6 +17048,37 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    app_apk_download_api_v1_field_app_apk_get: {
+        parameters: {
+            query?: {
+                platform?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

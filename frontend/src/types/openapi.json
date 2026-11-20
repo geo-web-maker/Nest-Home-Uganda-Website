@@ -496,7 +496,6 @@
             "title": "Active",
             "type": "boolean"
           },
-<<<<<<< HEAD
           "apk_key": {
             "anyOf": [
               {
@@ -530,8 +529,6 @@
             ],
             "title": "Bundle Key"
           },
-=======
->>>>>>> 81f5627 (finalizing app installation)
           "download_path": {
             "anyOf": [
               {
@@ -583,11 +580,47 @@
             "title": "Release Notes",
             "type": "string"
           },
+          "sha256": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sha256"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
           "version": {
             "maxLength": 80,
             "minLength": 5,
             "title": "Version",
             "type": "string"
+          },
+          "version_code": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Code"
           }
         },
         "required": [
@@ -1546,6 +1579,30 @@
           "consent"
         ],
         "title": "Body_public_create_api_v1_public_applications_post",
+        "type": "object"
+      },
+      "BuildStart": {
+        "properties": {
+          "target": {
+            "enum": [
+              "nurse-apk",
+              "admin-apk",
+              "nurse-web",
+              "admin-web"
+            ],
+            "title": "Target",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "version"
+        ],
+        "title": "BuildStart",
         "type": "object"
       },
       "CareRecipientIn": {
@@ -11776,6 +11833,125 @@
           }
         ],
         "summary": "Publish Release",
+        "tags": [
+          "app-releases"
+        ]
+      }
+    },
+    "/api/v1/admin/app-releases/builds": {
+      "get": {
+        "operationId": "list_builds_api_v1_admin_app_releases_builds_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Builds",
+        "tags": [
+          "app-releases"
+        ]
+      },
+      "post": {
+        "operationId": "start_build_api_v1_admin_app_releases_builds_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildStart"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Start Build",
+        "tags": [
+          "app-releases"
+        ]
+      }
+    },
+    "/api/v1/admin/app-releases/preflight": {
+      "post": {
+        "description": "Check what a release needs before a build (superadmin with a verified authenticator).",
+        "operationId": "release_preflight_api_v1_admin_app_releases_preflight_post",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Release Preflight",
         "tags": [
           "app-releases"
         ]
@@ -22658,6 +22834,54 @@
           }
         },
         "summary": "Receive Client Error"
+      }
+    },
+    "/api/v1/field/app/apk": {
+      "get": {
+        "description": "Short-lived signed URL for the latest APK. Expires in 10 minutes.",
+        "operationId": "app_apk_download_api_v1_field_app_apk_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "platform",
+            "required": false,
+            "schema": {
+              "default": "android",
+              "pattern": "^(android|ios|web)$",
+              "title": "Platform",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "App Apk Download",
+        "tags": [
+          "field"
+        ]
       }
     },
     "/api/v1/field/app/version": {
