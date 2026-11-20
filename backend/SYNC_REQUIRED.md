@@ -42,3 +42,7 @@ Rules
 2026-11-20 (pool, final): `max_inactive_connection_lifetime` lowered from 60 to 30 seconds in both copies (with `min_size=0`), so the mail pool shows no idle Postgres connection for long. Parity check passes ("In sync.").
 
 2026-11-20 (release key): `release_publish_key` in `core/config.py` and `POST /app-bundles/releases` (header `X-Release-Key`, disabled unless `NEST_RELEASE_PUBLISH_KEY` is 32+ characters) in `modules/app_releases/router.py`, applied to both copies; tests added to the Nest repo only (hosting copy has no tests dir); parity check passes ("In sync.").
+
+2026-11-20 (admin builds): `modules/app_releases/github_builds.py` (new), `GET/POST /admin/app-releases/builds` in `router.py`, `github_repo`/`github_token`/`github_branch` in `core/config.py` applied to both copies; tests (`test_github_builds.py`, scope-test body) in the Nest repo only; parity check passes ("In sync.").
+
+2026-11-20 (release checks): `modules/app_releases/preflight.py` (new) and `POST /admin/app-releases/preflight` (authenticator session required) in `router.py`, applied to both copies; Diagnostics "Releases" tab in the Admin app; tests (`test_release_preflight.py`) in the Nest repo only; parity check passes ("In sync.").

@@ -120,6 +120,55 @@ Admin is the same with `--config capacitor.config.ts`, `apply_admin_android_over
 
 ---
 
+## 2a. Release checks (run before every build)
+
+Admin app, then Diagnostics, then the **Releases** tab, then **Run release checks**. It needs your authenticator code like the other diagnostics. It checks, in plain words:
+
+| Check | What it proves |
+|---|---|
+| release key on backend | `NEST_RELEASE_PUBLISH_KEY` is set and long enough |
+| private bucket write | the backend can write, read back and delete a file in the private bucket |
+| GitHub connection, branch, Actions read | the token works and sees the repo, branch and build runs |
+| GitHub tag permission | the token can create (and removes) a throwaway tag, so **Start build** will work |
+| GitHub workflows | the three release workflow files are on the branch |
+| nurse and admin version | `package.json` versions are readable, and warns when that version's tag is already used |
+| GitHub secrets | every required secret name exists (names only) |
+| GitHub variables | `VITE_API_URL` is https with no trailing slash and answers; `VITE_MAIL_STORAGE_URL` is an origin with no bucket path |
+
+Anything marked **FIX** will break the build; **CHECK** is worth a look; **SKIPPED** means the token lacks a read-only permission for that check. Run it again after each fix until it says "Ready to build".
+
+What it cannot do: read the *values* of GitHub secrets, so a mistyped password or key still only shows up in the build. It also cannot compare GitHub's `RELEASE_PUBLISH_KEY` with the backend's; it only confirms the backend's side.
+
+---
+
+## 2b. Start and watch builds from the Admin app
+
+Admin app, then App releases, then **Build and publish an app**. Pick what to build, type the version and tap **Start build**. The page tags the latest code on GitHub, GitHub builds and publishes it, and **Recent builds** shows the status (waiting, building, published, failed) with a link to the GitHub log. While a build runs the list refreshes by itself.
+
+Each build target uses the same tags as section 2 and 3:
+
+| Choice | Tag created |
+|---|---|
+| Nurse Android app | `nurse-vX.Y.Z` |
+| Admin Android app | `admin-vX.Y.Z` |
+| Nurse web update | `nurse-web-vX.Y.Z` |
+| Admin web update | `admin-web-vX.Y.Z` |
+
+Rules the page enforces: only a superadmin can use it, the version must equal `version` in that app's `package.json` on GitHub (change it there first and commit), and a tag that already exists is refused. The old manual policy form is still below it, for rare hand-published policies.
+
+One-time setup on the backend (Render):
+
+1. On GitHub: Settings, Developer settings, Personal access tokens, **Fine-grained tokens**, Generate new token.
+   - Repository access: **Only select repositories**, choose this repo.
+   - Permissions: **Contents: Read and write**, **Actions: Read-only**, and for the release checks **Secrets: Read-only** (names only, never values) and **Variables: Read-only**. Metadata is added for you.
+   - Expiry: the longest allowed. Note the date; when it lapses the page says GitHub refused the token and you make a new one.
+2. On Render, add `NEST_GITHUB_REPO` (`owner/name`) and `NEST_GITHUB_TOKEN` (the token), then redeploy.
+3. Optional `NEST_GITHUB_BRANCH` if your default branch is not `main`.
+
+The token can create tags and read runs in that one repository only. It cannot read secrets or change workflows. Keep it only in the backend environment, never in the app or the repo. Builds still need all the GitHub secrets and variables from section 1; this page only starts and watches them.
+
+---
+
 ## 3. Ship an update without a new APK (web-only)
 
 For UI and logic changes that need no new native code:
@@ -171,6 +220,7 @@ In a plain browser it shows a download link for the Android app. Both endpoints 
 
 ## 6. Checklist before every tag
 
+- [ ] Diagnostics, Releases tab: **Run release checks** says Ready to build
 - [ ] `npm run typecheck`, `npm run lint`, `npm test` pass in `nurse/` and `admin/`
 - [ ] Version bumped in `package.json`
 - [ ] `VITE_API_URL` and `VITE_MAIL_STORAGE_URL` variables set
@@ -181,5 +231,6 @@ In a plain browser it shows a download link for the Android app. Both endpoints 
 
 - A real Gradle build and a device install have not been run in this environment. Do a debug build and install once before the first tagged release.
 - App Center has no dedicated tests yet.
+- The Builds panel and the release checks have unit tests with GitHub mocked; neither has been run against the real GitHub API.
 - The release-key route has unit tests for the disabled, wrong-key and only-route cases. A full end-to-end publish needs a live MongoDB and was not run here; two older release tests that need MongoDB also fail in the original zip.
 - The admin app has 177 failing unit tests that also fail in the original zip. They are not caused by the App Center or branding changes and are not fixed.

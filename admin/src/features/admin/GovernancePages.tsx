@@ -5,6 +5,7 @@ import { Button } from '@shared/components/ui/Button';
 import { Field } from '@shared/components/ui/Field';
 import { Checkbox } from '@shared/components/ui/Checkbox';
 import { PageHeader } from '../../components/admin/PageHeader';
+import { AppBuildsPanel } from './AppBuildsPanel';
 import { DataTable } from '../../components/admin/DataTable';
 import { apiClient } from '@shared/lib/api/client';
 import { useAuth } from './auth/useAuth';
@@ -76,8 +77,9 @@ export function AppReleasesPage() {
       {!allowed ? <p role="alert">Super administrator access is required to view or publish app releases.</p> : null}
       {allowed && releases.isPending ? <p role="status">Loading release records…</p> : null}
       {allowed && releases.isError ? <div role="alert"><p>Release records could not be loaded. Check your access and API connection.</p><Button variant="outline" onClick={() => void releases.refetch()}>Retry</Button></div> : null}
+      {allowed ? <AppBuildsPanel /> : null}
       {allowed ? <form className={styles.card} onSubmit={submit}>
-        <h2>Publish a release</h2>
+        <h2>Publish a release policy by hand</h2>
         <p>Publishing changes the version policy consumed by field apps. Confirm the minimum version before publishing.</p>
         <div className={styles.formGrid}>
           <Field kind="select" label="Platform" value={platform} onChange={(e) => setPlatform(e.target.value as typeof platform)}><option value="android">Android</option><option value="ios">iOS</option><option value="web">Web</option></Field>

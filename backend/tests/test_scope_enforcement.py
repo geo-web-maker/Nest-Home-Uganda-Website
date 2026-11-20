@@ -21,7 +21,7 @@ WRITE_METHODS = {"POST", "PATCH", "PUT", "DELETE"}
 SIGNED_PHOTO_STREAM = "/api/v1/admin/care/visits/{visit_id}/photos/{photo_id}/stream"
 SIGNED_FIELD_PHOTO_STREAM = "/api/v1/field/visits/{visit_id}/photos/{photo_id}/stream"
 SIGNED_PHOTO_STREAMS = {SIGNED_PHOTO_STREAM, SIGNED_FIELD_PHOTO_STREAM}
-SUPERADMIN_ONLY_PATHS = {"/api/v1/admin/app-releases"}
+SUPERADMIN_ONLY_PATHS = {"/api/v1/admin/app-releases", "/api/v1/admin/app-releases/builds"}
 # The test-account screen is superadmin plus verified authenticator session (a dependency, not a scope).
 SUPERADMIN_TOTP_PREFIX = "/api/v1/admin/test-accounts"
 # A GET that lists assignment candidates (users who could supervise a nurse). It is gated by
@@ -151,12 +151,16 @@ async def test_exact_scopes_and_superadmin_pass_authorisation(
         response = await client.post(
             concrete(path),
             headers=scoped_headers,
-            json={
-                "id": "release-coverage-0001",
-                "platform": "android",
-                "version": "1.0.0",
-                "min_supported_version": "1.0.0",
-            },
+            json=(
+                {"target": "nurse-apk", "version": "1.0.0"}
+                if path.endswith("/builds")
+                else {
+                    "id": "release-coverage-0001",
+                    "platform": "android",
+                    "version": "1.0.0",
+                    "min_supported_version": "1.0.0",
+                }
+            ),
         )
         scoped_status = response.status_code
     else:

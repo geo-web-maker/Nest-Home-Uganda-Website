@@ -4,13 +4,16 @@ from datetime import UTC, datetime
 from functools import cmp_to_key
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Query, Response
+from pydantic import BaseModel
 
 from app.core.config import get_settings
 from app.core.deps import Principal, require_scopes
 from app.core.rate_limit import rate_limit
 from app.core.security import constant_time_equal
 from app.core.storage import Bucket, get_storage
+from app.core.totp_guard import assert_totp_session
+from app.modules.app_releases import github_builds, preflight
 from app.modules.app_releases.models import AppRelease
 from app.modules.app_releases.rules import compare_versions
 from app.modules.app_releases.schemas import AppReleaseCreate
@@ -39,6 +42,49 @@ async def list_releases(
         rows = [row for row in rows if row.platform == platform]
     rows.sort(key=lambda row: (row.platform, row.published_at), reverse=True)
     return {"items": [row.model_dump(mode="json", exclude={"_id"}) for row in rows]}
+
+
+class BuildStart(BaseModel):
+    target: Literal["nurse-apk", "admin-apk", "nurse-web", "admin-web"]
+    version: str
+
+
+@router.get("/builds")
+async def list_builds(principal: Principal = Depends(require_scopes("system:manage"))):
+    _superadmin(principal)
+    return await github_builds.list_builds()
+
+
+@router.post(
+    "/builds", status_code=201, dependencies=[Depends(rate_limit("app_build_start", 10, 3600))]
+)
+async def start_build(
+    body: BuildStart, principal: Principal = Depends(require_scopes("system:manage"))
+):
+    _superadmin(principal)
+    result = await github_builds.start_build(body.target, body.version.strip())
+    await audit.record(
+        principal,
+        "app_build.start",
+        "app_build",
+        result["tag"],
+        after={"target": body.target, "version": body.version.strip(), "sha": result["sha"]},
+    )
+    return result
+
+
+@router.post("/preflight")
+async def release_preflight(
+    response: Response,
+    principal: Principal = Depends(require_scopes("system:manage")),
+    mail_totp: str | None = Cookie(default=None),
+):
+    """Check what a release needs before a build (superadmin with a verified authenticator)."""
+    _superadmin(principal)
+    await assert_totp_session(principal, mail_totp)
+    checks = await preflight.run_preflight()
+    response.headers["Cache-Control"] = "no-store"
+    return {"checks": checks, "summary": preflight.summarize(checks)}
 
 
 async def _create_release(body: AppReleaseCreate, principal: Principal | None) -> dict:
@@ -83,9 +129,6 @@ async def publish_release(
     return await _create_release(body, principal)
 
 
-MIN_RELEASE_KEY_LENGTH = 32
-
-
 @public_router.post(
     "/releases",
     status_code=201,
@@ -100,7 +143,7 @@ async def publish_release_with_key(
     Disabled (404) unless NEST_RELEASE_PUBLISH_KEY is set to a value of at least 32 characters.
     """
     configured = get_settings().release_publish_key
-    if len(configured) < MIN_RELEASE_KEY_LENGTH:
+    if len(configured) < preflight.MIN_RELEASE_KEY_LENGTH:
         raise HTTPException(status_code=404, detail="Not found")
     if not x_release_key or not constant_time_equal(x_release_key, configured):
         raise HTTPException(status_code=401, detail="Invalid release key")

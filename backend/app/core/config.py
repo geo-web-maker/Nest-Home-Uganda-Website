@@ -107,6 +107,11 @@ class Settings(BaseSettings):
 
     # Long random key CI uses to publish app releases (and nothing else). Empty = key publishing disabled.
     release_publish_key: str = ""
+    # GitHub access for the Builds panel (start a release build, watch its run). Fine-grained token with
+    # Contents: read and write, Actions: read, on this one repository. Empty = panel shows "not set up".
+    github_repo: str = ""  # owner/name
+    github_token: str = ""
+    github_branch: str = "main"
     alert_emails: str = ""
     alert_phones: str = ""
     first_superadmin_email: str = ""
