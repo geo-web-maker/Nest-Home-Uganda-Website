@@ -9,6 +9,7 @@ Values are owner-supplied at deployment time. Never commit secrets or production
 | `MONGODB_URI` | Existing primary MongoDB connection string. |
 | `MONGODB_DB` | Existing primary database name. |
 | `SECRET_KEY` | JWT signing secret. |
+| `NEST_RELEASE_PUBLISH_KEY` | Optional. Random string of at least 32 characters that lets CI publish app releases through `POST /api/v1/app-bundles/releases` (header `X-Release-Key`) and nothing else. Empty disables the route (404). Generate with `openssl rand -hex 32`. Must match the GitHub secret `RELEASE_PUBLISH_KEY`. |
 | `VITE_API_URL` | Leave EMPTY for the public website: Cloudflare proxies `/api/*` (see docs/CLOUDFLARE_API_PROXY.md). Backend base URL used by the Admin, Nurse and native builds. For Multi-Site Hosting, use `https://<hoster-domain>/nest` (no trailing slash), because the clients append `/api/v1`. |
 | `VITE_ADMIN_URL` | Public frontend build-time base origin for the staff-login link; production value is `https://admin.bhcug.com`. |
 | `VITE_SITE_URL` | Public site origin (canonical and og:url). Set to the new domain; no domain is hardcoded. |

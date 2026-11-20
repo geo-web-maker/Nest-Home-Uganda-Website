@@ -112,7 +112,8 @@ describe('nurse MailScreen', () => {
     await screen.findByText('rota.pdf');
     fireEvent.click(button('Reply'));
     const dialog = await screen.findByRole('dialog', { name: 'Compose' });
-    expect(within(dialog).getByLabelText('To')).toHaveValue('ruth@mail.test');
+    // The To field turns a complete address into a chip, so the address is shown as chip text.
+    expect(within(dialog).getByText('ruth@mail.test')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Subject')).toHaveValue('Re: Rota change');
     await sendNow(dialog);
     await waitFor(() => expect(posted('/mail/drafts/srv-1/send')).toHaveLength(1));
@@ -126,7 +127,8 @@ describe('nurse MailScreen', () => {
     await fill(dialog, 'not-an-address');
     await sendNow(dialog);
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Check these addresses: not-an-address');
-    expect(await listDrafts('u1')).toHaveLength(0);
+    // The composer autosaves a plain draft on the device; what must not exist is a queued send.
+    expect((await listDrafts('u1')).filter((d) => d.state !== 'draft')).toHaveLength(0);
     expect(posted('/mail/drafts')).toHaveLength(0);
   });
 

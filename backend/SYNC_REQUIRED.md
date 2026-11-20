@@ -40,3 +40,5 @@ Rules
 2026-11-20 (pool): `modules/mail/db.py` asyncpg pool now `min_size=0` in both copies, so the mail pool holds no standing Postgres connection while idle (family tree already opens connections lazily). Parity check passes ("In sync.").
 2026-11-20 (pool, later): `max_inactive_connection_lifetime=60` added next to `min_size=0` in both copies. asyncpg's default idle lifetime is 300 seconds, the same as Neon's 5-minute suspend window, so it is now set explicitly to 60 seconds. Parity check passes ("In sync.").
 2026-11-20 (pool, final): `max_inactive_connection_lifetime` lowered from 60 to 30 seconds in both copies (with `min_size=0`), so the mail pool shows no idle Postgres connection for long. Parity check passes ("In sync.").
+
+2026-11-20 (release key): `release_publish_key` in `core/config.py` and `POST /app-bundles/releases` (header `X-Release-Key`, disabled unless `NEST_RELEASE_PUBLISH_KEY` is 32+ characters) in `modules/app_releases/router.py`, applied to both copies; tests added to the Nest repo only (hosting copy has no tests dir); parity check passes ("In sync.").

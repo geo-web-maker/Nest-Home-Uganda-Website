@@ -5,7 +5,7 @@ import { AuditScreen } from './AuditScreen';
 vi.mock('../lib/api/client', () => ({ apiRequest: vi.fn() }));
 
 describe('AuditScreen TOTP protection', () => {
-  beforeEach(() => vi.mocked(apiRequest).mockReset());
+  beforeEach(() => { vi.mocked(apiRequest).mockReset(); });
 
   it('does not request nurse audit records until the authenticator is verified', async () => {
     let statusChecks = 0;

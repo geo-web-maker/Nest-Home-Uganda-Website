@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -25,6 +25,8 @@ function headersPlugin(apiUrl: string, mailStorageUrl: string): Plugin {
   };
 }
 
+const pkg = JSON.parse(readFileSync('./package.json', 'utf8')) as { version: string };
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
@@ -38,6 +40,7 @@ export default defineConfig(({ mode }) => {
       workbox: { navigateFallback: '/index.html', globPatterns: ['**/*.{js,css,html,svg,png,woff2}'] },
     }),
   ],
+  define: { __BUNDLE_VERSION__: JSON.stringify(pkg.version) },
   server: { host: '0.0.0.0' },
 };
 });

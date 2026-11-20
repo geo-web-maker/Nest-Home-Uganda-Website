@@ -10,6 +10,8 @@ export interface DownloadDone {
 }
 
 export interface NativeUpdaterPlugin {
+  /** Installed APK versionName and versionCode. */
+  getInfo(): Promise<{ versionName: string; versionCode: number }>;
   /**
    * Download an APK and launch the system installer.
    * The callback fires with DownloadProgress events during the download,

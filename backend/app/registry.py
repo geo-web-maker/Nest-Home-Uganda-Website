@@ -13,6 +13,7 @@ from app.modules.activity import router as activity_router
 from app.modules.agreements.models import Agreement, AgreementMessageTemplate, AgreementOtp, AgreementTemplate
 from app.modules.agreements.router import admin_router as agreements_admin_router, public_router as agreements_public_router
 from app.modules.app_releases.models import AppRelease
+from app.modules.app_releases.router import public_router as app_bundles_public_router
 from app.modules.app_releases.router import router as app_releases_api_router
 from app.modules.applications import router as applications_router
 from app.modules.applications.models import Application
@@ -158,6 +159,7 @@ ROUTERS: list[APIRouter] = [
     auth_router.router,
     auth_router.admin_router,
     app_releases_api_router,
+    app_bundles_public_router,
     services_router.public_router,
     services_router.admin_router,
     enquiries_router.public_router,

@@ -3,6 +3,7 @@ import { Button } from '@shared/components/ui/Button';
 import { apiClient } from '@shared/lib/api/client';
 import { useAuth } from './auth/useAuth';
 import { hasScopes } from './auth/hasScopes';
+import { AppCenterPanel } from './AppCenterPanel';
 import './care/nurses/nurse-detail.css';
 import './ProfilePage.css';
 
@@ -40,6 +41,7 @@ export function ProfilePage() {
       <p>This account has nurse-app access as well as admin access. Switching opens the nurse application; it does not create a second account.</p>
       {loading ? <p role="status">Loading nurse app link…</p> : error ? <p role="alert">{error}</p> : nurseUrl ? <Button type="button" onClick={() => window.location.assign(nurseUrl)}>Open nurse app</Button> : <p>The nurse app URL is not configured for this deployment.</p>}
     </article>}
+    <AppCenterPanel />
     <article className="care-form"><h2>Permissions</h2><ul>{(user?.scopes ?? []).map((scope) => <li key={scope}><code>{scope}</code></li>)}</ul></article>
   </section>;
 }

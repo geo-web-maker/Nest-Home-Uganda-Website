@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.modules.app_releases.rules import parse_version
 
@@ -21,6 +21,17 @@ class AppReleaseCreate(BaseModel):
     size_bytes: int | None = Field(default=None, ge=1)
     release_notes: str = Field(default="", max_length=2000)
     active: bool = True
+    app: Literal["nurse", "admin"] = "nurse"
+    bundle_key: str | None = Field(default=None, max_length=500)
+    min_native_version_code: int | None = Field(default=None, ge=1)
+
+    @model_validator(mode="after")
+    def bundle_rules(self) -> "AppReleaseCreate":
+        if self.bundle_key and self.platform != "web":
+            raise ValueError("bundle_key is only valid for platform web")
+        if self.platform == "web" and self.bundle_key and not self.sha256:
+            raise ValueError("A web bundle release requires sha256")
+        return self
 
     @field_validator("version", "min_supported_version")
     @classmethod

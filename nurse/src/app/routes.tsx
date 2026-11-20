@@ -13,6 +13,7 @@ export type NurseRouteViews = {
   sync: ReactNode;
   mail: ReactNode;
   audit: ReactNode;
+  appCenter?: ReactNode;
   visit: (visitId: string) => ReactNode;
   activeVisit: (visitId: string) => ReactNode;
 };
@@ -33,6 +34,7 @@ export function NurseRoutes({ views, authenticated }: { views: NurseRouteViews; 
     <Route path="/documents" element={authenticated ? (views.documents ?? views.today) : views.login} />
     <Route path="/sync" element={authenticated ? views.sync : views.login} />
     <Route path="/mail" element={authenticated ? views.mail : views.login} />
+    <Route path="/app-center" element={authenticated ? (views.appCenter ?? views.profile) : views.login} />
     <Route path="/audit" element={authenticated ? views.audit : views.login} />
     <Route path="/visit/:visitId" element={authenticated ? <VisitRoute render={views.visit} /> : views.login} />
     <Route path="/active/:visitId" element={authenticated ? <VisitRoute render={views.activeVisit} /> : views.login} />

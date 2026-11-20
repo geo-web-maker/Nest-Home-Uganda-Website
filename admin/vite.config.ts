@@ -7,6 +7,8 @@ import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
 import { manifest } from './src/pwa/manifest';
 
+const pkg = JSON.parse(readFileSync('./package.json', 'utf8')) as { version: string };
+
 function headersPlugin(apiUrl: string, mailStorageUrl: string): Plugin {
   return {
     name: 'admin-headers',
@@ -55,7 +57,10 @@ export default defineConfig(({ mode }) => {
         '@shared': fileURLToPath(new URL('./src/_shared', import.meta.url)),
       },
     },
-    define: { __BUILD_ID__: JSON.stringify(Date.now().toString(36).slice(-4)) },
+    define: {
+      __BUILD_ID__: JSON.stringify(Date.now().toString(36).slice(-4)),
+      __BUNDLE_VERSION__: JSON.stringify(pkg.version),
+    },
     server: { host: '0.0.0.0', port: 5175 },
     test: {
       environment: 'jsdom', globals: true, setupFiles: ['./src/test-setup.ts'],

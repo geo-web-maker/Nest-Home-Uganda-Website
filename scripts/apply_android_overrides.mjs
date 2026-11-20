@@ -18,6 +18,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { installNativePlugins } from './lib/webBundleAndroid.mjs';
+import { applyBranding } from './lib/androidBranding.mjs';
 
 const NOTIFICATION_ICON = `<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -119,19 +121,11 @@ export function applyAndroidOverrides({ androidDir, overridesDir, versionCode, v
     fs.copyFileSync(fileProviderPaths, path.join(main, 'res', 'xml', 'update_file_paths.xml'));
   }
 
-  // Copy NativeUpdaterPlugin.kt into the generated Android project.
-  // The appId drives the package path; default is ug.nesthomecare.nurse.
+  // Website updates (WebBundle) and full-APK updates (NativeUpdater), both Java: the Capacitor template has no Kotlin.
   const appId = process.env.CAP_APP_ID_NURSE ?? 'ug.nesthomecare.nurse';
-  const packagePath = appId.replace(/\./g, '/');
-  const kotlinDir = path.join(main, 'java', packagePath);
-  fs.mkdirSync(kotlinDir, { recursive: true });
-  const pluginSrc = path.join(overridesDir, 'NativeUpdaterPlugin.kt');
-  if (fs.existsSync(pluginSrc)) {
-    let kt = fs.readFileSync(pluginSrc, 'utf8');
-    kt = kt.replace('__PACKAGE__', appId);
-    kt = kt.replace('__APP_ID__', appId);
-    fs.writeFileSync(path.join(kotlinDir, 'NativeUpdaterPlugin.kt'), kt);
-  }
+  const sharedDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'android-shared');
+  installNativePlugins({ mainDir: main, appId, sharedDir });
+  applyBranding({ mainDir: main, sharedDir, app: 'nurse' });
 
   return { manifestPath, gradlePath, versionCode, versionName };
 }

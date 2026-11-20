@@ -9,7 +9,7 @@ describe('SigningBlock', () => {
     render(<SigningBlock mode="client" formId="03" defaultName="Mary K" autoEmail={false} clientAgreed={false} onClientAgreed={() => undefined} onSubmit={onSubmit} />);
     for (const r of ['Client', 'Representative', 'Interpreter or reader', 'Witness']) expect(screen.getByRole('button', { name: r })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Client signs' }));
-    await waitFor(() => expect(screen.getByText(/agree to sign electronically|drawn signature/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Tick the box to agree to sign electronically.')).toBeTruthy());
     expect(onSubmit).not.toHaveBeenCalled();
   });
   it('hides the email-copy tick unless the admin switch is on', () => {

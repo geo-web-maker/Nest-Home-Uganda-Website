@@ -105,6 +105,8 @@ class Settings(BaseSettings):
     nest_mail_provider: str = Field("console", validation_alias="NEST_MAIL_PROVIDER")
     nest_mail_api_key: str = Field("", validation_alias="NEST_MAIL_API_KEY")
 
+    # Long random key CI uses to publish app releases (and nothing else). Empty = key publishing disabled.
+    release_publish_key: str = ""
     alert_emails: str = ""
     alert_phones: str = ""
     first_superadmin_email: str = ""

@@ -38,7 +38,7 @@ function navIsCurrent(pathname: string, to: string) {
   if (to === '/') return pathname === '/' || pathname.startsWith('/visit/') || pathname.startsWith('/active/');
   if (to === '/mail') return pathname === '/mail' || pathname.startsWith('/mail/');
   if (to === '/audit') return pathname === '/audit' || pathname.startsWith('/audit/');
-  if (to === '/profile') return pathname === '/profile' || pathname === '/sync';
+  if (to === '/profile') return pathname === '/profile' || pathname === '/sync' || pathname === '/app-center';
   return pathname === to || pathname.startsWith(`${to}/`);
 }
 

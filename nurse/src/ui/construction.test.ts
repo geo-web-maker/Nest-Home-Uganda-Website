@@ -23,9 +23,17 @@ const rel = (path: string) => relative(srcRoot, path).replaceAll('\\', '/');
 
 /** Bespoke interactive surfaces that are not pill buttons: row toggles, thumbnails, the SOS hold button. */
 const bespokeButtons: Record<string, number> = {
+  'features/careforms/CareFormsCard.tsx': 1,
+  'features/careforms/DocumentsScreen.tsx': 2,
+  'features/careforms/FormSheet.tsx': 2,
+  'features/careforms/SignatureMethodPicker.tsx': 4,
+  'features/careforms/SignaturePad.tsx': 1,
+  'features/careforms/SigningBlock.tsx': 1,
+  'shared/mail-rich/react/MessageActionBar.tsx': 8,
   'features/sos/SosSheet.tsx': 1,
   'features/timesheets/TimesheetsScreen.tsx': 1,
   'pwa/InstallHint.tsx': 1,
+  'pwa/UpdatePrompt.tsx': 3,
   'shared/mail-rich/react/MailMessageView.tsx': 6,
   'screens/ActiveVisit.tsx': 2,
   'screens/HistoryScreen.tsx': 1,

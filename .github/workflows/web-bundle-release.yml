@@ -1,0 +1,86 @@
+name: web-bundle-release
+
+# Publishes an over-the-air web bundle for an installed Android app (no APK needed).
+# Trigger by pushing a tag: nurse-web-v1.2.3 or admin-web-v1.2.3. The version must match
+# <app>/package.json and be higher than the version baked into the installed APKs.
+on:
+  push:
+    tags:
+      - 'nurse-web-v[0-9]*.[0-9]*.[0-9]*'
+      - 'admin-web-v[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve app and version from the tag
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          APP="${TAG%%-web-v*}"
+          VERSION="${TAG##*-web-v}"
+          PKG_VERSION=$(node -p "require('./${APP}/package.json').version")
+          [ "$VERSION" = "$PKG_VERSION" ] || { echo "Tag ${VERSION} does not match ${APP}/package.json ${PKG_VERSION}"; exit 1; }
+          echo "APP=${APP}" >> "$GITHUB_ENV"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            nurse/package-lock.json
+            admin/package-lock.json
+
+      - name: Build
+        working-directory: ${{ env.APP }}
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_MAIL_STORAGE_URL: ${{ vars.VITE_MAIL_STORAGE_URL }}
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Zip dist with index.html at the root
+        working-directory: ${{ env.APP }}/dist
+        run: |
+          rm -f _headers
+          zip -qr "../../${APP}-web-${VERSION}.zip" .
+          cd ../..
+          echo "SHA=$(sha256sum "${APP}-web-${VERSION}.zip" | awk '{print $1}')" >> "$GITHUB_ENV"
+          echo "SIZE=$(stat -c%s "${APP}-web-${VERSION}.zip")" >> "$GITHUB_ENV"
+
+      - name: Upload to private bucket
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET }}
+          AWS_DEFAULT_REGION: ${{ secrets.S3_REGION }}
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_BUCKET_PRIVATE: ${{ secrets.S3_BUCKET_PRIVATE }}
+        run: |
+          BUNDLE_KEY="bundles/${APP}-web-${VERSION}-${{ github.run_number }}.zip"
+          aws s3 cp "${APP}-web-${VERSION}.zip" "s3://${S3_BUCKET_PRIVATE}/${BUNDLE_KEY}" \
+            --endpoint-url "${S3_ENDPOINT}" --content-type application/zip
+          echo "BUNDLE_KEY=${BUNDLE_KEY}" >> "$GITHUB_ENV"
+
+      - name: Publish release record
+        env:
+          ADMIN_API_URL: ${{ secrets.ADMIN_API_URL }}
+          RELEASE_PUBLISH_KEY: ${{ secrets.RELEASE_PUBLISH_KEY }}
+          # Oldest APK versionCode that can run this bundle. Raise it when a bundle needs new native code.
+          MIN_NATIVE_VERSION_CODE: ${{ vars.MIN_NATIVE_VERSION_CODE || '1' }}
+        run: |
+          curl -sf -X POST "${ADMIN_API_URL}/app-bundles/releases" \
+            -H "X-Release-Key: ${RELEASE_PUBLISH_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg id "web-${GITHUB_REF_NAME}" --arg app "$APP" --arg version "$VERSION" \
+              --arg key "$BUNDLE_KEY" --arg sha "$SHA" --argjson sz "$SIZE" \
+              --argjson min "$MIN_NATIVE_VERSION_CODE" \
+              '{id:$id,platform:"web",app:$app,version:$version,min_supported_version:$version,
+                bundle_key:$key,sha256:$sha,size_bytes:$sz,min_native_version_code:$min}')"

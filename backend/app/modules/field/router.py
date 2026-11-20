@@ -740,7 +740,9 @@ async def app_version(
     from app.modules.app_releases.rules import compare_versions, effective_minimum_version
 
     rows = [
-        row for row in await AppRelease.find().to_list() if row.platform == platform and row.active
+        row
+        for row in await AppRelease.find().to_list()
+        if row.platform == platform and row.active and not row.bundle_key and row.app == "nurse"
     ]
     values = await care_values()
     configured_minimum = str(values.get("care.min_app_version", "0.1.0"))
@@ -789,7 +791,7 @@ async def app_apk_download(
     rows = [
         row
         for row in await AppRelease.find().to_list()
-        if row.platform == platform and row.active and row.apk_key
+        if row.platform == platform and row.active and row.apk_key and row.app == "nurse"
     ]
     if not rows:
         raise HTTPException(status_code=404, detail="No APK available for this platform")

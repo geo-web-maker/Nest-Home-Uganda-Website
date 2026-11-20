@@ -1,8 +1,8 @@
+import { Capacitor } from '@capacitor/core';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import styles from './InstallHint.module.css';
 
-/** Small, accessible update prompt; no update is installed without an explicit click. */
-export function InstallHint() {
+function WebInstallHint() {
   const { needRefresh: [needRefresh, setNeedRefresh], offlineReady: [offlineReady, setOfflineReady], updateServiceWorker } = useRegisterSW({
     onRegisterError(error) { console.warn('[admin-pwa] service worker registration failed', error); },
   });
@@ -25,4 +25,10 @@ export function InstallHint() {
       </div>
     </aside>
   );
+}
+
+/** The Android app updates through web bundles; a service worker there would shadow them, so it is skipped. */
+export function InstallHint() {
+  if (Capacitor.isNativePlatform()) return null;
+  return <WebInstallHint />;
 }

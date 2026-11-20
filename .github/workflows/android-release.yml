@@ -44,6 +44,9 @@ jobs:
 
       - run: npm ci --no-audit --no-fund
       - run: npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_MAIL_STORAGE_URL: ${{ vars.VITE_MAIL_STORAGE_URL }}
 
       - name: Decode keystore
         run: |
@@ -105,12 +108,12 @@ jobs:
       - name: Publish release record
         env:
           ADMIN_API_URL: ${{ secrets.ADMIN_API_URL }}
-          ADMIN_SERVICE_TOKEN: ${{ secrets.ADMIN_SERVICE_TOKEN }}
+          RELEASE_PUBLISH_KEY: ${{ secrets.RELEASE_PUBLISH_KEY }}
         run: |
           TAG="${{ github.ref_name }}"          # nurse-v1.2.3
           RELEASE_ID="android-${TAG}"
-          curl -sf -X POST "${ADMIN_API_URL}/admin/app-releases" \
-            -H "Authorization: Bearer ${ADMIN_SERVICE_TOKEN}" \
+          curl -sf -X POST "${ADMIN_API_URL}/app-bundles/releases" \
+            -H "X-Release-Key: ${RELEASE_PUBLISH_KEY}" \
             -H "Content-Type: application/json" \
             -d "$(jq -n \
               --arg id "$RELEASE_ID" \

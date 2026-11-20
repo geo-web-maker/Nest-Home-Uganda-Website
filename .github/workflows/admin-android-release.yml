@@ -1,0 +1,131 @@
+name: admin-android-release
+
+# Builds a signed release APK, uploads it to private storage, and publishes the
+# release record via the admin API. Trigger by pushing a tag: admin-v1.2.3 (full APK; website-only changes use web-bundle-release)
+on:
+  push:
+    tags:
+      - 'admin-v[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: read
+
+jobs:
+  release-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      ADMIN_VERSION_CODE: ${{ github.run_number }}
+    defaults:
+      run:
+        working-directory: admin
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require lockfile
+        run: test -f package-lock.json || { echo "admin/package-lock.json missing"; exit 1; }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_MAIL_STORAGE_URL: ${{ vars.VITE_MAIL_STORAGE_URL }}
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.ADMIN_KEYSTORE_BASE64 }}" | base64 -d > /tmp/release.jks
+
+      - name: Generate native project
+        run: npx cap add android --config capacitor.config.ts
+
+      - name: Apply Android overrides
+        working-directory: .
+        run: node scripts/apply_admin_android_overrides.mjs
+
+      - run: npx cap sync android --config capacitor.config.ts
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build signed release APK
+        working-directory: admin/android
+        env:
+          KEYSTORE_PATH: /tmp/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.ADMIN_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ADMIN_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ADMIN_KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file="$KEYSTORE_PATH" \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD" \
+            --no-daemon --stacktrace
+
+      - name: Collect APK info
+        id: apk
+        run: |
+          APK=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
+          SHA=$(sha256sum "$APK" | awk '{print $1}')
+          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
+          SIZE=$(stat -c%s "$APK")
+          echo "size=$SIZE" >> "$GITHUB_OUTPUT"
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK to private bucket
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET }}
+          AWS_DEFAULT_REGION: ${{ secrets.S3_REGION }}
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_BUCKET_PRIVATE: ${{ secrets.S3_BUCKET_PRIVATE }}
+        run: |
+          APK_KEY="apks/admin-v${{ steps.apk.outputs.version }}-${{ github.run_number }}.apk"
+          aws s3 cp "${{ steps.apk.outputs.path }}" \
+            "s3://${S3_BUCKET_PRIVATE}/${APK_KEY}" \
+            --endpoint-url "${S3_ENDPOINT}" \
+            --content-type "application/vnd.android.package-archive"
+          echo "APK_KEY=${APK_KEY}" >> "$GITHUB_ENV"
+
+      - name: Publish release record
+        env:
+          ADMIN_API_URL: ${{ secrets.ADMIN_API_URL }}
+          RELEASE_PUBLISH_KEY: ${{ secrets.RELEASE_PUBLISH_KEY }}
+        run: |
+          TAG="${{ github.ref_name }}"          # admin-v1.2.3
+          RELEASE_ID="android-${TAG}"
+          curl -sf -X POST "${ADMIN_API_URL}/app-bundles/releases" \
+            -H "X-Release-Key: ${RELEASE_PUBLISH_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg id "$RELEASE_ID" \
+              --arg version "${{ steps.apk.outputs.version }}" \
+              --argjson vc "${{ env.ADMIN_VERSION_CODE }}" \
+              --arg min "${{ steps.apk.outputs.version }}" \
+              --arg key "$APK_KEY" \
+              --arg sha "${{ steps.apk.outputs.sha256 }}" \
+              --argjson sz "${{ steps.apk.outputs.size }}" \
+              '{id:$id,platform:"android",app:"admin",version:$version,version_code:$vc,
+                min_supported_version:$min,apk_key:$key,sha256:$sha,size_bytes:$sz}')"
+
+      - name: Clean up keystore
+        if: always()
+        run: rm -f /tmp/release.jks

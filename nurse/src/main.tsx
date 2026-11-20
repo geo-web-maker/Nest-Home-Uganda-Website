@@ -6,6 +6,7 @@ import { App } from './app/App';
 import { installNurseClientErrorCapture } from './lib/clientErrors';
 import { ClientErrorBoundary } from './components/ClientErrorBoundary';
 import './styles.css';
+import { startWebBundleUpdates } from './platform/webBundle';
 
 initTheme();
 installNurseClientErrorCapture();
@@ -13,3 +14,4 @@ installNurseClientErrorCapture();
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode><ClientErrorBoundary><App /></ClientErrorBoundary></React.StrictMode>,
 );
+startWebBundleUpdates('nurse');

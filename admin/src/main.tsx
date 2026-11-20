@@ -13,6 +13,7 @@ import '@shared/design/tokens.css';
 import '@shared/design/fonts.css';
 import '@shared/design/global.css';
 import '@shared/design/motion.css';
+import { startWebBundleUpdates } from './admin-native/webBundle';
 
 initTheme();
 if (typeof window !== 'undefined') installClientErrorCapture();
@@ -33,3 +34,4 @@ createRoot(document.getElementById('root')!).render(
     </HelmetProvider>
   </StrictMode>,
 );
+startWebBundleUpdates('admin');

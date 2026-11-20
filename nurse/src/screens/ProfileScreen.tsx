@@ -36,7 +36,7 @@ export function ProfileScreen(props: Props) {
     <nav className="mk-profile-shortcuts" aria-label={copy.profile.quickSettings}>
       <Link to="/sync"><Icon name="sync" /><span>{copy.profile.syncTitle}</span><Icon name="arrow-up-right" /></Link>
       <a href="#profile-permissions"><Icon name="user" /><span>{copy.profile.permissionsHelp}</span><Icon name="arrow-up-right" /></a>
-      <a href="#profile-update"><Icon name="check" /><span>{copy.profile.checkUpdate}</span><Icon name="arrow-up-right" /></a>
+      <Link to="/app-center"><Icon name="check" /><span>App Center</span><Icon name="arrow-up-right" /></Link>
       <a href="#profile-device"><Icon name="doc" /><span>{copy.profile.appVersion}: {props.appVersion}</span><Icon name="arrow-up-right" /></a>
     </nav>
 

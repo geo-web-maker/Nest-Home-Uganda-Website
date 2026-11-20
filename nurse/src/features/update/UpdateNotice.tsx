@@ -1,6 +1,7 @@
 import { isForcedUpdate, compareVersions } from '../../lib/version';
 import { copy } from '../../copy';
 import { Banner } from '../../ui/Banner';
+import { PillButton } from '../../ui/PillButton';
 import { useNativeUpdate } from './useNativeUpdate';
 
 type ApkInfo = { url: string; sha256?: string | null; version: string };
@@ -28,12 +29,12 @@ export function UpdateNotice({
     return <Banner tone="ok">{copy.update.upToDate} ({currentVersion}).</Banner>;
   }
 
-  function renderDownloadButton() {
+  function renderDownloadButton(label: string) {
     if (state.status === 'error') {
       return (
         <div className="mk-update-actions">
           <span className="mk-update-error">{state.message}</span>
-          <button className="mk-update-link" onClick={reset}>{copy.update.checkAgain}</button>
+          <PillButton tone="ghost" size="sm" showArrow={false} onClick={reset}>{copy.update.checkAgain}</PillButton>
         </div>
       );
     }
@@ -51,16 +52,11 @@ export function UpdateNotice({
     // idle — show the best available action
     if (isNative && apkInfo) {
       return (
-        <button
-          className="mk-update-link"
-          onClick={() => start(apkInfo)}
-        >
-          {copy.update.getSupported}
-        </button>
+        <PillButton tone="forest" size="sm" showArrow={false} onClick={() => void start(apkInfo)}>{label}</PillButton>
       );
     }
     if (downloadPath) {
-      return <a className="mk-update-link" href={downloadPath}>{copy.update.getSupported}</a>;
+      return <a className="mk-update-link" href={downloadPath}>{label}</a>;
     }
     return <p>{copy.update.contactSupervisor}</p>;
   }
@@ -72,7 +68,7 @@ export function UpdateNotice({
           <strong>{copy.update.required}</strong> {copy.update.belowMinimum}{' '}
           {copy.update.installed} {currentVersion} · {copy.update.minimum} {minimumVersion}
         </Banner>
-        {renderDownloadButton()}
+        {renderDownloadButton(copy.update.getSupported)}
       </div>
     );
   }
@@ -83,7 +79,7 @@ export function UpdateNotice({
         {copy.update.newerAvailable} ({latestVersion}) {copy.update.available}{' '}
         {copy.update.installedVersion} {currentVersion}.
       </Banner>
-      {renderDownloadButton()}
+      {renderDownloadButton(copy.update.view)}
     </div>
   );
 }

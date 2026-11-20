@@ -313,9 +313,10 @@ export function MailScreen() {
     const snapshot = composer;
     setComposer(null);
     setProblem('');
+    // Open the undo window before the list reloads, so the stored draft never shows its own "Send now" row.
+    if (state === 'queued') startUndoWindow(record, snapshot);
     await reloadDrafts();
-    if (state === 'draft') { setNotice(copy.mail.draftSaved); return; }
-    startUndoWindow(record, snapshot);
+    if (state === 'draft') setNotice(copy.mail.draftSaved);
   };
 
   // Undo send: hold the stored draft for a few seconds before it is queued.
