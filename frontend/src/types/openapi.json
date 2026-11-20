@@ -1898,6 +1898,66 @@
         "title": "ClientLocationBody",
         "type": "object"
       },
+      "ClientPolicyBody": {
+        "additionalProperties": false,
+        "description": "Only the fields sent are changed.",
+        "properties": {
+          "block_unversioned": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Unversioned"
+          },
+          "blocked_user_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 200,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked User Ids"
+          },
+          "legacy_min_interval_seconds": {
+            "anyOf": [
+              {
+                "maximum": 86400.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legacy Min Interval Seconds"
+          },
+          "min_build": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Build"
+          }
+        },
+        "title": "ClientPolicyBody",
+        "type": "object"
+      },
       "ClientScenarioBody": {
         "properties": {
           "name": {
@@ -24829,6 +24889,114 @@
         "summary": "Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/v1/mail/admin/client-policy": {
+      "get": {
+        "operationId": "get_client_policy_api_v1_mail_admin_client_policy_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Client Policy",
+        "tags": [
+          "mail"
+        ]
+      },
+      "put": {
+        "operationId": "put_client_policy_api_v1_mail_admin_client_policy_put",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "mail_totp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mail Totp"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientPolicyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Put Client Policy",
+        "tags": [
+          "mail"
+        ]
+      }
+    },
+    "/api/v1/mail/admin/client-traffic": {
+      "get": {
+        "operationId": "get_client_traffic_api_v1_mail_admin_client_traffic_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Client Traffic",
+        "tags": [
+          "mail"
         ]
       }
     },

@@ -4129,6 +4129,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mail/admin/client-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Client Policy */
+        get: operations["get_client_policy_api_v1_mail_admin_client_policy_get"];
+        /** Put Client Policy */
+        put: operations["put_client_policy_api_v1_mail_admin_client_policy_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mail/admin/client-traffic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Client Traffic */
+        get: operations["get_client_traffic_api_v1_mail_admin_client_traffic_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/mail/admin/mailboxes": {
         parameters: {
             query?: never;
@@ -6412,6 +6447,20 @@ export interface components {
              * @default 150
              */
             radius_m: number;
+        };
+        /**
+         * ClientPolicyBody
+         * @description Only the fields sent are changed.
+         */
+        ClientPolicyBody: {
+            /** Block Unversioned */
+            block_unversioned?: boolean | null;
+            /** Blocked User Ids */
+            blocked_user_ids?: string[] | null;
+            /** Legacy Min Interval Seconds */
+            legacy_min_interval_seconds?: number | null;
+            /** Min Build */
+            min_build?: number | null;
         };
         /** ClientScenarioBody */
         ClientScenarioBody: {
@@ -18357,6 +18406,81 @@ export interface operations {
         };
     };
     health_api_v1_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_client_policy_api_v1_mail_admin_client_policy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    put_client_policy_api_v1_mail_admin_client_policy_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientPolicyBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_client_traffic_api_v1_mail_admin_client_traffic_get: {
         parameters: {
             query?: never;
             header?: never;
