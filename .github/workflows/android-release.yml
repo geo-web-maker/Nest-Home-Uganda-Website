@@ -77,9 +77,28 @@ jobs:
             echo "No NURSE_GOOGLE_SERVICES_JSON_BASE64 secret: building WITHOUT push notifications."
             exit 0
           fi
-          echo "$GOOGLE_SERVICES_B64" | base64 -d > android/app/google-services.json
-          grep -q '"package_name": *"ug.nesthomecare.nurse"' android/app/google-services.json \
-            || { echo "google-services.json is not for package ug.nesthomecare.nurse"; rm -f android/app/google-services.json; exit 1; }
+          mkdir -p android/app
+          OUT=android/app/google-services.json
+          # Accept either the raw JSON text or its base64, and ignore stray quotes, spaces and line breaks.
+          CLEAN=$(printf '%s' "$GOOGLE_SERVICES_B64" | tr -d '\r\n\t "')
+          case "$CLEAN" in
+            \{*) printf '%s' "$GOOGLE_SERVICES_B64" > "$OUT" ;;
+            *) printf '%s' "$CLEAN" | base64 -d > "$OUT" 2>/dev/null \
+                 || { echo "NURSE_GOOGLE_SERVICES_JSON_BASE64 is neither valid JSON nor valid base64. Re-save it (see README)."; rm -f "$OUT"; exit 1; } ;;
+          esac
+          # The file must be valid JSON and belong to this app, otherwise push silently never arrives.
+          PKG="ug.nesthomecare.nurse" python3 - <<'PY' || { rm -f "$OUT"; exit 1; }
+          import json, os, sys
+          try:
+              data = json.load(open("android/app/google-services.json"))
+          except Exception as e:
+              sys.exit("google-services.json is not valid JSON: %s" % e)
+          pkgs = [c.get("client_info", {}).get("android_client_info", {}).get("package_name") for c in data.get("client", [])]
+          want = os.environ["PKG"]
+          if want not in pkgs:
+              sys.exit("google-services.json is for %s, but this build is %s" % (pkgs, want))
+          print("google-services.json OK for", want)
+          PY
           echo "Firebase config installed: push notifications enabled."
 
       - run: npx cap sync android
