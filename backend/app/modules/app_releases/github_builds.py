@@ -13,6 +13,7 @@ import httpx
 from fastapi import HTTPException
 
 from app.core.config import get_settings
+from app.modules.app_releases import rules
 
 API = "https://api.github.com"
 SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
@@ -109,50 +110,153 @@ async def list_builds(limit: int = 15) -> dict[str, Any]:
     return {"repo": repo, "items": items[:limit]}
 
 
-async def _package_version(repo: str, branch: str, path: str) -> str:
+APPS = {"nurse": "nurse/package.json", "admin": "admin/package.json"}
+_VERSION_FIELD = re.compile(r'("version"\s*:\s*")[^"]+(")')
+
+
+def _kind(target: str) -> str:
+    return "web" if target.endswith("-web") else "apk"
+
+
+def _app(target: str) -> str:
+    return target.split("-", 1)[0]
+
+
+async def _read_package(repo: str, branch: str, path: str) -> tuple[str, str, str]:
+    """Return (version, file sha, raw text) of a package.json on the branch."""
     response = await _request("GET", f"/repos/{repo}/contents/{path}", params={"ref": branch})
     if response.status_code != 200:
         raise _fail(response, f"reading {path}")
     try:
-        content = base64.b64decode(response.json()["content"]).decode()
-        return str(json.loads(content)["version"])
+        data = response.json()
+        text = base64.b64decode(data["content"]).decode()
+        return str(json.loads(text)["version"]), str(data.get("sha", "")), text
     except (KeyError, ValueError) as exc:
         raise HTTPException(
             status_code=502, detail=f"Could not read the version in {path}."
         ) from exc
 
 
-async def start_build(target: str, version: str) -> dict[str, Any]:
-    if target not in TARGETS:
-        raise HTTPException(status_code=422, detail="Unknown build target")
-    if not SEMVER.match(version):
-        raise HTTPException(status_code=422, detail="Version must look like 1.2.3")
+async def build_versions() -> dict[str, Any]:
+    """Current version per app and the next version each kind of build may use."""
     repo, _, branch = _config()
-    prefix, package_path, _label = TARGETS[target]
-    current = await _package_version(repo, branch, package_path)
-    if current != version:
-        raise HTTPException(
-            status_code=409,
-            detail=f"{package_path} on {branch} says {current}, not {version}. "
-            "Change the version in package.json on GitHub and commit it, then start the build.",
-        )
-    tag = f"{prefix}{version}"
+    apps: dict[str, Any] = {}
+    for app, path in APPS.items():
+        current = (await _read_package(repo, branch, path))[0]
+        try:
+            apps[app] = {"current": current, "next": rules.suggest_versions(current)}
+        except ValueError:
+            apps[app] = {"current": current, "next": None}
+    return {"apps": apps}
+
+
+async def _tag_exists(repo: str, tag: str) -> bool:
     existing = await _request("GET", f"/repos/{repo}/git/ref/tags/{tag}")
     if existing.status_code == 200:
-        raise HTTPException(
-            status_code=409, detail=f"Tag {tag} already exists. Raise the version to build again."
-        )
+        return True
     if existing.status_code != 404:
         raise _fail(existing, "checking the tag")
-    head = await _request("GET", f"/repos/{repo}/git/ref/heads/{branch}")
-    if head.status_code != 200:
-        raise _fail(head, f"reading branch {branch}")
-    sha = head.json()["object"]["sha"]
-    created = await _request(
-        "POST", f"/repos/{repo}/git/refs", json={"ref": f"refs/tags/{tag}", "sha": sha}
+    return False
+
+
+async def _commit_version(
+    repo: str, branch: str, path: str, file_sha: str, text: str, version: str, label: str
+) -> str:
+    """Write the new version into package.json on the branch; return the commit sha."""
+    updated, count = _VERSION_FIELD.subn(rf"\g<1>{version}\g<2>", text, count=1)
+    if count != 1:
+        raise HTTPException(status_code=502, detail=f"Could not find the version in {path}.")
+    response = await _request(
+        "PUT",
+        f"/repos/{repo}/contents/{path}",
+        json={
+            "message": f"Release {label} {version}",
+            "content": base64.b64encode(updated.encode()).decode(),
+            "sha": file_sha,
+            "branch": branch,
+        },
     )
-    if created.status_code == 422:
-        raise HTTPException(status_code=409, detail=f"Tag {tag} already exists.")
-    if created.status_code != 201:
-        raise _fail(created, "creating the tag")
-    return {"tag": tag, "sha": sha, "target": target}
+    if response.status_code == 409:
+        raise HTTPException(
+            status_code=409, detail=f"{path} changed on GitHub while starting. Try again."
+        )
+    if response.status_code not in (200, 201):
+        raise _fail(response, f"updating the version in {path}")
+    return str(response.json()["commit"]["sha"])
+
+
+async def start_builds(items: list[tuple[str, str]]) -> list[dict[str, Any]]:
+    """Start several builds at once.
+
+    Everything is checked first and nothing is written if any item is invalid. Each app's
+    package.json is then committed once, and every tag points at that commit. A failure while
+    writing is reported on its item and does not stop the others.
+    """
+    if not items:
+        raise HTTPException(status_code=422, detail="Choose at least one build")
+    seen: dict[str, str] = {}
+    for target, version in items:
+        if target not in TARGETS:
+            raise HTTPException(status_code=422, detail="Unknown build target")
+        if not SEMVER.match(version):
+            raise HTTPException(status_code=422, detail="Version must look like 1.2.3")
+        app = _app(target)
+        if app in seen:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Choose either the {app} Android app or its web update, not both. "
+                "A new Android app already includes the latest screens.",
+            )
+        seen[app] = target
+    repo, _, branch = _config()
+    plans: list[dict[str, Any]] = []
+    for target, version in items:
+        prefix, path, label = TARGETS[target]
+        current, file_sha, text = await _read_package(repo, branch, path)
+        try:
+            rules.check_build_version(_kind(target), current, version)
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=f"{label}: {exc}") from exc
+        tag = f"{prefix}{version}"
+        if await _tag_exists(repo, tag):
+            raise HTTPException(
+                status_code=409, detail=f"Tag {tag} already exists. Raise the version to build again."
+            )
+        plans.append(
+            {"target": target, "version": version, "tag": tag, "path": path, "label": label,
+             "current": current, "file_sha": file_sha, "text": text}
+        )
+    results: list[dict[str, Any]] = []
+    for plan in plans:
+        try:
+            if plan["version"] != plan["current"]:
+                sha = await _commit_version(
+                    repo, branch, plan["path"], plan["file_sha"], plan["text"],
+                    plan["version"], plan["label"],
+                )
+            else:
+                head = await _request("GET", f"/repos/{repo}/git/ref/heads/{branch}")
+                if head.status_code != 200:
+                    raise _fail(head, f"reading branch {branch}")
+                sha = head.json()["object"]["sha"]
+            created = await _request(
+                "POST", f"/repos/{repo}/git/refs", json={"ref": f"refs/tags/{plan['tag']}", "sha": sha}
+            )
+            if created.status_code == 422:
+                raise HTTPException(status_code=409, detail=f"Tag {plan['tag']} already exists.")
+            if created.status_code != 201:
+                raise _fail(created, "creating the tag")
+            results.append({"target": plan["target"], "tag": plan["tag"], "sha": sha,
+                            "version": plan["version"], "ok": True, "error": None})
+        except HTTPException as exc:
+            results.append({"target": plan["target"], "tag": plan["tag"], "sha": None,
+                            "version": plan["version"], "ok": False, "error": exc.detail})
+    return results
+
+
+async def start_build(target: str, version: str) -> dict[str, Any]:
+    """Single-build convenience used by older callers."""
+    (result,) = await start_builds([(target, version)])
+    if not result["ok"]:
+        raise HTTPException(status_code=502, detail=result["error"])
+    return {"tag": result["tag"], "sha": result["sha"], "target": target}

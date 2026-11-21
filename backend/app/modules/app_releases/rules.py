@@ -58,3 +58,44 @@ def effective_minimum_version(release_minimum: str, configured_minimum: str) -> 
         if compare_versions(release_minimum, configured_minimum) >= 0
         else configured_minimum
     )
+
+
+def check_build_version(kind: str, current: str, new: str) -> None:
+    """Policy for a requested build version against the version in package.json.
+
+    - ``apk``: a new install, so it must be exactly the next major version (1.4.2 -> 2.0.0).
+      The current version itself is allowed only to build an APK that was never built.
+    - ``web``: a no-reinstall update, so the first number stays and the version goes up
+      (1.0.0 -> 1.0.1 or 1.1.0).
+    Nothing may go below the current version.
+    """
+    cur, req = parse_version(current), parse_version(new)
+    if compare_versions(new, current) < 0:
+        raise ValueError(f"{new} is lower than the current version {current}.")
+    if kind == "apk":
+        if req[0] == cur[0] and compare_versions(new, current) == 0:
+            return
+        if req[0] != cur[0] + 1 or (req[1], req[2]) != (0, 0):
+            raise ValueError(
+                f"A new Android app must be the next major version, "
+                f"{cur[0] + 1}.0.0 (current is {current})."
+            )
+    elif kind == "web":
+        if req[0] != cur[0]:
+            raise ValueError(
+                f"A web update keeps the first number ({cur[0]}). Use {cur[0]}.{cur[1]}.{cur[2] + 1} "
+                f"or {cur[0]}.{cur[1] + 1}.0; a new first number needs a new Android app."
+            )
+        if compare_versions(new, current) == 0:
+            raise ValueError(f"{new} is already the current version. Raise it to publish an update.")
+    else:
+        raise ValueError("Unknown build kind")
+
+
+def suggest_versions(current: str) -> dict[str, str]:
+    major, minor, patch, _ = parse_version(current)
+    return {
+        "apk": f"{major + 1}.0.0",
+        "web_patch": f"{major}.{minor}.{patch + 1}",
+        "web_minor": f"{major}.{minor + 1}.0",
+    }

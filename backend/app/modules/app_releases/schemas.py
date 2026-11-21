@@ -69,3 +69,12 @@ class AppReleaseOut(BaseModel):
     release_notes: str
     active: bool
     published_at: datetime
+
+
+class BuildItem(BaseModel):
+    target: str
+    version: str
+
+
+class BuildBatch(BaseModel):
+    items: list[BuildItem] = Field(min_length=1, max_length=4)

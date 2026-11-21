@@ -16,7 +16,7 @@ from app.core.totp_guard import assert_totp_session
 from app.modules.app_releases import github_builds, preflight
 from app.modules.app_releases.models import AppRelease
 from app.modules.app_releases.rules import compare_versions
-from app.modules.app_releases.schemas import AppReleaseCreate
+from app.modules.app_releases.schemas import AppReleaseCreate, BuildBatch
 from app.modules.audit import service as audit
 
 router = APIRouter(prefix="/admin/app-releases", tags=["app-releases"])
@@ -47,6 +47,31 @@ async def list_releases(
 class BuildStart(BaseModel):
     target: Literal["nurse-apk", "admin-apk", "nurse-web", "admin-web"]
     version: str
+
+
+@router.get("/builds/versions")
+async def build_versions(principal: Principal = Depends(require_scopes("system:manage"))):
+    _superadmin(principal)
+    return await github_builds.build_versions()
+
+
+@router.post(
+    "/builds/batch",
+    status_code=201,
+    dependencies=[Depends(rate_limit("app_build_start", 10, 3600))],
+)
+async def start_builds(
+    body: BuildBatch, principal: Principal = Depends(require_scopes("system:manage"))
+):
+    _superadmin(principal)
+    results = await github_builds.start_builds([(i.target, i.version.strip()) for i in body.items])
+    for item in results:
+        if item["ok"]:
+            await audit.record(
+                principal, "app_build.start", "app_build", item["tag"],
+                after={"target": item["target"], "version": item["version"], "sha": item["sha"]},
+            )
+    return {"items": results}
 
 
 @router.get("/builds")

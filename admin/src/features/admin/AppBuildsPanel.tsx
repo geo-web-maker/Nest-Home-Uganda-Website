@@ -21,12 +21,6 @@ export type BuildRun = {
 };
 type BuildsResponse = { repo: string; items: BuildRun[] };
 
-const TARGET_LABELS: Record<BuildTarget, string> = {
-  'nurse-apk': 'Nurse Android app (full APK)',
-  'admin-apk': 'Admin Android app (full APK)',
-  'nurse-web': 'Nurse web update (no reinstall)',
-  'admin-web': 'Admin web update (no reinstall)',
-};
 const STATE_LABELS: Record<BuildState, string> = {
   queued: '⏳ Waiting to start',
   running: '🔄 Building',
@@ -35,8 +29,44 @@ const STATE_LABELS: Record<BuildState, string> = {
   cancelled: '⛔ Cancelled',
 };
 const ACTIVE: BuildState[] = ['queued', 'running'];
-const SEMVER = /^\d+\.\d+\.\d+$/;
 const POLL_MS = 8000;
+const SEMVER = /^\d+\.\d+\.\d+$/;
+
+type AppKey = 'nurse' | 'admin';
+type Kind = 'none' | 'web' | 'apk';
+type Versions = { apps: Record<AppKey, { current: string; next: { apk: string; web_patch: string; web_minor: string } | null }> };
+type BatchResult = { items: { target: BuildTarget; tag: string; version: string; ok: boolean; error: string | null }[] };
+type Choice = { kind: Kind; version: string };
+
+const APP_LABELS: Record<AppKey, string> = { nurse: 'Nurse app', admin: 'Admin app' };
+const KIND_LABELS: Record<Kind, string> = { none: 'Skip', web: 'Web update', apk: 'Android app' };
+const KIND_HINT: Record<Exclude<Kind, 'none'>, string> = {
+  web: 'No reinstall. Changes the inner numbers (1.0.0 to 1.0.1 or 1.1.0). About 3 minutes.',
+  apk: 'Full install. Always the next major version (1.4.2 to 2.0.0) and includes the latest screens. About 10 to 15 minutes.',
+};
+
+const parts = (v: string) => v.split('.').map(Number);
+const cmp = (a: string, b: string) => {
+  const [x, y] = [parts(a), parts(b)];
+  for (let i = 0; i < 3; i += 1) if (x[i] !== y[i]) return x[i] > y[i] ? 1 : -1;
+  return 0;
+};
+
+/** Mirrors the server rule so mistakes show before anything is sent; the server still decides. */
+export function versionProblem(kind: Kind, current: string, version: string): string {
+  if (kind === 'none') return '';
+  if (!SEMVER.test(version)) return 'Enter the version as three numbers, for example 1.0.0.';
+  const [cur, req] = [parts(current), parts(version)];
+  if (cmp(version, current) < 0) return `${version} is lower than the current version ${current}.`;
+  if (kind === 'apk') {
+    if (cmp(version, current) === 0) return '';
+    if (req[0] !== cur[0] + 1 || req[1] !== 0 || req[2] !== 0) return `A new Android app must be the next major version, ${cur[0] + 1}.0.0.`;
+    return '';
+  }
+  if (req[0] !== cur[0]) return `A web update keeps the first number (${cur[0]}). A new first number needs a new Android app.`;
+  if (cmp(version, current) === 0) return `${version} is already the current version.`;
+  return '';
+}
 
 const timeLabel = (value: string | null) => {
   const date = value ? new Date(value) : null;
@@ -47,76 +77,121 @@ const timeLabel = (value: string | null) => {
 
 export function AppBuildsPanel() {
   const queryClient = useQueryClient();
-  const [target, setTarget] = useState<BuildTarget>('nurse-apk');
-  const [version, setVersion] = useState('');
+  const [choices, setChoices] = useState<Record<AppKey, Choice>>({ nurse: { kind: 'none', version: '' }, admin: { kind: 'none', version: '' } });
   const [formError, setFormError] = useState('');
+  const [outcome, setOutcome] = useState<BatchResult['items']>([]);
   const builds = useQuery({
     queryKey: ['admin', 'app-builds'],
     queryFn: () => apiClient.get<BuildsResponse>('/admin/app-releases/builds'),
     retry: false,
-    refetchInterval: (query) =>
-      query.state.data?.items.some((run) => ACTIVE.includes(run.state)) ? POLL_MS : false,
+    refetchInterval: (query) => (query.state.data?.items.some((run) => ACTIVE.includes(run.state)) ? POLL_MS : false),
   });
+  const versions = useQuery({
+    queryKey: ['admin', 'app-build-versions'],
+    queryFn: () => apiClient.get<Versions>('/admin/app-releases/builds/versions'),
+    retry: false,
+  });
+
+  const choose = (app: AppKey, kind: Kind) => {
+    const next = versions.data?.apps[app].next;
+    setFormError('');
+    setChoices((all) => ({ ...all, [app]: { kind, version: kind === 'none' || !next ? '' : kind === 'apk' ? next.apk : next.web_patch } }));
+  };
+  const setVersion = (app: AppKey, version: string) => setChoices((all) => ({ ...all, [app]: { ...all[app], version } }));
+  const both = (kind: Kind) => (['nurse', 'admin'] as AppKey[]).forEach((app) => choose(app, kind));
+
+  const selected = (Object.keys(choices) as AppKey[]).filter((app) => choices[app].kind !== 'none');
+  const problems = Object.fromEntries(selected.map((app) => [app, versionProblem(choices[app].kind, versions.data?.apps[app].current ?? '0.0.0', choices[app].version.trim())])) as Record<string, string>;
+  const blocked = selected.some((app) => problems[app]);
+
   const start = useMutation({
-    mutationFn: () =>
-      apiClient.post<{ tag: string }>('/admin/app-releases/builds', { target, version: version.trim() }),
-    onSuccess: () => {
+    mutationFn: () => apiClient.post<BatchResult>('/admin/app-releases/builds/batch', {
+      items: selected.map((app) => ({ target: `${app}-${choices[app].kind}` as BuildTarget, version: choices[app].version.trim() })),
+    }),
+    onSuccess: (result) => {
       setFormError('');
-      setVersion('');
+      setOutcome(result.items);
+      setChoices({ nurse: { kind: 'none', version: '' }, admin: { kind: 'none', version: '' } });
       const refresh = () => {
         void queryClient.invalidateQueries({ queryKey: ['admin', 'app-builds'] });
         void queryClient.invalidateQueries({ queryKey: ['admin', 'app-releases'] });
+        void queryClient.invalidateQueries({ queryKey: ['admin', 'app-build-versions'] });
       };
       refresh();
-      // GitHub needs a moment to register the run after the tag is created.
+      // GitHub needs a moment to register the runs after the tags are created.
       window.setTimeout(refresh, 2500);
     },
-    onError: (error) =>
-      setFormError(error instanceof Error ? error.message : 'The build could not be started.'),
+    onError: (error) => setFormError(error instanceof Error ? error.message : 'The builds could not be started.'),
   });
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError('');
-    if (!SEMVER.test(version.trim())) {
-      setFormError('Enter the version as three numbers, for example 1.0.0.');
-      return;
-    }
+    setOutcome([]);
+    if (selected.length === 0) { setFormError('Choose at least one build.'); return; }
+    if (blocked) { setFormError('Fix the version problems shown first.'); return; }
     start.mutate();
   };
-  const tag = start.data?.tag;
   const anyActive = builds.data?.items.some((run) => ACTIVE.includes(run.state)) ?? false;
+
   return (
     <>
-      <form className={styles.card} onSubmit={submit} aria-label="Start a build">
-        <h2>Build and publish an app</h2>
+      <form className={styles.card} onSubmit={submit} aria-label="Start builds">
+        <h2>Build and publish</h2>
         <p>
-          This tags the latest code on GitHub. GitHub then builds, signs and publishes the app, which takes about
-          3 minutes for a web update and 10 to 15 for a full APK. The version must match the one in the app’s
-          package.json on GitHub, so change it there first.
+          Pick what to build for each app. Starting writes the new version into the app’s package.json on GitHub,
+          then GitHub builds, signs and publishes. Versions can never go down.
         </p>
+        {versions.isError ? <p role="alert">{versions.error instanceof Error ? versions.error.message : 'Current versions could not be loaded.'}</p> : null}
         <div className={styles.formGrid}>
-          <Field
-            kind="select"
-            label="What to build"
-            value={target}
-            onChange={(e) => setTarget(e.target.value as BuildTarget)}
-          >
-            {(Object.keys(TARGET_LABELS) as BuildTarget[]).map((key) => (
-              <option key={key} value={key}>{TARGET_LABELS[key]}</option>
-            ))}
-          </Field>
-          <Field
-            label="Version"
-            value={version}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setVersion(e.target.value)}
-            placeholder="1.0.0"
-            required
-            requiredLabel="(required)"
-          />
+          <Button type="button" variant="outline" onClick={() => both('web')}>Web update for both</Button>
+          <Button type="button" variant="outline" onClick={() => both('apk')}>Android app for both</Button>
+          <Button type="button" variant="outline" onClick={() => both('none')}>Clear</Button>
         </div>
+        {(Object.keys(APP_LABELS) as AppKey[]).map((app) => {
+          const info = versions.data?.apps[app];
+          const choice = choices[app];
+          return (
+            <fieldset key={app} className={styles.card}>
+              <legend>{APP_LABELS[app]}{info ? ` · now ${info.current}` : ''}</legend>
+              <div role="radiogroup" aria-label={`${APP_LABELS[app]} build type`}>
+                {(Object.keys(KIND_LABELS) as Kind[]).map((kind) => (
+                  <label key={kind} style={{ marginRight: 16 }}>
+                    <input type="radio" name={`kind-${app}`} checked={choice.kind === kind} onChange={() => choose(app, kind)} disabled={!info} /> {KIND_LABELS[kind]}
+                  </label>
+                ))}
+              </div>
+              {choice.kind !== 'none' ? (
+                <>
+                  <p>{KIND_HINT[choice.kind]}</p>
+                  <Field
+                    label={`${APP_LABELS[app]} version`}
+                    value={choice.version}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setVersion(app, e.target.value)}
+                    placeholder="1.0.0"
+                    required
+                    requiredLabel="(required)"
+                  />
+                  {choice.kind === 'web' && info?.next ? (
+                    <p>
+                      <Button type="button" variant="outline" onClick={() => setVersion(app, info.next!.web_patch)}>{info.next.web_patch} (fix)</Button>{' '}
+                      <Button type="button" variant="outline" onClick={() => setVersion(app, info.next!.web_minor)}>{info.next.web_minor} (new feature)</Button>
+                    </p>
+                  ) : null}
+                  {problems[app] ? <p role="alert">{problems[app]}</p> : null}
+                </>
+              ) : null}
+            </fieldset>
+          );
+        })}
         {formError ? <p role="alert">{formError}</p> : null}
-        {tag ? <p role="status">Build started for {tag}. Progress appears below.</p> : null}
-        <Button type="submit" disabled={start.isPending}>{start.isPending ? 'Starting…' : 'Start build'}</Button>
+        {outcome.map((item) => (
+          <p key={item.target} role={item.ok ? 'status' : 'alert'}>
+            {item.ok ? `Build started for ${item.tag}. Progress appears below.` : `${item.tag} could not start: ${item.error}`}
+          </p>
+        ))}
+        <Button type="submit" disabled={start.isPending || selected.length === 0 || blocked}>
+          {start.isPending ? 'Starting…' : selected.length > 1 ? `Start ${selected.length} builds` : 'Start build'}
+        </Button>
       </form>
       <div className={styles.card}>
         <h2>Recent builds</h2>
@@ -130,30 +205,19 @@ export function AppBuildsPanel() {
         {builds.data && builds.data.items.length === 0 ? <p>No builds yet. Start one above.</p> : null}
         {builds.data && builds.data.items.length > 0 ? (
           <>
-            <p role="status">
-              {anyActive ? 'A build is in progress. This list refreshes by itself.' : `Repository: ${builds.data.repo}`}
-            </p>
+            <p role="status">{anyActive ? 'A build is in progress. This list refreshes by itself.' : `Repository: ${builds.data.repo}`}</p>
             <DataTable
               columns={[
                 { key: 'tag', header: 'Build', cell: (run: BuildRun) => run.tag },
                 { key: 'state', header: 'Status', cell: (run: BuildRun) => STATE_LABELS[run.state] },
                 { key: 'started', header: 'Started', cell: (run: BuildRun) => timeLabel(run.created_at) },
-                {
-                  key: 'log',
-                  header: 'Log',
-                  cell: (run: BuildRun) =>
-                    run.url ? (
-                      <a href={run.url} target="_blank" rel="noreferrer">Open on GitHub</a>
-                    ) : '—',
-                },
+                { key: 'log', header: 'Log', cell: (run: BuildRun) => (run.url ? <a href={run.url} target="_blank" rel="noreferrer">Open on GitHub</a> : '—') },
               ]}
               rows={builds.data.items}
               getRowKey={(run: BuildRun) => String(run.id)}
               labels={{ caption: 'Recent app builds', loading: 'Loading…', empty: 'Nothing to show.' }}
             />
-            <Button variant="outline" onClick={() => void builds.refetch()} disabled={builds.isFetching}>
-              {builds.isFetching ? 'Refreshing…' : 'Refresh'}
-            </Button>
+            <Button variant="outline" onClick={() => void builds.refetch()} disabled={builds.isFetching}>{builds.isFetching ? 'Refreshing…' : 'Refresh'}</Button>
           </>
         ) : null}
       </div>
