@@ -116,7 +116,7 @@ cd android && ./gradlew assembleDebug
 # output: nurse/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Admin is the same with `--config capacitor.config.ts`, `apply_admin_android_overrides.mjs`, and the `admin/` folder. Needs Node 22, JDK 21 and the Android SDK (platform 35, build-tools 35.0.0).
+Admin is the same with `apply_admin_android_overrides.mjs`, and the `admin/` folder. Needs Node 22, JDK 21 and the Android SDK (platform 35, build-tools 35.0.0).
 
 ---
 

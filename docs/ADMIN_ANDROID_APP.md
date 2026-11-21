@@ -17,11 +17,11 @@ From the repository root:
 cd admin
 npm ci
 npm run build
-npx cap add android --config capacitor.config.ts
+npx cap add android
 cd ..
 node scripts/apply_admin_android_overrides.mjs
 cd admin
-npx cap sync android --config capacitor.config.ts
+npx cap sync android
 cd android
 ./gradlew assembleDebug
 ```

@@ -51,13 +51,13 @@ jobs:
           echo "${{ secrets.ADMIN_KEYSTORE_BASE64 }}" | base64 -d > /tmp/release.jks
 
       - name: Generate native project
-        run: npx cap add android --config capacitor.config.ts
+        run: npx cap add android
 
       - name: Apply Android overrides
         working-directory: .
         run: node scripts/apply_admin_android_overrides.mjs
 
-      - run: npx cap sync android --config capacitor.config.ts
+      - run: npx cap sync android
 
       - uses: gradle/actions/setup-gradle@v4
 
