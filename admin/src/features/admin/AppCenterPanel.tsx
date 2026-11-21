@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Button } from '@shared/components/ui/Button';
 import { NativeUpdater } from '../../admin-native/nativeUpdater';
 import { WebBundle } from '../../admin-native/webBundle';
-import { formatSize, useAppCenter, type AppCenterPlugins } from '../../admin-native/appCenter';
+import { formatSize, isNewerVersion, useAppCenter, type AppCenterPlugins } from '../../admin-native/appCenter';
 import { useUpgradeRequired } from '../../admin-native/useUpgradeRequired';
 import { CLIENT_BUILD } from '@shared/lib/api/clientBuild';
 
@@ -11,10 +11,11 @@ const CHANNEL_LABEL = { native: 'Android app', pwa: 'Installed web app', browser
 /** The small in-app store for the admin app: what is installed, what is newer, one button to get it. */
 export function AppCenterPanel() {
   const plugins = useMemo<AppCenterPlugins>(() => ({ nativeUpdater: NativeUpdater, webBundle: WebBundle }), []);
-  const { channel, installed, apk, apkIsNewer, bundle, pwa, phase, checkedAt, check, installApk, installBundle, updatePwa } = useAppCenter('admin', plugins);
+  const { channel, installed, apk, apkIsNewer, bundle, webLatest, pwa, phase, checkedAt, check, installApk, installBundle, updatePwa } = useAppCenter('admin', plugins);
   const busy = phase.kind === 'checking' || phase.kind === 'downloading' || phase.kind === 'installing';
   const upgradeRequired = useUpgradeRequired();
-  const nothingNew = !upgradeRequired && (channel === 'native' ? !apkIsNewer && !bundle : !pwa.updateReady);
+  const webIsNewer = channel !== 'native' && isNewerVersion(webLatest, installed.webVersion);
+  const nothingNew = !upgradeRequired && (channel === 'native' ? !apkIsNewer && !bundle : !pwa.updateReady && !webIsNewer);
 
   return <article className="care-form" aria-labelledby="app-center-title">
     <h2 id="app-center-title">App Center</h2>
@@ -23,6 +24,7 @@ export function AppCenterPanel() {
       <div><dt>Running as</dt><dd>{CHANNEL_LABEL[channel]}</dd></div>
       <div><dt>App version</dt><dd>{installed.nativeVersion ?? installed.webVersion}</dd></div>
       <div><dt>Client build</dt><dd>{CLIENT_BUILD}</dd></div>
+      {channel !== 'native' && webLatest && <div><dt>Newest web version</dt><dd>{webLatest}</dd></div>}
       {channel === 'native' && <div><dt>Web content</dt><dd>{installed.runningBundle ?? installed.webVersion}</dd></div>}
       {channel === 'native' && installed.stagedBundle && <div><dt>Waiting for next launch</dt><dd>{installed.stagedBundle}</dd></div>}
       {checkedAt && <div><dt>Last checked</dt><dd>{checkedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</dd></div>}
@@ -43,9 +45,13 @@ export function AppCenterPanel() {
       <Button type="button" variant="forest" disabled={busy} onClick={() => void installApk()}>Download and install</Button>
     </div>}
     {channel !== 'native' && pwa.updateReady && <div>
-      <h3>A new version is ready</h3>
+      <h3>{webLatest ? `Version ${webLatest} is ready` : 'A new version is ready'}</h3>
       <p>The page reloads once.</p>
       <Button type="button" variant="forest" disabled={busy} onClick={() => void updatePwa()}>Update now</Button>
+    </div>}
+    {channel !== 'native' && !pwa.updateReady && webIsNewer && <div>
+      <h3>Version {webLatest} is available</h3>
+      <p>You have {installed.webVersion}. Tap “Check for updates”; if it is still not offered, close and reopen the app once.</p>
     </div>}
     {channel !== 'native' && apk && <div>
       <h3>Android app {apk.version}</h3>

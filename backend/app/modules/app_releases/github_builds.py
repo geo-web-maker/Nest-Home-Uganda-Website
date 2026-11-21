@@ -4,8 +4,6 @@ A build starts by creating the release tag on the default branch; the tag workfl
 build, sign, upload and publish. Nothing here can touch code, secrets or other workflows.
 """
 
-import base64
-import json
 import re
 from typing import Any
 
@@ -13,7 +11,7 @@ import httpx
 from fastapi import HTTPException
 
 from app.core.config import get_settings
-from app.modules.app_releases import rules
+from app.modules.app_releases import planner, rules
 
 API = "https://api.github.com"
 SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
@@ -72,10 +70,18 @@ def _fail(response: httpx.Response, what: str) -> HTTPException:
     )
 
 
+AUTO_WORKFLOW = "web-bundle-release"
+
+
 def summarise_run(run: dict[str, Any]) -> dict[str, Any] | None:
-    tag = run.get("head_branch") or ""
-    if run.get("event") != "push" or not TAG_RE.match(tag):
+    ref = run.get("head_branch") or ""
+    is_tag_build = bool(TAG_RE.match(ref))
+    # A push to the branch that the web workflow publishes by itself is a build too.
+    is_auto_web = run.get("name") == AUTO_WORKFLOW and not is_tag_build
+    if run.get("event") != "push" or not (is_tag_build or is_auto_web):
         return None
+    sha = str(run.get("head_sha") or "")[:7]
+    tag = ref if is_tag_build else f"web update ({ref} {sha})".replace(" )", ")")
     status, conclusion = run.get("status"), run.get("conclusion")
     if status in ("queued", "waiting", "pending", "requested"):
         state = "queued"
@@ -110,8 +116,7 @@ async def list_builds(limit: int = 15) -> dict[str, Any]:
     return {"repo": repo, "items": items[:limit]}
 
 
-APPS = {"nurse": "nurse/package.json", "admin": "admin/package.json"}
-_VERSION_FIELD = re.compile(r'("version"\s*:\s*")[^"]+(")')
+APPS = ("nurse", "admin")
 
 
 def _kind(target: str) -> str:
@@ -122,31 +127,22 @@ def _app(target: str) -> str:
     return target.split("-", 1)[0]
 
 
-async def _read_package(repo: str, branch: str, path: str) -> tuple[str, str, str]:
-    """Return (version, file sha, raw text) of a package.json on the branch."""
-    response = await _request("GET", f"/repos/{repo}/contents/{path}", params={"ref": branch})
-    if response.status_code != 200:
-        raise _fail(response, f"reading {path}")
-    try:
-        data = response.json()
-        text = base64.b64decode(data["content"]).decode()
-        return str(json.loads(text)["version"]), str(data.get("sha", "")), text
-    except (KeyError, ValueError) as exc:
-        raise HTTPException(
-            status_code=502, detail=f"Could not read the version in {path}."
-        ) from exc
-
-
 async def build_versions() -> dict[str, Any]:
-    """Current version per app and the next version each kind of build may use."""
-    repo, _, branch = _config()
+    """Current version per app and the version the next build of each kind will get.
+
+    Numbers come from the releases that were really published, not from package.json:
+    ``next.apk`` is the next whole number (2.0.0), ``next.web`` the next counter step of the
+    current app (1.0.7 -> 1.0.8). ``next.web`` is None when the 99.99 counter is full.
+    """
     apps: dict[str, Any] = {}
-    for app, path in APPS.items():
-        current = (await _read_package(repo, branch, path))[0]
-        try:
-            apps[app] = {"current": current, "next": rules.suggest_versions(current)}
-        except ValueError:
-            apps[app] = {"current": current, "next": None}
+    for app in APPS:
+        planned = await planner.plan(app)
+        apps[app] = {
+            "current": planned["current_web"] or planned["current_apk"] or "0.0.0",
+            "current_apk": planned["current_apk"],
+            "current_web": planned["current_web"],
+            "next": {"apk": planned["next_apk"], "web": planned["next_web"]},
+        }
     return {"apps": apps}
 
 
@@ -159,38 +155,38 @@ async def _tag_exists(repo: str, tag: str) -> bool:
     return False
 
 
-async def _commit_version(
-    repo: str, branch: str, path: str, file_sha: str, text: str, version: str, label: str
-) -> str:
-    """Write the new version into package.json on the branch; return the commit sha."""
-    updated, count = _VERSION_FIELD.subn(rf"\g<1>{version}\g<2>", text, count=1)
-    if count != 1:
-        raise HTTPException(status_code=502, detail=f"Could not find the version in {path}.")
+async def _tag_is_building(repo: str, tag: str) -> bool:
     response = await _request(
-        "PUT",
-        f"/repos/{repo}/contents/{path}",
-        json={
-            "message": f"Release {label} {version}",
-            "content": base64.b64encode(updated.encode()).decode(),
-            "sha": file_sha,
-            "branch": branch,
-        },
+        "GET", f"/repos/{repo}/actions/runs", params={"per_page": 50, "event": "push"}
     )
-    if response.status_code == 409:
+    if response.status_code != 200:
+        raise _fail(response, "checking running builds")
+    return any(
+        r.get("head_branch") == tag
+        and r.get("status") in ("queued", "waiting", "pending", "requested", "in_progress")
+        for r in response.json().get("workflow_runs", [])
+    )
+
+
+async def _clear_failed_tag(repo: str, tag: str) -> None:
+    """A tag with no published release is a failed build: remove it so the number is retried."""
+    if await _tag_is_building(repo, tag):
         raise HTTPException(
-            status_code=409, detail=f"{path} changed on GitHub while starting. Try again."
+            status_code=409, detail=f"{tag} is still building. Wait for it to finish."
         )
-    if response.status_code not in (200, 201):
-        raise _fail(response, f"updating the version in {path}")
-    return str(response.json()["commit"]["sha"])
+    deleted = await _request("DELETE", f"/repos/{repo}/git/refs/tags/{tag}")
+    if deleted.status_code not in (204, 404):
+        raise _fail(deleted, "removing the tag of the failed build")
 
 
 async def start_builds(items: list[tuple[str, str]]) -> list[dict[str, Any]]:
     """Start several builds at once.
 
-    Everything is checked first and nothing is written if any item is invalid. Each app's
-    package.json is then committed once, and every tag points at that commit. A failure while
-    writing is reported on its item and does not stop the others.
+    The version is chosen by the server (see build_versions); an item may pass it only to
+    confirm it. Everything is checked first and nothing is changed if any item is invalid.
+    The tag is created on the head of the branch and the tag workflow builds, signs and
+    publishes it, taking the version from the tag. A failure while writing is reported on its
+    item and does not stop the others.
     """
     if not items:
         raise HTTPException(status_code=422, detail="Choose at least one build")
@@ -198,7 +194,7 @@ async def start_builds(items: list[tuple[str, str]]) -> list[dict[str, Any]]:
     for target, version in items:
         if target not in TARGETS:
             raise HTTPException(status_code=422, detail="Unknown build target")
-        if not SEMVER.match(version):
+        if version and not SEMVER.match(version):
             raise HTTPException(status_code=422, detail="Version must look like 1.2.3")
         app = _app(target)
         if app in seen:
@@ -210,47 +206,69 @@ async def start_builds(items: list[tuple[str, str]]) -> list[dict[str, Any]]:
         seen[app] = target
     repo, _, branch = _config()
     plans: list[dict[str, Any]] = []
-    for target, version in items:
-        prefix, path, label = TARGETS[target]
-        current, file_sha, text = await _read_package(repo, branch, path)
+    for target, requested in items:
+        prefix, _path, label = TARGETS[target]
+        planned = await planner.plan(_app(target))
+        kind = _kind(target)
+        version = planned["next_apk"] if kind == "apk" else planned["next_web"]
+        if not version:
+            raise HTTPException(
+                status_code=409,
+                detail=f"{label}: the web counter is full. Build a new Android app to restart it.",
+            )
         try:
-            rules.check_build_version(_kind(target), current, version)
+            if requested:
+                rules.check_build_version(kind, str(version), requested)
         except ValueError as exc:
             raise HTTPException(status_code=409, detail=f"{label}: {exc}") from exc
-        tag = f"{prefix}{version}"
-        if await _tag_exists(repo, tag):
-            raise HTTPException(
-                status_code=409, detail=f"Tag {tag} already exists. Raise the version to build again."
-            )
         plans.append(
-            {"target": target, "version": version, "tag": tag, "path": path, "label": label,
-             "current": current, "file_sha": file_sha, "text": text}
+            {
+                "target": target,
+                "version": str(version),
+                "tag": f"{prefix}{version}",
+                "label": label,
+                "stale": await _tag_exists(repo, f"{prefix}{version}"),
+            }
         )
     results: list[dict[str, Any]] = []
     for plan in plans:
         try:
-            if plan["version"] != plan["current"]:
-                sha = await _commit_version(
-                    repo, branch, plan["path"], plan["file_sha"], plan["text"],
-                    plan["version"], plan["label"],
-                )
-            else:
-                head = await _request("GET", f"/repos/{repo}/git/ref/heads/{branch}")
-                if head.status_code != 200:
-                    raise _fail(head, f"reading branch {branch}")
-                sha = head.json()["object"]["sha"]
+            if plan["stale"]:
+                await _clear_failed_tag(repo, plan["tag"])
+            head = await _request("GET", f"/repos/{repo}/git/ref/heads/{branch}")
+            if head.status_code != 200:
+                raise _fail(head, f"reading branch {branch}")
+            sha = head.json()["object"]["sha"]
             created = await _request(
-                "POST", f"/repos/{repo}/git/refs", json={"ref": f"refs/tags/{plan['tag']}", "sha": sha}
+                "POST",
+                f"/repos/{repo}/git/refs",
+                json={"ref": f"refs/tags/{plan['tag']}", "sha": sha},
             )
             if created.status_code == 422:
                 raise HTTPException(status_code=409, detail=f"Tag {plan['tag']} already exists.")
             if created.status_code != 201:
                 raise _fail(created, "creating the tag")
-            results.append({"target": plan["target"], "tag": plan["tag"], "sha": sha,
-                            "version": plan["version"], "ok": True, "error": None})
+            results.append(
+                {
+                    "target": plan["target"],
+                    "tag": plan["tag"],
+                    "sha": sha,
+                    "version": plan["version"],
+                    "ok": True,
+                    "error": None,
+                }
+            )
         except HTTPException as exc:
-            results.append({"target": plan["target"], "tag": plan["tag"], "sha": None,
-                            "version": plan["version"], "ok": False, "error": exc.detail})
+            results.append(
+                {
+                    "target": plan["target"],
+                    "tag": plan["tag"],
+                    "sha": None,
+                    "version": plan["version"],
+                    "ok": False,
+                    "error": exc.detail,
+                }
+            )
     return results
 
 

@@ -1,6 +1,3 @@
-import base64
-import json
-
 import httpx
 import pytest
 
@@ -44,9 +41,18 @@ async def test_github_not_configured_fails_once_and_skips_the_rest(env):
     assert all(c["status"] in ("fail", "skip") for c in checks.values())
 
 
-def package(version):
-    body = base64.b64encode(json.dumps({"version": version}).encode()).decode()
-    return httpx.Response(200, json={"content": body})
+@pytest.fixture(autouse=True)
+def _planned_versions(monkeypatch):
+    async def fake_plan(app):
+        return {
+            "current_apk": None,
+            "current_web": None,
+            "next_apk": "1.0.0",
+            "next_web": "0.0.1",
+            "min_native_version_code": 1,
+        }
+
+    monkeypatch.setattr(pf.planner, "plan", fake_plan)
 
 
 def github(monkeypatch, overrides=None, record=None):
@@ -60,8 +66,6 @@ def github(monkeypatch, overrides=None, record=None):
         ("GET", "/repos/a/b/contents/.github/workflows"): httpx.Response(
             200, json=[{"name": n} for n in pf.WORKFLOWS]
         ),
-        ("GET", "/repos/a/b/contents/nurse/package.json"): package("1.0.0"),
-        ("GET", "/repos/a/b/contents/admin/package.json"): package("1.0.0"),
         ("GET", "/repos/a/b/actions/secrets"): httpx.Response(
             200, json={"secrets": [{"name": n} for n in pf.REQUIRED_SECRETS]}
         ),

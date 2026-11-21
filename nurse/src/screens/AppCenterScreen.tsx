@@ -7,7 +7,7 @@ import { PillButton } from '../ui/PillButton';
 import { PillLink } from '../ui/PillLink';
 import { NativeUpdater } from '../plugins/NativeUpdater';
 import { WebBundle } from '../platform/webBundle';
-import { formatSize, useAppCenter, type AppCenterPlugins } from '../platform/appCenter';
+import { formatSize, isNewerVersion, useAppCenter, type AppCenterPlugins } from '../platform/appCenter';
 import { useUpgradeRequired } from '../lib/useUpgradeRequired';
 import { CLIENT_BUILD } from '../lib/clientBuild';
 
@@ -16,10 +16,11 @@ const CHANNEL_LABEL = { native: 'Android app', pwa: 'Installed web app', browser
 /** The small in-app store: what is installed, what is newer, and one button to get it. */
 export function AppCenterScreen() {
   const plugins = useMemo<AppCenterPlugins>(() => ({ nativeUpdater: NativeUpdater, webBundle: WebBundle }), []);
-  const { channel, installed, apk, apkIsNewer, bundle, pwa, phase, checkedAt, check, installApk, installBundle, updatePwa } = useAppCenter('nurse', plugins);
+  const { channel, installed, apk, apkIsNewer, bundle, webLatest, pwa, phase, checkedAt, check, installApk, installBundle, updatePwa } = useAppCenter('nurse', plugins);
   const busy = phase.kind === 'checking' || phase.kind === 'downloading' || phase.kind === 'installing';
   const upgradeRequired = useUpgradeRequired();
-  const nothingNew = !upgradeRequired && (channel === 'native' ? !apkIsNewer && !bundle : !pwa.updateReady);
+  const webIsNewer = channel !== 'native' && isNewerVersion(webLatest, installed.webVersion);
+  const nothingNew = !upgradeRequired && (channel === 'native' ? !apkIsNewer && !bundle : !pwa.updateReady && !webIsNewer);
 
   return <section className="screen" aria-labelledby="appcenter-heading">
     <header className="screen-heading"><div><p className="eyebrow">APP CENTER</p><h2 id="appcenter-heading">Get and update the app</h2><p>See which version you have and install updates yourself.</p></div></header>
@@ -29,6 +30,7 @@ export function AppCenterScreen() {
       <Row label="Running as" value={CHANNEL_LABEL[channel]} />
       <Row label="App version" value={installed.nativeVersion ?? installed.webVersion} />
       <Row label="Client build" value={String(CLIENT_BUILD)} />
+      {channel !== 'native' && webLatest && <Row label="Newest web version" value={webLatest} />}
       {channel === 'native' && <Row label="Web content" value={installed.runningBundle ?? installed.webVersion} />}
       {channel === 'native' && installed.stagedBundle && <Row label="Waiting for next launch" value={installed.stagedBundle} />}
       {checkedAt && <Row label="Last checked" value={checkedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} />}
@@ -55,9 +57,14 @@ export function AppCenterScreen() {
     </Card>}
 
     {channel !== 'native' && pwa.updateReady && <Card>
-      <div className="mk-profile-section__heading"><h3>A new version is ready</h3><Chip kind="new">Web update</Chip></div>
+      <div className="mk-profile-section__heading"><h3>{webLatest ? `Version ${webLatest} is ready` : 'A new version is ready'}</h3><Chip kind="new">Web update</Chip></div>
       <p>Saved work stays on this phone. The app reloads once.</p>
       <PillButton tone="gold" disabled={busy} onClick={() => void updatePwa()}>Update now</PillButton>
+    </Card>}
+
+    {channel !== 'native' && !pwa.updateReady && webIsNewer && <Card>
+      <div className="mk-profile-section__heading"><h3>Version {webLatest} is available</h3><Chip kind="new">Web update</Chip></div>
+      <p>You have {installed.webVersion}. Tap “Check for updates”; if it is still not offered, close and reopen the app once.</p>
     </Card>}
 
     {channel !== 'native' && apk && <Card>

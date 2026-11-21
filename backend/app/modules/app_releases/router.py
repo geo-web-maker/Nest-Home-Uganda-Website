@@ -13,7 +13,7 @@ from app.core.rate_limit import rate_limit
 from app.core.security import constant_time_equal
 from app.core.storage import Bucket, get_storage
 from app.core.totp_guard import assert_totp_session
-from app.modules.app_releases import github_builds, preflight
+from app.modules.app_releases import github_builds, planner, preflight
 from app.modules.app_releases.models import AppRelease
 from app.modules.app_releases.rules import compare_versions
 from app.modules.app_releases.schemas import AppReleaseCreate, BuildBatch
@@ -31,6 +31,14 @@ def _superadmin(principal: Principal) -> Principal:
     return principal
 
 
+def _check_release_key(provided: str | None) -> None:
+    configured = get_settings().release_publish_key
+    if len(configured) < preflight.MIN_RELEASE_KEY_LENGTH:
+        raise HTTPException(status_code=404, detail="Not found")
+    if not provided or not constant_time_equal(provided, configured):
+        raise HTTPException(status_code=401, detail="Invalid release key")
+
+
 @router.get("")
 async def list_releases(
     platform: str | None = Query(default=None, pattern="^(android|ios|web)$"),
@@ -46,7 +54,7 @@ async def list_releases(
 
 class BuildStart(BaseModel):
     target: Literal["nurse-apk", "admin-apk", "nurse-web", "admin-web"]
-    version: str
+    version: str = ""
 
 
 @router.get("/builds/versions")
@@ -167,12 +175,34 @@ async def publish_release_with_key(
 
     Disabled (404) unless NEST_RELEASE_PUBLISH_KEY is set to a value of at least 32 characters.
     """
-    configured = get_settings().release_publish_key
-    if len(configured) < preflight.MIN_RELEASE_KEY_LENGTH:
-        raise HTTPException(status_code=404, detail="Not found")
-    if not x_release_key or not constant_time_equal(x_release_key, configured):
-        raise HTTPException(status_code=401, detail="Invalid release key")
+    _check_release_key(x_release_key)
     return await _create_release(body, None)
+
+
+@public_router.get(
+    "/{app}/next-version", dependencies=[Depends(rate_limit("app_release_key", 10, 60))]
+)
+async def next_web_version(
+    app: Literal["nurse", "admin"],
+    x_release_key: str | None = Header(default=None, alias="X-Release-Key"),
+):
+    """CI asks which number the web update it is about to build will get (release key required).
+
+    The number is the next step of the web counter of the newest published Android app, so every
+    push gets the next number by itself and a new APK starts the counter again.
+    """
+    _check_release_key(x_release_key)
+    planned = await planner.plan(app)
+    if not planned["next_web"]:
+        raise HTTPException(
+            status_code=409,
+            detail="The web counter is full. Build a new Android app to start it again.",
+        )
+    return {
+        "version": planned["next_web"],
+        "min_native_version_code": planned["min_native_version_code"],
+        "apk_version": planned["current_apk"],
+    }
 
 
 @public_router.get("/{app}/latest", dependencies=[Depends(rate_limit("app_bundle", 30, 60))])
@@ -309,7 +339,8 @@ async def latest_version_public(
     rows = [
         row
         for row in await AppRelease.find().to_list()
-        if row.platform == platform and row.active and not row.bundle_key and row.app == app
+        if row.platform == platform and row.active and row.app == app
+        and (platform == "web" or not row.bundle_key)
     ]
     config_minimum = "0.1.0"
     try:
@@ -332,7 +363,8 @@ async def latest_version_public(
     latest = rows[0]
     minimum = effective_minimum_version(latest.min_supported_version, config_minimum)
     try:
-        blocked = compare_versions(current, minimum) < 0
+        # A web bundle only says "newer exists"; it is never a reason to lock the app.
+        blocked = platform != "web" and compare_versions(current, minimum) < 0
     except ValueError:
         blocked = False
     return {
@@ -341,7 +373,4 @@ async def latest_version_public(
         "min_supported": minimum,
         "blocked": blocked,
         "platform": platform,
-    }
-
-        "release_notes": latest.release_notes,
     }

@@ -1,6 +1,3 @@
-import base64
-import json
-
 import httpx
 import pytest
 from fastapi import HTTPException
@@ -26,25 +23,41 @@ def fake_github(monkeypatch, routes: dict[tuple[str, str], httpx.Response], call
     monkeypatch.setattr(gb, "_request", fake_request)
 
 
-def package(version: str) -> httpx.Response:
-    body = base64.b64encode(json.dumps({"version": version}).encode()).decode()
-    return httpx.Response(200, json={"content": body})
+def planned(next_apk="1.0.0", next_web="0.0.1", **over):
+    base = {
+        "current_apk": None,
+        "current_web": None,
+        "next_apk": next_apk,
+        "next_web": next_web,
+        "min_native_version_code": 1,
+    }
+    return {**base, **over}
 
 
-def routes_for(version="1.0.0", tag_exists=False, create=201, put=200):
+@pytest.fixture
+def plan(monkeypatch):
+    """The release records are replaced by a plan the test sets."""
+    state = {"value": planned()}
+
+    async def fake_plan(app):
+        return state["value"]
+
+    monkeypatch.setattr(gb.planner, "plan", fake_plan)
+    return state
+
+
+def routes_for(tag="nurse-v1.0.0", tag_exists=False, create=201, runs=None, delete=204):
     return {
-        ("GET", "/repos/acme/nest/contents/nurse/package.json"): package(version),
-        ("GET", "/repos/acme/nest/git/ref/tags/nurse-v1.0.0"): httpx.Response(
+        ("GET", f"/repos/acme/nest/git/ref/tags/{tag}"): httpx.Response(
             200 if tag_exists else 404, json={}
         ),
-        ("GET", "/repos/acme/nest/git/ref/tags/nurse-v2.0.0"): httpx.Response(404, json={}),
-        ("GET", "/repos/acme/nest/git/ref/tags/nurse-web-v1.0.1"): httpx.Response(404, json={}),
         ("GET", "/repos/acme/nest/git/ref/heads/main"): httpx.Response(
             200, json={"object": {"sha": "abc123"}}
         ),
-        ("PUT", "/repos/acme/nest/contents/nurse/package.json"): httpx.Response(
-            put, json={"commit": {"sha": "def456"}}
+        ("GET", "/repos/acme/nest/actions/runs"): httpx.Response(
+            200, json={"workflow_runs": runs or []}
         ),
+        ("DELETE", f"/repos/acme/nest/git/refs/tags/{tag}"): httpx.Response(delete, json={}),
         ("POST", "/repos/acme/nest/git/refs"): httpx.Response(create, json={}),
     }
 
@@ -59,56 +72,73 @@ async def test_not_configured_is_a_clear_503(monkeypatch):
     assert "NEST_GITHUB_TOKEN" in err.value.detail
 
 
-async def test_unbuilt_current_version_is_tagged_without_a_commit(configured, monkeypatch):
+async def test_first_apk_is_tagged_at_the_branch_head_without_touching_package_json(
+    configured, monkeypatch, plan
+):
     calls: list = []
     fake_github(monkeypatch, routes_for(), calls)
-    result = await gb.start_build("nurse-apk", "1.0.0")
+    result = await gb.start_build("nurse-apk", "")
     assert result == {"tag": "nurse-v1.0.0", "sha": "abc123", "target": "nurse-apk"}
     assert not any(c[0] == "PUT" for c in calls)
+    assert calls[-1][2] == {"ref": "refs/tags/nurse-v1.0.0", "sha": "abc123"}
 
 
-async def test_apk_raises_the_first_number_and_commits_package_json(configured, monkeypatch):
+async def test_web_update_gets_the_next_counter_value_by_itself(configured, monkeypatch, plan):
+    plan["value"] = planned(current_apk="1.0.0", next_apk="2.0.0", next_web="1.0.8")
+    fake_github(monkeypatch, routes_for(tag="nurse-web-v1.0.8"), [])
+    (item,) = await gb.start_builds([("nurse-web", "")])
+    assert item["ok"] and item["tag"] == "nurse-web-v1.0.8" and item["version"] == "1.0.8"
+
+
+async def test_apk_after_a_release_is_the_next_whole_number(configured, monkeypatch, plan):
+    plan["value"] = planned(current_apk="1.0.0", next_apk="2.0.0", next_web="1.0.8")
+    fake_github(monkeypatch, routes_for(tag="nurse-v2.0.0"), [])
+    (item,) = await gb.start_builds([("nurse-apk", "")])
+    assert item["tag"] == "nurse-v2.0.0"
+
+
+async def test_a_typed_version_must_match_the_automatic_one(configured, monkeypatch, plan):
     calls: list = []
     fake_github(monkeypatch, routes_for(), calls)
-    (item,) = await gb.start_builds([("nurse-apk", "2.0.0")])
-    assert item["ok"] and item["tag"] == "nurse-v2.0.0" and item["sha"] == "def456"
-    put = next(c for c in calls if c[0] == "PUT")
-    assert json.loads(base64.b64decode(put[2]["content"]))["version"] == "2.0.0"
-    assert calls[-1][2] == {"ref": "refs/tags/nurse-v2.0.0", "sha": "def456"}
-
-
-async def test_web_update_changes_inner_numbers_only(configured, monkeypatch):
-    fake_github(monkeypatch, routes_for(), [])
-    (item,) = await gb.start_builds([("nurse-web", "1.0.1")])
-    assert item["ok"] and item["tag"] == "nurse-web-v1.0.1"
-    for target, version in [("nurse-web", "2.0.0"), ("nurse-apk", "1.1.0"), ("nurse-apk", "1.0.1"), ("nurse-apk", "3.0.0")]:
+    for target, version in [("nurse-apk", "2.0.0"), ("nurse-web", "1.0.5"), ("nurse-apk", "1.0.1")]:
         with pytest.raises(HTTPException) as err:
             await gb.start_builds([(target, version)])
         assert err.value.status_code == 409
+    assert not any(c[0] in ("DELETE", "POST") for c in calls)
 
 
-async def test_a_lower_version_is_refused_and_nothing_is_written(configured, monkeypatch):
-    calls: list = []
-    fake_github(monkeypatch, routes_for(version="1.2.0"), calls)
+async def test_a_full_web_counter_asks_for_a_new_apk(configured, monkeypatch, plan):
+    plan["value"] = planned(current_apk="1.0.0", next_apk="2.0.0", next_web=None)
+    fake_github(monkeypatch, routes_for(), [])
     with pytest.raises(HTTPException) as err:
-        await gb.start_builds([("nurse-web", "1.1.5")])
-    assert err.value.status_code == 409 and "lower" in err.value.detail
-    assert not any(c[0] in ("PUT", "POST") for c in calls)
+        await gb.start_builds([("nurse-web", "")])
+    assert err.value.status_code == 409 and "full" in err.value.detail
 
 
 async def test_apk_and_web_for_the_same_app_cannot_be_batched(configured):
     with pytest.raises(HTTPException) as err:
-        await gb.start_builds([("nurse-apk", "2.0.0"), ("nurse-web", "1.0.1")])
+        await gb.start_builds([("nurse-apk", ""), ("nurse-web", "")])
     assert err.value.status_code == 422
 
 
-async def test_start_build_refuses_an_existing_tag(configured, monkeypatch):
+async def test_failed_build_tag_is_replaced_so_the_same_number_is_retried(
+    configured, monkeypatch, plan
+):
     calls: list = []
     fake_github(monkeypatch, routes_for(tag_exists=True), calls)
-    with pytest.raises(HTTPException) as err:
-        await gb.start_builds([("nurse-apk", "1.0.0")])
-    assert err.value.status_code == 409
-    assert not any(c[0] in ("PUT", "POST") for c in calls)
+    (item,) = await gb.start_builds([("nurse-apk", "")])
+    assert item["ok"] and item["tag"] == "nurse-v1.0.0"
+    methods = [c[0] for c in calls]
+    assert methods.index("DELETE") < methods.index("POST")
+
+
+async def test_a_tag_that_is_still_building_is_left_alone(configured, monkeypatch, plan):
+    calls: list = []
+    running = [{"head_branch": "nurse-v1.0.0", "status": "in_progress"}]
+    fake_github(monkeypatch, routes_for(tag_exists=True, runs=running), calls)
+    (item,) = await gb.start_builds([("nurse-apk", "")])
+    assert not item["ok"] and "still building" in item["error"]
+    assert not any(c[0] in ("DELETE", "POST") for c in calls)
 
 
 async def test_start_build_rejects_bad_input(configured):
@@ -118,12 +148,12 @@ async def test_start_build_rejects_bad_input(configured):
         assert err.value.status_code == 422
 
 
-async def test_github_refusing_the_token_is_reported_not_leaked(configured, monkeypatch):
+async def test_github_refusing_the_token_is_reported_not_leaked(configured, monkeypatch, plan):
     routes = routes_for()
-    routes[("GET", "/repos/acme/nest/contents/nurse/package.json")] = httpx.Response(401, json={})
+    routes[("GET", "/repos/acme/nest/git/ref/tags/nurse-v1.0.0")] = httpx.Response(401, json={})
     fake_github(monkeypatch, routes, [])
     with pytest.raises(HTTPException) as err:
-        await gb.start_builds([("nurse-apk", "2.0.0")])
+        await gb.start_builds([("nurse-apk", "")])
     assert err.value.status_code == 502
     assert "ghp_test" not in err.value.detail
 
@@ -152,3 +182,11 @@ def test_run_states_and_filtering():
     assert gb.summarise_run(run(conclusion="cancelled"))["state"] == "cancelled"
     assert gb.summarise_run(run(head_branch="main")) is None  # ordinary pushes are not builds
     assert gb.summarise_run(run(event="pull_request")) is None
+
+
+def test_automatic_web_updates_from_a_push_are_listed_too():
+    auto = gb.summarise_run(
+        run(head_branch="main", name="web-bundle-release", head_sha="abcdef123456")
+    )
+    assert auto["tag"] == "web update (main abcdef1)"
+    assert gb.summarise_run(run(head_branch="main", name="ci")) is None

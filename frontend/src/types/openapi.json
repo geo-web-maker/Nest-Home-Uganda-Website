@@ -1581,6 +1581,42 @@
         "title": "Body_public_create_api_v1_public_applications_post",
         "type": "object"
       },
+      "BuildBatch": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BuildItem"
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "BuildBatch",
+        "type": "object"
+      },
+      "BuildItem": {
+        "properties": {
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "version": {
+            "default": "",
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "title": "BuildItem",
+        "type": "object"
+      },
       "BuildStart": {
         "properties": {
           "target": {
@@ -1594,13 +1630,13 @@
             "type": "string"
           },
           "version": {
+            "default": "",
             "title": "Version",
             "type": "string"
           }
         },
         "required": [
-          "target",
-          "version"
+          "target"
         ],
         "title": "BuildStart",
         "type": "object"
@@ -11964,6 +12000,74 @@
         ]
       }
     },
+    "/api/v1/admin/app-releases/builds/batch": {
+      "post": {
+        "operationId": "start_builds_api_v1_admin_app_releases_builds_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildBatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Start Builds",
+        "tags": [
+          "app-releases"
+        ]
+      }
+    },
+    "/api/v1/admin/app-releases/builds/versions": {
+      "get": {
+        "operationId": "build_versions_api_v1_admin_app_releases_builds_versions_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Build Versions",
+        "tags": [
+          "app-releases"
+        ]
+      }
+    },
     "/api/v1/admin/app-releases/preflight": {
       "post": {
         "description": "Check what a release needs before a build (superadmin with a verified authenticator).",
@@ -22210,7 +22314,7 @@
     },
     "/api/v1/app-bundles/{app}/apk": {
       "get": {
-        "description": "Newest active APK for an app when it is newer than the installed versionName, else {\"update\": false}.",
+        "description": "Newest active APK for an app when it is newer than the installed versionName, else {\"update\": false}.\n\nAlso returns ``blocked`` (the installed version is below the minimum supported) and\n``min_supported`` so callers can gate the login screen before the user authenticates.",
         "operationId": "latest_apk_api_v1_app_bundles__app__apk_get",
         "parameters": [
           {
@@ -22323,6 +22427,133 @@
           }
         },
         "summary": "Latest Web Bundle",
+        "tags": [
+          "app-releases"
+        ]
+      }
+    },
+    "/api/v1/app-bundles/{app}/next-version": {
+      "get": {
+        "description": "CI asks which number the web update it is about to build will get (release key required).\n\nThe number is the next step of the web counter of the newest published Android app, so every\npush gets the next number by itself and a new APK starts the counter again.",
+        "operationId": "next_web_version_api_v1_app_bundles__app__next_version_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "enum": [
+                "nurse",
+                "admin"
+              ],
+              "title": "App",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Release-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Release-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Next Web Version",
+        "tags": [
+          "app-releases"
+        ]
+      }
+    },
+    "/api/v1/app-bundles/{app}/version": {
+      "get": {
+        "description": "Unauthenticated version-policy summary for pre-login update checks.\n\nReturns the minimum supported version, whether the caller is blocked, and whether\nany release records exist. Download URLs are not included; use /apk or /latest for those.\nSafe to call before the user authenticates \u2014 rate-limited, no credentials required.",
+        "operationId": "latest_version_public_api_v1_app_bundles__app__version_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "app",
+            "required": true,
+            "schema": {
+              "enum": [
+                "nurse",
+                "admin"
+              ],
+              "title": "App",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "current",
+            "required": true,
+            "schema": {
+              "maxLength": 80,
+              "title": "Current",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "platform",
+            "required": false,
+            "schema": {
+              "default": "android",
+              "pattern": "^(android|ios|web)$",
+              "title": "Platform",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Latest Version Public",
         "tags": [
           "app-releases"
         ]
@@ -23899,6 +24130,55 @@
           }
         ],
         "summary": "Mark Inbox Read",
+        "tags": [
+          "field"
+        ]
+      }
+    },
+    "/api/v1/field/mail/delivery-log": {
+      "get": {
+        "description": "Return recent outbound mail delivery events for the authenticated nurse.\n\nCovers messages where the nurse's staff email address (or the mailbox address\nlinked to their account) appears as an outbox sender.  Uses the mail DB pool\nso it stays read-only and isolated from the main database.\n\nReturns a lightweight summary: recipient, subject, delivery status, timestamp and\nany provider error.  Full message bodies are not included.",
+        "operationId": "field_mail_delivery_log_api_v1_field_mail_delivery_log_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Field Mail Delivery Log",
         "tags": [
           "field"
         ]

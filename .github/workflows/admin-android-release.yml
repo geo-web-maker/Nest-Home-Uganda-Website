@@ -3,7 +3,9 @@ name: admin-android-release
 # Builds a signed release APK, uploads it to private storage, and publishes the
 # release record via the admin API. Trigger by pushing a tag: admin-v1.2.3 (full APK; website-only changes use web-bundle-release)
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - 'admin-v*'
 
 permissions:
   contents: read
@@ -20,6 +22,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Take the version from the tag
+        # admin-v2.0.0 builds app 2.0.0. The number is chosen by the backend (next whole number
+        # after the last PUBLISHED Android app), so a build that fails keeps its number for the retry.
+        run: |
+          VERSION="${GITHUB_REF_NAME#admin-v}"
+          echo "$VERSION" | grep -Eq '^[0-9]+\.0\.0$' || { echo "Tag ${GITHUB_REF_NAME} must look like admin-v2.0.0"; exit 1; }
+          echo "APP_VERSION=${VERSION}" >> "$GITHUB_ENV"
 
       - name: Require lockfile
         run: test -f package-lock.json || { echo "admin/package-lock.json missing"; exit 1; }
@@ -85,7 +95,7 @@ jobs:
           echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
           SIZE=$(stat -c%s "$APK")
           echo "size=$SIZE" >> "$GITHUB_OUTPUT"
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION="${APP_VERSION}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK to private bucket

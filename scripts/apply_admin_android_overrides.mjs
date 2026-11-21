@@ -47,7 +47,7 @@ let gradle = fs.readFileSync(gradlePath, 'utf8');
 if (!/versionCode\s+\d+/.test(gradle) || !/versionName\s+"[^"]*"/.test(gradle)) {
   throw new Error('app/build.gradle does not contain versionCode and versionName in the expected form.');
 }
-gradle = gradle.replace(/versionCode\s+\d+/, `versionCode ${versionCode}`).replace(/versionName\s+"[^"]*"/, `versionName "${pkg.version}"`);
+gradle = gradle.replace(/versionCode\s+\d+/, `versionCode ${versionCode}`).replace(/versionName\s+"[^"]*"/, `versionName "${process.env.APP_VERSION || pkg.version}"`);
 fs.writeFileSync(gradlePath, gradle);
 
 installNativePlugins({

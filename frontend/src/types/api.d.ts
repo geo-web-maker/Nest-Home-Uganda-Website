@@ -647,6 +647,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/app-releases/builds/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Builds */
+        post: operations["start_builds_api_v1_admin_app_releases_builds_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/app-releases/builds/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Build Versions */
+        get: operations["build_versions_api_v1_admin_app_releases_builds_versions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/app-releases/preflight": {
         parameters: {
             query?: never;
@@ -3159,6 +3193,9 @@ export interface paths {
         /**
          * Latest Apk
          * @description Newest active APK for an app when it is newer than the installed versionName, else {"update": false}.
+         *
+         *     Also returns ``blocked`` (the installed version is below the minimum supported) and
+         *     ``min_supported`` so callers can gate the login screen before the user authenticates.
          */
         get: operations["latest_apk_api_v1_app_bundles__app__apk_get"];
         put?: never;
@@ -3181,6 +3218,53 @@ export interface paths {
          * @description Newest active web bundle this installed APK can run, or {"update": false}.
          */
         get: operations["latest_web_bundle_api_v1_app_bundles__app__latest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/app-bundles/{app}/next-version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Next Web Version
+         * @description CI asks which number the web update it is about to build will get (release key required).
+         *
+         *     The number is the next step of the web counter of the newest published Android app, so every
+         *     push gets the next number by itself and a new APK starts the counter again.
+         */
+        get: operations["next_web_version_api_v1_app_bundles__app__next_version_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/app-bundles/{app}/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Latest Version Public
+         * @description Unauthenticated version-policy summary for pre-login update checks.
+         *
+         *     Returns the minimum supported version, whether the caller is blocked, and whether
+         *     any release records exist. Download URLs are not included; use /apk or /latest for those.
+         *     Safe to call before the user authenticates — rate-limited, no credentials required.
+         */
+        get: operations["latest_version_public_api_v1_app_bundles__app__version_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3749,6 +3833,33 @@ export interface paths {
         put?: never;
         /** Mark Inbox Read */
         post: operations["mark_inbox_read_api_v1_field_inbox__notification_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/mail/delivery-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Field Mail Delivery Log
+         * @description Return recent outbound mail delivery events for the authenticated nurse.
+         *
+         *     Covers messages where the nurse's staff email address (or the mailbox address
+         *     linked to their account) appears as an outbox sender.  Uses the mail DB pool
+         *     so it stays read-only and isolated from the main database.
+         *
+         *     Returns a lightweight summary: recipient, subject, delivery status, timestamp and
+         *     any provider error.  Full message bodies are not included.
+         */
+        get: operations["field_mail_delivery_log_api_v1_field_mail_delivery_log_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6321,6 +6432,21 @@ export interface components {
              */
             website: string;
         };
+        /** BuildBatch */
+        BuildBatch: {
+            /** Items */
+            items: components["schemas"]["BuildItem"][];
+        };
+        /** BuildItem */
+        BuildItem: {
+            /** Target */
+            target: string;
+            /**
+             * Version
+             * @default
+             */
+            version: string;
+        };
         /** BuildStart */
         BuildStart: {
             /**
@@ -6328,7 +6454,10 @@ export interface components {
              * @enum {string}
              */
             target: "nurse-apk" | "admin-apk" | "nurse-web" | "admin-web";
-            /** Version */
+            /**
+             * Version
+             * @default
+             */
             version: string;
         };
         /** CareRecipientIn */
@@ -10633,6 +10762,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_builds_api_v1_admin_app_releases_builds_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuildBatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    build_versions_api_v1_admin_app_releases_builds_versions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
@@ -16761,6 +16943,73 @@ export interface operations {
             };
         };
     };
+    next_web_version_api_v1_app_bundles__app__next_version_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Release-Key"?: string | null;
+            };
+            path: {
+                app: "nurse" | "admin";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    latest_version_public_api_v1_app_bundles__app__version_get: {
+        parameters: {
+            query: {
+                current: string;
+                platform?: string;
+            };
+            header?: never;
+            path: {
+                app: "nurse" | "admin";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     accept_invite_api_v1_auth_accept_invite_post: {
         parameters: {
             query?: never;
@@ -17768,6 +18017,37 @@ export interface operations {
             path: {
                 notification_id: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    field_mail_delivery_log_api_v1_field_mail_delivery_log_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;

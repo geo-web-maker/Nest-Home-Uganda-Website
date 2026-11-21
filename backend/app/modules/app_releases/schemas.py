@@ -73,7 +73,7 @@ class AppReleaseOut(BaseModel):
 
 class BuildItem(BaseModel):
     target: str
-    version: str
+    version: str = ""  # optional: the server numbers builds itself
 
 
 class BuildBatch(BaseModel):

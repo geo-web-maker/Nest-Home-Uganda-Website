@@ -9,7 +9,8 @@ import { Capacitor } from '@capacitor/core';
  *  1. Which build is this?             (native APK, installed PWA, or plain browser)
  *  2. Is a newer APK available?        GET /api/v1/app-bundles/{app}/apk?current=<versionName>
  *  3. Is a newer web bundle available? GET /api/v1/app-bundles/{app}/latest?native_code=&current=
- *  4. Is the PWA out of date?          service-worker update check
+ *  4. Is the PWA out of date?          service-worker update check, plus the newest web version number
+ *                                      GET /api/v1/app-bundles/{app}/version?platform=web (browser / installed web app)
  */
 declare const __BUNDLE_VERSION__: string;
 
@@ -54,6 +55,19 @@ export function detectChannel(): Channel {
   return standalone || iosStandalone ? 'pwa' : 'browser';
 }
 
+/** True when version `a` is higher than `b` (plain a.b.c numbers; anything unreadable counts as not newer). */
+export function isNewerVersion(a: string | null | undefined, b: string | null | undefined): boolean {
+  const parse = (v: string) => v.split('.').map((n) => Number(n));
+  if (!a || !b) return false;
+  const [x, y] = [parse(a), parse(b)];
+  if ([...x, ...y].some((n) => !Number.isInteger(n))) return false;
+  for (let i = 0; i < Math.max(x.length, y.length); i += 1) {
+    const d = (x[i] ?? 0) - (y[i] ?? 0);
+    if (d !== 0) return d > 0;
+  }
+  return false;
+}
+
 export function formatSize(bytes?: number | null): string {
   if (!bytes || bytes <= 0) return '';
   return bytes >= 1_048_576 ? `${(bytes / 1_048_576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -91,6 +105,7 @@ export function useAppCenter(app: AppKind, plugins: AppCenterPlugins) {
   const [apk, setApk] = useState<ApkOffer | null>(null);
   const [apkIsNewer, setApkIsNewer] = useState(false);
   const [bundle, setBundle] = useState<BundleOffer | null>(null);
+  const [webLatest, setWebLatest] = useState<string | null>(null);
   const [pwa, setPwa] = useState<PwaStatus>({ supported: false, registered: false, updateReady: false });
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const [checkedAt, setCheckedAt] = useState<Date | null>(null);
@@ -117,13 +132,16 @@ export function useAppCenter(app: AppKind, plugins: AppCenterPlugins) {
         setApkIsNewer(Boolean(apkAnswer.update));
         const offered = bundleAnswer.update && bundleAnswer.version !== state?.bad && bundleAnswer.version !== next.stagedBundle ? (bundleAnswer as BundleOffer) : null;
         setBundle(offered);
+        setWebLatest(null);
         setPwa({ supported: false, registered: false, updateReady: false });
       } else {
         // Browser or installed PWA: the APK is offered as a download for Android phones; the PWA updates through its service worker.
-        const [apkAnswer, status] = await Promise.all([
+        const [apkAnswer, status, webAnswer] = await Promise.all([
           getJson<{ update: boolean } & Partial<ApkOffer>>(`/app-bundles/${app}/apk?current=${MIN_VERSION}`).catch(() => ({ update: false } as const)),
           pwaStatus(true),
+          getJson<{ latest: string | null }>(`/app-bundles/${app}/version?platform=web&current=${encodeURIComponent(__BUNDLE_VERSION__)}`).catch(() => ({ latest: null })),
         ]);
+        setWebLatest(webAnswer.latest ?? null);
         setApk(apkAnswer.update ? (apkAnswer as ApkOffer) : null);
         setApkIsNewer(false);
         setBundle(null);
@@ -175,5 +193,5 @@ export function useAppCenter(app: AppKind, plugins: AppCenterPlugins) {
     if (!(await applyPwaUpdate())) setPhase({ kind: 'idle' });
   }, []);
 
-  return { channel, installed, apk, apkIsNewer, bundle, pwa, phase, checkedAt, check, installApk, installBundle, updatePwa };
+  return { channel, installed, apk, apkIsNewer, bundle, webLatest, pwa, phase, checkedAt, check, installApk, installBundle, updatePwa };
 }

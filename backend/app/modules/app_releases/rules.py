@@ -1,6 +1,7 @@
 """Pure semantic-version parsing and precedence for app-release policy."""
 
 import re
+from functools import cmp_to_key
 
 _SEMVER = re.compile(
     r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$"
@@ -60,42 +61,70 @@ def effective_minimum_version(release_minimum: str, configured_minimum: str) -> 
     )
 
 
-def check_build_version(kind: str, current: str, new: str) -> None:
-    """Policy for a requested build version against the version in package.json.
+# --- Version numbers -------------------------------------------------------------------------
+#
+# Every version is  <apk>.<a>.<b>
+#   apk  counts Android app releases. It only goes up when an APK build SUCCEEDED (a failed build
+#        never uses the number up), and every new APK starts its web counter again at 0.0.
+#   a.b  counts web updates published since that APK, 0.1 .. 99.99, assigned automatically.
+# Examples: first APK 1.0.0, then web updates 1.0.1, 1.0.2 ... 1.0.99, 1.1.0 ... ; the next APK
+# is 2.0.0 and its web updates start again at 2.0.1.
 
-    - ``apk``: a new install, so it must be exactly the next major version (1.4.2 -> 2.0.0).
-      The current version itself is allowed only to build an APK that was never built.
-    - ``web``: a no-reinstall update, so the first number stays and the version goes up
-      (1.0.0 -> 1.0.1 or 1.1.0).
-    Nothing may go below the current version.
-    """
-    cur, req = parse_version(current), parse_version(new)
-    if compare_versions(new, current) < 0:
-        raise ValueError(f"{new} is lower than the current version {current}.")
-    if kind == "apk":
-        if req[0] == cur[0] and compare_versions(new, current) == 0:
-            return
-        if req[0] != cur[0] + 1 or (req[1], req[2]) != (0, 0):
-            raise ValueError(
-                f"A new Android app must be the next major version, "
-                f"{cur[0] + 1}.0.0 (current is {current})."
-            )
-    elif kind == "web":
-        if req[0] != cur[0]:
-            raise ValueError(
-                f"A web update keeps the first number ({cur[0]}). Use {cur[0]}.{cur[1]}.{cur[2] + 1} "
-                f"or {cur[0]}.{cur[1] + 1}.0; a new first number needs a new Android app."
-            )
-        if compare_versions(new, current) == 0:
-            raise ValueError(f"{new} is already the current version. Raise it to publish an update.")
+WEB_COUNTER_MAX = 99
+
+
+def apk_generation(apk_versions: list[str]) -> int:
+    """The APK number of the newest successful Android release (0 when none exists yet)."""
+    return max((parse_version(v)[0] for v in apk_versions), default=0)
+
+
+def next_apk_version(apk_versions: list[str]) -> str:
+    return f"{apk_generation(apk_versions) + 1}.0.0"
+
+
+def next_web_version(apk_versions: list[str], web_versions: list[str]) -> str:
+    """Next web update for the current APK: the highest published a.b of this APK plus one."""
+    generation = apk_generation(apk_versions)
+    used = [parse_version(v)[1:3] for v in web_versions if parse_version(v)[0] == generation]
+    minor, patch = max(used, default=(0, 0))
+    if patch < WEB_COUNTER_MAX:
+        patch += 1
     else:
-        raise ValueError("Unknown build kind")
+        minor, patch = minor + 1, 0
+    if minor > WEB_COUNTER_MAX:
+        raise ValueError(
+            f"The web counter for app {generation} is full ({generation}.{WEB_COUNTER_MAX}."
+            f"{WEB_COUNTER_MAX}). Release a new Android app to start again at "
+            f"{generation + 1}.0.0."
+        )
+    return f"{generation}.{minor}.{patch}"
 
 
-def suggest_versions(current: str) -> dict[str, str]:
-    major, minor, patch, _ = parse_version(current)
+def plan_versions(apk_versions: list[str], web_versions: list[str]) -> dict[str, str | None]:
+    """What is current and what the next build of each kind will be called."""
+    generation = apk_generation(apk_versions)
+    current_apk = max(apk_versions, key=cmp_to_key(compare_versions), default=None)
+    in_line = [v for v in web_versions if parse_version(v)[0] == generation]
+    current_web = max(in_line, key=cmp_to_key(compare_versions), default=None)
+    try:
+        next_web: str | None = next_web_version(apk_versions, web_versions)
+    except ValueError:
+        next_web = None
     return {
-        "apk": f"{major + 1}.0.0",
-        "web_patch": f"{major}.{minor}.{patch + 1}",
-        "web_minor": f"{major}.{minor + 1}.0",
+        "current_apk": current_apk,
+        "current_web": current_web,
+        "next_apk": next_apk_version(apk_versions),
+        "next_web": next_web,
     }
+
+
+def check_build_version(kind: str, expected: str, requested: str) -> None:
+    """Versions are assigned by the server; a requested number must be the one it would assign."""
+    if kind not in ("apk", "web"):
+        raise ValueError("Unknown build kind")
+    parse_version(requested)
+    if requested != expected:
+        raise ValueError(
+            f"The next {'Android app' if kind == 'apk' else 'web update'} is {expected}, "
+            f"not {requested}. Versions are numbered automatically."
+        )

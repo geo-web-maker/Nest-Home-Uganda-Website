@@ -26,6 +26,18 @@ function headersPlugin(apiUrl: string, mailStorageUrl: string): Plugin {
 }
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf8')) as { version: string };
+// Version shown in the app: APP_VERSION (stamped by the release workflows from the tag), else version.json
+// (written by web-bundle-release after every web update, so Cloudflare builds pick it up), else package.json.
+const SEMVER = /^\d+\.\d+\.\d+$/;
+function readVersionFile(): string | undefined {
+  try {
+    const v = (JSON.parse(readFileSync('./version.json', 'utf8')) as { version?: string }).version;
+    return v && SEMVER.test(v) ? v : undefined;
+  } catch {
+    return undefined;
+  }
+}
+const appVersion = SEMVER.test(process.env.APP_VERSION ?? '') ? (process.env.APP_VERSION as string) : (readVersionFile() ?? pkg.version);
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -40,7 +52,7 @@ export default defineConfig(({ mode }) => {
       workbox: { navigateFallback: '/index.html', globPatterns: ['**/*.{js,css,html,svg,png,woff2}'] },
     }),
   ],
-  define: { __BUNDLE_VERSION__: JSON.stringify(pkg.version) },
+  define: { __BUNDLE_VERSION__: JSON.stringify(appVersion) },
   server: { host: '0.0.0.0' },
 };
 });

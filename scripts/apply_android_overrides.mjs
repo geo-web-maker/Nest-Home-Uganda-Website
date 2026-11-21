@@ -13,7 +13,7 @@
  *
  * CLI: node scripts/apply_android_overrides.mjs
  *   NURSE_VERSION_CODE  integer, defaults to GITHUB_RUN_NUMBER, then 1
- *   (versionName comes from nurse/package.json)
+ *   APP_VERSION         versionName, set by the release workflow from the tag (else nurse/package.json)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -139,7 +139,7 @@ function main() {
     androidDir: path.join(nurse, 'android'),
     overridesDir: path.join(nurse, 'android-overrides'),
     versionCode,
-    versionName: pkg.version,
+    versionName: process.env.APP_VERSION || pkg.version,
   });
   console.log(`Applied Android overrides: versionCode ${result.versionCode}, versionName ${result.versionName}`);
 }

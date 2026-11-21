@@ -8,6 +8,18 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { manifest } from './src/pwa/manifest';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf8')) as { version: string };
+// Version shown in the app: APP_VERSION (stamped by the release workflows from the tag), else version.json
+// (written by web-bundle-release after every web update, so Cloudflare builds pick it up), else package.json.
+const SEMVER = /^\d+\.\d+\.\d+$/;
+function readVersionFile(): string | undefined {
+  try {
+    const v = (JSON.parse(readFileSync('./version.json', 'utf8')) as { version?: string }).version;
+    return v && SEMVER.test(v) ? v : undefined;
+  } catch {
+    return undefined;
+  }
+}
+const appVersion = SEMVER.test(process.env.APP_VERSION ?? '') ? (process.env.APP_VERSION as string) : (readVersionFile() ?? pkg.version);
 
 function headersPlugin(apiUrl: string, mailStorageUrl: string): Plugin {
   return {
@@ -59,7 +71,7 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       __BUILD_ID__: JSON.stringify(Date.now().toString(36).slice(-4)),
-      __BUNDLE_VERSION__: JSON.stringify(pkg.version),
+      __BUNDLE_VERSION__: JSON.stringify(appVersion),
     },
     server: { host: '0.0.0.0', port: 5175 },
     test: {

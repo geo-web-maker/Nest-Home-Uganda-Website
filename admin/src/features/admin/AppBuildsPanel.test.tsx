@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiClient } from '@shared/lib/api/client';
-import { AppBuildsPanel, versionProblem } from './AppBuildsPanel';
+import { AppBuildsPanel, plannedVersion } from './AppBuildsPanel';
 import type { BuildRun } from './AppBuildsPanel';
 
 vi.mock('@shared/lib/api/client', async (importOriginal) => {
@@ -24,29 +24,37 @@ function renderPanel() {
 }
 
 const versions = { apps: {
-  nurse: { current: '1.0.0', next: { apk: '2.0.0', web_patch: '1.0.1', web_minor: '1.1.0' } },
-  admin: { current: '1.4.2', next: { apk: '2.0.0', web_patch: '1.4.3', web_minor: '1.5.0' } },
+  nurse: { current: '1.0.0', current_apk: '1.0.0', current_web: null, next: { apk: '2.0.0', web: '1.0.1' } },
+  admin: { current: '1.4.2', current_apk: '1.0.0', current_web: '1.4.2', next: { apk: '2.0.0', web: '1.4.3' } },
 } };
 const serve = (items: BuildRun[]) => vi.mocked(apiClient.get).mockImplementation(async (url: string) => (
   url.endsWith('/builds/versions') ? versions : { repo: 'a/b', items }) as never);
 
-describe('versionProblem', () => {
-  it('lets an Android app raise the first number only', () => {
-    expect(versionProblem('apk', '1.4.2', '2.0.0')).toBe('');
-    expect(versionProblem('apk', '1.4.2', '1.5.0')).toMatch(/next major/);
-    expect(versionProblem('apk', '1.4.2', '2.1.0')).toMatch(/next major/);
-    expect(versionProblem('apk', '1.4.2', '3.0.0')).toMatch(/next major/);
+describe('plannedVersion', () => {
+  it('gives the server-assigned number for the kind of build', () => {
+    expect(plannedVersion('apk', versions.apps.nurse)).toBe('2.0.0');
+    expect(plannedVersion('web', versions.apps.admin)).toBe('1.4.3');
   });
-  it('lets a web update change the inner numbers only, never go down', () => {
-    expect(versionProblem('web', '1.0.0', '1.0.1')).toBe('');
-    expect(versionProblem('web', '1.1.0', '1.1.1')).toBe('');
-    expect(versionProblem('web', '1.0.0', '2.0.0')).toMatch(/keeps the first number/);
-    expect(versionProblem('web', '1.2.0', '1.1.9')).toMatch(/lower/);
-    expect(versionProblem('web', '1.0.0', '1.0')).toMatch(/three numbers/);
+  it('is empty when nothing is chosen, unknown, or the web counter is full', () => {
+    expect(plannedVersion('none', versions.apps.nurse)).toBeNull();
+    expect(plannedVersion('web', undefined)).toBeNull();
+    expect(plannedVersion('web', { ...versions.apps.nurse, next: { apk: '2.0.0', web: null } })).toBeNull();
   });
 });
 
 describe('AppBuildsPanel', () => {
+  it('still lets you choose a build when the current versions cannot be loaded', async () => {
+    vi.mocked(apiClient.get).mockImplementation(async (url: string) => {
+      if (url.endsWith('/builds/versions')) throw new Error('Not found');
+      return { repo: 'a/b', items: [] } as never;
+    });
+    renderPanel();
+    const radio = await screen.findByLabelText('Web update', { selector: 'input[name="kind-nurse"]' });
+    await userEvent.click(radio);
+    expect(radio).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Start build' })).toBeEnabled();
+  });
+
   beforeEach(() => {
     vi.mocked(apiClient.get).mockReset();
     vi.mocked(apiClient.post).mockReset();
@@ -73,15 +81,26 @@ describe('AppBuildsPanel', () => {
     expect((await screen.findAllByRole('alert'))[0]).toHaveTextContent('GitHub is not set up');
   });
 
-  it('prefills the next valid version and blocks a bad one before sending', async () => {
+  it('shows the number each build will get, with no version to type', async () => {
     serve([]);
     renderPanel();
     await userEvent.click(await screen.findByRole('button', { name: 'Android app for both' }));
-    expect(screen.getByLabelText(/Nurse app version/)).toHaveValue('2.0.0');
-    await userEvent.clear(screen.getByLabelText(/Nurse app version/));
-    await userEvent.type(screen.getByLabelText(/Nurse app version/), '1.5.0');
-    expect(screen.getByRole('button', { name: /Start 2 builds/ })).toBeDisabled();
-    expect(screen.getByRole('alert')).toHaveTextContent('next major');
+    expect(screen.getAllByText('2.0.0')).toHaveLength(2);
+    expect(screen.queryByLabelText(/app version/i)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Web update for both' }));
+    expect(screen.getByText('1.0.1')).toBeInTheDocument();
+    expect(screen.getByText('1.4.3')).toBeInTheDocument();
+  });
+
+  it('blocks a web update when the 99.99 counter is full', async () => {
+    vi.mocked(apiClient.get).mockImplementation(async (url: string) => (
+      url.endsWith('/builds/versions')
+        ? { apps: { ...versions.apps, nurse: { ...versions.apps.nurse, next: { apk: '2.0.0', web: null } } } }
+        : { repo: 'a/b', items: [] }) as never);
+    renderPanel();
+    await userEvent.click(await screen.findByLabelText('Web update', { selector: 'input[name="kind-nurse"]' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('counter is full');
+    expect(screen.getByRole('button', { name: 'Start build' })).toBeDisabled();
     expect(apiClient.post).not.toHaveBeenCalled();
   });
 
@@ -102,10 +121,10 @@ describe('AppBuildsPanel', () => {
 
   it('shows why a build could not start', async () => {
     serve([]);
-    vi.mocked(apiClient.post).mockRejectedValue(new Error('Nurse app: 1.0.1 is already the current version.'));
+    vi.mocked(apiClient.post).mockRejectedValue(new Error('Nurse app: the next web update is 1.0.1, not 1.0.0.'));
     renderPanel();
     await userEvent.click(await screen.findByLabelText('Web update', { selector: 'input[name="kind-nurse"]' }));
     await userEvent.click(screen.getByRole('button', { name: 'Start build' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('already the current version');
+    expect(await screen.findByRole('alert')).toHaveTextContent('the next web update is 1.0.1');
   });
 });

@@ -17,6 +17,7 @@ from fastapi import HTTPException
 from app.core.config import get_settings
 from app.core.storage import Bucket, get_storage
 from app.modules.app_releases import github_builds as gb
+from app.modules.app_releases import planner
 
 MIN_RELEASE_KEY_LENGTH = 32
 PASS, WARN, FAIL, SKIP = "pass", "warn", "fail", "skip"
@@ -82,7 +83,6 @@ def check_release_key() -> dict[str, str]:
     )
 
 
-
 async def check_bucket() -> dict[str, str]:
     key = f"apks/.preflight-{secrets.token_hex(6)}.txt"
     storage = get_storage()
@@ -98,7 +98,11 @@ async def check_bucket() -> dict[str, str]:
             "Check S3_ENDPOINT, S3_BUCKET_PRIVATE and that the key has Object Read and Write.",
         )
     if data != b"preflight":
-        return _c("private_bucket_write", FAIL, "The test file read back differently from what was written.")
+        return _c(
+            "private_bucket_write",
+            FAIL,
+            "The test file read back differently from what was written.",
+        )
     return _c(
         "private_bucket_write",
         PASS,
@@ -130,8 +134,15 @@ async def check_github() -> list[dict[str, str]]:
         ]
         out += [
             _c(name, SKIP, "Skipped until GitHub is connected.")
-            for name in ("github_branch", "github_tag_permission", "github_workflows", "nurse_version",
-                         "admin_version", "github_secrets", "github_variables")
+            for name in (
+                "github_branch",
+                "github_tag_permission",
+                "github_workflows",
+                "nurse_version",
+                "admin_version",
+                "github_secrets",
+                "github_variables",
+            )
         ]
         return out
     repo, branch = s.github_repo, s.github_branch or "main"
@@ -153,7 +164,9 @@ async def check_github() -> list[dict[str, str]]:
 
     head = await _gh("GET", f"/repos/{repo}/git/ref/heads/{branch}")
     if head is None or head.status_code != 200:
-        out.append(_c("github_branch", FAIL, f"Branch {branch} was not found. Set NEST_GITHUB_BRANCH."))
+        out.append(
+            _c("github_branch", FAIL, f"Branch {branch} was not found. Set NEST_GITHUB_BRANCH.")
+        )
         sha = ""
     else:
         sha = head.json()["object"]["sha"]
@@ -161,13 +174,21 @@ async def check_github() -> list[dict[str, str]]:
 
     runs = await _gh("GET", f"/repos/{repo}/actions/runs", params={"per_page": 1})
     if runs is None or runs.status_code != 200:
-        out.append(_c("github_actions_read", FAIL, "The token cannot read Actions runs. Add Actions: Read."))
+        out.append(
+            _c(
+                "github_actions_read",
+                FAIL,
+                "The token cannot read Actions runs. Add Actions: Read.",
+            )
+        )
     else:
         out.append(_c("github_actions_read", PASS, "The token can read build runs."))
 
     if sha:
         name = f"preflight-{secrets.token_hex(6)}"
-        made = await _gh("POST", f"/repos/{repo}/git/refs", json={"ref": f"refs/tags/{name}", "sha": sha})
+        made = await _gh(
+            "POST", f"/repos/{repo}/git/refs", json={"ref": f"refs/tags/{name}", "sha": sha}
+        )
         if made is None or made.status_code != 201:
             out.append(
                 _c(
@@ -180,11 +201,17 @@ async def check_github() -> list[dict[str, str]]:
             gone = await _gh("DELETE", f"/repos/{repo}/git/refs/tags/{name}")
             if gone is None or gone.status_code != 204:
                 out.append(
-                    _c("github_tag_permission", WARN, f"Tags can be created, but test tag {name} was not removed. "
-                       "Delete it on GitHub.")
+                    _c(
+                        "github_tag_permission",
+                        WARN,
+                        f"Tags can be created, but test tag {name} was not removed. "
+                        "Delete it on GitHub.",
+                    )
                 )
             else:
-                out.append(_c("github_tag_permission", PASS, "Created and removed a throwaway tag."))
+                out.append(
+                    _c("github_tag_permission", PASS, "Created and removed a throwaway tag.")
+                )
     else:
         out.append(_c("github_tag_permission", SKIP, "Needs the branch to be found first."))
 
@@ -195,33 +222,56 @@ async def check_github() -> list[dict[str, str]]:
         present = {f.get("name") for f in files.json()}
         missing = [w for w in WORKFLOWS if w not in present]
         out.append(
-            _c("github_workflows", FAIL, f"Missing on {branch}: {', '.join(missing)}. Push the project.")
+            _c(
+                "github_workflows",
+                FAIL,
+                f"Missing on {branch}: {', '.join(missing)}. Push the project.",
+            )
             if missing
             else _c("github_workflows", PASS, "All three release workflows are on the branch.")
         )
 
     for app, prefix in (("nurse", "nurse"), ("admin", "admin")):
         try:
-            version = await gb._package_version(repo, branch, f"{app}/package.json")
-        except HTTPException:
-            out.append(_c(f"{app}_version", FAIL, f"Could not read {app}/package.json on {branch}."))
+            planned = await planner.plan(app)
+        except Exception:
+            out.append(
+                _c(
+                    f"{app}_version",
+                    FAIL,
+                    f"Could not read the {app} releases to work out the next version.",
+                )
+            )
             continue
-        taken = []
-        for tag in (f"{prefix}-v{version}", f"{prefix}-web-v{version}"):
-            ref = await _gh("GET", f"/repos/{repo}/git/ref/tags/{tag}")
-            if ref is not None and ref.status_code == 200:
-                taken.append(tag)
-        if taken:
+        apk, web = planned["next_apk"], planned["next_web"]
+        if not web:
             out.append(
                 _c(
                     f"{app}_version",
                     WARN,
-                    f"{app}/package.json says {version}, but {' and '.join(taken)} already exist. "
-                    "Raise the version before building that kind again.",
+                    f"The {app} web counter is full. Build a new Android app ({apk}) to start it again.",
+                )
+            )
+            continue
+        # A tag that exists without a release is a failed build; starting it again removes the tag.
+        stale = []
+        for tag in (f"{prefix}-v{apk}", f"{prefix}-web-v{web}"):
+            ref = await _gh("GET", f"/repos/{repo}/git/ref/tags/{tag}")
+            if ref is not None and ref.status_code == 200:
+                stale.append(tag)
+        if stale:
+            out.append(
+                _c(
+                    f"{app}_version",
+                    WARN,
+                    f"Next numbers are Android app {apk} and web update {web}. {' and '.join(stale)} "
+                    "exists from a build that did not publish; starting that build again replaces it.",
                 )
             )
         else:
-            out.append(_c(f"{app}_version", PASS, f"{app}/package.json says {version}; no tag uses it yet."))
+            out.append(
+                _c(f"{app}_version", PASS, f"Next numbers: Android app {apk}, web update {web}.")
+            )
 
     out.append(await _check_secrets(repo))
     out.append(await _check_variables(repo))
@@ -262,8 +312,14 @@ async def _check_variables(repo: str) -> dict[str, str]:
     api = values.get("VITE_API_URL", "")
     if not api:
         problems.append("VITE_API_URL is missing (an app built without it cannot log in)")
-    elif not api.startswith("https://") or api.endswith("/") or api.rstrip("/").endswith(("/api", "/api/v1")):
-        problems.append("VITE_API_URL must be https, with no trailing slash and no /api/v1 on the end")
+    elif (
+        not api.startswith("https://")
+        or api.endswith("/")
+        or api.rstrip("/").endswith(("/api", "/api/v1"))
+    ):
+        problems.append(
+            "VITE_API_URL must be https, with no trailing slash and no /api/v1 on the end"
+        )
     elif not _safe_https_host(api):
         problems.append("VITE_API_URL must be an https address with a domain name")
     else:
@@ -275,14 +331,18 @@ async def _check_variables(repo: str) -> dict[str, str]:
             else:
                 notes.append(f"VITE_API_URL reachable ({reach.status_code})")
         except httpx.HTTPError:
-            problems.append("VITE_API_URL could not be reached (a sleeping host can take a minute; retry)")
+            problems.append(
+                "VITE_API_URL could not be reached (a sleeping host can take a minute; retry)"
+            )
     mail = values.get("VITE_MAIL_STORAGE_URL", "")
     if not mail:
         problems.append("VITE_MAIL_STORAGE_URL is missing (mail attachments will not upload)")
     else:
         parts = urlparse(mail)
         if parts.scheme != "https" or not parts.hostname or parts.path not in ("",):
-            problems.append("VITE_MAIL_STORAGE_URL must be the https origin only: no bucket, no trailing slash")
+            problems.append(
+                "VITE_MAIL_STORAGE_URL must be the https origin only: no bucket, no trailing slash"
+            )
         else:
             notes.append("VITE_MAIL_STORAGE_URL looks right")
     if problems:
@@ -294,4 +354,3 @@ async def run_preflight() -> list[dict[str, str]]:
     checks = [check_release_key(), await check_bucket()]
     checks += await check_github()
     return checks
-

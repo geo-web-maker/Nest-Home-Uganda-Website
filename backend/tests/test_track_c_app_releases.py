@@ -152,4 +152,72 @@ def test_release_key_cannot_reach_any_other_route():
         if any("release_key" in getattr(p, "name", "") or getattr(p, "alias", "") == "X-Release-Key"
                for p in route.dependant.header_params)
     ]
-    assert keyed == ["/api/v1/app-bundles/releases"]
+    # Publishing a release, and asking which web version number a build will get (read-only).
+    assert sorted(keyed) == [
+        "/api/v1/app-bundles/releases",
+        "/api/v1/app-bundles/{app}/next-version",
+    ]
+
+
+async def test_next_web_version_needs_the_release_key(client, monkeypatch):
+    from app.core.config import get_settings
+
+    key = "k" * 40
+    monkeypatch.setenv("NEST_RELEASE_PUBLISH_KEY", key)
+    get_settings.cache_clear()
+    try:
+        missing = await client.get("/api/v1/app-bundles/nurse/next-version")
+        wrong = await client.get(
+            "/api/v1/app-bundles/nurse/next-version", headers={"X-Release-Key": "x" * 40}
+        )
+        assert missing.status_code == wrong.status_code == 401
+    finally:
+        monkeypatch.delenv("NEST_RELEASE_PUBLISH_KEY")
+        get_settings.cache_clear()
+
+
+async def test_next_web_version_is_disabled_without_a_strong_key(client, monkeypatch):
+    from app.core.config import get_settings
+
+    monkeypatch.setenv("NEST_RELEASE_PUBLISH_KEY", "short")
+    get_settings.cache_clear()
+    try:
+        response = await client.get(
+            "/api/v1/app-bundles/nurse/next-version", headers={"X-Release-Key": "short"}
+        )
+        assert response.status_code == 404
+    finally:
+        monkeypatch.delenv("NEST_RELEASE_PUBLISH_KEY")
+        get_settings.cache_clear()
+
+
+async def test_next_web_version_answers_with_the_planned_number(client, monkeypatch):
+    from app.core.config import get_settings
+    from app.modules.app_releases import planner
+
+    key = "k" * 40
+    monkeypatch.setenv("NEST_RELEASE_PUBLISH_KEY", key)
+    get_settings.cache_clear()
+
+    async def fake_plan(app):
+        return {"current_apk": "2.0.0", "next_web": "2.0.4", "min_native_version_code": 9}
+
+    monkeypatch.setattr(planner, "plan", fake_plan)
+    try:
+        ok = await client.get(
+            "/api/v1/app-bundles/admin/next-version", headers={"X-Release-Key": key}
+        )
+        assert ok.status_code == 200
+        assert ok.json() == {"version": "2.0.4", "min_native_version_code": 9, "apk_version": "2.0.0"}
+
+        async def full(app):
+            return {"current_apk": "2.0.0", "next_web": None, "min_native_version_code": 9}
+
+        monkeypatch.setattr(planner, "plan", full)
+        refused = await client.get(
+            "/api/v1/app-bundles/admin/next-version", headers={"X-Release-Key": key}
+        )
+        assert refused.status_code == 409
+    finally:
+        monkeypatch.delenv("NEST_RELEASE_PUBLISH_KEY")
+        get_settings.cache_clear()

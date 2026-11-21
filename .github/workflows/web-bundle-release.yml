@@ -1,30 +1,119 @@
 name: web-bundle-release
 
-# Publishes an over-the-air web bundle for an installed Android app (no APK needed).
-# Trigger by pushing a tag: nurse-web-v1.2.3 or admin-web-v1.2.3. The version must match
-# <app>/package.json and be higher than the version baked into the installed APKs.
+# Publishes an over-the-air web update for an installed app (no APK needed) and gives it the next
+# version number by itself.
+#
+#   Version = <apk>.<a>.<b>   e.g. 1.0.7
+#     apk  the Android app the update belongs to (changes only when a new APK is published)
+#     a.b  web counter, 0.1 to 99.99, +1 for every update; a new APK starts it again at 0.0
+#
+# Runs when:
+#   * code under admin/ or nurse/ is pushed to main  -> that app gets the next number automatically
+#   * a tag nurse-web-vX.Y.Z / admin-web-vX.Y.Z is pushed (Admin app > Builds) -> uses the tag's number
+#   * started by hand (Actions > Run workflow)
+# A build that fails publishes nothing, so its number is simply used by the next attempt.
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'admin/**'
+      - 'nurse/**'
+    tags:
+      - 'nurse-web-v*'
+      - 'admin-web-v*'
   workflow_dispatch:
+    inputs:
+      app:
+        description: App to publish
+        type: choice
+        options: [both, nurse, admin]
+        default: both
+
+# One release at a time, so two pushes never ask for the same number.
+concurrency:
+  group: web-bundle-release
+  cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write # only to add the version tag after a successful publish
 
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.apps.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Decide which apps changed
+        id: apps
+        env:
+          BEFORE: ${{ github.event.before }}
+          INPUT_APP: ${{ inputs.app }}
+        run: |
+          APPS=""
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            case "${GITHUB_REF_NAME}" in
+              nurse-web-v*) APPS="nurse" ;;
+              admin-web-v*) APPS="admin" ;;
+            esac
+          elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            case "${INPUT_APP}" in
+              both) APPS="nurse admin" ;;
+              *) APPS="${INPUT_APP}" ;;
+            esac
+          else
+            if [[ -z "${BEFORE}" || "${BEFORE}" =~ ^0+$ ]] || ! git cat-file -e "${BEFORE}" 2>/dev/null; then
+              CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "admin/ nurse/")
+            else
+              CHANGED=$(git diff --name-only "${BEFORE}" "${GITHUB_SHA}")
+            fi
+            for app in nurse admin; do
+              echo "${CHANGED}" | grep -q "^${app}/" && APPS="${APPS} ${app}"
+            done
+          fi
+          JSON=$(printf '%s\n' ${APPS} | grep . | jq -R . | jq -sc .)
+          echo "Publishing: ${JSON}"
+          echo "apps=${JSON}" >> "$GITHUB_OUTPUT"
+
   bundle:
+    needs: plan
+    if: needs.plan.outputs.apps != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        app: ${{ fromJSON(needs.plan.outputs.apps) }}
+    env:
+      APP: ${{ matrix.app }}
+      ADMIN_API_URL: ${{ secrets.ADMIN_API_URL }}
+      RELEASE_PUBLISH_KEY: ${{ secrets.RELEASE_PUBLISH_KEY }}
+      MIN_OVERRIDE: ${{ vars.MIN_NATIVE_VERSION_CODE }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Resolve app and version from the tag
+      - name: Get the version number
         run: |
-          TAG="${GITHUB_REF_NAME}"
-          APP="${TAG%%-web-v*}"
-          VERSION="${TAG##*-web-v}"
-          PKG_VERSION=$(node -p "require('./${APP}/package.json').version")
-          [ "$VERSION" = "$PKG_VERSION" ] || { echo "Tag ${VERSION} does not match ${APP}/package.json ${PKG_VERSION}"; exit 1; }
-          echo "APP=${APP}" >> "$GITHUB_ENV"
+          ANSWER=$(curl -sf "${ADMIN_API_URL}/app-bundles/${APP}/next-version" \
+            -H "X-Release-Key: ${RELEASE_PUBLISH_KEY}") || { echo "The backend refused the version request. Check ADMIN_API_URL and RELEASE_PUBLISH_KEY."; exit 1; }
+          NEXT=$(echo "$ANSWER" | jq -r .version)
+          MIN_CODE=$(echo "$ANSWER" | jq -r .min_native_version_code)
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME##*-web-v}"
+            [ "$VERSION" = "$NEXT" ] || { echo "Tag says ${VERSION} but the next web number is ${NEXT}. Start the build again from the Admin app."; exit 1; }
+          else
+            VERSION="$NEXT"
+          fi
+          # Oldest APK that can run this bundle: the newest Android app of this line, unless a
+          # repository variable MIN_NATIVE_VERSION_CODE overrides it.
+          if [ -n "${MIN_OVERRIDE}" ]; then MIN_CODE="${MIN_OVERRIDE}"; fi
+          echo "Publishing ${APP} web update ${VERSION} (needs APK code >= ${MIN_CODE})"
           echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+          echo "MIN_NATIVE_VERSION_CODE=${MIN_CODE}" >> "$GITHUB_ENV"
+          echo "APP_VERSION=${VERSION}" >> "$GITHUB_ENV"
 
       - uses: actions/setup-node@v4
         with:
@@ -66,18 +155,35 @@ jobs:
           echo "BUNDLE_KEY=${BUNDLE_KEY}" >> "$GITHUB_ENV"
 
       - name: Publish release record
-        env:
-          ADMIN_API_URL: ${{ secrets.ADMIN_API_URL }}
-          RELEASE_PUBLISH_KEY: ${{ secrets.RELEASE_PUBLISH_KEY }}
-          # Oldest APK versionCode that can run this bundle. Raise it when a bundle needs new native code.
-          MIN_NATIVE_VERSION_CODE: ${{ vars.MIN_NATIVE_VERSION_CODE || '1' }}
         run: |
           curl -sf -X POST "${ADMIN_API_URL}/app-bundles/releases" \
             -H "X-Release-Key: ${RELEASE_PUBLISH_KEY}" \
             -H "Content-Type: application/json" \
             -d "$(jq -n \
-              --arg id "web-${GITHUB_REF_NAME}" --arg app "$APP" --arg version "$VERSION" \
+              --arg id "web-${APP}-web-v${VERSION}" --arg app "$APP" --arg version "$VERSION" \
               --arg key "$BUNDLE_KEY" --arg sha "$SHA" --argjson sz "$SIZE" \
               --argjson min "$MIN_NATIVE_VERSION_CODE" \
               '{id:$id,platform:"web",app:$app,version:$version,min_supported_version:$version,
                 bundle_key:$key,sha256:$sha,size_bytes:$sz,min_native_version_code:$min}')"
+
+      - name: Save the number in the repo so Cloudflare builds show it
+        if: github.ref_type != 'tag'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git checkout -B release-version origin/main
+            echo "{ \"version\": \"${VERSION}\" }" > "${APP}/version.json"
+            git add "${APP}/version.json"
+            git commit -m "${APP} web ${VERSION}"
+            git push origin HEAD:main && break
+            sleep 3
+          done
+
+      - name: Tag the published version
+        if: github.ref_type != 'tag'
+        run: |
+          TAG="${APP}-web-v${VERSION}"
+          git tag "$TAG" "${GITHUB_SHA}"
+          git push origin "refs/tags/${TAG}"
