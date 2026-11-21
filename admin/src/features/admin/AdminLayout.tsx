@@ -30,6 +30,8 @@ export function AdminLayout() {
   const moreRef = useRef<HTMLButtonElement>(null);
   const previousPath = useRef(pathname);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
 
   // On a route change: close the More list, go to the top and focus <main> for screen readers.
   useEffect(() => {
@@ -66,7 +68,19 @@ export function AdminLayout() {
   const label = (item: AdminNavItem) => t(`nav.${item.labelKey}`);
   const initial = user?.name.trim().charAt(0).toUpperCase() ?? '';
 
+  // Close the account menu on a route change, an outside tap or Escape.
+  useEffect(() => { setAccountOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (!accountOpen) return;
+    const away = (event: Event) => { if (!accountRef.current?.contains(event.target as Node)) setAccountOpen(false); };
+    const esc = (event: KeyboardEvent) => { if (event.key === 'Escape') setAccountOpen(false); };
+    document.addEventListener('pointerdown', away);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('pointerdown', away); document.removeEventListener('keydown', esc); };
+  }, [accountOpen]);
+
   const signOut = () => {
+    setAccountOpen(false);
     setMoreOpen(false);
     void logout();
   };
@@ -132,16 +146,38 @@ export function AdminLayout() {
             lightLabel={t('layout.light')}
             darkLabel={t('layout.dark')}
           />
-          <div className={styles.user}>
-            <Link to="/profile" className={styles.userText} aria-label="Open my profile">
-              <span className={styles.userName}>{user?.name}</span>
-              {user?.is_superadmin && (
-                <span className={styles.userNote}>{t('layout.superadmin')}</span>
-              )}
-            </Link>
-            <span className={styles.initial} aria-hidden="true">
-              {initial}
-            </span>
+          <div className={styles.user} ref={accountRef}>
+            <button
+              type="button"
+              className={styles.userButton}
+              aria-haspopup="menu"
+              aria-expanded={accountOpen}
+              aria-controls="admin-account-menu"
+              aria-label="Account menu"
+              onClick={() => setAccountOpen((open) => !open)}
+            >
+              <span className={styles.userText}>
+                <span className={styles.userName}>{user?.name}</span>
+                {user?.is_superadmin && (
+                  <span className={styles.userNote}>{t('layout.superadmin')}</span>
+                )}
+              </span>
+              <span className={styles.initial} aria-hidden="true">{initial}</span>
+            </button>
+            {accountOpen && (
+              <div id="admin-account-menu" className={styles.accountMenu} role="menu" aria-label="Account">
+                <div className={styles.accountHead}>
+                  <strong>{user?.name}</strong>
+                  <span>{user?.email}</span>
+                  <span>{user?.is_superadmin ? t('layout.superadmin') : 'Staff account'}</span>
+                </div>
+                <Link to="/profile" role="menuitem" className={styles.accountItem}>My profile</Link>
+                <Link to="/app-center" role="menuitem" className={styles.accountItem}>App Center</Link>
+                <button type="button" role="menuitem" className={cx(styles.accountItem, styles.accountSignOut)} onClick={signOut}>
+                  {t('layout.signOut')}
+                </button>
+              </div>
+            )}
           </div>
         </header>
         <main id="admin-main" ref={mainRef} tabIndex={-1} className={styles.main}>
