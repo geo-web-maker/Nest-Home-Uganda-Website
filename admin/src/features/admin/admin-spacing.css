@@ -1,0 +1,13 @@
+/* Admin-only spacing for buttons that follow text. Paragraphs and headings have no margin (global reset),
+   so a button placed straight after one touches it unless its container adds a gap. */
+
+/* "Could not load ... Retry": the message and its button. Boxes that already set their own gap are left alone. */
+[role="alert"]:not([class*="sectionAlert"]) > p + :is(button, a) { margin-top: 0.75rem; }
+
+/* Plain sections (no class) that put a button directly under a heading or paragraph. */
+section:not([class]) > :is(h3, p) + :is(button, a) { margin-top: 0.75rem; }
+
+/* On a phone, buttons placed straight in a care form are all the same full width instead of sizing to their text. */
+@media (max-width: 600px) {
+  .care-form > :is(button, a) { flex: 1 1 100%; }
+}

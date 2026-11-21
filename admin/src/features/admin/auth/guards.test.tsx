@@ -60,9 +60,9 @@ describe('route guards', () => {
     expect(screen.getByText('login, from /admin/enquiries?status=new')).toBeInTheDocument();
   });
 
-  it('renders nothing while the session is being restored', () => {
-    const { container } = setup('', { status: 'loading' });
-    expect(container).toBeEmptyDOMElement();
+  it('shows a loading message while the session is being restored', () => {
+    setup('', { status: 'loading' });
+    expect(screen.getByRole('status')).toHaveTextContent('Loading…');
   });
 
   it('shows the plain no-access page with the business phone when no screen is reachable', () => {

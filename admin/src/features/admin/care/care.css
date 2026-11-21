@@ -186,3 +186,7 @@
 .care-form > .client-form-actions { flex: 1 1 100%; }
 
 .care-places-list-title { margin: 1.5rem 0 0.5rem; font-size: 1.1rem; }
+
+/* App Center: every block is full width with the same space before its button, and every button the same width. */
+.care-form > .app-center-block { flex-basis: 100%; display: grid; gap: 0.75rem; }
+.care-form > .app-center-block > :is(h3, p) { margin: 0; }

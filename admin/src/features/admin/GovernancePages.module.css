@@ -67,3 +67,6 @@
 .matrixYes { color: var(--leaf, var(--ink)); font-weight: 700; }
 .matrixNo { color: var(--mut); }
 @media (max-width: 640px) { .matrixCorner, .matrixScope { min-width: 11rem; } .matrixPerson { min-width: 9rem; } }
+
+/* Keeps the Start build button off the frame of the card above it. */
+.buildSubmit { margin-top: 16px; }

@@ -12,7 +12,7 @@ export function RequireAuth({ children }: GuardProps) {
   const { status, user } = useAuth();
   const location = useLocation();
 
-  if (status === 'loading') return null;
+  if (status === 'loading') return <p role="status" style={{ padding: '1rem' }}>Loading…</p>;
   if (status === 'signedOut') {
     const from = `${location.pathname}${location.search}`;
     return <Navigate to="/login" state={{ from }} replace />;

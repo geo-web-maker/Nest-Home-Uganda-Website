@@ -17,6 +17,7 @@ import styles from './AdminLayout.module.css';
 import { InstallHint } from '../../pwa/InstallHint';
 import { ApkUpdateBanner } from '../../admin-native/ApkUpdateBanner';
 import { PushNotifier } from './PushNotifier';
+import './admin-spacing.css';
 
 const GROUPS = ['website', 'careOperations', 'monitoring', 'safety', 'setup'] as const;
 

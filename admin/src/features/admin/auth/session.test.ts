@@ -136,6 +136,21 @@ describe('session', () => {
     expect(authStore.getCsrf()).toBe('csrf-1');
   });
 
+  it('settles a first load on signed out when the restore never answers', async () => {
+    vi.useFakeTimers();
+    try {
+      const { client, post } = mockClient();
+      window.localStorage.setItem('nhc.csrf', 'csrf-1');
+      post.mockReturnValue(new Promise(() => {}));
+      const done = restoreSession(client);
+      await vi.advanceTimersByTimeAsync(8000);
+      await done;
+      expect(authStore.getState().status).toBe('signedOut');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('logout signs out first and still does so when the request fails', async () => {
     const { client, post } = mockClient();
     authStore.setSession(session(1));

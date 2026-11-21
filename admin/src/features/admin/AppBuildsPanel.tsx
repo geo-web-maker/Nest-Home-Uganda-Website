@@ -159,7 +159,7 @@ export function AppBuildsPanel() {
             {item.ok ? `Build started for ${item.tag}. Progress appears below.` : `${item.tag} could not start: ${item.error}`}
           </p>
         ))}
-        <Button type="submit" disabled={start.isPending || selected.length === 0 || blocked}>
+        <Button type="submit" className={styles.buildSubmit} disabled={start.isPending || selected.length === 0 || blocked}>
           {start.isPending ? 'Starting…' : selected.length > 1 ? `Start ${selected.length} builds` : 'Start build'}
         </Button>
       </form>

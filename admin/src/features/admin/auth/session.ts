@@ -108,8 +108,23 @@ export function refreshSession(client: ApiClient = apiClient): Promise<boolean> 
 }
 
 /** First load: renew the session from the refresh cookie, or settle on signed out. */
+const RESTORE_TIMEOUT_MS = 8000;
+
 export async function restoreSession(client: ApiClient = apiClient): Promise<void> {
-  await refreshSession(client);
+  // If the restore never answers (a stuck native call, a sleeping server), show the sign-in screen instead of
+  // leaving the app waiting forever. A restore that finishes later still signs the user in.
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<void>((resolve) => {
+    timer = setTimeout(() => {
+      if (authStore.getState().status === 'loading') authStore.markSignedOut();
+      resolve();
+    }, RESTORE_TIMEOUT_MS);
+  });
+  try {
+    await Promise.race([refreshSession(client), timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function login(

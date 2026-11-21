@@ -34,30 +34,30 @@ export function AppCenterPanel() {
     {phase.kind === 'downloading' && <p>{phase.what === 'apk' ? 'Downloading the app update' : 'Downloading the latest screens'}… {phase.pct}% <progress value={phase.pct} max={100} aria-label="Download progress" /></p>}
     {phase.kind === 'installing' && <p role="status">{channel === 'native' ? 'Opening the installer. Confirm on the next screen.' : 'Updating…'}</p>}
 
-    {channel === 'native' && bundle && <div>
+    {channel === 'native' && bundle && <div className="app-center-block">
       <h3>Latest screens {bundle.version}</h3>
       <p>{bundle.release_notes || 'Improvements to the screens. No reinstall needed.'} {formatSize(bundle.size_bytes)}</p>
-      <Button type="button" variant="forest" disabled={busy} onClick={() => void installBundle()}>Update now</Button>
+      <Button fullWidth type="button" variant="forest" disabled={busy} onClick={() => void installBundle()}>Update now</Button>
     </div>}
-    {channel === 'native' && apkIsNewer && apk && <div>
+    {channel === 'native' && apkIsNewer && apk && <div className="app-center-block">
       <h3>App version {apk.version}</h3>
       <p>{apk.release_notes || 'A new version of the app is ready to install.'} {formatSize(apk.size_bytes)}. Android asks you to confirm the install.</p>
-      <Button type="button" variant="forest" disabled={busy} onClick={() => void installApk()}>Download and install</Button>
+      <Button fullWidth type="button" variant="forest" disabled={busy} onClick={() => void installApk()}>Download and install</Button>
     </div>}
-    {channel !== 'native' && pwa.updateReady && <div>
+    {channel !== 'native' && pwa.updateReady && <div className="app-center-block">
       <h3>{webLatest ? `Version ${webLatest} is ready` : 'A new version is ready'}</h3>
       <p>The page reloads once.</p>
-      <Button type="button" variant="forest" disabled={busy} onClick={() => void updatePwa()}>Update now</Button>
+      <Button fullWidth type="button" variant="forest" disabled={busy} onClick={() => void updatePwa()}>Update now</Button>
     </div>}
-    {channel !== 'native' && !pwa.updateReady && webIsNewer && <div>
+    {channel !== 'native' && !pwa.updateReady && webIsNewer && <div className="app-center-block">
       <h3>Version {webLatest} is available</h3>
       <p>You have {installed.webVersion}. Tap “Check for updates”; if it is still not offered, close and reopen the app once.</p>
     </div>}
-    {channel !== 'native' && apk && <div>
+    {channel !== 'native' && apk && <div className="app-center-block">
       <h3>Android app {apk.version}</h3>
       <p>Download the full app for an Android phone. Open the file afterwards and allow installs from this browser if Android asks. {formatSize(apk.size_bytes)}</p>
-      <Button href={apk.url} variant="outline" rel="noopener">Download Android app</Button>
+      <Button fullWidth href={apk.url} variant="outline" rel="noopener">Download Android app</Button>
     </div>}
-    <Button type="button" variant="outline" disabled={busy} onClick={() => void check()}>{phase.kind === 'checking' ? 'Checking…' : 'Check for updates'}</Button>
+    <Button fullWidth type="button" variant="outline" disabled={busy} onClick={() => void check()}>{phase.kind === 'checking' ? 'Checking…' : 'Check for updates'}</Button>
   </article>;
 }

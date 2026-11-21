@@ -5,22 +5,25 @@ type SecurePlugin = {
   get(options: { key: string }): Promise<{ value: string }>;
   remove(options: { key: string }): Promise<unknown>;
 };
-async function plugin(): Promise<SecurePlugin> {
+// Never return the plugin itself from an async function. Capacitor plugins answer to any property name,
+// so the promise machinery's check for `.then` is sent to the native side, never answers, and the caller
+// waits forever (blank screen on launch). Wrapping it in a plain object avoids that.
+async function plugin(): Promise<{ api: SecurePlugin }> {
   const loaded = (await import('capacitor-secure-storage-plugin')) as unknown as {
     SecureStoragePlugin?: SecurePlugin;
   };
   if (!loaded.SecureStoragePlugin)
     throw new Error('Secure token storage is unavailable on this device.');
-  return loaded.SecureStoragePlugin;
+  return { api: loaded.SecureStoragePlugin };
 }
 export async function saveNativeRefreshToken(value: string) {
   if (!Capacitor.isNativePlatform()) return;
-  await (await plugin()).set({ key: REFRESH_KEY, value });
+  await (await plugin()).api.set({ key: REFRESH_KEY, value });
 }
 export async function readNativeRefreshToken(): Promise<string | null> {
   if (!Capacitor.isNativePlatform()) return null;
   try {
-    return (await (await plugin()).get({ key: REFRESH_KEY })).value;
+    return (await (await plugin()).api.get({ key: REFRESH_KEY })).value;
   } catch {
     return null;
   }
@@ -28,7 +31,7 @@ export async function readNativeRefreshToken(): Promise<string | null> {
 export async function clearNativeRefreshToken() {
   if (!Capacitor.isNativePlatform()) return;
   try {
-    await (await plugin()).remove({ key: REFRESH_KEY });
+    await (await plugin()).api.remove({ key: REFRESH_KEY });
   } catch {
     /* Already absent. */
   }
