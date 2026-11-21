@@ -97,8 +97,21 @@ jobs:
 
       - name: Get the version number
         run: |
-          ANSWER=$(curl -sf "${ADMIN_API_URL}/app-bundles/${APP}/next-version" \
-            -H "X-Release-Key: ${RELEASE_PUBLISH_KEY}") || { echo "The backend refused the version request. Check ADMIN_API_URL and RELEASE_PUBLISH_KEY."; exit 1; }
+          HTTP=$(curl -s -o answer.json -w "%{http_code}" "${ADMIN_API_URL}/app-bundles/${APP}/next-version" \
+            -H "X-Release-Key: ${RELEASE_PUBLISH_KEY}") || HTTP="no-connection"
+          if [ "$HTTP" != "200" ]; then
+            echo "The backend answered ${HTTP} to the version request."
+            case "$HTTP" in
+              401) echo "RELEASE_PUBLISH_KEY does not match the key set on the backend." ;;
+              404) echo "Wrong ADMIN_API_URL (it must end in /api/v1), or the backend's release key is unset or too short." ;;
+              409) echo "The web counter is full. Build a new Android app to reset it." ;;
+              429) echo "Rate limited. Wait a minute and run again." ;;
+              no-connection) echo "Could not reach ADMIN_API_URL." ;;
+            esac
+            cat answer.json 2>/dev/null; echo
+            exit 1
+          fi
+          ANSWER=$(cat answer.json)
           NEXT=$(echo "$ANSWER" | jq -r .version)
           MIN_CODE=$(echo "$ANSWER" | jq -r .min_native_version_code)
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
