@@ -45,11 +45,13 @@ const KIND_HINT: Record<Exclude<Kind, 'none'>, string> = {
   apk: 'Full install. Always the next major version (1.4.2 to 2.0.0) and includes the latest screens. About 10 to 15 minutes.',
 };
 
-const parts = (v: string) => v.split('.').map(Number);
+const parts = (v: string): [number, number, number] => {
+  const [major = 0, minor = 0, patch = 0] = v.split('.').map(Number);
+  return [major, minor, patch];
+};
 const cmp = (a: string, b: string) => {
   const [x, y] = [parts(a), parts(b)];
-  for (let i = 0; i < 3; i += 1) if (x[i] !== y[i]) return x[i] > y[i] ? 1 : -1;
-  return 0;
+  return x[0] !== y[0] ? Math.sign(x[0] - y[0]) : x[1] !== y[1] ? Math.sign(x[1] - y[1]) : Math.sign(x[2] - y[2]);
 };
 
 /** Mirrors the server rule so mistakes show before anything is sent; the server still decides. */

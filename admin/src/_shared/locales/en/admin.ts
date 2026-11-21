@@ -16,6 +16,7 @@ export const adminEn = {
     users: 'Users and scopes',
     permissions: 'Permissions',
     appCenter: 'App Center',
+    diagnostics: 'Diagnostics',
     appReleases: 'App releases',
     backupsHealth: 'Backups and hosting',
     reports: 'Reports',

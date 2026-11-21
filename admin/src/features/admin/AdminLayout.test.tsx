@@ -66,7 +66,7 @@ describe('AdminLayout navigation', () => {
   it('shows only reachable items in the reference Website group', () => {
     setup('/enquiries', ['enquiries:read', 'reports:read']);
     const links = within(sidebar()).getAllByRole('link');
-    expect(links.map((a) => a.textContent)).toEqual(['Enquiries', 'Reports']);
+    expect(links.map((a) => a.textContent)).toEqual(['App Center', 'Enquiries', 'Reports']);
     expect(within(sidebar()).getByText('Website')).toBeInTheDocument();
     expect(within(sidebar()).queryByText('Monitoring')).not.toBeInTheDocument();
     expect(within(sidebar()).queryByText('Careers')).not.toBeInTheDocument();
@@ -180,6 +180,7 @@ describe('AdminLayout phone navigation', () => {
         .getAllByRole('link')
         .map((a) => a.textContent),
     ).toEqual([
+      'App Center',
       'Enquiries',
       'Careers',
       'Applications',
@@ -197,6 +198,8 @@ describe('AdminLayout phone navigation', () => {
       'Flags',
       'My team',
       'Agreements',
+      'Billing',
+      'Receipts',
       'Live dashboard',
       'Executive charts',
       'Last-seen map',
@@ -217,6 +220,8 @@ describe('AdminLayout phone navigation', () => {
       'Backups and hosting',
       'Shared mailboxes',
       'Mail settings',
+      'Client control',
+      'Diagnostics',
     ]);
     await user.click(within(list).getByRole('button', { name: 'Sign out' }));
     expect(logout).toHaveBeenCalledTimes(1);

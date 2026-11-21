@@ -24,9 +24,9 @@ describe('mockup-aligned admin navigation', () => {
   });
 
   it('declares implemented screens in the reference information architecture', () => {
-    expect(ADMIN_NAV).toHaveLength(44);
-    expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 12, careOperations: 8, monitoring: 8, safety: 4, setup: 12 });
-    expect(paths(visibleNav(user([], true)))).toHaveLength(43);
+    expect(ADMIN_NAV).toHaveLength(46);
+    expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 12, careOperations: 10, monitoring: 8, safety: 4, setup: 12 });
+    expect(paths(visibleNav(user([], true)))).toHaveLength(46);
     expect(visibleNav(user([], true)).some((item) => item.path.includes('/care/patients'))).toBe(false);
   });
 
@@ -42,7 +42,7 @@ describe('mockup-aligned admin navigation', () => {
 
   it('lets system managers reach system controls and data requests without general settings access', () => {
     const systemManager = user(['system:manage']);
-    expect(paths(visibleNav(systemManager))).toEqual(['/app-center', '/settings', '/care/data-requests', '/app-releases', '/backups']);
+    expect(paths(visibleNav(systemManager))).toEqual(['/app-center', '/settings', '/care/data-requests', '/app-releases', '/backups', '/diagnostics']);
     expect(firstReachablePath(systemManager)).toBe('/settings');
   });
 
@@ -71,7 +71,7 @@ describe('mockup-aligned admin navigation', () => {
       '/care/alerts',
       '/care/sos',
     ]);
-    expect(bottomNav(all).more).toHaveLength(38);
+    expect(bottomNav(all).more).toHaveLength(42);
     expect(paths(bottomNav(user(['content:read'])).primary)).toEqual(['/app-center', '/content']);
     expect(bottomNav(user(['content:read'])).more).toEqual([]);
   });
@@ -138,7 +138,7 @@ describe('mail navigation', () => {
     const website = ADMIN_NAV.filter((item) => item.group === 'website').map((item) => item.path);
     expect(website.at(-1)).toBe('/mail');
     const setup = ADMIN_NAV.filter((item) => item.group === 'setup').map((item) => item.path);
-    expect(setup.at(-1)).toBe('/mail/settings');
+    expect(setup.at(-1)).toBe('/diagnostics');
     expect(ADMIN_NAV[0]?.path).toBe('/');
   });
 
@@ -150,7 +150,7 @@ describe('mail navigation', () => {
     expect(scopesFor('/agreements')).toEqual(['agreements:read']);
     expect(scopesFor('/billing')).toEqual(['billing:read']);
     expect(scopesFor('/billing/receipts')).toEqual(['billing:read']);
-    expect(paths(visibleNav(user(['mail:use'])))).toEqual(['/mail']);
+    expect(paths(visibleNav(user(['mail:use'])))).toEqual(['/app-center', '/mail']);
     expect(navItemFor('/mail/settings')?.path).toBe('/mail/settings');
     expect(navItemFor('/mail')?.path).toBe('/mail');
   });
