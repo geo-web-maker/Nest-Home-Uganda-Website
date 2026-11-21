@@ -13,7 +13,6 @@ import { JobEditorPage } from './jobs/JobEditorPage';
 import { ADMIN_NAV, scopesFor } from './nav';
 import { AdminPlaceholder, adminScreens } from './screens';
 import { ProfilePage } from './ProfilePage';
-import { AppCenterPanel } from './AppCenterPanel';
 
 // Mounted at the admin origin root. The dashboard is the index route.
 
@@ -44,7 +43,6 @@ export function Component() {
               );
             })}
             <Route path="profile" element={<ProfilePage />} />
-            <Route path="app-center" element={<section className="admin-page admin-profile"><AppCenterPanel /></section>} />
             <Route path="care" element={<Navigate to="/care/clients" replace />} />
             {/* Detail routes use their list's scopes (spec 12.3). The editors gate their own write actions. */}
             <Route

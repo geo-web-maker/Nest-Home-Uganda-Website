@@ -87,6 +87,7 @@ const PATHS: Record<string, ReactNode> = {
   mailSettings: <><rect x="3" y="5" width="13" height="11" rx="2" /><path d="m4 7 5.5 4L15 7" /><circle cx="18" cy="17" r="3" /><path d="M18 13v1M18 20v1M14.5 17h1M20.5 17h1" /></>,
   clientControl: <><rect x="6" y="2.5" width="9" height="15" rx="2" /><path d="M9.5 14.5h2" /><circle cx="18" cy="17" r="3" /><path d="m16.3 18.7 3.4-3.4" /></>,
   diagnostics: <><path d="M10 3v6L4.5 19a2 2 0 0 0 1.8 3h11.4a2 2 0 0 0 1.8-3L14 9V3M8.5 3h7" /><path d="M7.5 15h9" /></>,
+  appCenter: <><path d="M12 3v11M7.5 10 12 14.5 16.5 10" /><path d="M4 15v3.5A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5V15" /></>,
   release: <><rect x="6" y="2.5" width="12" height="19" rx="2.5" /><path d="M12 8v6M9.5 11.5 12 14l2.5-2.5M10.5 18.5h3" /></>,
   permissions: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3M12 15v2" /></>,
   executive: <><path d="M3 3v18h18" /><path d="m7 15 4-4 3 3 5-6" /><path d="M15 8h4v4" /></>,

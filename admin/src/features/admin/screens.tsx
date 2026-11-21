@@ -26,6 +26,7 @@ import { SettingsPage } from './settings';
 import { UsersPage } from './users';
 import { DiagnosticsPage } from './diagnostics/DiagnosticsPage';
 import type { AdminNavItem } from './nav';
+import { AppCenterPanel } from './AppCenterPanel';
 import { AppReleasesPage, BackupsHealthPage, PermissionsPage, CareSettingCataloguePage, DataRetentionPage } from './GovernancePages';
 
 /**
@@ -50,6 +51,7 @@ export const adminScreens: Partial<Record<string, ComponentType>> = {
   '/settings': SettingsPage,
   '/users': UsersPage,
   '/permissions': PermissionsPage,
+  '/app-center': () => <section className="admin-page admin-profile"><AppCenterPanel /></section>,
   '/app-releases': AppReleasesPage,
   '/backups': BackupsHealthPage,
   '/care/setting-catalogue': CareSettingCataloguePage,

@@ -24,40 +24,43 @@ describe('mockup-aligned admin navigation', () => {
   });
 
   it('declares implemented screens in the reference information architecture', () => {
-    expect(ADMIN_NAV).toHaveLength(43);
-    expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 11, careOperations: 8, monitoring: 8, safety: 4, setup: 12 });
+    expect(ADMIN_NAV).toHaveLength(44);
+    expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 12, careOperations: 8, monitoring: 8, safety: 4, setup: 12 });
     expect(paths(visibleNav(user([], true)))).toHaveLength(43);
     expect(visibleNav(user([], true)).some((item) => item.path.includes('/care/patients'))).toBe(false);
   });
 
   it('shows only reachable items and hides a write-only scope holder', () => {
     expect(paths(visibleNav(user(['enquiries:read', 'reports:read'])))).toEqual([
+      '/app-center',
       '/enquiries',
       '/reports',
     ]);
-    expect(visibleNav(user(['enquiries:write']))).toEqual([]);
+    expect(paths(visibleNav(user(['enquiries:write'])))).toEqual(['/app-center']);
     expect(visibleNav(null)).toEqual([]);
   });
 
   it('lets system managers reach system controls and data requests without general settings access', () => {
     const systemManager = user(['system:manage']);
-    expect(paths(visibleNav(systemManager))).toEqual(['/settings', '/care/data-requests', '/app-releases', '/backups']);
+    expect(paths(visibleNav(systemManager))).toEqual(['/app-center', '/settings', '/care/data-requests', '/app-releases', '/backups']);
     expect(firstReachablePath(systemManager)).toBe('/settings');
   });
 
   it('shows only the care routes granted by the assigned read scopes', () => {
     expect(paths(visibleNav(user(['visits:read'])))).toEqual([
+      '/app-center',
       '/care/visits',
       '/care/schedule',
       '/care/team',
       '/care/map',
     ]);
     expect(paths(visibleNav(user(['alerts:read'])))).toEqual([
+      '/app-center',
       '/care/alerts',
       '/care/sos',
       '/care/sos/history',
     ]);
-    expect(paths(visibleNav(user(['clients:read'])))).toEqual(['/care/clients']);
+    expect(paths(visibleNav(user(['clients:read'])))).toEqual(['/app-center', '/care/clients']);
   });
 
   it('puts the reference shortcuts on mobile and leaves the other screens under More', () => {
@@ -68,8 +71,8 @@ describe('mockup-aligned admin navigation', () => {
       '/care/alerts',
       '/care/sos',
     ]);
-    expect(bottomNav(all).more).toHaveLength(37);
-    expect(paths(bottomNav(user(['content:read'])).primary)).toEqual(['/content']);
+    expect(bottomNav(all).more).toHaveLength(38);
+    expect(paths(bottomNav(user(['content:read'])).primary)).toEqual(['/app-center', '/content']);
     expect(bottomNav(user(['content:read'])).more).toEqual([]);
   });
 

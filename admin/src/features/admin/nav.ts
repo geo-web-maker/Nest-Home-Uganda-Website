@@ -22,6 +22,8 @@ export type AdminNavItem = {
 export const ADMIN_NAV: readonly AdminNavItem[] = [
   // Website and administration
   { path: '/', labelKey: 'dashboard', scopes: ['dashboard:view'], icon: 'dashboard', group: 'website' },
+  // Open to every signed-in user: anyone must be able to check for and install app updates.
+  { path: '/app-center', labelKey: 'appCenter', scopes: [], icon: 'appCenter', group: 'website' },
   { path: '/enquiries', labelKey: 'enquiries', scopes: ['enquiries:read'], icon: 'enquiries', group: 'website' },
   { path: '/careers', labelKey: 'careers', scopes: ['jobs:read'], icon: 'careers', group: 'website' },
   { path: '/applications', labelKey: 'applications', scopes: ['applications:read'], icon: 'applications', group: 'website' },
@@ -120,5 +122,6 @@ export function bottomNav(user: Access | null): { primary: AdminNavItem[]; more:
 }
 
 export function firstReachablePath(user: Access | null): string | null {
-  return visibleNav(user)[0]?.path ?? null;
+  // Scope-free items (App Center) are never a landing page.
+  return visibleNav(user).find((item) => item.scopes.length > 0)?.path ?? null;
 }

@@ -2,6 +2,7 @@ import type { SVGProps } from 'react';
 
 const paths: Record<string, string[]> = {
   mail: ['M3 5h18v14H3z', 'm3 7 9 6 9-6'],
+  download: ['M12 3v12', 'm7 11 5 5 5-5', 'M4 20h16'],
   today: ['M4 5h16v15H4z', 'M8 3v4', 'M16 3v4', 'M4 10h16', 'M8 14h3'],
   hist: ['M3 12a9 9 0 1 0 2.64-6.36', 'M3 4v5h5', 'M12 7v5l3 2'],
   doc: ['M6 3h9l4 4v14H6z', 'M14 3v5h5', 'M9 12h7', 'M9 16h7'],

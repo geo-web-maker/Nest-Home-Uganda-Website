@@ -1113,6 +1113,10 @@ html, body { overflow-x: clip; max-width: 100%; }
 /* Quick theme button: a slim row in the normal page flow (not floating), so no content is pushed aside for it. */
 .shell-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; margin: calc(8px + env(safe-area-inset-top)) 18px 0; }
 .shell-topbar__name { min-width: 0; overflow: hidden; color: var(--mut); font-size: .78rem; font-weight: 650; letter-spacing: .02em; text-overflow: ellipsis; white-space: nowrap; }
+.shell-topbar__actions { display: flex; align-items: center; gap: 8px; }
+.shell-topbar__link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border-radius: 999px; color: var(--mut); font-size: .78rem; font-weight: 650; text-decoration: none; }
+.shell-topbar__link[aria-current="page"] { color: var(--leaf, #08675F); }
+.shell-topbar__link svg { width: 18px; height: 18px; }
 .shell-topbar__mark { height: 30px; width: auto; flex-shrink: 0; display: block; }
 .shell-mark-leaf  { fill: var(--leaf, #08675F); }
 .shell-mark-cross { fill: var(--leaf, #08675F); }

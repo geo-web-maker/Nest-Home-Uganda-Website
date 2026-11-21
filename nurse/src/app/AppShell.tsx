@@ -77,7 +77,10 @@ export function AppShell({ children, online, queued, authenticated, message, syn
             <path className="shell-mark-leaf" d={MARK_LEAVES} />
             <path className="shell-mark-cross" d={MARK_CROSS} />
           </svg>
-          <ThemeToggle />
+          <div className="shell-topbar__actions">
+            <Link to="/app-center" className="shell-topbar__link" aria-label="App Center" aria-current={location.pathname === '/app-center' ? 'page' : undefined}><Icon name="download" /><span>App Center</span></Link>
+            <ThemeToggle />
+          </div>
         </div>
       : <div className="shell-tools"><ThemeToggle /></div>}
     <InstallHint />
