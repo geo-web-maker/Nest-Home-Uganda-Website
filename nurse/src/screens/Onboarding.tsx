@@ -54,7 +54,7 @@ export function Onboarding({ accepted, onAccept, onContinue, showNotifications }
       onAccept={() => undefined}
       showAction={false}
     />
-    <PillButton tone="forest" size="full" onClick={onContinue}>{copy.generic.continue}</PillButton>
+    <PillButton tone="gold" size="full" onClick={onContinue}>{copy.generic.continue}</PillButton>
     {showNotifications && <Card className="native-prompt"><p className="eyebrow">{copy.onboarding.androidPromptEyebrow}</p><h2>{copy.onboarding.androidPromptTitle}</h2><div className="native-options"><span>{copy.onboarding.androidWhileUsing}</span><span>{copy.onboarding.androidOnlyThisTime}</span><span>{copy.onboarding.androidDontAllow}</span></div></Card>}
   </section>;
 }

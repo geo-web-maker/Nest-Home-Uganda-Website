@@ -75,7 +75,7 @@ export function TestAccountsSection() {
   });
 
   async function confirmReset() {
-    if (await dialogs.confirm('Delete everything the test nurse and test admin created (visits, notes, alerts, clients, places, photos, mail)? The accounts stay as they are.', { confirmLabel: 'Delete' })) reset.mutate();
+    if (await dialogs.confirm('Delete everything the test nurse and test admin created (visits, notes, alerts, clients, places, photos, mail)? The accounts stay as they are.', { confirmLabel: 'Delete', danger: true })) reset.mutate();
   }
 
   return (
@@ -181,7 +181,7 @@ export function TestAccountsSection() {
                 <h3>Clean up</h3>
                 <p className={styles.help}>Deletes what the test accounts created. The accounts stay as they are.</p>
                 <div className={styles.actions}>
-                  <Button variant="outline" size="compact" disabled={reset.isPending} onClick={() => void confirmReset()}>Delete test data now</Button>
+                  <Button variant="danger-outline" size="compact" disabled={reset.isPending} onClick={() => void confirmReset()}>Delete test data now</Button>
                 </div>
               </div>
             </>

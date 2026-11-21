@@ -15,7 +15,7 @@ export class ClientErrorBoundary extends React.Component<Props, State> {
   render() {
     if (!this.state.failed) return this.props.children;
     return <main role="alert" aria-live="assertive" style={{ padding: '1rem', maxWidth: 560, margin: '2rem auto' }}>
-      <Card><h1>We could not open this screen</h1><p>Your saved work has not been cleared. The technical issue has been reported.</p><p>Reference: <strong>{this.state.incidentId}</strong></p><PillButton tone="forest" onClick={() => window.location.reload()}>Reload the app</PillButton></Card>
+      <Card><h1>We could not open this screen</h1><p>Your saved work has not been cleared. The technical issue has been reported.</p><p>Reference: <strong>{this.state.incidentId}</strong></p><PillButton tone="gold" onClick={() => window.location.reload()}>Reload the app</PillButton></Card>
     </main>;
   }
 }

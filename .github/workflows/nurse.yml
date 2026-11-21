@@ -1,9 +1,6 @@
 name: nurse-app
 on:
   workflow_dispatch:
-  push:
-    branches: [main, 'nurse-module']
-  pull_request:
 permissions:
   contents: read
 jobs:

@@ -137,7 +137,7 @@ export function MailboxAdminSection() {
                   <Button variant="outline" size="compact" onClick={() => setOpen(open === box.id ? null : box.id)}>{open === box.id ? 'Hide mail' : 'View mail'}</Button>
                   <Button variant="outline" size="compact" onClick={() => { setAction({ kind: 'rename', box }); setValue(box.local_part); }}>Rename</Button>
                   {box.kind === 'personal' ? <Button variant="outline" size="compact" onClick={() => { setAction({ kind: 'reassign', box }); setValue(''); }}>Reassign</Button> : null}
-                  <Button variant="outline" size="compact" disabled={!box.can_delete} onClick={() => { setAction({ kind: 'delete', box }); setValue(''); }}>Delete</Button>
+                  <Button variant="danger-outline" size="compact" disabled={!box.can_delete} onClick={() => { setAction({ kind: 'delete', box }); setValue(''); }}>Delete</Button>
                 </div>
                 {!box.can_delete && box.delete_blocked_reason ? <div className={styles.meta}>{box.delete_blocked_reason}</div> : null}
                 {open === box.id ? (
@@ -196,6 +196,7 @@ export function MailboxAdminSection() {
           ) : null}
           <ButtonGroup spaced>
             <Button
+              variant={action.kind === 'delete' ? 'danger' : 'primary'}
               disabled={run.isPending || !value.trim() || Boolean(needsChoice)}
               onClick={() => run.mutate()}
             >

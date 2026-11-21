@@ -4,8 +4,6 @@ name: repo-hygiene
 # (backend/*.egg-info) so nobody has to run git commands locally. Does nothing when already clean.
 on:
   workflow_dispatch:
-  push:
-    branches: [main, nurse-module]
 
 permissions:
   contents: write

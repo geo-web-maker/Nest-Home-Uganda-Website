@@ -53,7 +53,7 @@ export function AuthenticatorSection() {
           <p className={styles.help}>Removes the authenticator. The next protected action walks you through setting it up again.</p>
           <Field label="Current code, to reset the authenticator" value={code} maxLength={32} autoComplete="one-time-code" onChange={(event) => setCode(event.target.value)} />
           <div className={styles.actions}>
-            <Button variant="outline" disabled={code.trim().length < 6 || reset.isPending} onClick={() => reset.mutate()}>Reset authenticator</Button>
+            <Button variant="danger-outline" disabled={code.trim().length < 6 || reset.isPending} onClick={() => reset.mutate()}>Reset authenticator</Button>
           </div>
         </div>
       ) : null}

@@ -4,10 +4,7 @@ name: web-bundle-release
 # Trigger by pushing a tag: nurse-web-v1.2.3 or admin-web-v1.2.3. The version must match
 # <app>/package.json and be higher than the version baked into the installed APKs.
 on:
-  push:
-    tags:
-      - 'nurse-web-v[0-9]*.[0-9]*.[0-9]*'
-      - 'admin-web-v[0-9]*.[0-9]*.[0-9]*'
+  workflow_dispatch:
 
 permissions:
   contents: read

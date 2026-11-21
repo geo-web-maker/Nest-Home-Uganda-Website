@@ -33,7 +33,6 @@ const bespokeButtons: Record<string, number> = {
   'features/sos/SosSheet.tsx': 1,
   'features/timesheets/TimesheetsScreen.tsx': 1,
   'pwa/InstallHint.tsx': 1,
-  'pwa/UpdatePrompt.tsx': 3,
   'shared/mail-rich/react/MailMessageView.tsx': 6,
   'screens/ActiveVisit.tsx': 2,
   'screens/HistoryScreen.tsx': 1,

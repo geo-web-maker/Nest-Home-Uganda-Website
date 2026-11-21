@@ -98,7 +98,10 @@ function NurseWorkspace() {
   const [pendingAction, setPendingAction] = useState<{ visit: CachedVisit; kind: 'check_in' | 'check_out' } | null>(null);
   const [historyHasMore, setHistoryHasMore] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [versionInfo, setVersionInfo] = useState<{ latest: string; min_supported: string; download_path?: string | null; apk_info?: { url: string; sha256?: string | null; version: string } | null } | null>(null);
+  const [versionInfo, setVersionInfo] = useState<{ latest: string | null; min_supported: string; has_releases?: boolean; download_path?: string | null; apk_info?: { url: string; sha256?: string | null; version: string } | null } | null>(null);
+  /** True when the public /app-bundles/nurse/version endpoint says the installed version
+   *  is below the minimum BEFORE the user has authenticated. Gates the login screen. */
+  const [preLoginBlocked, setPreLoginBlocked] = useState(false);
   const [inbox, setInbox] = useState<Array<{ id: string; title: string; body: string; created_at?: string }>>([]);
   const [inboxMessage, setInboxMessage] = useState('');
   const [sosSmsHref, setSosSmsHref] = useState(() => buildSosSmsHref(buildSosSmsBody()));
@@ -816,6 +819,24 @@ function NurseWorkspace() {
   const safetyPromptVisit = useMemo(() => visits.find((visit) => visit.safety_state === 'armed' && (visit.status === 'in_progress' || visit.safety_checkout_pending)), [visits]);
   useHeartbeat(Boolean(token), activeVisit?.id);
   useEffect(() => { if (token) void checkForUpdate(); }, [token]);
+
+  // Pre-login version check using the public endpoint — no credentials required.
+  // If the installed version is below the minimum we block the login form entirely
+  // so the nurse is directed to update before they can even attempt to sign in.
+  useEffect(() => {
+    if (token) return; // already authenticated; the authenticated check takes over
+    void (async () => {
+      try {
+        const url = `/api/v1/app-bundles/nurse/version?current=${encodeURIComponent(APP_VERSION)}&platform=android`;
+        const res = await fetch(url, { signal: AbortSignal.timeout(8_000) });
+        if (!res.ok) return;
+        const data = await res.json() as { blocked?: boolean };
+        if (data.blocked) setPreLoginBlocked(true);
+      } catch {
+        // Network unavailable — allow login attempt; the server will enforce the gate.
+      }
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (token && import.meta.env.VITE_NURSE_INBOX_ENABLED === 'true') void loadInbox(); }, [token]);
 
   const selectedVisit = (visitId: string) => visits.find((visit) => visit.id === visitId);
@@ -840,14 +861,21 @@ function NurseWorkspace() {
     audit: <AuditScreen />,
     appCenter: <AppCenterScreen />,
     sync: <SyncScreen operations={allOperations} photos={localPhotos} userId={currentUserId} online={online} busy={busy} wifiOnly={wifiOnlyUpload} onSync={() => void sync()} onRetry={(id) => void retrySavedOperation(id)} onDiscard={(id) => void discardSavedOperation(id)} onApplyAgain={(operation) => void applySavedOperationAgain(operation)} onRetryPhoto={(id) => void retrySavedPhoto(id)} onUploadPhotoNow={(id) => { void uploadPhotoNow(id); }} onDiscardPhoto={(id) => void discardSavedPhoto(id)} />,
-    visit: (visitId: string) => { const visit = selectedVisit(visitId); return visit ? <VisitDetail visit={visit} photosEnabled={photosEnabled} onArrive={(item) => requestVisitAction(item, 'check_in')} onLeave={(item) => requestVisitAction(item, 'check_out')} onNote={openNote} onPhoto={openPhoto} /> : <Card><h2>{copy.generic.visitUnavailable}</h2><p>{copy.generic.visitUnavailableCopy}</p><PillButton type="button" tone="forest" onClick={() => void sync()}>{copy.generic.syncSchedule}</PillButton></Card>; },
-    activeVisit: (visitId: string) => { const visit = selectedVisit(visitId); return visit && visit.status === 'in_progress' ? <ActiveVisit visit={visit} onNote={openNote} onPhoto={openPhoto} onLeave={(item) => requestVisitAction(item, 'check_out')} photosEnabled={photosEnabled} /> : <Card><h2>{copy.generic.activeVisitUnavailable}</h2><p>{copy.generic.activeVisitUnavailableCopy}</p><PillButton type="button" tone="forest" onClick={() => void sync()}>{copy.generic.syncSchedule}</PillButton></Card>; },
+    visit: (visitId: string) => { const visit = selectedVisit(visitId); return visit ? <VisitDetail visit={visit} photosEnabled={photosEnabled} onArrive={(item) => requestVisitAction(item, 'check_in')} onLeave={(item) => requestVisitAction(item, 'check_out')} onNote={openNote} onPhoto={openPhoto} /> : <Card><h2>{copy.generic.visitUnavailable}</h2><p>{copy.generic.visitUnavailableCopy}</p><PillButton type="button" tone="gold" onClick={() => void sync()}>{copy.generic.syncSchedule}</PillButton></Card>; },
+    activeVisit: (visitId: string) => { const visit = selectedVisit(visitId); return visit && visit.status === 'in_progress' ? <ActiveVisit visit={visit} onNote={openNote} onPhoto={openPhoto} onLeave={(item) => requestVisitAction(item, 'check_out')} photosEnabled={photosEnabled} /> : <Card><h2>{copy.generic.activeVisitUnavailable}</h2><p>{copy.generic.activeVisitUnavailableCopy}</p><PillButton type="button" tone="gold" onClick={() => void sync()}>{copy.generic.syncSchedule}</PillButton></Card>; },
   };
-  const updateBlocked = Boolean(versionInfo && isForcedUpdate(APP_VERSION, versionInfo.min_supported));
+  const updateBlocked = preLoginBlocked || Boolean(versionInfo && isForcedUpdate(APP_VERSION, versionInfo.min_supported));
 
   refreshLocalRef.current = refreshLocal; syncRef.current = sync;
   return <CareFormsProvider value={careForms}><AppShell onDismissMessage={() => setMessage('')} online={online} queued={queued} authenticated={Boolean(token)} message={message} syncing={busy} sosEnabled={sosEnabled} smsHref={sosSmsHref} emergencyNumbers={fieldProfile?.settings?.emergency_numbers ?? []} supervisorPhone={fieldProfile?.supervisor_phone} liveFollowEnabled={Boolean(fieldProfile?.settings?.live_follow_enabled)} liveFollowMinutes={fieldProfile?.settings?.live_follow_minutes ?? 30} liveFollowIntervalSeconds={fieldProfile?.settings?.live_follow_interval_seconds ?? 30} sosHoldSeconds={fieldProfile?.settings?.sos_hold_seconds ?? 2} sosCancelWindowSeconds={fieldProfile?.settings?.sos_cancel_window_s ?? 5} onSendSos={sendSos} onStartSosFollow={startSosFollow} onPingSosFollow={pingSosFollow} onSafeNow={reportSafeNow}>
-    {token && updateBlocked && versionInfo ? <Card className="update-gate"><UpdateNotice currentVersion={APP_VERSION} latestVersion={versionInfo.latest} minimumVersion={versionInfo.min_supported} downloadPath={versionInfo.download_path} apkInfo={versionInfo.apk_info} /><PillButton type="button" tone="ghost" showArrow={false} onClick={() => void checkForUpdate()}>{copy.update.checkAgain}</PillButton></Card> : token && consentsRequired.length > 0 ? <Card className="consent-gate"><h2>{copy.consent.heading}</h2><p>{copy.consent.explanation}</p>{consentsRequired.map((requirement) => <Card className="consent-requirement" key={`${requirement.type}:${requirement.version}`}><h3>{requirement.type.replaceAll('_', ' ')}</h3><p>{requirement.text}</p><p>{copy.consent.version} {requirement.version}</p><PillButton type="button" tone="forest" onClick={() => void acceptConsent(requirement)}>{copy.consent.accept}</PillButton></Card>)}</Card> : <NurseRoutes views={views} authenticated={Boolean(token)} />}
+    {/* Pre-login update gate: block before the user can enter credentials */}
+    {!token && preLoginBlocked
+      ? <Card className="update-gate"><UpdateNotice currentVersion={APP_VERSION} latestVersion={null} minimumVersion="0.0.0" hasReleases={true} /><p style={{ fontSize: '.82rem', color: 'var(--mut)', marginTop: 8 }}>{copy.update.contactSupervisor}</p></Card>
+      : token && updateBlocked && versionInfo
+        ? <Card className="update-gate"><UpdateNotice currentVersion={APP_VERSION} latestVersion={versionInfo.latest} minimumVersion={versionInfo.min_supported} downloadPath={versionInfo.download_path} apkInfo={versionInfo.apk_info} hasReleases={versionInfo.has_releases ?? true} /><PillButton type="button" tone="ghost" showArrow={false} onClick={() => void checkForUpdate()}>{copy.update.checkAgain}</PillButton></Card>
+        : token && consentsRequired.length > 0
+          ? <Card className="consent-gate"><h2>{copy.consent.heading}</h2><p>{copy.consent.explanation}</p>{consentsRequired.map((requirement) => <Card className="consent-requirement" key={`${requirement.type}:${requirement.version}`}><h3>{requirement.type.replaceAll('_', ' ')}</h3><p>{requirement.text}</p><p>{copy.consent.version} {requirement.version}</p><PillButton type="button" tone="gold" onClick={() => void acceptConsent(requirement)}>{copy.consent.accept}</PillButton></Card>)}</Card>
+          : <NurseRoutes views={views} authenticated={Boolean(token)} />}
     {token && actionVisit && actionKind === 'check_in' && <ArriveSheet visit={actionVisit} location={actionLocation} locationState={actionLocationState} busy={actionBusy} safetyTimerEnabled={safetyTimerEnabled} canEnableSafetyTimer={sosEnabled} onSafetyTimerChange={setSafetyTimerEnabled} onConfirm={() => void confirmVisitAction()} onCancel={() => { setActionVisit(null); setActionKind(null); setSafetyTimerEnabled(false); }} />}
     {token && actionVisit && actionKind === 'check_out' && <LeaveSheet visit={actionVisit} finalNote={actionFinalNote} busy={actionBusy} onFinalNote={setActionFinalNote} onConfirm={() => void confirmVisitAction()} onCancel={() => { setActionVisit(null); setActionKind(null); }} onAddPhoto={() => { const visit = actionVisit; setActionVisit(null); setActionKind(null); if (visit) openPhoto(visit); }} canAddRequiredPhoto={canAddRequiredPhoto} requiredPhotoMissing={requiredPhotoMissing} />}
     {token && noteVisitId && selectedVisit(noteVisitId) && <NoteSheet visit={selectedVisit(noteVisitId)!} value={noteBody} onChange={setNoteBody} onSubmit={saveVisitNote} onCancel={() => { setNoteVisitId(''); setNoteBody(''); }} />}

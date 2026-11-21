@@ -31,7 +31,7 @@ export function ProfileCareSection({ profile }: { profile: FieldProfile | null }
       <label>Practising licence valid to<input type="date" value={f.unmc_licence_expiry} onChange={(e) => setF({ ...f, unmc_licence_expiry: e.target.value })} /></label>
       {problem && <Banner tone="warn">{problem.message}</Banner>}
       {msg && <Banner tone="info">{msg}</Banner>}
-      <PillButton tone="forest" disabled={busy || !care.online} onClick={() => void save()}>{busy ? 'Saving…' : 'Save registration'}</PillButton>
+      <PillButton tone="gold" disabled={busy || !care.online} onClick={() => void save()}>{busy ? 'Saving…' : 'Save registration'}</PillButton>
       {!care.online && <p className="cf-hint">Connect to the internet to save.</p>}
     </Card>
     {profile?.can_switch_app && profile.admin_app_url && <Card className="mk-profile-section"><h3>Switch app</h3><p>Your account can also use the admin app. It opens as a separate session.</p><a className="mk-btn mk-btn--ghost" href={profile.admin_app_url}><span>Open admin app</span></a></Card>}

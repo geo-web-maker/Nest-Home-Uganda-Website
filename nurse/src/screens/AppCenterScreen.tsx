@@ -4,6 +4,7 @@ import { Chip } from '../ui/Chip';
 import { Row } from '../ui/Row';
 import { Banner } from '../ui/Banner';
 import { PillButton } from '../ui/PillButton';
+import { PillLink } from '../ui/PillLink';
 import { NativeUpdater } from '../plugins/NativeUpdater';
 import { WebBundle } from '../platform/webBundle';
 import { formatSize, useAppCenter, type AppCenterPlugins } from '../platform/appCenter';
@@ -43,27 +44,27 @@ export function AppCenterScreen() {
       <div className="mk-profile-section__heading"><h3>Latest screens {bundle.version}</h3><Chip kind="new">Quick update</Chip></div>
       <p>{bundle.release_notes || 'Improvements to the screens. No reinstall needed.'}</p>
       <p className="mk-hint">{formatSize(bundle.size_bytes)}</p>
-      <PillButton tone="forest" disabled={busy} onClick={() => void installBundle()}>Update now</PillButton>
+      <PillButton tone="gold" disabled={busy} onClick={() => void installBundle()}>Update now</PillButton>
     </Card>}
 
     {channel === 'native' && apkIsNewer && apk && <Card>
       <div className="mk-profile-section__heading"><h3>App version {apk.version}</h3><Chip kind="new">New app</Chip></div>
       <p>{apk.release_notes || 'A new version of the app is ready to install.'}</p>
       <p className="mk-hint">{formatSize(apk.size_bytes)} · Android will ask you to confirm the install.</p>
-      <PillButton tone="forest" disabled={busy} onClick={() => void installApk()}>Download and install</PillButton>
+      <PillButton tone="gold" disabled={busy} onClick={() => void installApk()}>Download and install</PillButton>
     </Card>}
 
     {channel !== 'native' && pwa.updateReady && <Card>
       <div className="mk-profile-section__heading"><h3>A new version is ready</h3><Chip kind="new">Web update</Chip></div>
       <p>Saved work stays on this phone. The app reloads once.</p>
-      <PillButton tone="forest" disabled={busy} onClick={() => void updatePwa()}>Update now</PillButton>
+      <PillButton tone="gold" disabled={busy} onClick={() => void updatePwa()}>Update now</PillButton>
     </Card>}
 
     {channel !== 'native' && apk && <Card>
       <div className="mk-profile-section__heading"><h3>Android app</h3><Chip kind="pg">v{apk.version}</Chip></div>
       <p>Prefer a full app on your Android phone? Download it here. Open the file afterwards and allow installs from this browser if Android asks.</p>
       <p className="mk-hint">{formatSize(apk.size_bytes)}</p>
-      <a className="mk-update-link" href={apk.url} rel="noopener">Download Android app</a>
+      <PillLink tone="gold" href={apk.url} rel="noopener">Download Android app</PillLink>
     </Card>}
 
     {channel === 'browser' && <Card><h3>Install as an app</h3><p>On Android Chrome use the menu, then Install app. On iPhone use Share, then Add to Home Screen.</p></Card>}

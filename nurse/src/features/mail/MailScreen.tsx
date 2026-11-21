@@ -471,7 +471,7 @@ export function MailScreen() {
           <Chip kind={draft.state === 'failed' ? 'bad' : draft.state === 'draft' ? 'pd' : 'pg'}>{copy.mail.draftStates[draft.state]}</Chip>
           <div className="mail-actions">
             <PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={() => editDraft(draft)}>{copy.mail.editDraft}</PillButton>
-            {(draft.state === 'draft' || draft.state === 'failed') && <PillButton type="button" tone="forest" size="sm" showArrow={false} onClick={() => void sendNow(draft)}>{copy.mail.sendNow}</PillButton>}
+            {(draft.state === 'draft' || draft.state === 'failed') && <PillButton type="button" tone="gold" size="sm" showArrow={false} onClick={() => void sendNow(draft)}>{copy.mail.sendNow}</PillButton>}
             <PillButton type="button" tone="danger" size="sm" showArrow={false} onClick={() => void discardDraft(draft)}>{copy.mail.discardDraft}</PillButton>
           </div>
         </li>)}
@@ -551,7 +551,7 @@ export function MailScreen() {
         <h2 id="mail-external-link-title">{copy.mail.externalLinkTitle}</h2>
         <p>{copy.mail.externalLinkPrompt.replace('{host}', new URL(externalLink).hostname)}</p>
         <SheetActions>
-          <PillButton tone="forest" showArrow={false} onClick={() => { window.open(externalLink, '_blank', 'noopener,noreferrer'); setExternalLink(null); }}>{copy.mail.externalLinkContinue}</PillButton>
+          <PillButton tone="gold" showArrow={false} onClick={() => { window.open(externalLink, '_blank', 'noopener,noreferrer'); setExternalLink(null); }}>{copy.mail.externalLinkContinue}</PillButton>
           <PillButton tone="ghost" showArrow={false} onClick={() => setExternalLink(null)}>{copy.generic.cancel}</PillButton>
         </SheetActions>
       </Sheet>

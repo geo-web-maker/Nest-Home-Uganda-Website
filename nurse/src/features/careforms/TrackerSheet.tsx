@@ -56,12 +56,12 @@ export function TrackerSheet({ clientId, clientName, visitId, weekStart, doc, on
       <label>Week note<textarea rows={3} value={data.notes[0]?.text ?? ''} onChange={(e) => setData((d) => ({ ...d, notes: e.target.value ? [{ date: weekStart, text: e.target.value }] : [] }))} /></label>
       {error && <Banner tone="warn">{error}</Banner>}
       <SheetActions>
-        <PillButton tone="forest" size="full" disabled={busy} onClick={() => void send()}>Save week</PillButton>
+        <PillButton tone="gold" size="full" disabled={busy} onClick={() => void send()}>Save week</PillButton>
         <PillButton tone="ghost" size="full" showArrow={false} disabled={busy} onClick={() => setStage('sign')}>Sign this week</PillButton>
         <PillButton tone="ghost" size="full" showArrow={false} onClick={onClose}>Close</PillButton>
       </SheetActions>
     </>}
     {stage === 'sign' && <><SigningBlock mode="nurse" formId="tracker" online={care.online} problem={unmcProblem(care.registration)} busy={busy} onSubmit={async (sig) => { await send(sig); }} />{error && <Banner tone="warn">{error}</Banner>}<SheetActions><PillButton tone="ghost" size="full" showArrow={false} onClick={() => setStage('edit')}>Back</PillButton></SheetActions></>}
-    {stage === 'done' && <><Banner tone="ok">Week signed.</Banner><SheetActions><PillButton tone="forest" size="full" showArrow={false} onClick={onClose}>Done</PillButton></SheetActions></>}
+    {stage === 'done' && <><Banner tone="ok">Week signed.</Banner><SheetActions><PillButton tone="gold" size="full" showArrow={false} onClick={onClose}>Done</PillButton></SheetActions></>}
   </Sheet>;
 }

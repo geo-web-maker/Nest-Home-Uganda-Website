@@ -16,7 +16,7 @@ export function DataToolsPanel(props: Props) {
     <Field label="Client ID" required requiredLabel="required" maxLength={160} value={props.clientId} onChange={(event) => props.setClientId(event.target.value)} />
     <ButtonGroup spaced>
       <Button type="button" variant="outline" onClick={props.onExport} disabled={props.busy || !props.clientId.trim()}>{props.busy ? 'Working' : 'Export client data'}</Button>
-      <Button type="button" variant="outline" className="care-danger-button" onClick={props.onAnonymise} disabled={props.busy || !props.clientId.trim()}>Anonymise client</Button>
+      <Button type="button" variant="danger-outline" onClick={props.onAnonymise} disabled={props.busy || !props.clientId.trim()}>Anonymise client</Button>
     </ButtonGroup>
     {props.message && <p role="status">{props.message}</p>}
     {props.exportedData && <pre className="care-data-export">{JSON.stringify(props.exportedData, null, 2)}</pre>}

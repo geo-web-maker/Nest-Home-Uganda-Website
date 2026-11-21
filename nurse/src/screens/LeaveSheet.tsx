@@ -23,7 +23,7 @@ export function LeaveSheet({ visit, finalNote, busy, onFinalNote, onConfirm, onC
         : <p className="muted">{copy.departure.savedOffline}</p>}
       <SheetActions>
         {requiredPhotoMissing && canAddRequiredPhoto && <PillButton type="button" tone="ghost" size="full" onClick={onAddPhoto} disabled={busy} showArrow={false}>{copy.departure.addRequiredPhoto}</PillButton>}
-        <PillButton type="button" tone="forest" size="full" onClick={onConfirm} disabled={busy || requiredPhotoMissing}>{busy ? copy.departure.saving : copy.departure.confirm}</PillButton>
+        <PillButton type="button" tone="gold" size="full" onClick={onConfirm} disabled={busy || requiredPhotoMissing}>{busy ? copy.departure.saving : copy.departure.confirm}</PillButton>
         <PillButton type="button" tone="ghost" size="full" onClick={onCancel} disabled={busy} showArrow={false}>{copy.generic.cancel}</PillButton>
       </SheetActions>
   </Sheet>;

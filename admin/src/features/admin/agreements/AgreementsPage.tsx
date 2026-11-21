@@ -322,7 +322,7 @@ export function AgreementsPage() {
     finally { setBusy(false); }
   };
   const performDeletePractice = async () => {
-    if (!await dialogs.confirm('Delete ALL practice agreements and their files? Real agreements are not touched.', { confirmLabel: 'Delete all' })) return;
+    if (!await dialogs.confirm('Delete ALL practice agreements and their files? Real agreements are not touched.', { confirmLabel: 'Delete all', danger: true })) return;
     setBusy(true); setError('');
     try { const r = await apiClient.delete<{ deleted: number }>('/admin/agreements/practice'); setSelected(''); setDetail(null); await loadList(); setNotice(`${r?.deleted ?? 0} practice agreement(s) deleted.`); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not delete the practice agreements.'); }
@@ -330,14 +330,14 @@ export function AgreementsPage() {
   };
 
   const performDelete = async (id: string, reference: string) => {
-    if (!await dialogs.confirm(`Permanently delete agreement ${reference}? This removes it and any stored files, and cannot be undone.`, { confirmLabel: 'Delete' })) return;
+    if (!await dialogs.confirm(`Permanently delete agreement ${reference}? This removes it and any stored files, and cannot be undone.`, { confirmLabel: 'Delete', danger: true })) return;
     setBusy(true); setError('');
     try { await apiClient.delete(`/admin/agreements/${id}`); if (selected === id) { setSelected(''); setDetail(null); } await loadList(); setNotice(`${reference} deleted.`); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not delete the agreement.'); }
     finally { setBusy(false); }
   };
   const performVoid = async (id: string) => {
-    const reason = await dialogs.prompt('Reason for cancelling this agreement (required):', '', { minLength: 3, multiline: true, confirmLabel: 'Cancel agreement' });
+    const reason = await dialogs.prompt('Reason for cancelling this agreement (required):', '', { minLength: 3, multiline: true, confirmLabel: 'Cancel agreement', danger: true });
     if (!reason?.trim()) return;
     setBusy(true); setError('');
     try { await apiClient.post(`/admin/agreements/${id}/void`, { reason }); await loadList(); if (selected === id) await loadDetail(id); setNotice('Agreement cancelled.'); }
@@ -443,14 +443,14 @@ export function AgreementsPage() {
               {['draft','sent','client_in_progress','client_signed','completed','changes_requested','expired','voided'].map((s) => <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>)}
             </Field>
           </FilterBar>
-          {canVoid && showPractice && <div className={styles.practiceBar}><span>Showing practice agreements</span><Button variant="outline" size="compact" className={styles.danger} onClick={() => void performDeletePractice()} disabled={busy}>Delete all practice</Button></div>}
+          {canVoid && showPractice && <div className={styles.practiceBar}><span>Showing practice agreements</span><Button variant="danger-outline" size="compact" onClick={() => void performDeletePractice()} disabled={busy}>Delete all practice</Button></div>}
           {rows.length === 0 ? <div className={styles.empty}><h2>No agreements yet</h2><p>Create an agreement from a client enquiry, review the staff-only care and fee sections, then send a secure link. Clients complete and sign in their browser.</p>{canWrite && <Button onClick={() => void create()} variant="outline">Create first agreement</Button>}</div> : (
             <ul className={styles.rows}>{rows.map((row) => <li key={row.id} className={selected === row.id ? styles.selected : ''}>
               <Button type="button" variant="outline" size="compact" className={styles.rowMain} onClick={() => { setSelected(row.id); setTab('parties'); }}>
                 <strong>{row.reference}{row.is_test ? ' (PRACTICE)' : ''}</strong><span>{row.client_name || 'Client not named'}</span><small>{row.patient_name ? `Patient: ${row.patient_name}` : 'Patient details pending'}</small>
                 <StatusBadge status={statusTone(row.status)}>{row.status.replaceAll('_', ' ')}</StatusBadge>
               </Button>
-              {(canWrite || canVoid) && <ButtonGroup size="compact" align="end">{canWrite && <Button variant="outline" onClick={() => void performResend(row.id)} disabled={busy || !['draft','sent','client_in_progress','changes_requested','expired'].includes(row.status)}>Resend</Button>}{canVoid && <Button variant="outline" onClick={() => void performVoid(row.id)} disabled={busy || row.status === 'completed' || row.status === 'voided'}>Void</Button>}{canVoid && (DELETABLE_STATUSES.has(row.status) || row.is_test) && <Button variant="outline" className={styles.danger} onClick={() => void performDelete(row.id, row.reference)} disabled={busy}>Delete</Button>}</ButtonGroup>}
+              {(canWrite || canVoid) && <ButtonGroup size="compact" align="end">{canWrite && <Button variant="outline" onClick={() => void performResend(row.id)} disabled={busy || !['draft','sent','client_in_progress','changes_requested','expired'].includes(row.status)}>Resend</Button>}{canVoid && <Button variant="danger-outline" onClick={() => void performVoid(row.id)} disabled={busy || row.status === 'completed' || row.status === 'voided'}>Void</Button>}{canVoid && (DELETABLE_STATUSES.has(row.status) || row.is_test) && <Button variant="danger-outline" onClick={() => void performDelete(row.id, row.reference)} disabled={busy}>Delete</Button>}</ButtonGroup>}
             </li>)}</ul>
           )}
         </section>
@@ -549,7 +549,7 @@ export function AgreementsPage() {
               {canWrite && <><h3>Send agreement for review</h3><p>Messages contain a secure link only. No patient name, care details or fees are sent by email or SMS.</p><fieldset><legend>Send via (tick one or more)</legend><Checkbox checked={pick.email} onChange={(e) => setPick({ ...pick, email: e.target.checked })} label="Email" />{' '}<Checkbox checked={pick.sms} onChange={(e) => setPick({ ...pick, sms: e.target.checked })} label="SMS" />{noChannel && <p role="alert">Tick at least one way to send.</p>}</fieldset><p>Link expiry: 14 days. Reminders: 48 hours and day 5. Expiry warning: 48 hours before expiry.</p><Button onClick={() => void send()} disabled={busy || noChannel || !['draft','changes_requested','expired'].includes(detail.status)}>Validate and send</Button>{['sent','client_in_progress'].includes(detail.status) && <><p>Client did not get it? Resend sends the same link again by the channel selected above. Nothing earlier stops working.</p><LinkPanel id={detail.id} link={detail.link} onChanged={() => void loadDetail(detail.id)} resend={<Button variant="outline" onClick={() => void performResend(detail.id, channels)} disabled={busy || noChannel}>Resend link</Button>} /></>}</>}
               {canSign && detail.status === 'client_signed' && <section className={styles.countersign}><h3>Bloomwell countersignature</h3><p>By countersigning, the system seals the agreement and stores its PDF in private storage.</p><Field label="Authorised signatory name" value={bloomwellName} onChange={(e) => setBloomwellName(e.target.value)} /><SignatureMethodPicker method={signMethod} onMethod={(next) => { setSignMethod(next); setError(''); }} biometricAvailable={biometricAvailable} mode="staff" password={signPassword} onPassword={setSignPassword} confirm="" onConfirm={() => undefined}
                 drawPanel={<canvas ref={signatureCanvas} className={styles.signaturePad} width={800} height={160} aria-label="Bloomwell countersignature area" onPointerDown={beginSignature} onPointerMove={moveSignature} onPointerUp={() => { drawing.current = false; }} onPointerCancel={() => { drawing.current = false; }} />} /><ButtonGroup>{signMethod === 'drawn' && <Button variant="outline" onClick={clearSignature}>Clear signature</Button>}<Button onClick={() => void countersign()} disabled={busy}>Countersign and seal</Button></ButtonGroup></section>}
-              {canVoid && (DELETABLE_STATUSES.has(detail.status) || detail.is_test) && <><ButtonGroup><Button variant="outline" className={styles.danger} onClick={() => void performDelete(detail.id, detail.reference)} disabled={busy}>Delete agreement</Button></ButtonGroup><p className={styles.hint}>Deleting removes this agreement permanently. Sent or signed agreements must be voided first; completed agreements cannot be deleted.</p></>}
+              {canVoid && (DELETABLE_STATUSES.has(detail.status) || detail.is_test) && <><ButtonGroup><Button variant="danger-outline" onClick={() => void performDelete(detail.id, detail.reference)} disabled={busy}>Delete agreement</Button></ButtonGroup><p className={styles.hint}>Deleting removes this agreement permanently. Sent or signed agreements must be voided first; completed agreements cannot be deleted.</p></>}
               {canWrite && detail.status === 'completed' && <ButtonGroup><Button variant="outline" onClick={() => void createAmendment()} disabled={busy}>Create amendment</Button><Button variant="outline" onClick={() => void openSealedPdf()} disabled={busy}>Download internal sealed PDF</Button></ButtonGroup>}
             </div>}
             {tab === 'messages' && <div className={styles.messagePanel}>
@@ -644,7 +644,7 @@ function LinkPanel({ id, link, onChanged, resend }: { id: string; link?: LinkInf
       {resend}
     </div>
     <div className={styles.linkActions}>
-      <Button variant="outline" className={styles.danger} onClick={() => void replaceAll()} disabled={busy}>Withdraw all links and create a new one</Button>
+      <Button variant="danger-outline" onClick={() => void replaceAll()} disabled={busy}>Withdraw all links and create a new one</Button>
     </div>
   </div>;
 }

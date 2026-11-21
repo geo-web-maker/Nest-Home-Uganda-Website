@@ -5,9 +5,6 @@ name: care-environment-docs
 # `${{ }}` inside braces, which is invalid YAML; block style below.
 on:
   workflow_dispatch:
-  pull_request:
-  push:
-    branches: [main, nurse-module]
 
 permissions:
   contents: write

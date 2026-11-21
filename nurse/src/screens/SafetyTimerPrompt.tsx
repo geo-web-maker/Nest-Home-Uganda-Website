@@ -41,7 +41,7 @@ export function SafetyTimerPrompt({ visit, onOpenVisit }: Props) {
     <p>{visit.safety_timer_sync_state === 'confirmed' ? copy.safety.timerStillArmed : copy.safety.timerPendingSync}</p>
     <p>{copy.safety.timerSafe}</p>
     <SheetActions>
-      <PillButton type="button" tone="forest" size="full" onClick={() => { dismiss(); onOpenVisit(visit); }}>{copy.safety.timerReview}</PillButton>
+      <PillButton type="button" tone="gold" size="full" onClick={() => { dismiss(); onOpenVisit(visit); }}>{copy.safety.timerReview}</PillButton>
       <PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={dismiss}>{copy.safety.timerDismiss}</PillButton>
     </SheetActions>
   </Sheet>;

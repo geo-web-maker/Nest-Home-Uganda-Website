@@ -75,42 +75,92 @@ export function AppReleasesPage() {
   return (
     <section className={styles.page}>
       <PageHeader title="App releases" />
-      {!allowed ? <p role="alert">Super administrator access is required to view or publish app releases.</p> : null}
-      {allowed && releases.isPending ? <p role="status">Loading release records…</p> : null}
-      {allowed && releases.isError ? <div role="alert"><p>Release records could not be loaded. Check your access and API connection.</p><Button variant="outline" onClick={() => void releases.refetch()}>Retry</Button></div> : null}
-      {allowed ? <AppBuildsPanel /> : null}
-      {allowed ? <p>Need to slow down, update-lock or pause an old app? <Link to="/mail/clients">Open Client control</Link>.</p> : null}
-      {allowed ? <form className={styles.card} onSubmit={submit}>
-        <h2>Publish a release policy by hand</h2>
-        <p>Publishing changes the version policy consumed by field apps. Confirm the minimum version before publishing.</p>
-        <div className={styles.formGrid}>
-          <Field kind="select" label="Platform" value={platform} onChange={(e) => setPlatform(e.target.value as typeof platform)}><option value="android">Android</option><option value="ios">iOS</option><option value="web">Web</option></Field>
-          <Field label="Version" value={version} onChange={(e: ChangeEvent<HTMLInputElement>) => setVersion(e.target.value)} placeholder="1.2.3" required requiredLabel="(required)" />
-          <Field label="Minimum supported version" value={minimum} onChange={(e: ChangeEvent<HTMLInputElement>) => setMinimum(e.target.value)} placeholder="1.0.0" required requiredLabel="(required)" />
-          <Field label="Download path (optional)" value={downloadPath} onChange={(e: ChangeEvent<HTMLInputElement>) => setDownloadPath(e.target.value)} placeholder="/downloads/app.apk or https://…" />
+
+      {!allowed && (
+        <p role="alert">Super administrator access is required to view or publish app releases.</p>
+      )}
+
+      {/* ── APK build store ──────────────────────────────────────────────── */}
+      {allowed && (
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>Build store</h2>
+          {releases.isPending && <p role="status">Loading release records…</p>}
+          {releases.isError && (
+            <div role="alert" className={styles.sectionAlert}>
+              <p>Release records could not be loaded. Check your access and API connection.</p>
+              <Button variant="outline" onClick={() => void releases.refetch()}>Retry</Button>
+            </div>
+          )}
+          <AppBuildsPanel />
         </div>
-        <Field kind="textarea" label="Release notes" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={2000} rows={3} />
-        <Checkbox label="Activate this release policy" checked={active} onChange={(e) => setActive(e.target.checked)} />
-        {formError ? <p role="alert">{formError}</p> : null}
-        {publish.isError ? <p role="alert">{formError || 'Release was not published.'}</p> : null}
-        {publish.isSuccess ? <p role="status">Release published successfully.</p> : null}
-        <Button type="submit" disabled={publish.isPending}>{publish.isPending ? 'Publishing…' : 'Publish release'}</Button>
-      </form> : null}
-      {allowed && releases.data && releases.data.items.length === 0 ? <p>No releases have been published yet.</p> : null}
-      {allowed && releases.data && releases.data.items.length > 0 ? <DataTable
-    columns={[
-      { key: 'platform', header: 'Platform', cell: (release) => release.platform },
-      { key: 'version', header: 'Version', cell: (release) => release.version },
-      { key: 'minimum-supported', header: 'Minimum supported', cell: (release) => release.min_supported_version },
-      { key: 'policy', header: 'Policy', cell: (release) => release.active ? 'Active' : 'Inactive' },
-      { key: 'published', header: 'Published', cell: (release) => dateLabel(release.published_at) },
-      { key: 'notes', header: 'Notes', cell: (release) => release.release_notes || '—' },
-    ]}
-    rows={releases.data.items}
-    getRowKey={(release) => release.id}
-    labels={{ caption: 'Published app release policies', loading: 'Loading…', empty: 'Nothing to show.' }}
-  /> : null}
-      <div className={styles.card}><h2>Adoption analytics</h2><p>Not connected yet. The current API records published policies but does not report installed versions, active devices, rollout percentage, or adoption over time. Do not infer adoption from release records.</p></div>
+      )}
+
+      {/* ── Version policy ───────────────────────────────────────────────── */}
+      {allowed && (
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>Version policy</h2>
+          <p className={styles.sectionMeta}>
+            Publishing a policy changes the version floor consumed by field apps.
+            Confirm the minimum version before publishing.{' '}
+            Need to slow down, update-lock or pause an old build?{' '}
+            <Link to="/mail/clients">Open Client control</Link>.
+          </p>
+          <form className={styles.card} onSubmit={submit}>
+            <div className={styles.formGrid}>
+              <Field kind="select" label="Platform" value={platform} onChange={(e) => setPlatform(e.target.value as typeof platform)}>
+                <option value="android">Android</option>
+                <option value="ios">iOS</option>
+                <option value="web">Web</option>
+              </Field>
+              <Field label="Version" value={version} onChange={(e: ChangeEvent<HTMLInputElement>) => setVersion(e.target.value)} placeholder="1.2.3" required requiredLabel="(required)" />
+              <Field label="Minimum supported" value={minimum} onChange={(e: ChangeEvent<HTMLInputElement>) => setMinimum(e.target.value)} placeholder="1.0.0" required requiredLabel="(required)" />
+              <Field label="Download path (optional)" value={downloadPath} onChange={(e: ChangeEvent<HTMLInputElement>) => setDownloadPath(e.target.value)} placeholder="/downloads/app.apk or https://…" />
+            </div>
+            <Field kind="textarea" label="Release notes" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={2000} rows={3} />
+            <Checkbox label="Activate this release policy immediately" checked={active} onChange={(e) => setActive(e.target.checked)} />
+            {formError       && <p role="alert" className={styles.formError}>{formError}</p>}
+            {publish.isError && <p role="alert" className={styles.formError}>{formError || 'Release was not published.'}</p>}
+            {publish.isSuccess && <p role="status" className={styles.formOk}>Release published successfully.</p>}
+            <Button type="submit" disabled={publish.isPending}>
+              {publish.isPending ? 'Publishing…' : 'Publish release'}
+            </Button>
+          </form>
+        </div>
+      )}
+
+      {/* ── Published policies table ─────────────────────────────────────── */}
+      {allowed && releases.data && (
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>Published policies</h2>
+          {releases.data.items.length === 0
+            ? <p className={styles.sectionMeta}>No release policies have been published yet.</p>
+            : <DataTable
+                columns={[
+                  { key: 'platform',   header: 'Platform',   cell: (r) => r.platform },
+                  { key: 'version',    header: 'Version',    cell: (r) => r.version },
+                  { key: 'minimum',    header: 'Min supported', cell: (r) => r.min_supported_version },
+                  { key: 'policy',     header: 'Policy',     cell: (r) => r.active ? 'Active' : 'Inactive' },
+                  { key: 'published',  header: 'Published',  cell: (r) => dateLabel(r.published_at) },
+                  { key: 'notes',      header: 'Notes',      cell: (r) => r.release_notes || '—' },
+                ]}
+                rows={releases.data.items}
+                getRowKey={(r) => r.id}
+                labels={{ caption: 'Published app release policies', loading: 'Loading…', empty: 'Nothing to show.' }}
+              />
+          }
+        </div>
+      )}
+
+      {/* ── Adoption analytics placeholder ───────────────────────────────── */}
+      {allowed && (
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>Adoption analytics</h2>
+          <p className={styles.sectionMeta}>
+            Not connected yet. Release policies are recorded but installed versions, active device counts, rollout
+            percentage and adoption over time are not tracked. Do not infer adoption from release records.
+          </p>
+        </div>
+      )}
     </section>
   );
 }

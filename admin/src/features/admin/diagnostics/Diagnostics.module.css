@@ -29,7 +29,7 @@
   font-weight: 600;
 }
 .pillOn { border-color: var(--forest); background: var(--forest); color: var(--onf); }
-.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--action-gap); }
 .fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.8rem; }
 .field { display: grid; gap: 0.3rem; font-weight: 600; font-size: 0.9rem; }
 .field input, .field select { font: inherit; min-height: 44px; padding: 0 12px; border: 2px solid var(--line); border-radius: 0.75rem; background: var(--surf); color: var(--ink); }

@@ -13,7 +13,7 @@ export function NoteSheet({ visit, value, onChange, onSubmit, onCancel, busy = f
       <label htmlFor="visit-note-body">{copy.notes.label}</label>
       <textarea id="visit-note-body" value={value} onChange={(event) => onChange(event.target.value)} required maxLength={1000} rows={4} />
       <SheetActions>
-        <PillButton type="submit" tone="forest" size="full" disabled={busy || !value.trim()}>{busy ? copy.notes.saving : copy.generic.save}</PillButton>
+        <PillButton type="submit" tone="gold" size="full" disabled={busy || !value.trim()}>{busy ? copy.notes.saving : copy.generic.save}</PillButton>
         <PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={onCancel} disabled={busy}>{copy.generic.cancel}</PillButton>
       </SheetActions>
     </form>

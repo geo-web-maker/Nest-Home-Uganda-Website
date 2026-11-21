@@ -110,7 +110,7 @@ export function PhotoSheet({
           <h3 id="photo-guidance-title">{copy.photos.guidanceTitle}</h3>
           <p>{guidanceText.trim() || copy.photos.guidanceDefault}</p>
           <p className="muted">{copy.photos.description}</p>
-          <PillButton type="button" tone="forest" size="full" onClick={acknowledgeGuidance}>{copy.photos.guidanceContinue}</PillButton>
+          <PillButton type="button" tone="gold" size="full" onClick={acknowledgeGuidance}>{copy.photos.guidanceContinue}</PillButton>
         </Card>}
 
         <p>{copy.photos.description}</p>
@@ -149,7 +149,7 @@ export function PhotoSheet({
           </section>}
           <label className="check-row"><input type="checkbox" checked={wifiOnly} onChange={(event) => onWifiOnly(event.target.checked)} /> {copy.photos.wifiOnly}</label>
           <p className="hint">{copy.photos.wifiHint}</p>
-          <SheetActions><PillButton type="submit" tone="forest" size="full" disabled={!file || busy}>{busy ? copy.photos.saving : copy.photos.save}</PillButton><PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={onCancel} disabled={busy}>{copy.generic.cancel}</PillButton></SheetActions>
+          <SheetActions><PillButton type="submit" tone="gold" size="full" disabled={!file || busy}>{busy ? copy.photos.saving : copy.photos.save}</PillButton><PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={onCancel} disabled={busy}>{copy.generic.cancel}</PillButton></SheetActions>
         </form>
       </>}
     </Sheet>

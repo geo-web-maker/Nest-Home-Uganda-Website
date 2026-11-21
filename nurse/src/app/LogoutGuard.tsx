@@ -20,7 +20,7 @@ export function LogoutGuard({ open, pendingItems, onCancel, onConfirm }: LogoutG
       </p>
       <SheetActions className="logout-guard-actions">
         <PillButton type="button" tone="ghost" size="full" onClick={onCancel} showArrow={false}>{copy.logout.keepWorking}</PillButton>
-        <PillButton type="button" tone="forest" size="full" onClick={onConfirm}>{copy.logout.confirm}</PillButton>
+        <PillButton type="button" tone="danger" size="full" onClick={onConfirm}>{copy.logout.confirm}</PillButton>
       </SheetActions>
   </Sheet>;
 }

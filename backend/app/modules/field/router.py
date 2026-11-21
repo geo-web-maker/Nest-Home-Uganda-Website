@@ -747,9 +747,11 @@ async def app_version(
     values = await care_values()
     configured_minimum = str(values.get("care.min_app_version", "0.1.0"))
     if not rows:
-        # Preserve the care setting until the owner publishes a release record.
+        # No release record published yet — return the config floor but signal the absence
+        # so the client can show "no policy" rather than a false "up to date".
         return {
-            "latest": "0.1.0",
+            "has_releases": False,
+            "latest": None,
             "min_supported": configured_minimum,
             "min_app_version": configured_minimum,
             "download_path": None,
@@ -766,6 +768,7 @@ async def app_version(
     # The policy setting may raise (never silently lower) the release's minimum floor.
     minimum = effective_minimum_version(latest.min_supported_version, configured_minimum)
     return {
+        "has_releases": True,
         "latest": latest.version,
         "min_supported": minimum,
         "min_app_version": minimum,
@@ -856,3 +859,66 @@ async def mark_inbox_read(notification_id: str, principal: Principal = CanUse):
         row.read_at = datetime.now(UTC)
         await row.save()
     return {"id": row.id, "read_at": row.read_at}
+
+
+@router.get("/mail/delivery-log")
+async def field_mail_delivery_log(
+    limit: int = Query(default=20, ge=1, le=50),
+    principal: Principal = CanUse,
+):
+    """Return recent outbound mail delivery events for the authenticated nurse.
+
+    Covers messages where the nurse's staff email address (or the mailbox address
+    linked to their account) appears as an outbox sender.  Uses the mail DB pool
+    so it stays read-only and isolated from the main database.
+
+    Returns a lightweight summary: recipient, subject, delivery status, timestamp and
+    any provider error.  Full message bodies are not included.
+    """
+    from app.modules.mail import mail_db
+
+    pool = mail_db.get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT
+                o.id,
+                o.sent_at,
+                o.state,
+                o.last_error,
+                r.address  AS recipient,
+                m.subject
+            FROM outbox o
+            JOIN message m ON m.id = o.message_id
+            JOIN message_recipient r ON r.message_id = m.id AND r.kind = 'to'
+            WHERE m.from_address = ANY(
+                SELECT unnest(ARRAY[u.email, mb.address])
+                FROM "user" u
+                LEFT JOIN mailbox mb ON mb.user_id = u.id
+                WHERE u.id = $1
+                LIMIT 1
+            )
+            ORDER BY COALESCE(o.sent_at, o.created_at) DESC
+            LIMIT $2
+            """,
+            str(principal.user_id),
+            limit,
+        )
+
+    def _status(state: str) -> str:
+        mapping = {"sent": "delivered", "failed": "failed", "pending": "pending", "sending": "pending"}
+        return mapping.get(state, state)
+
+    return {
+        "items": [
+            {
+                "id": str(row["id"]),
+                "recipient": row["recipient"],
+                "subject": row["subject"] or "(no subject)",
+                "status": _status(row["state"]),
+                "sent_at": row["sent_at"].isoformat() if row["sent_at"] else "",
+                "error": row["last_error"],
+            }
+            for row in rows
+        ]
+    }

@@ -5,13 +5,6 @@ name: regenerate-api-types
 # Commits made with GITHUB_TOKEN do not start other workflows: re-run `ci` after this one commits.
 on:
   workflow_dispatch:
-  pull_request:
-  push:
-    branches: [main, nurse-module]
-    paths:
-      - backend/app/**
-      - backend/requirements.lock
-      - scripts/gen-types.sh
 
 permissions:
   contents: write

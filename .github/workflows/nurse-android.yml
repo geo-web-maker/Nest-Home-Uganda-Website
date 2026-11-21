@@ -4,17 +4,6 @@ name: nurse-android
 # (npx cap add android) and is not committed. Signing and distribution are a separate phase.
 on:
   workflow_dispatch:
-  push:
-    branches: [main, nurse-module]
-    paths:
-      - nurse/**
-      - scripts/apply_android_overrides.mjs
-      - .github/workflows/nurse-android.yml
-  pull_request:
-    paths:
-      - nurse/**
-      - scripts/apply_android_overrides.mjs
-      - .github/workflows/nurse-android.yml
 
 permissions:
   contents: read

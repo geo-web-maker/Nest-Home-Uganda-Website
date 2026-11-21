@@ -7,4 +7,4 @@
 .tag { border: 1px solid var(--line); border-radius: 999px; padding: 0 0.5rem; font-size: var(--fs-small); }
 .warn { border-color: var(--danger); color: var(--danger); }
 .preview { margin: 0.25rem 0 0; padding-left: 1.1rem; font-size: var(--fs-small); overflow-wrap: anywhere; }
-.actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--action-gap); }

@@ -18,8 +18,8 @@ describe('mockup-parity component kit', () => {
   });
 
   it('keeps buttons semantic and renders line icons as decorative SVGs', () => {
-    render(<PillButton tone="forest">Continue</PillButton>);
-    expect(screen.getByRole('button', { name: 'Continue' })).toHaveClass('mk-btn--forest');
+    render(<PillButton tone="gold">Continue</PillButton>);
+    expect(screen.getByRole('button', { name: 'Continue' })).toHaveClass('mk-btn--gold');
     render(<Icon name="pin" />);
     expect(document.querySelector('svg[aria-hidden="true"]')).toBeInTheDocument();
   });

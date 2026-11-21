@@ -362,7 +362,7 @@ export function CareWorkspace() {
     if (
       !await dialogs.confirm(
         'Anonymise this client and delete associated photo assets? This action cannot be undone.',
-        { confirmLabel: 'Anonymise client' },
+        { confirmLabel: 'Anonymise client', danger: true },
       )
     )
       return;

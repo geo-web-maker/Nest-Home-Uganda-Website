@@ -195,22 +195,54 @@ async def latest_web_bundle(
 
 @public_router.get("/{app}/apk", dependencies=[Depends(rate_limit("app_apk", 30, 60))])
 async def latest_apk(app: Literal["nurse", "admin"], current: str = Query(max_length=80)):
-    """Newest active APK for an app when it is newer than the installed versionName, else {"update": false}."""
-    rows = [
+    """Newest active APK for an app when it is newer than the installed versionName, else {"update": false}.
+
+    Also returns ``blocked`` (the installed version is below the minimum supported) and
+    ``min_supported`` so callers can gate the login screen before the user authenticates.
+    """
+    from app.modules.app_releases.rules import effective_minimum_version
+
+    all_rows = [
         row
         for row in await AppRelease.find().to_list()
-        if row.platform == "android" and row.active and row.apk_key and row.app == app
+        if row.platform == "android" and row.active and row.app == app
     ]
-    if not rows:
-        return {"update": False}
-    rows.sort(key=cmp_to_key(lambda a, b: compare_versions(a.version, b.version)), reverse=True)
-    latest = rows[0]
+    apk_rows = [row for row in all_rows if row.apk_key]
+
+    # Minimum floor from the care settings (best-effort; fall back gracefully).
+    config_minimum = "0.1.0"
+    try:
+        from app.modules.field.router import care_values as _care_values
+        values = await _care_values()
+        config_minimum = str(values.get("care.min_app_version", "0.1.0"))
+    except Exception:
+        pass
+
+    if not apk_rows:
+        # No APK on record. Still compute blocked from any release row so the
+        # pre-login check can gate the login screen even before an APK is uploaded.
+        blocked = False
+        minimum = config_minimum
+        if all_rows:
+            all_rows.sort(key=cmp_to_key(lambda a, b: compare_versions(a.version, b.version)), reverse=True)
+            minimum = effective_minimum_version(all_rows[0].min_supported_version, config_minimum)
+            try:
+                blocked = compare_versions(current, minimum) < 0
+            except ValueError:
+                pass
+        return {"update": False, "has_releases": bool(all_rows), "blocked": blocked, "min_supported": minimum}
+
+    apk_rows.sort(key=cmp_to_key(lambda a, b: compare_versions(a.version, b.version)), reverse=True)
+    latest = apk_rows[0]
+    minimum = effective_minimum_version(latest.min_supported_version, config_minimum)
     try:
         newer = compare_versions(latest.version, current) > 0
+        blocked = compare_versions(current, minimum) < 0
     except ValueError:
         newer = True
+        blocked = False
     if not newer:
-        return {"update": False}
+        return {"update": False, "has_releases": True, "blocked": blocked, "min_supported": minimum}
     url = await get_storage().signed_url(
         Bucket.PRIVATE,
         latest.apk_key,
@@ -220,10 +252,71 @@ async def latest_apk(app: Literal["nurse", "admin"], current: str = Query(max_le
     )
     return {
         "update": True,
+        "has_releases": True,
+        "blocked": blocked,
+        "min_supported": minimum,
         "version": latest.version,
         "version_code": latest.version_code,
         "url": url,
         "sha256": latest.sha256,
         "size_bytes": latest.size_bytes,
+        "release_notes": latest.release_notes,
+    }
+
+
+@public_router.get(
+    "/{app}/version",
+    dependencies=[Depends(rate_limit("app_version_public", 60, 60))],
+)
+async def latest_version_public(
+    app: Literal["nurse", "admin"],
+    current: str = Query(max_length=80),
+    platform: str = Query(default="android", pattern="^(android|ios|web)$"),
+):
+    """Unauthenticated version-policy summary for pre-login update checks.
+
+    Returns the minimum supported version, whether the caller is blocked, and whether
+    any release records exist. Download URLs are not included; use /apk or /latest for those.
+    Safe to call before the user authenticates — rate-limited, no credentials required.
+    """
+    from app.modules.app_releases.rules import effective_minimum_version
+
+    rows = [
+        row
+        for row in await AppRelease.find().to_list()
+        if row.platform == platform and row.active and not row.bundle_key and row.app == app
+    ]
+    config_minimum = "0.1.0"
+    try:
+        from app.modules.field.router import care_values as _care_values
+        values = await _care_values()
+        config_minimum = str(values.get("care.min_app_version", "0.1.0"))
+    except Exception:
+        pass
+
+    if not rows:
+        return {
+            "has_releases": False,
+            "latest": None,
+            "min_supported": config_minimum,
+            "blocked": False,
+            "platform": platform,
+        }
+
+    rows.sort(key=cmp_to_key(lambda a, b: compare_versions(a.version, b.version)), reverse=True)
+    latest = rows[0]
+    minimum = effective_minimum_version(latest.min_supported_version, config_minimum)
+    try:
+        blocked = compare_versions(current, minimum) < 0
+    except ValueError:
+        blocked = False
+    return {
+        "has_releases": True,
+        "latest": latest.version,
+        "min_supported": minimum,
+        "blocked": blocked,
+        "platform": platform,
+    }
+
         "release_notes": latest.release_notes,
     }

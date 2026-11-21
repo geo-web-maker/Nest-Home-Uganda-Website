@@ -1,5 +1,6 @@
 import { ProfileCareSection } from '../features/careforms/ProfileCareSection';
 import { Link } from 'react-router-dom';
+import { useState, useCallback } from 'react';
 import type { FieldProfile } from '../app/useFieldProfile';
 import type { CachedVisit } from '../offline/db';
 import { UpdateNotice } from '../features/update/UpdateNotice';
@@ -13,9 +14,76 @@ import { PillButton } from '../ui/PillButton';
 import { Chip } from '../ui/Chip';
 import { initials } from '../ui/greeting';
 
+type MailLogEntry = {
+  id: string;
+  recipient: string;
+  subject: string;
+  status: 'delivered' | 'failed' | 'pending' | string;
+  sent_at: string;
+  error?: string | null;
+};
+
+function MailLogsDisclosure() {
+  const [open, setOpen] = useState(false);
+  const [logs, setLogs] = useState<MailLogEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const load = useCallback(async () => {
+    if (logs.length > 0) return; // already fetched this session
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/v1/field/mail/delivery-log?limit=20');
+      if (!res.ok) throw new Error(`${res.status}`);
+      const data = await res.json() as { items?: MailLogEntry[] };
+      setLogs(data.items ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load logs.');
+    } finally {
+      setLoading(false);
+    }
+  }, [logs.length]);
+
+  function handleToggle(e: React.SyntheticEvent<HTMLDetailsElement>) {
+    const isOpen = (e.currentTarget as HTMLDetailsElement).open;
+    setOpen(isOpen);
+    if (isOpen) void load();
+  }
+
+  const statusKind = (s: string): 'ok' | 'bad' | 'sc' =>
+    s === 'delivered' ? 'ok' : s === 'failed' ? 'bad' : 'sc';
+
+  return (
+    <details className="mk-profile-disclosure mk-mail-logs" onToggle={handleToggle} open={open}>
+      <summary className="mk-mail-logs__summary">
+        <Icon name="mail" /><span>Mail delivery log</span>
+      </summary>
+      <div className="mk-mail-logs__body">
+        {loading && <p className="mk-mail-logs__state">Loading…</p>}
+        {error  && <p className="mk-mail-logs__state mk-mail-logs__state--err">{error}</p>}
+        {!loading && !error && logs.length === 0 && <p className="mk-mail-logs__state">No delivery records.</p>}
+        {logs.map((log) => (
+          <div key={log.id} className="mk-mail-log-item">
+            <div className="mk-mail-log-item__meta">
+              <Chip kind={statusKind(log.status)}>{log.status}</Chip>
+              <span className="mk-mail-log-item__to">{log.recipient}</span>
+            </div>
+            <p className="mk-mail-log-item__subject">{log.subject}</p>
+            {log.error && <p className="mk-mail-log-item__err">{log.error}</p>}
+            <time className="mk-mail-log-item__time" dateTime={log.sent_at}>
+              {new Date(log.sent_at).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
+            </time>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 type InboxItem = { id: string; title: string; body: string; created_at?: string };
 type ApkInfo = { url: string; sha256?: string | null; version: string };
-type VersionInfo = { latest: string; min_supported: string; download_path?: string | null; apk_info?: ApkInfo | null };
+type VersionInfo = { latest: string | null; min_supported: string; has_releases?: boolean; download_path?: string | null; apk_info?: ApkInfo | null };
 type Props = {
   profile: FieldProfile | null; appVersion: string; versionInfo: VersionInfo | null; remindersEnabled: boolean;
   sosEnabled?: boolean; inboxEnabled: boolean; inbox: InboxItem[]; inboxMessage: string; visits: CachedVisit[]; busy: boolean;
@@ -43,7 +111,10 @@ export function ProfileScreen(props: Props) {
     <Card className="mk-profile-section" id="profile-update">
       <h3>{copy.profile.updates}</h3>
       <Row label={copy.profile.appVersion} value={props.appVersion} />
-      {props.versionInfo && <UpdateNotice currentVersion={props.appVersion} latestVersion={props.versionInfo.latest} minimumVersion={props.versionInfo.min_supported} downloadPath={props.versionInfo.download_path} apkInfo={props.versionInfo.apk_info} />}
+      {props.versionInfo
+        ? <UpdateNotice currentVersion={props.appVersion} latestVersion={props.versionInfo.latest} minimumVersion={props.versionInfo.min_supported} downloadPath={props.versionInfo.download_path} apkInfo={props.versionInfo.apk_info} hasReleases={props.versionInfo.has_releases ?? true} />
+        : <UpdateNotice currentVersion={props.appVersion} latestVersion={null} minimumVersion="0.0.0" hasReleases={false} />
+      }
       <PillButton tone="ghost" onClick={props.onCheckUpdate}>{copy.profile.checkUpdate}</PillButton>
     </Card>
 
@@ -74,8 +145,36 @@ export function ProfileScreen(props: Props) {
       </details>
     </Card>
 
-    <Card className="mk-profile-section"><div className="mk-profile-section__heading"><h3>{copy.profile.inbox}</h3><Chip kind={props.inboxEnabled ? 'ok' : 'sc'}>{props.inboxEnabled ? copy.profile.inboxEnabled : copy.profile.notConfigured}</Chip></div>
-      {!props.inboxEnabled ? <p>{copy.profile.inboxUnavailable}</p> : props.inboxMessage ? <p role="status">{props.inboxMessage}</p> : props.inbox.length === 0 ? <p>{copy.profile.noNotifications}</p> : props.inbox.map((item) => <article className="inbox-item" key={item.id}><h4>{item.title}</h4><p>{item.body}</p>{item.created_at && <small>{item.created_at}</small>}</article>)}
+    <Card className="mk-profile-section" id="profile-inbox">
+      <div className="mk-profile-section__heading">
+        <h3>{copy.profile.inbox}</h3>
+        <Chip kind={props.inboxEnabled ? 'ok' : 'sc'}>{props.inboxEnabled ? copy.profile.inboxEnabled : copy.profile.notConfigured}</Chip>
+      </div>
+      {!props.inboxEnabled
+        ? <p>{copy.profile.inboxUnavailable}</p>
+        : props.inboxMessage
+          ? <p role="status">{props.inboxMessage}</p>
+          : props.inbox.length === 0
+            ? <p>{copy.profile.noNotifications}</p>
+            : <ul className="inbox-list" role="list">
+                {props.inbox.map((item) => (
+                  <li key={item.id}>
+                    <article className="inbox-item">
+                      <div className="inbox-item__body">
+                        <h4 className="inbox-item__title">{item.title}</h4>
+                        <p className="inbox-item__text">{item.body}</p>
+                      </div>
+                      {item.created_at && (
+                        <time className="inbox-item__time" dateTime={item.created_at}>
+                          {new Date(item.created_at).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
+                        </time>
+                      )}
+                    </article>
+                  </li>
+                ))}
+              </ul>
+      }
+      <MailLogsDisclosure />
     </Card>
 
     <Card className="mk-profile-section"><h3>{copy.profile.savedWork}</h3><Row icon={<Icon name="clock" />} label={copy.profile.cachedActiveLabel} value={`${activeVisits} ${copy.profile.activeCached}`} /><PillButton tone="ghost" onClick={props.onSync} disabled={props.busy}>{props.busy ? copy.today.syncing : copy.profile.syncNow}</PillButton></Card>

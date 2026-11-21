@@ -133,7 +133,7 @@ export function InstallHint() {
             {copy.shell.installApp}
           </PillButton>
         )}
-        <PillButton className="mk-install-hint__got-it" type="button" tone="forest" size="sm" showArrow={false} onClick={dismiss}>
+        <PillButton className="mk-install-hint__got-it" type="button" tone="gold" size="sm" showArrow={false} onClick={dismiss}>
           {copy.profile.installGotIt}
         </PillButton>
       </div>

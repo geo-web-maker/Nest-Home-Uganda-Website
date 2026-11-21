@@ -6,8 +6,6 @@ name: nurse-lockfile
 # workflows, so re-run the nurse-app workflow after this one finishes.
 on:
   workflow_dispatch:
-  push:
-    branches: [main, nurse-module]
 
 permissions:
   contents: write

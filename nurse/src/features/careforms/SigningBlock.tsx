@@ -71,7 +71,7 @@ function ClientBlock({ formId, defaultName, autoEmail, clientAgreed, onClientAgr
       {autoEmail && <label className="cf-check"><input type="checkbox" checked={clientAgreed} onChange={(e) => onClientAgreed(e.target.checked)} />The client agrees to receive a copy by email.</label>}
     </div>
     {error && <Banner tone="warn">{error}</Banner>}
-    <PillButton tone="forest" size="full" disabled={busy} onClick={() => void submit()}>{busy ? 'Saving…' : 'Client signs'}</PillButton>
+    <PillButton tone="gold" size="full" disabled={busy} onClick={() => void submit()}>{busy ? 'Saving…' : 'Client signs'}</PillButton>
   </div>;
 }
 
@@ -97,6 +97,6 @@ function NurseBlock({ online, problem, busy, onSubmit, formId }: NurseProps) {
     <SignatureMethodPicker mode="staff" method={method} onMethod={(m) => { setMethod(m); setError(''); }} biometricAvailable={bio} password={pass} onPassword={setPass} confirm="" onConfirm={() => undefined}
       drawPanel={<SignaturePad label="Clinician signature" onChange={setImage} />} />
     {error && <Banner tone="warn">{error}</Banner>}
-    <PillButton tone="forest" size="full" disabled={busy} onClick={() => void submit()}>{busy ? 'Saving…' : 'Sign as clinician'}</PillButton>
+    <PillButton tone="gold" size="full" disabled={busy} onClick={() => void submit()}>{busy ? 'Saving…' : 'Sign as clinician'}</PillButton>
   </div>;
 }

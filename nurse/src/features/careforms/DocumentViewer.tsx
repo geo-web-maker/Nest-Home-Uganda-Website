@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { apiAssetUrl, apiRequest } from '../../lib/api/client';
 import { Banner } from '../../ui/Banner';
 import { PillButton } from '../../ui/PillButton';
+import { PillLink } from '../../ui/PillLink';
 import { Sheet, SheetActions } from '../../ui/Sheet';
 import { formTitle } from './rules';
 import type { DocRow } from './store';
@@ -36,7 +37,7 @@ export function DocumentViewer({ doc, clientName, onClose, onCorrect }: { doc: D
     {url && <iframe title="Signed document" src={url} className="cf-pdf" />}
     {note && <Banner tone="info">{note}</Banner>}
     <SheetActions>
-      {url && <a className="mk-btn mk-btn--forest mk-btn--full" href={url} download={`form-${doc.form_id}.pdf`}><span>Download</span></a>}
+      {url && <PillLink tone="gold" size="full" href={url} download={`form-${doc.form_id}.pdf`}>Download</PillLink>}
       {care?.autoEmail && care.online && !local && <PillButton tone="ghost" size="full" showArrow={false} onClick={() => void resend()}>Resend copy</PillButton>}
       <PillButton tone="ghost" size="full" showArrow={false} onClick={onCorrect}>Add a correction</PillButton>
       <PillButton tone="ghost" size="full" showArrow={false} onClick={onClose}>Close</PillButton>

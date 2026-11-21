@@ -2,7 +2,6 @@ import { HomeSummaryCard } from '../features/careforms/HomeSummaryCard';
 import type { FormEvent } from 'react';
 import type { CachedClient, CachedVisit } from '../offline/db';
 import { formatKampalaTime } from '../lib/time';
-import { Link } from 'react-router-dom';
 import { copy } from '../copy';
 import { VisitCard } from './VisitCard';
 import { ActiveVisit } from './ActiveVisit';
@@ -14,6 +13,7 @@ import { Card } from '../ui/Card';
 import { Row } from '../ui/Row';
 import { Chip } from '../ui/Chip';
 import { PillButton } from '../ui/PillButton';
+import { PillLink } from '../ui/PillLink';
 import { MapPlaceholder } from '../ui/MapPlaceholder';
 import { Banner } from '../ui/Banner';
 import { Sheet, SheetActions } from '../ui/Sheet';
@@ -83,7 +83,7 @@ export function TodayScreen(props: Props) {
         {activeVisit && <Row icon={<Icon name="check" />} label={copy.today.activeLabel} value={<Chip kind="pg">{copy.active.eyebrow}</Chip>} />}
       </Card>
       <MapPlaceholder title={copy.today.mapTitle} subtitle={mapAddress || copy.address.missingOffline} />
-      <Link to="/history" className="mk-side-link">{copy.today.historyLink}<Icon name="arrow-up-right" /></Link>
+      <PillLink to="/history" icon="hist">{copy.today.historyLink}</PillLink>
     </aside>
 
     {props.adhocOpen && <Sheet labelledBy="adhoc-title" className="adhoc-sheet"><h2 id="adhoc-title">{copy.today.adhocQuestion}</h2><p>{copy.today.adhocExplanation}</p><form onSubmit={props.onStartAdhoc}><div className="adhoc-options">{props.clients.map((client) => <label key={client.id}><input type="radio" name="adhoc-client" value={client.id} checked={props.adhocClientId === client.id} onChange={(event) => props.onAdhocClient(event.target.value)} /><span>{client.display_name}</span></label>)}</div><Banner tone="info">{copy.today.adhocReviewNotice}</Banner><SheetActions><PillButton type="submit" disabled={!props.adhocClientId}>{copy.today.startVisit}</PillButton><PillButton type="button" tone="ghost" onClick={props.onAdhocOpen}>{copy.generic.cancel}</PillButton></SheetActions></form></Sheet>}

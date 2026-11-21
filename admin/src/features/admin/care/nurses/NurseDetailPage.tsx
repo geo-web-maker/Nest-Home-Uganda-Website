@@ -145,7 +145,7 @@ export function NurseDetailPage() {
         {details.devices.length === 0 ? <p>No registered devices.</p> : <div className="nurse-device-list">{details.devices.map((device) => <article className="nurse-device" key={device.device_id}>
           <div><strong>{device.platform}</strong><p>{device.device_id}</p><small>Registered {dateTime(device.registered_at)} · token {device.has_push_token ? 'present' : 'missing'}</small></div>
           <span className={`nurse-device-state${device.revoked_at ? ' is-revoked' : ''}`}>{device.revoked_at ? `Revoked ${dateTime(device.revoked_at)}` : 'Active'}</span>
-          {canWriteNurse && !device.revoked_at && <Button variant="outline" disabled={busy} onClick={async () => { const accepted = await dialogs.confirm(`Revoke device ${device.device_id}?`, { confirmLabel: 'Revoke device' }); if (accepted) void runAction(() => apiClient.post(`/admin/care/nurses/${encodeURIComponent(userId)}/revoke-device`, { device_id: device.device_id }), 'Device revoked.'); }}>Revoke</Button>}
+          {canWriteNurse && !device.revoked_at && <Button variant="danger-outline" disabled={busy} onClick={async () => { const accepted = await dialogs.confirm(`Revoke device ${device.device_id}?`, { confirmLabel: 'Revoke device', danger: true }); if (accepted) void runAction(() => apiClient.post(`/admin/care/nurses/${encodeURIComponent(userId)}/revoke-device`, { device_id: device.device_id }), 'Device revoked.'); }}>Revoke</Button>}
         </article>)}</div>}
       </section>
 

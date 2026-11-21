@@ -3,9 +3,7 @@ name: android-release
 # Builds a signed release APK, uploads it to private storage, and publishes the
 # release record via the admin API. Trigger by pushing a tag: nurse-v1.2.3
 on:
-  push:
-    tags:
-      - 'nurse-v[0-9]*.[0-9]*.[0-9]*'
+  workflow_dispatch:
 
 permissions:
   contents: read

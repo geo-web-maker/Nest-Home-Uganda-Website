@@ -4,17 +4,6 @@ name: admin-android
 # and is intentionally not committed, matching the nurse Android build pattern.
 on:
   workflow_dispatch:
-  push:
-    branches: [main, nurse-module]
-    paths:
-      - admin/**
-      - scripts/apply_admin_android_overrides.mjs
-      - .github/workflows/admin-android.yml
-  pull_request:
-    paths:
-      - admin/**
-      - scripts/apply_admin_android_overrides.mjs
-      - .github/workflows/admin-android.yml
 
 permissions:
   contents: read

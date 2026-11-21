@@ -268,6 +268,7 @@ export const copy = {
     required: 'Update required', belowMinimum: 'This version is below the minimum supported version. Update before continuing.', installed: 'Installed:', minimum: 'Minimum:',
     getSupported: 'Get the supported version', contactSupervisor: 'Contact your supervisor for the approved update channel.',
     newerAvailable: 'A newer version', available: 'is available.', installedVersion: 'Installed version:', view: 'View update', upToDate: 'App is up to date', checkAgain: 'Check update status again', installing: 'Opening the installer…',
+    noPolicyYet: 'No version policy has been published yet.',
   },
   disclosure: { accept: 'Accept and continue' },
   logout: { heading: 'Saved work has not been sent', keepWorking: 'Keep working', confirm: 'Sign out and keep saved work', savedItem: 'saved item', keepDataHint: 'If you sign out, this device will keep those items. They will only sync after the same account signs in again. Do not clear this app’s storage while the items are pending.' },

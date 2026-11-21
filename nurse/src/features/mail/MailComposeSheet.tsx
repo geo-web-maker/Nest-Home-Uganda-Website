@@ -171,11 +171,11 @@ export function MailComposeSheet({ value, problem, onDismissProblem, online, att
       {problem && <Banner id="mail-problem" tone="bad" role="alert" floating onDismiss={onDismissProblem ?? (() => undefined)}>{problem}</Banner>}
       {!online && <p role="status" className="mail-hint">{copy.mail.queued}</p>}
       <SheetActions>
-        <PillButton type="submit" tone="forest" size="full" disabled={!canSend}>{copy.mail.send}</PillButton>
+        <PillButton type="submit" tone="gold" size="full" disabled={!canSend}>{copy.mail.send}</PillButton>
         <PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={onSaveDraft}>{copy.mail.saveDraft}</PillButton>
         <PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={requestClose}>{copy.generic.cancel}</PillButton>
       </SheetActions>
     </form>
-    {closeConfirm ? <Sheet role="alertdialog" placement="center" labelledBy="mail-close-confirm-title" className="mr-send-confirm"><h3 id="mail-close-confirm-title">Save your changes?</h3><p>Your draft has changed since it was opened.</p><SheetActions><PillButton type="button" tone="forest" size="full" showArrow={false} onClick={onSaveDraft}>Save draft and close</PillButton><PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={() => onDiscard(value)}>Discard changes</PillButton><PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={() => setCloseConfirm(false)}>Keep editing</PillButton></SheetActions></Sheet> : null}
+    {closeConfirm ? <Sheet role="alertdialog" placement="center" labelledBy="mail-close-confirm-title" className="mr-send-confirm"><h3 id="mail-close-confirm-title">Save your changes?</h3><p>Your draft has changed since it was opened.</p><SheetActions><PillButton type="button" tone="gold" size="full" showArrow={false} onClick={onSaveDraft}>Save draft and close</PillButton><PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={() => onDiscard(value)}>Discard changes</PillButton><PillButton type="button" tone="ghost" size="full" showArrow={false} onClick={() => setCloseConfirm(false)}>Keep editing</PillButton></SheetActions></Sheet> : null}
   </Sheet></NurseMailUiProvider>;
 }

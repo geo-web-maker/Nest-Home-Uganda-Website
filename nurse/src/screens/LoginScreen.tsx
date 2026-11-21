@@ -23,7 +23,7 @@ export function LoginScreen({ identifier, password, busy, online, errorMessage, 
         <input id="identifier" autoComplete="username" value={identifier} onChange={(event) => onIdentifier(event.target.value)} required />
         <label htmlFor="password">{copy.login.password}</label>
         <input id="password" type="password" autoComplete="current-password" value={password} onChange={(event) => onPassword(event.target.value)} required />
-        <PillButton type="submit" tone="forest" disabled={busy || !online} size="full">{busy ? copy.login.working : copy.login.submit}</PillButton>
+        <PillButton type="submit" tone="gold" disabled={busy || !online} size="full">{busy ? copy.login.working : copy.login.submit}</PillButton>
       </form>
       <p className="forgot-password"><span>{copy.login.forgotPassword}</span><small>{copy.login.forgotPasswordHelp}</small></p>
     </Card>

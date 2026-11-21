@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { cx } from '../../lib/cx';
 import styles from './Button.module.css';
 
-export type ButtonVariant = 'primary' | 'outline' | 'whatsapp' | 'forest';
+export type ButtonVariant = 'primary' | 'outline' | 'whatsapp' | 'forest' | 'danger' | 'danger-outline';
 /**
  * default: marketing pill. header: site header. control: matches a form control (48px).
  * compact: inline actions inside table rows and cards.
@@ -52,7 +52,7 @@ export function Button(props: ButtonProps) {
   const { variant = 'primary', size = inherited, fullWidth = false, arrow = false, className, children } = props;
   const classes = cx(
     styles.button,
-    styles[variant],
+    styles[variant === 'danger-outline' ? 'dangerOutline' : variant],
     arrow && styles.withArrow,
     size === 'header' && styles.header,
     size === 'control' && styles.control,

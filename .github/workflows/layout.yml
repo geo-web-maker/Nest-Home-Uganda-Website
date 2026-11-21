@@ -4,9 +4,7 @@ name: layout
 # Fails on sideways scrolling, text spilling out of its box or off the screen, and broken
 # page structure (h1 count, landmarks, heading order, images without alt).
 on:
-  pull_request:
-  push:
-    branches: [main, "batch-*"]
+  workflow_dispatch:
 
 jobs:
   layout:

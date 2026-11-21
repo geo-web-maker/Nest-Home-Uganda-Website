@@ -1,10 +1,10 @@
-import { Link } from 'react-router-dom';
 import type { CachedVisit } from '../offline/db';
 import { formatKampalaTime } from '../lib/time';
 import { copy } from '../copy';
 import { Card } from '../ui/Card';
 import { Chip } from '../ui/Chip';
 import { PillButton } from '../ui/PillButton';
+import { PillLink } from '../ui/PillLink';
 import { Icon } from '../ui/Icon';
 import { Timer } from '../ui/Timer';
 import { statusKind, statusText } from '../ui/statusChip';
@@ -39,10 +39,10 @@ export function ActiveVisit({ visit, onNote, onPhoto, onLeave, photosEnabled, em
       <button type="button" className="quick-note-input mk-quick-note" onClick={() => onNote(visit)}>{copy.active.quickNotePlaceholder}</button>
       <PillButton tone="ghost" showArrow={false} onClick={() => onNote(visit)}>{copy.active.addNote}</PillButton>
     </Card>
-    <div className="detail-primary-action mk-detail-actions"><PillButton tone="forest" onClick={() => onLeave(visit)}>{copy.active.leave}</PillButton></div>
+    <div className="detail-primary-action mk-detail-actions"><PillButton tone="gold" onClick={() => onLeave(visit)}>{copy.active.leave}</PillButton></div>
     {embedded
-      ? <Link className="mk-pane-open" to={`/active/${encodeURIComponent(visit.id)}`}>{copy.active.openFullView}<Icon name="arrow-up-right" /></Link>
-      : <Link className="active-back" to={`/visit/${encodeURIComponent(visit.id)}`}><Icon name="arrow-left" />{copy.active.back}</Link>}
+      ? <PillLink to={`/active/${encodeURIComponent(visit.id)}`} icon="arrow-up-right">{copy.active.openFullView}</PillLink>
+      : <PillLink to={`/visit/${encodeURIComponent(visit.id)}`} icon="arrow-left">{copy.active.back}</PillLink>}
   </section>;
 }
 

@@ -249,7 +249,7 @@ export function SosControl({
             {sent && liveFollowEnabled && confirmedServerCase && !safeConfirmed && !follow && onStartFollow && <section className="live-follow-panel">
               <h3>{copy.safety.liveFollowTitle}</h3>
               <p>{copy.safety.liveFollowStart} {liveFollowMinutes} {copy.safety.liveFollowMinutes}. {copy.safety.liveFollowDisclosure}</p>
-              <PillButton type="button" tone="forest" size="full" onClick={() => void startFollow()} disabled={startingFollow}>{startingFollow ? copy.safety.liveFollowStarting : copy.safety.liveFollowStartButton}</PillButton>
+              <PillButton type="button" tone="gold" size="full" onClick={() => void startFollow()} disabled={startingFollow}>{startingFollow ? copy.safety.liveFollowStarting : copy.safety.liveFollowStartButton}</PillButton>
             </section>}
             {follow && <section className="live-follow-panel" aria-live="polite"><h3>{copy.safety.liveFollowTitle}</h3><p>{copy.safety.liveFollowActive}</p><p>{copy.safety.liveFollowDeadlineLabel}: {new Date(follow.untilMs).toLocaleString()}</p></section>}
             {followMessage && <p role="status">{followMessage}</p>}

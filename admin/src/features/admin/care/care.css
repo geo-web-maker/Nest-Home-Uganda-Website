@@ -69,12 +69,6 @@
   border-bottom: 1px solid var(--line);
 }
 
-button.care-danger-button,
-a.care-danger-button {
-  border-color: var(--danger);
-  color: var(--danger);
-}
-
 .care-data-export {
   max-height: 28rem;
   overflow: auto;

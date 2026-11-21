@@ -3,9 +3,7 @@ name: admin-android-release
 # Builds a signed release APK, uploads it to private storage, and publishes the
 # release record via the admin API. Trigger by pushing a tag: admin-v1.2.3 (full APK; website-only changes use web-bundle-release)
 on:
-  push:
-    tags:
-      - 'admin-v[0-9]*.[0-9]*.[0-9]*'
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -59,7 +59,7 @@ export function SetPasswordScreen() {
           {strength !== 'empty' && <small className="password-strength" data-level={strength} aria-live="polite">{text.strength[strength]}</small>}
           <label htmlFor="confirm-password">{text.confirm}</label>
           <input id="confirm-password" type="password" autoComplete="new-password" value={confirm} onChange={(event) => { setConfirm(event.target.value); setError(''); }} required />
-          <PillButton type="submit" tone="forest" disabled={busy} size="full">{busy ? text.submitting : text.submit}</PillButton>
+          <PillButton type="submit" tone="gold" disabled={busy} size="full">{busy ? text.submitting : text.submit}</PillButton>
         </form>
       </>}
     </Card>

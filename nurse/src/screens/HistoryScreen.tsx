@@ -4,6 +4,7 @@ import { formatKampala } from '../lib/time';
 import { copy, visitStatusLabel } from '../copy';
 import { Card } from '../ui/Card';
 import { Chip } from '../ui/Chip';
+import { Icon } from '../ui/Icon';
 import { PillButton } from '../ui/PillButton';
 import { statusKind } from '../ui/statusChip';
 
@@ -50,6 +51,7 @@ export function HistoryScreen({ history, loading, hasMore, onLoadMore, pendingVi
           <button type="button" className="mk-history-toggle" aria-expanded={expanded} onClick={() => setExpandedVisitId(expanded ? null : item.id)}>
             <span className="mk-history-main"><strong>{clientName}</strong><small>{formatKampala(item.scheduled_start).split(',').slice(-1)[0].trim()} · {durationLabel(item)}</small></span>
             <Chip kind={pending ? 'pd' : statusKind(item.status, item.verification_label)}>{label}</Chip>
+            <Icon name="chevron-right" size={16} className={`mk-history-chevron${expanded ? ' is-open' : ''}`} aria-hidden="true" />
           </button>
           {expanded && <section className="history-past-details mk-history-details" aria-label={copy.history.pastVisit}>
             <p className="eyebrow">{copy.history.pastVisit}</p><p className="muted">{copy.history.readOnly}</p>

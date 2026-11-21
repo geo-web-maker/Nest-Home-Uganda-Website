@@ -69,7 +69,7 @@ export function FormSheet({ formId, clientId, clientName, visitId, doc, onClose 
       {doc?.status === 'signed' && <label>Correction note (a dated note and a new version are added)<textarea rows={2} value={s(data, '_correction_note')} onChange={(e) => set('_correction_note', e.target.value)} /></label>}
       {error && <Banner tone="warn">{error}</Banner>}
       <SheetActions>
-        <PillButton tone="forest" size="full" disabled={busy} onClick={() => void toSigning()}>Continue to signing</PillButton>
+        <PillButton tone="gold" size="full" disabled={busy} onClick={() => void toSigning()}>Continue to signing</PillButton>
         <PillButton tone="ghost" size="full" showArrow={false} disabled={busy} onClick={() => void saveDraft()}>Save draft</PillButton>
         <PillButton tone="ghost" size="full" showArrow={false} onClick={onClose}>Close</PillButton>
       </SheetActions>
@@ -87,7 +87,7 @@ export function FormSheet({ formId, clientId, clientName, visitId, doc, onClose 
         {clientOptional(formId) || !clientTakesPart(formId) ? <PillButton tone="ghost" size="full" showArrow={false} onClick={() => setStage('edit')}>Back</PillButton> : <PillButton tone="ghost" size="full" showArrow={false} onClick={onClose}>Countersign later</PillButton>}
       </SheetActions>
     </>}
-    {stage === 'done' && <><Banner tone="ok">{doneText}</Banner><SheetActions><PillButton tone="forest" size="full" showArrow={false} onClick={onClose}>Done</PillButton></SheetActions></>}
+    {stage === 'done' && <><Banner tone="ok">{doneText}</Banner><SheetActions><PillButton tone="gold" size="full" showArrow={false} onClick={onClose}>Done</PillButton></SheetActions></>}
   </Sheet>;
 }
 

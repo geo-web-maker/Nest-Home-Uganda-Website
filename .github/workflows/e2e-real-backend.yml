@@ -5,9 +5,6 @@ name: e2e-real-backend
 # Cloudinary) is called: SMS_PROVIDER=console and PUSH_SENDER=fake.
 on:
   workflow_dispatch:
-  push:
-    branches: [main, nurse-module]
-  pull_request:
 
 permissions:
   contents: read

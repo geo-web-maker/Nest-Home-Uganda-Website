@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { Icon } from './Icon';
-import { IconButton } from './IconButton';
+import { DismissButton } from './DismissButton';
 type Props = {
   tone: 'info' | 'warn' | 'bad' | 'ok';
   children: ReactNode;
@@ -22,6 +22,6 @@ export function Banner({ tone, children, className = '', role = 'status', id, fl
   }, [floating, onDismiss, tone, children]);
   return <div id={id} className={`mk-banner mk-banner--${tone}${floating ? ' mk-banner--floating' : ''}${className ? ` ${className}` : ''}`} role={role} aria-live={role === 'alert' ? 'assertive' : 'polite'}>
     <Icon name={iconFor[tone]} size={17} /><span className="mk-banner__text">{children}</span>
-    {floating && onDismiss ? <IconButton label="Dismiss message" className="mk-banner__close" onClick={onDismiss}>×</IconButton> : null}
+    {floating && onDismiss ? <DismissButton onClick={onDismiss} /> : null}
   </div>;
 }
