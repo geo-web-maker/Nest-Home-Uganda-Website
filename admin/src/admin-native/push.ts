@@ -13,8 +13,24 @@ async function ensurePushChannels() {
 export const PUSH_OPEN_EVENT = 'nest:push-open';
 export const PUSH_RECEIVED_EVENT = 'nest:push-received';
 
+/**
+ * Push needs a Firebase config (google-services.json) compiled into the APK. Without one, the native
+ * PushNotifications.register() call throws "Default FirebaseApp is not initialized" and the app closes as soon
+ * as the person signs in. Push therefore stays off unless the build sets VITE_PUSH_ENABLED=true, which the
+ * release workflow should do only when it also generates google-services.json.
+ */
+export const PUSH_ENABLED = import.meta.env.VITE_PUSH_ENABLED === 'true';
+
 export async function registerAdminPush(onToken: (token: string) => Promise<void>) {
-  if (!Capacitor.isNativePlatform()) return;
+  if (!Capacitor.isNativePlatform() || !PUSH_ENABLED) return;
+  try {
+    await registerAdminPushUnsafe(onToken);
+  } catch {
+    /* Push is optional: a registration problem must never take the app down or block sign-in. */
+  }
+}
+
+async function registerAdminPushUnsafe(onToken: (token: string) => Promise<void>) {
   const permission = await PushNotifications.requestPermissions();
   if (permission.receive !== 'granted') return;
   await ensurePushChannels();

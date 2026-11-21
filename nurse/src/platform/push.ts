@@ -14,12 +14,19 @@ export type PushCallbacks = {
   onAction?: (action: ActionPerformed) => void;
 };
 
+/**
+ * Push needs a Firebase config (google-services.json) compiled into the APK. Without one, the native register call
+ * throws "Default FirebaseApp is not initialized" and the app closes. Push stays off unless the build sets
+ * VITE_PUSH_ENABLED=true, which the release workflow does only when it also installs google-services.json.
+ */
+export const PUSH_ENABLED = import.meta.env.VITE_PUSH_ENABLED === 'true';
+
 /** Register for native push after the listener is installed, and return a cleanup handle. */
 export async function registerForPush(
   onToken: (token: string) => Promise<void>,
   callbacks: PushCallbacks = {},
 ): Promise<StopPushRegistration | undefined> {
-  if (!Capacitor.isNativePlatform()) return undefined;
+  if (!Capacitor.isNativePlatform() || !PUSH_ENABLED) return undefined;
   const permission = await PushNotifications.requestPermissions();
   if (permission.receive !== 'granted') return undefined;
   await ensurePushChannels();
