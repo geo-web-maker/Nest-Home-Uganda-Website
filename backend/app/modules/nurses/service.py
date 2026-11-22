@@ -28,13 +28,14 @@ async def profile_for_user(user_id: str):
     return await get_profile_for_user(user_id)
 
 
-async def register_user_device(user_id: str, payload: DeviceRegistration) -> Device:
+async def register_user_device(user_id: str, payload: DeviceRegistration, app: str | None = None) -> Device:
     return await register_device(
         Device(
             device_id=payload.device_id,
             user_id=user_id,
             platform=payload.platform,
             push_token=payload.push_token,
+            app=app,
         )
     )
 

@@ -26,6 +26,8 @@ async def register_device(device: Device) -> Device:
         if existing.revoked_at is not None:
             raise Unauthorised("This device has been revoked.")
         existing.platform = device.platform
+        if device.app:
+            existing.app = device.app
         if device.push_token != existing.push_token:
             existing.push_token = device.push_token
             existing.push_token_updated_at = datetime.now(UTC)

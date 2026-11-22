@@ -40,6 +40,7 @@ class Device(Document):
     revoked_at: datetime | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     push_token_updated_at: datetime | None = None
+    app: str | None = None  # "nurse" or "admin": which Android app registered this device
 
     class Settings:
         name = "devices"

@@ -450,7 +450,7 @@ async def register_device(
     if existing and existing.user_id != principal.user_id:
         raise HTTPException(status_code=409, detail="device_already_registered")
     try:
-        device = await register_user_device(principal.user_id, payload)
+        device = await register_user_device(principal.user_id, payload, app="nurse")
     except Exception as exc:
         from app.core.errors import Conflict, Unauthorised
 

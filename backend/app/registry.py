@@ -56,6 +56,7 @@ from app.modules.flags.models import VisitFlag
 from app.modules.jobs import router as jobs_router
 from app.modules.jobs.models import Job
 from app.modules.mail import router as mail_router
+from app.modules.push import router as push_diagnostics_router
 from app.modules.media import router as media_router
 from app.modules.media.models import Media
 from app.modules.notifications.models import SmsLog
@@ -203,6 +204,7 @@ ROUTERS: list[APIRouter] = [
     care_forms_router.admin_router,
     care_ops_router.router,
     mail_router.router,
+    push_diagnostics_router.router,
     agreements_admin_router,
     agreements_public_router,
     billing_admin_router,

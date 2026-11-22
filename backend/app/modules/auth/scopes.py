@@ -69,6 +69,7 @@ SCOPES: tuple[Scope, ...] = (
     Scope("agreements:templates", "Agreements", "Manage agreement wording and email/SMS templates"),
     Scope("agreements:notifications", "Agreements", "View agreement email/SMS notification wording"),
     Scope("agreements:diagnostics", "Agreements", "Run agreement readiness checks, workflow simulation and delivery tests"),
+    Scope("push:diagnostics", "Diagnostics", "Inspect push notification setup, devices and deliveries, and send test notifications"),
     Scope("billing:read", "Billing", "View invoices, receipts and their timelines; download PDFs"),
     Scope("billing:write", "Billing", "Create and edit drafts, issue invoices, record payments and email documents"),
     Scope("billing:void", "Billing", "Void an invoice or payment after authenticator verification"),

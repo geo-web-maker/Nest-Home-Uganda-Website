@@ -6,17 +6,19 @@ import { useAuth } from '../auth/useAuth';
 import { AgreementDiagnostics } from '../agreements/AgreementDiagnostics';
 import { MailDiagnosticsSection } from '../mail/MailDiagnosticsSection';
 import { AuthenticatorSection } from './AuthenticatorSection';
+import { PushDiagnosticsSection } from './PushDiagnosticsSection';
 import { ReleaseChecksSection } from './ReleaseChecksSection';
 import { SmsDiagnosticsSection } from './SmsDiagnosticsSection';
 import { TestAccountsSection } from './TestAccountsSection';
 
-type Section = 'authenticator' | 'test-accounts' | 'email' | 'sms' | 'agreements' | 'releases';
+type Section = 'authenticator' | 'test-accounts' | 'email' | 'sms' | 'push' | 'agreements' | 'releases';
 
 const TABS = [
   { value: 'authenticator', label: 'Authenticator' },
   { value: 'test-accounts', label: 'Test accounts' },
   { value: 'email', label: 'Email' },
   { value: 'sms', label: 'SMS' },
+  { value: 'push', label: 'Push' },
   { value: 'agreements', label: 'Agreements' },
   { value: 'releases', label: 'Releases' },
 ] as const;
@@ -38,6 +40,7 @@ export function DiagnosticsPage() {
         {section === 'test-accounts' ? <TestAccountsSection /> : null}
         {section === 'email' ? <MailDiagnosticsSection /> : null}
         {section === 'sms' ? <SmsDiagnosticsSection /> : null}
+        {section === 'push' ? <PushDiagnosticsSection /> : null}
         {section === 'releases' ? <ReleaseChecksSection /> : null}
         {section === 'agreements' ? <AgreementDiagnostics canRunWorkflow canSeedTemplate /> : null}
       </div>

@@ -312,12 +312,14 @@ async def register_admin_device(
             platform=platform,
             push_token=push_token,
             push_token_updated_at=datetime.now(UTC),
+            app="admin",
         )
         await device.insert()
     else:
         device.user_id = principal.user_id
         device.platform = platform
         device.push_token = push_token
+        device.app = "admin"
         device.push_token_updated_at = datetime.now(UTC)
         await device.save()
     await audit(
