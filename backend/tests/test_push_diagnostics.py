@@ -98,3 +98,15 @@ def test_each_app_labels_its_own_devices():
 def test_nurse_hint_explains_the_opt_in_and_the_firebase_secret():
     assert "Visit reminders" in diagnostics.NURSE_HINT
     assert "NURSE_GOOGLE_SERVICES_JSON_BASE64" in diagnostics.NURSE_HINT
+
+
+def test_b64_key_decoding_is_forgiving():
+    import base64
+    from app.modules.push.fcm import _decode_b64_setting as d
+    raw = '{"a": 1}'
+    enc = base64.b64encode(raw.encode()).decode()
+    assert d(enc) == raw
+    assert d(enc[:10] + "\n  " + enc[10:]) == raw
+    assert d('"' + enc + '"') == raw
+    assert d(enc.rstrip("=")) == raw
+    assert d(raw) == raw

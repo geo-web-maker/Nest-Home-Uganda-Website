@@ -13,11 +13,24 @@ from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from app.core.config import get_settings
 
 
+def _decode_b64_setting(value: str) -> str:
+    """Decode the base64 key leniently: ignores whitespace/line breaks, surrounding quotes and a data: prefix,
+    accepts URL-safe characters and missing padding, and accepts the raw JSON if that was pasted by mistake."""
+    text = value.strip().strip("\"'").strip()
+    if text.startswith("{"):
+        return text
+    if "base64," in text:
+        text = text.split("base64,", 1)[1]
+    text = "".join(text.split()).replace("-", "+").replace("_", "/")
+    text = text + "=" * (-len(text) % 4)
+    return base64.b64decode(text, validate=True).decode("utf-8")
+
+
 def _service_account():
     settings = get_settings()
     raw = settings.fcm_service_account_json
     if not raw and settings.fcm_service_account_json_b64:
-        raw = base64.b64decode(settings.fcm_service_account_json_b64, validate=True).decode("utf-8")
+        raw = _decode_b64_setting(settings.fcm_service_account_json_b64)
     if not raw:
         raise ValueError("FCM service account is not configured")
     data = json.loads(raw)
