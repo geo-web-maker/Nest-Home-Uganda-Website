@@ -12,13 +12,15 @@ interface ModalProps {
   subtitle?: ReactNode;
   onClose: () => void;
   closeLabel?: string;
+  /** Hide the header button when the dialog's own footer already has a Cancel; Escape still closes. */
+  hideClose?: boolean;
   className?: string;
   role?: 'dialog' | 'alertdialog';
   children: ReactNode;
 }
 
 /** The one admin dialog: backdrop, heading, Close button, Escape to close, focus moves inside. */
-export function Modal({ id, title, subtitle, onClose, closeLabel = 'Close', className, role = 'dialog', children }: ModalProps) {
+export function Modal({ id, title, subtitle, onClose, closeLabel = 'Close', hideClose = false, className, role = 'dialog', children }: ModalProps) {
   const dialog = useRef<HTMLElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -54,9 +56,11 @@ export function Modal({ id, title, subtitle, onClose, closeLabel = 'Close', clas
             <h2 id={id}>{title}</h2>
             {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
           </div>
-          <Button variant="outline" onClick={onClose}>
-            {closeLabel}
-          </Button>
+          {hideClose ? null : (
+            <Button variant="outline" onClick={onClose}>
+              {closeLabel}
+            </Button>
+          )}
         </header>
         {children}
       </section>

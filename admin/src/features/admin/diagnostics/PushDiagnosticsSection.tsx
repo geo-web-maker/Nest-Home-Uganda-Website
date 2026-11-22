@@ -18,6 +18,7 @@ type Device = {
 type Delivery = { id: string; user_id: string; category: string; title: string; status: string; attempts: number; last_error: string | null; help: string; created_at: string | null };
 type SendResult = { ok: boolean; stage?: string; error?: string; detail?: string; help?: string; note?: string; http_status?: number; elapsed_ms?: number; validate_only?: boolean; message_name?: string; sender_setting?: string };
 type ScenarioResult = { ok: boolean; mode: string; note: string | null; to?: string; critical?: boolean; results: { device_id: string; status: string; error?: string | null; help?: string }[] };
+type Urgency = { category: string; label: string; value: 'default' | 'urgent' | 'normal' };
 type Pipeline = { mode: string; note: string | null; results: { device_id: string; status: string }[] };
 
 const BASE = '/admin/push/diagnostics';
@@ -65,6 +66,7 @@ export function PushDiagnosticsSection() {
   const [body, setBody] = useState('If you can read this, push works.');
   const [critical, setCritical] = useState(false);
   const [app, setApp] = useState<App>('any');
+  const [urgency, setUrgency] = useState<Urgency[] | null>(null);
   const [scenario, setScenario] = useState('visit_assigned');
   const [scenarioResult, setScenarioResult] = useState<ScenarioResult | null>(null);
 
@@ -84,6 +86,11 @@ export function PushDiagnosticsSection() {
     const out = await apiClient.post<{ steps: Check[]; devices?: Device[] }>(`${BASE}/explain`, { user: person, app });
     setExplain(out.steps);
     if (out.devices) setDevices(out.devices);
+  });
+  const loadUrgency = () => act('urgency', async () => setUrgency((await apiClient.get<{ items: Urgency[] }>(`${BASE}/urgency`)).items));
+  const saveUrgency = (item: Urgency, value: Urgency['value']) => act('urgency-save', async () => {
+    await apiClient.put(`${BASE}/urgency`, { category: item.category, value });
+    setUrgency((current) => (current ?? []).map((row) => (row.category === item.category ? { ...row, value } : row)));
   });
   const runScenario = async () => {
     if (!(await dialogs.confirm(`Send a "${SCENARIOS.find((item) => item.id === scenario)?.label}" test notification to ${person}? It is marked "Test:" and goes through the real delivery pipeline.`))) return;
@@ -108,6 +115,25 @@ export function PushDiagnosticsSection() {
         ))}
       </div>
       {app === 'nurse' ? <Notice tone="info"><p>The nurse app only registers for push after the nurse turns on Visit reminders, allows notifications, and is on a build made with the nurse Firebase config. No phone row means one of those is missing.</p></Notice> : null}
+
+      <div className={styles.block}>
+        <h3>Notification urgency</h3>
+        <p className={styles.help}>Urgent notifications use the loud urgent channel and stay deliverable longer. Normal ones use the regular Updates channel. "Built-in" keeps the default rule: only safety alerts and critical care alerts are urgent. Every notification is sent at high priority either way.</p>
+        {urgency === null ? <div className={styles.actions}><Button variant="outline" disabled={busy !== ''} onClick={() => void loadUrgency()}>{busy === 'urgency' ? 'Loading…' : 'Load urgency settings'}</Button></div> : (
+          <div className={styles.fields}>
+            {urgency.map((item) => (
+              <label key={item.category} className={styles.field}>{item.label}
+                <select value={item.value} disabled={busy !== ''} onChange={(event) => void saveUrgency(item, event.target.value as Urgency['value'])}>
+                  <option value="default">Built-in rule</option>
+                  <option value="urgent">Always urgent</option>
+                  <option value="normal">Always normal</option>
+                </select>
+              </label>
+            ))}
+          </div>
+        )}
+        {urgency?.some((item) => item.category === 'sos' && item.value === 'normal') ? <Notice tone="error"><p>Safety alerts are set to normal. They will no longer use the urgent channel, so they may be easier to miss.</p></Notice> : null}
+      </div>
 
       <div className={styles.block}>
         <h3>1. Setup</h3>

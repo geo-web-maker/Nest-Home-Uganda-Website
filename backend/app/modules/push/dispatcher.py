@@ -85,6 +85,17 @@ async def run_push_deliveries(now: datetime | None = None, *, limit: int = 100) 
     return processed
 
 
+async def resolve_critical(category: str, critical: bool) -> bool:
+    """Apply the admin's urgency setting for this kind of notification. "default" keeps what the code decided."""
+    try:
+        from app.modules.settings.care_service import care_values
+
+        choice = (await care_values()).get(f"push.urgency.{category}", "default")
+    except Exception:
+        return critical
+    return True if choice == "urgent" else False if choice == "normal" else critical
+
+
 async def dispatch(
     user_ids: list[str],
     category: str,
@@ -96,6 +107,7 @@ async def dispatch(
 ):
     """Persist each inbox item and push attempt before contacting the provider."""
     results = []
+    critical = await resolve_critical(category, critical)
     from app.core import sandbox
 
     for user_id in sorted(set(user_ids)):

@@ -48,7 +48,7 @@ export function DialogHost() {
 
   if (current.kind === 'choose') {
     return (
-      <Modal id="app-dialog-title" title={title} subtitle={current.message} onClose={cancel} closeLabel="Cancel">
+      <Modal id="app-dialog-title" title={title} subtitle={current.message} onClose={cancel} closeLabel="Cancel" hideClose>
         <form onSubmit={(event) => { event.preventDefault(); finish(text); }}>
           <select
             autoFocus
@@ -78,7 +78,7 @@ export function DialogHost() {
     const valid = minLength > 0 ? text.trim().length >= minLength : true;
     const submit = () => { if (valid) finish(text); };
     return (
-      <Modal id="app-dialog-title" title={title} subtitle={current.message} onClose={cancel} closeLabel="Cancel">
+      <Modal id="app-dialog-title" title={title} subtitle={current.message} onClose={cancel} closeLabel="Cancel" hideClose>
         <form onSubmit={(event) => { event.preventDefault(); submit(); }}>
           {multiline ? (
             <textarea
@@ -122,7 +122,7 @@ export function DialogHost() {
     const allValid = current.fields.every((field) => fieldIsValid(field, values[field.name] ?? ''));
     const submit = () => { if (allValid) finish(Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value.trim()]))); };
     return (
-      <Modal id="app-dialog-title" title={title} subtitle={current.message} onClose={cancel} closeLabel="Cancel">
+      <Modal id="app-dialog-title" title={title} subtitle={current.message} onClose={cancel} closeLabel="Cancel" hideClose>
         <form onSubmit={(event) => { event.preventDefault(); submit(); }}>
           {current.fields.map((field, index) => {
             const common = {
@@ -155,7 +155,7 @@ export function DialogHost() {
   const confirmLabel = current.kind === 'confirm' ? current.options.confirmLabel ?? 'Confirm' : 'OK';
   const danger = current.kind === 'confirm' && Boolean(current.options.danger);
   return (
-    <Modal id="app-dialog-title" title={title} subtitle={current.message} onClose={cancel} closeLabel="Cancel" role={current.kind === 'confirm' ? 'alertdialog' : 'dialog'}>
+    <Modal id="app-dialog-title" title={title} subtitle={current.message} onClose={cancel} closeLabel="Cancel" hideClose={current.kind === 'confirm'} role={current.kind === 'confirm' ? 'alertdialog' : 'dialog'}>
       <ButtonGroup>
         <Button type="button" variant={danger ? 'danger' : 'primary'} autoFocus={!danger} onClick={() => finish(true)}>{confirmLabel}</Button>
         {current.kind === 'confirm' && <Button type="button" variant="outline" autoFocus={danger} onClick={cancel}>Cancel</Button>}

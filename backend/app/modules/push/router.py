@@ -32,6 +32,21 @@ class ExplainBody(BaseModel):
     app: Literal["any", "admin", "nurse"] = "any"
 
 
+URGENCY_CATEGORIES = {
+    "mail": "New mail",
+    "visit": "Visit assigned, changed or cancelled",
+    "timesheet": "Timesheet approved or sent back",
+    "care_alert": "Care alerts",
+    "sos": "Staff safety alerts",
+}
+
+
+class UrgencyBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    category: Literal["mail", "visit", "timesheet", "care_alert", "sos"]
+    value: Literal["default", "urgent", "normal"]
+
+
 class ScenarioBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
     user: str = Field(min_length=1, max_length=200)
@@ -116,3 +131,23 @@ async def scenario(body: ScenarioBody, response: Response, principal: CanDiagnos
     """Send one real-looking notification (visit, timesheet, mail, safety alert) to a person via the real dispatcher."""
     await _guard(principal, mail_totp, response)
     return await diagnostics.send_scenario(body.user, body.scenario)
+
+
+@router.get("/urgency")
+async def get_urgency(response: Response, principal: CanDiagnose, mail_totp: str | None = Cookie(default=None)):
+    """How urgent each kind of notification is. "default" keeps the built-in rule (only safety alerts and critical care alerts are urgent)."""
+    await _guard(principal, mail_totp, response)
+    from app.modules.settings.care_service import care_values
+
+    values = await care_values()
+    return {"items": [{"category": k, "label": v, "value": values.get(f"push.urgency.{k}", "default")} for k, v in URGENCY_CATEGORIES.items()]}
+
+
+@router.put("/urgency")
+async def set_urgency(body: UrgencyBody, response: Response, principal: CanDiagnose,
+                      mail_totp: str | None = Cookie(default=None)):
+    """Make a kind of notification always urgent, always normal, or back to the built-in rule. Audited."""
+    await _guard(principal, mail_totp, response)
+    from app.modules.settings.care_service import save_care_value
+
+    return await save_care_value(f"push.urgency.{body.category}", body.value, principal.user_id)

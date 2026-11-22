@@ -193,7 +193,16 @@ async def list_devices(user_id: str | None = None, limit: int = 100, app: str = 
     devices = await query.sort("-created_at").limit(max(1, min(limit, 200))).to_list()
     if app in ("admin", "nurse"):
         devices = [d for d in devices if d.app == app]
-    users = {str(u.id): u for u in await User.find({"_id": {"$in": [d.user_id for d in devices]}}).to_list()} if devices else {}
+    users = {}
+    if devices:
+        from beanie import PydanticObjectId
+        ids = []
+        for d in devices:
+            try:
+                ids.append(PydanticObjectId(d.user_id))
+            except Exception:
+                continue
+        users = {str(u.id): u for u in await User.find({"_id": {"$in": ids}}).to_list()} if ids else {}
     now = datetime.now(UTC)
     rows = []
     for d in devices:
@@ -390,6 +399,8 @@ async def send_scenario(query: str, scenario: str) -> dict[str, Any]:
     if user is None:
         return {"ok": False, "note": "No user with that e-mail or id.", "results": []}
     category, title, body, data, critical = SCENARIOS[scenario]
+    from app.modules.push.dispatcher import resolve_critical
+    critical = await resolve_critical(category, critical)
     user_id = str(user.id)
     results = await dispatch([user_id], category, "Test: " + title, body, data, critical=critical)
     rows = await PushDelivery.find(PushDelivery.user_id == user_id).sort("-created_at").limit(max(1, len(results))).to_list()

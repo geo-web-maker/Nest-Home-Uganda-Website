@@ -110,3 +110,24 @@ def test_b64_key_decoding_is_forgiving():
     assert d('"' + enc + '"') == raw
     assert d(enc.rstrip("=")) == raw
     assert d(raw) == raw
+
+
+async def test_urgency_setting_overrides_the_built_in_rule(monkeypatch):
+    from app.modules.push import dispatcher
+    from app.modules.settings import care_service
+
+    async def values():
+        return {"push.urgency.mail": "urgent", "push.urgency.sos": "normal", "push.urgency.visit": "default"}
+    monkeypatch.setattr(care_service, "care_values", values)
+    assert await dispatcher.resolve_critical("mail", False) is True
+    assert await dispatcher.resolve_critical("sos", True) is False
+    assert await dispatcher.resolve_critical("visit", False) is False
+    assert await dispatcher.resolve_critical("visit", True) is True
+
+
+def test_urgency_values_are_validated():
+    from app.modules.settings.care_keys import validate_value
+
+    assert validate_value("push.urgency.mail", "urgent") == "urgent"
+    with pytest.raises(ValueError):
+        validate_value("push.urgency.mail", "loud")

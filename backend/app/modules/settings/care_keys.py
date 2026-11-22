@@ -109,6 +109,11 @@ for row in [
     ("alerts.sms_after_unacked_min", "integer", 15, False, ("org",), "alerts", 1, 240),
     ("alerts.quiet_hours", "text", "22:00-07:00"),
     ("sms.monthly_cap", "integer", 1000, False, ("org",), "sms", 0, 100000),
+    ("push.urgency.mail", "choice", "default", False, ("org",), "push"),
+    ("push.urgency.visit", "choice", "default", False, ("org",), "push"),
+    ("push.urgency.timesheet", "choice", "default", False, ("org",), "push"),
+    ("push.urgency.care_alert", "choice", "default", False, ("org",), "push"),
+    ("push.urgency.sos", "choice", "default", False, ("org",), "push"),
     ("timesheets.period_kind", "choice", "weekly", False, ("org",), "timesheets"),
     ("timesheets.approver_required", "boolean", True),
     ("timesheets.rounding_minutes", "integer", 1, False, ("org",), "timesheets", 1, 60),
@@ -156,6 +161,8 @@ def validate_value(key: str, value: Any) -> Any:
         or int(value[3:]) > 59
     ):
         raise ValueError(f"{key} must be HH:MM")
+    if key.startswith("push.urgency.") and value not in {"default", "urgent", "normal"}:
+        raise ValueError("push urgency must be default, urgent, or normal")
     if key == "auth.login_identifier" and value not in {"email", "phone", "either"}:
         raise ValueError("auth.login_identifier must be email, phone, or either")
     if key == "timesheets.period_kind" and value not in {"weekly", "fortnightly", "monthly"}:
