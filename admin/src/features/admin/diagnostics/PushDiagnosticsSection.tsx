@@ -32,7 +32,7 @@ const SCENARIOS = [
 ];
 const LABEL: Record<string, string> = {
   sender: 'Sender switched on', service_account: 'Firebase key', project: 'Firebase project', channels: 'Notification channels',
-  devices_admin: 'Admin app phones', devices_nurse: 'Nurse app phones', devices_unlabelled: 'Phones not yet labelled', nurse_profile: 'Nurse profile', mailbox: 'Mailbox membership',
+  devices_admin: 'Admin app phones', devices_nurse: 'Nurse app phones', devices_unlabelled: 'Phones not yet labelled', nurse_profile: 'Nurse profile',
   priority: 'Priority', ttl: 'Time to live', devices: 'Registered phones', deliveries: 'Recent deliveries', google_auth: 'Google accepts the key',
   user: 'Person', test_account: 'Test account', mailbox: 'Mailbox membership', history: 'Delivery history', sender_excluded: 'Sender is not notified',
 };
