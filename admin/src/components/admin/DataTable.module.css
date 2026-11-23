@@ -80,9 +80,13 @@
 
 .skeleton span {
   height: 14px;
-  background: var(--mint);
+  background: linear-gradient(90deg, var(--mint), color-mix(in srgb, var(--mint) 55%, var(--surf)), var(--mint)) 0 0 / 200% 100%;
   border-radius: 8px;
+  animation: skeleton-shimmer 1.6s linear infinite;
 }
+.skeleton span:nth-child(2) { width: 88%; }
+.skeleton span:nth-child(3) { width: 72%; }
+@keyframes skeleton-shimmer { to { background-position: -200% 0; } }
 
 @media (min-width: 1040px) {
   .wrap {
@@ -169,5 +173,6 @@
   border-radius: 6px;
 }
 @media (prefers-reduced-motion: reduce) {
+  .skeleton span { animation: none; }
   .row, .link { transition: none; }
 }

@@ -10,6 +10,7 @@ import '../care.css';
 import './nurse-detail.css';
 import { Notice } from '@shared/components/dialogs/Notice';
 import { MIN_PASSWORD_LENGTH, isWeakPassword } from '@shared/lib/passwordStrength';
+import { LoadingNote } from '../../../../components/admin/LoadingNote';
 
 type NurseDetails = {
   person: { name?: string | null; email?: string | null; phone_e164?: string | null; is_active?: boolean };
@@ -72,7 +73,7 @@ export function NurseDetailPage() {
     );
   }
 
-  if (loading) return <section className="admin-page"><p role="status">Loading nurse details…</p></section>;
+  if (loading) return <section className="admin-page"><LoadingNote>Loading nurse details…</LoadingNote></section>;
   if (!details) return <section className="admin-page"><p role="alert">{error || 'Nurse not found.'}</p><Button variant="outline" onClick={() => navigate('/care/nurses')}>Back to nurses</Button></section>;
 
   const nurse = details.profile;
@@ -109,7 +110,7 @@ export function NurseDetailPage() {
             <h3>Supervisor assignment</h3>
             <Field label="Supervisor user ID" value={supervisorId} onChange={(event) => setSupervisorId(event.target.value)} maxLength={160} />
             <p>Use the account ID of an active supervisor. Leave blank only when your operational policy allows an unassigned nurse.</p>
-            <Button type="submit" disabled={busy}>Save supervisor</Button>
+            <Button type="submit" loading={busy}>Save supervisor</Button>
           </form>}
         </article>
 

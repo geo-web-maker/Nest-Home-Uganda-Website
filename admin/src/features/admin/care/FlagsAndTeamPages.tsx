@@ -14,6 +14,7 @@ import { Notice } from '@shared/components/dialogs/Notice';
 import { StatusBadge } from '@shared/components/ui/Badge';
 import { ButtonGroup } from '@shared/components/dialogs/ButtonGroup';
 import { FilterBar, filterBarGrow } from '../../../components/admin/FilterBar';
+import { LoadingNote } from '../../../components/admin/LoadingNote';
 
 type Row = Record<string, any> & { id: string };
 const dateTime = (value: unknown) => {
@@ -63,7 +64,7 @@ export function FlagsQueuePage() {
     <div className="stage-summary-strip"><div><strong>{rows.length}</strong><span>Open flags</span></div><div><strong>{rows.filter((row) => /unscheduled|no_visit/i.test(String(row.type))).length}</strong><span>Scheduling review</span></div><div><strong>{rows.filter((row) => /location|distance|accuracy/i.test(String(row.type))).length}</strong><span>Verification</span></div><div><strong>{rows.filter((row) => /photo/i.test(String(row.type))).length}</strong><span>Photo review</span></div></div>
     <FilterBar label="Filter flags"><Field label="Find a flag" type="search" className={filterBarGrow} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Flag, visit or nurse" /><Field label="Type" kind="select" value={filter} onChange={(event) => setFilter(event.target.value)}><option value="all">All open flags</option>{kinds.map((kind) => <option key={kind} value={kind}>{label(kind)}</option>)}</Field></FilterBar>
     {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}{notice && <Notice floating onDismiss={() => setNotice('')}>{notice}</Notice>}
-    {loading ? <p aria-busy="true">Loading flags…</p> : visible.length === 0 ? <section className="stage-panel"><p>No open flags match this view.</p></section> : <section className="stage-panel"><DataTable
+    {loading ? <LoadingNote>Loading flags…</LoadingNote> : visible.length === 0 ? <section className="stage-panel"><p>No open flags match this view.</p></section> : <section className="stage-panel"><DataTable
     columns={[
       { key: 'flag', header: 'Flag', cell: (row) => <><StatusBadge status="warning">{label(row.type)}</StatusBadge><small className="stage-muted">{row.id}</small></> },
       { key: 'visit', header: 'Visit', cell: (row) => String(row.visit_id ?? 'No visit linked') },
@@ -110,7 +111,7 @@ export function MyTeamPage() {
     <PageHeader title="My team" actions={<Button variant="outline" onClick={() => void load()}>Refresh</Button>} />
     <div className="stage-summary-strip"><div><strong>{rows.length}</strong><span>Team members</span></div><div><strong>{active}</strong><span>Active staff</span></div><div><strong>{scheduledToday}</strong><span>Visits in progress or scheduled today</span></div><div><strong>{recentlySeen}</strong><span>Seen in the past 24 hours</span></div></div>
     {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}
-    {loading ? <p aria-busy="true">Loading team…</p> : rows.length === 0 ? <section className="stage-panel"><p>No team members are in your current scope.</p></section> : <section className="stage-panel"><DataTable
+    {loading ? <LoadingNote>Loading team…</LoadingNote> : rows.length === 0 ? <section className="stage-panel"><p>No team members are in your current scope.</p></section> : <section className="stage-panel"><DataTable
     columns={[
       { key: 'nurse', header: 'Nurse', cell: (row) => <strong>{String(row.display_name ?? row.name ?? row.user_id)}</strong> },
       { key: 'staff-number', header: 'Staff number', cell: (row) => String(row.staff_number ?? '—') },

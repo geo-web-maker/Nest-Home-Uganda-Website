@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { vi } from 'vitest';
 import { Button, ButtonSizeProvider } from './Button';
 
 function renderInRouter(ui: React.ReactElement) {
@@ -117,5 +118,17 @@ describe('Button', () => {
       renderInRouter(<Button size="control">Go</Button>);
       expect(screen.getByRole('button')).not.toHaveAttribute('size');
     });
+  });
+});
+
+describe('Button loading', () => {
+  it('sets aria-busy, disables the button and ignores clicks', async () => {
+    const onClick = vi.fn();
+    render(<Button loading onClick={onClick}>Save</Button>);
+    const button = screen.getByRole('button', { name: 'Save' });
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button).toBeDisabled();
+    button.click();
+    expect(onClick).not.toHaveBeenCalled();
   });
 });

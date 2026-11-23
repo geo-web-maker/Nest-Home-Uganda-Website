@@ -5,6 +5,7 @@ import { useAuth } from './auth/useAuth';
 import { hasScopes } from './auth/hasScopes';
 import './care/nurses/nurse-detail.css';
 import './ProfilePage.css';
+import { LoadingNote } from '../../components/admin/LoadingNote';
 
 /** Shared account identity and app switching for staff with both app scopes. */
 export function ProfilePage() {
@@ -38,7 +39,7 @@ export function ProfilePage() {
     {canSwitchToNurse && <article className="care-form">
       <h2>Nurse application</h2>
       <p>This account has nurse-app access as well as admin access. Switching opens the nurse application; it does not create a second account.</p>
-      {loading ? <p role="status">Loading nurse app link…</p> : error ? <p role="alert">{error}</p> : nurseUrl ? <Button type="button" onClick={() => window.location.assign(nurseUrl)}>Open nurse app</Button> : <p>The nurse app URL is not configured for this deployment.</p>}
+      {loading ? <LoadingNote>Loading nurse app link…</LoadingNote> : error ? <p role="alert">{error}</p> : nurseUrl ? <Button type="button" onClick={() => window.location.assign(nurseUrl)}>Open nurse app</Button> : <p>The nurse app URL is not configured for this deployment.</p>}
     </article>}
     <article className="care-form"><h2>Permissions</h2><ul>{(user?.scopes ?? []).map((scope) => <li key={scope}><code>{scope}</code></li>)}</ul></article>
   </section>;

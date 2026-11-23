@@ -14,6 +14,7 @@ import { Modal } from '@shared/components/dialogs/Modal';
 import { Notice } from '@shared/components/dialogs/Notice';
 import { StatusBadge } from '@shared/components/ui/Badge';
 import { ButtonGroup } from '@shared/components/dialogs/ButtonGroup';
+import { LoadingNote } from '../../../components/admin/LoadingNote';
 
 type Visit = Record<string, any> & {
   id: string;
@@ -273,7 +274,7 @@ export function VisitSchedulePage() {
       </div>
       {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}
       {notice && <Notice floating onDismiss={() => setNotice('')}>{notice}</Notice>}
-      {loading ? <p aria-busy="true">Loading schedule…</p> : visibleVisits.length === 0 ? <section className="stage-panel"><p>No visits are scheduled for this period.</p></section> : (
+      {loading ? <LoadingNote>Loading schedule…</LoadingNote> : visibleVisits.length === 0 ? <section className="stage-panel"><p>No visits are scheduled for this period.</p></section> : (
         view === 'day' ? <section className="stage-panel"><div className="stage-table-scroll"><table className="stage-table"><caption>Visits for {range.label}</caption><thead><tr><th>Time</th><th>Nurse</th><th>Client</th><th>Place</th><th>Status</th><th>Actions</th></tr></thead><tbody>{visibleVisits.map(renderVisit)}</tbody></table></div></section> : (
           <div className="stage-week-grid">{Array.from({ length: 7 }, (_, offset) => { const day = startOfWeek(dateFromKey(anchor)); day.setDate(day.getDate() + offset); const key = dateKey(day); const dayVisits = visibleVisits.filter((visit) => dateKey(new Date(visit.scheduled_start)) === key); return <section className="stage-panel stage-week-day" key={key}><h2>{new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(day)} <span>{day.getDate()}</span></h2>{dayVisits.length ? dayVisits.map((visit) => <article className="stage-calendar-visit" key={visit.id}><strong>{timeLabel(visit.scheduled_start)}</strong><span>{displayName(clients, visit.client_id, 'client')}</span><small>{displayName(nurses, visit.nurse_id, 'nurse')}</small><StatusBadge status={String(visit.status ?? '')}>{String(visit.status).replaceAll('_', ' ')}</StatusBadge><Button variant="outline" onClick={() => navigate(`/care/visits/${encodeURIComponent(visit.id)}`)}>Review</Button>{canWrite && visit.status === 'scheduled' && <Button variant="outline" onClick={() => void openVisitAction(visit)}>Change</Button>}</article>) : <p className="stage-muted">No visits</p>}</section>; })}</div>
         )

@@ -5,6 +5,7 @@ import { Button } from '@shared/components/ui/Button';
 import { apiClient } from '@shared/lib/api/client';
 import { DataTable } from '../../components/admin/DataTable';
 import styles from './GovernancePages.module.css';
+import { LoadingNote } from '../../components/admin/LoadingNote';
 
 export type BuildTarget = 'nurse-apk' | 'admin-apk' | 'nurse-web' | 'admin-web';
 export type BuildState = 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled';
@@ -165,7 +166,7 @@ export function AppBuildsPanel() {
       </form>
       <div className={styles.card}>
         <h2>Recent builds</h2>
-        {builds.isPending ? <p role="status">Loading builds…</p> : null}
+        {builds.isPending ? <LoadingNote>Loading builds…</LoadingNote> : null}
         {builds.isError ? (
           <div role="alert">
             <p>{builds.error instanceof Error ? builds.error.message : 'Builds could not be loaded.'}</p>

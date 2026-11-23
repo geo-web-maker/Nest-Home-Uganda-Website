@@ -12,6 +12,7 @@ import '../care.css';
 import './client-detail.css';
 import { Notice } from '@shared/components/dialogs/Notice';
 import { CareFormsAdminPanel } from './CareFormsAdminPanel';
+import { LoadingNote } from '../../../../components/admin/LoadingNote';
 
 type Client = {
   id: string;
@@ -276,7 +277,7 @@ export function ClientDetailPage() {
     } finally { setBusy(false); }
   }
 
-  if (loading) return <section className="admin-page"><p role="status">Loading client details…</p></section>;
+  if (loading) return <section className="admin-page"><LoadingNote>Loading client details…</LoadingNote></section>;
   if (!client) return <section className="admin-page"><div role="alert">{error || 'Client not found.'}</div><Button variant="outline" onClick={() => navigate('/care/clients')}>Back to clients</Button></section>;
 
   return (
@@ -306,7 +307,7 @@ export function ClientDetailPage() {
           {PHOTO_REQUIREMENTS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </Field>
         <Field kind="textarea" label="Photo guidance for nurse" value={photoGuidance} onChange={(event) => setPhotoGuidance(event.target.value)} maxLength={2000} disabled={!canEditClient} />
-        {canEditClient && <Button type="submit" disabled={busy}>Save client details</Button>}
+        {canEditClient && <Button type="submit" loading={busy}>Save client details</Button>}
       </form>
 
       <CareFormsAdminPanel clientId={id} />

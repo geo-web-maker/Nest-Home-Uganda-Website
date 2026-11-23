@@ -17,6 +17,7 @@ import { AdminMailUiProvider } from './mailUiKit';
 import { invalidRecipients, parseRecipients } from './recipients';
 import type { ComposeSeed } from './types';
 import styles from './MailPage.module.css';
+import { LoadingNote } from '../../../components/admin/LoadingNote';
 
 const LazyMailRichEditor = lazy(() => import('../../../shared/mail-rich/react/MailRichEditor').then((module) => ({ default: module.MailRichEditor })));
 
@@ -257,7 +258,7 @@ export function MailCompose({ mailboxId, seed, onClose, onDone, onSendLater }: P
         <Button size="compact" variant={format === 'html' ? 'primary' : 'outline'} aria-pressed={format === 'html'} onClick={switchToRich}>Rich text</Button>
         <Button size="compact" variant={format === 'plain' ? 'primary' : 'outline'} aria-pressed={format === 'plain'} onClick={showPlainModeConfirmation}>Plain text</Button>
       </div>
-      {format === 'html' ? <Suspense fallback={<p role="status">Loading editor…</p>}>
+      {format === 'html' ? <Suspense fallback={<LoadingNote>Loading editor…</LoadingNote>}>
         <LazyMailRichEditor value={bodyHtml || '<p></p>'} onChange={(html, text) => { setBodyHtml(html); setBody(text); }} label={t('mail.message')} quotedHtml={quoteHtml && !removeQuote ? quoteHtml : null} quoteInitiallyExpanded={seed.quote?.kind === 'forward' || seed.quote?.kind === 'forward_attachment'} quoteLabel="Original message" removeQuoteLabel="Remove original message" onRemoveQuote={() => { setRemoveQuote(true); setQuoteHtml(null); }} onPasteImageBlocked={() => setEditorNotice('This image could not be added inline; it will be offered as a normal attachment.')} onPasteFiles={attach} onPasteImage={pasteImage} />
       </Suspense> : <Field kind="textarea" label={t('mail.message')} rows={10} value={body} onChange={(event) => setBody(event.target.value)} />}
       <div className="mr-upload-actions">

@@ -18,6 +18,7 @@ import type {
 import styles from './ApplicationsPage.module.css';
 import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
+import { LoadingNote } from '../../../components/admin/LoadingNote';
 const stageValues: ApplicationStage[] = [
   'received',
   'shortlisted',
@@ -82,7 +83,7 @@ export function ApplicantDetailPage() {
         </Button>
       </div>
     );
-  if (!item.data) return <p aria-busy="true">{t('applications.detail.loading')}</p>;
+  if (!item.data) return <LoadingNote>{t('applications.detail.loading')}</LoadingNote>;
   const application = item.data;
   const selectedStage = stage ?? application.stage;
   return (

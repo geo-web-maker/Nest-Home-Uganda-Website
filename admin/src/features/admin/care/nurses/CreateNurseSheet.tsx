@@ -59,7 +59,7 @@ export function CreateNurseSheet({ onClose, onCreated }: { onClose: () => void; 
           <option value="">No supervisor</option>
           {options.map((option) => <option key={option.id} value={option.id}>{option.name} ({option.is_superadmin ? 'Super admin' : option.email})</option>)}
         </Field>
-        <div className="care-sheet-actions"><Button type="submit" disabled={busy}>{busy ? 'Creating nurse…' : 'Create nurse'}</Button><Button type="button" variant="outline" onClick={onClose} disabled={busy}>Cancel</Button></div>
+        <div className="care-sheet-actions"><Button type="submit" loading={busy}>{busy ? 'Creating nurse…' : 'Create nurse'}</Button><Button type="button" variant="outline" onClick={onClose} disabled={busy}>Cancel</Button></div>
       </form>
     </CareSheet>
   );

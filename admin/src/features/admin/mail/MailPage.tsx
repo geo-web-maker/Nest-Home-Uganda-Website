@@ -23,6 +23,7 @@ import type { MailMessageView as SharedMailMessage } from '../../../shared/mail-
 import { AdminMailUiProvider } from './mailUiKit';
 import '../../../shared/mail-rich/react/mail-rich.css';
 import styles from './MailPage.module.css';
+import { LoadingNote } from '../../../components/admin/LoadingNote';
 
 const UNDO_SEND_MS = 8000;
 type PendingSend = { draftId: string; mailboxId: string; seed: ComposeSeed };
@@ -402,7 +403,7 @@ export function MailPage() {
       <div className={styles.layout} data-has-selection={selectedId ? 'true' : 'false'}>
         <div className={`${styles.panel} ${styles.listPanel}`}>
           <div id="mail-list" className={styles.list} role="list" aria-label={t('mail.messages')} aria-busy={list.isFetching}>
-            {list.isLoading ? <p role="status">{t('mail.loading')}</p> : null}
+            {list.isLoading ? <LoadingNote>{t('mail.loading')}</LoadingNote> : null}
             {list.isSuccess && items.length === 0 ? <p>{query ? t('mail.emptySearch') : t('mail.empty')}</p> : null}
             {items.map((item) => (
               <div role="listitem" key={item.mailbox_message_id}>
@@ -432,7 +433,7 @@ export function MailPage() {
 
         <article className={`${styles.panel} ${styles.readerPanel}`} aria-label={t('mail.reader')}>
           {!selectedId ? <p>{t('mail.select')}</p> : null}
-          {selectedId && detail.isLoading ? <p role="status">{t('mail.loading')}</p> : null}
+          {selectedId && detail.isLoading ? <LoadingNote>{t('mail.loading')}</LoadingNote> : null}
           {selectedId && detail.isError ? <Notice tone="error">{t('mail.error')}</Notice> : null}
           {shown ? (
             <div className={styles.reader}>

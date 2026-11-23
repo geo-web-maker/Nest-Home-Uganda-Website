@@ -29,6 +29,7 @@ function toggle(list: Delivery[], item: Delivery, on: boolean): Delivery[] {
   return on ? [...list.filter((d) => d !== item), item] : list.filter((d) => d !== item);
 }
 import styles from './UsersPage.module.css';
+import { LoadingNote } from '../../../components/admin/LoadingNote';
 /** The server's message plus the fields it rejected, e.g. "Please check the highlighted fields. (scopes: List should have at most 64 items)". */
 function describeError(error: unknown, fallback: string): string {
   if (!(error instanceof Error) || !error.message) return fallback;
@@ -257,7 +258,7 @@ export function UsersPage() {
           </Button>
         </div>
       ) : !users.data || !scopes.data || !presets.data ? (
-        <p aria-busy="true">{t('users.loading')}</p>
+        <LoadingNote>{t('users.loading')}</LoadingNote>
       ) : (
         <DataTable
           columns={columns}

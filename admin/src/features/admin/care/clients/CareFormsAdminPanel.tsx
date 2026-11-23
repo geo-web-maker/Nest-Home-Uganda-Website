@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@shared/components/ui/Button';
 import { apiClient } from '@shared/lib/api/client';
 import './care-forms-admin.css';
+import { LoadingNote } from '../../../../components/admin/LoadingNote';
 
 type SignatureEvidence = {
   role: string;
@@ -70,7 +71,7 @@ export function CareFormsAdminPanel({ clientId }: { clientId: string }) {
 
   return <section className="care-form cf-admin-documents" aria-labelledby="care-documents-title">
     <div className="cf-admin-head"><div><h2 id="care-documents-title">Care forms and signature evidence</h2><p>Read-only clinical records. Corrections are added as a new version by the nurse; this view never edits a signed form.</p></div><Button type="button" variant="outline" onClick={() => { setLoading(true); setError(''); void apiClient.get<{ items: CareDocument[] }>('/admin/care/care-forms', { params: { client_id: clientId } }).then((r) => setItems(r.items ?? [])).catch((e) => setError(e instanceof Error ? e.message : 'Care documents could not be loaded.')).finally(() => setLoading(false)); }}>Refresh</Button></div>
-    {loading ? <p role="status">Loading care documents…</p> : error ? <p role="alert">{error}</p> : items.length === 0 ? <p>No care forms have been saved for this patient.</p> : <div className="cf-admin-doc-list">
+    {loading ? <LoadingNote>Loading care documents…</LoadingNote> : error ? <p role="alert">{error}</p> : items.length === 0 ? <p>No care forms have been saved for this patient.</p> : <div className="cf-admin-doc-list">
       {items.map((doc) => <article className="cf-admin-doc" key={doc.id}>
         <div><strong>{doc.form_id === 'tracker' ? 'Weekly tracker' : `Form ${doc.form_id}`}</strong><p>Version {doc.version} · {doc.status} · {when(doc.signed_at)}</p>
           <div className="cf-admin-signatures"><strong>Signature evidence</strong>{doc.signatures.length ? doc.signatures.map((sig, index) => <p key={`${sig.role}:${sig.signed_at}:${index}`}><b>{sig.role}</b>: {sig.name} · {sig.method} · {when(sig.signed_at)}{sig.registration_line ? <><br /><span>{sig.registration_line}</span></> : null}{sig.document_hash ? <code>{sig.document_hash}</code> : null}</p>) : <p>No signatures recorded.</p>}</div>

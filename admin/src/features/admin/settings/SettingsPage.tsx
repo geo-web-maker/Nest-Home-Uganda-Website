@@ -11,6 +11,7 @@ import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
 import type { SettingEntry, SettingsGroup } from './types';
 import styles from './SettingsPage.module.css';
+import { LoadingNote } from '../../../components/admin/LoadingNote';
 const tabs: Array<{ id: SettingsGroup; title: string }> = [
   { id: 'business', title: 'business' },
   { id: 'home', title: 'homepage' },
@@ -252,7 +253,7 @@ export function SettingsPage() {
           </Button>
         </div>
       ) : !data.data ? (
-        <p aria-busy="true">{t('settings.loading')}</p>
+        <LoadingNote>{t('settings.loading')}</LoadingNote>
       ) : (
         <section className={styles.panel}>
           <h2>

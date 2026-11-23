@@ -7,6 +7,7 @@ import { Button } from '@shared/components/ui/Button';
 import { apiClient } from '@shared/lib/api/client';
 import type { DashboardData } from './types';
 import styles from './DashboardPage.module.css';
+import { LoadingNote } from '../../../components/admin/LoadingNote';
 
 export function DashboardPage() {
   const { t } = useTranslation('admin');
@@ -42,7 +43,7 @@ export function DashboardPage() {
           </Button>
         </div>
       ) : !data.data ? (
-        <p aria-busy="true">{t('dashboard.loading')}</p>
+        <LoadingNote>{t('dashboard.loading')}</LoadingNote>
       ) : (
         <>
           <section className={styles.stats} aria-label={t('dashboard.statsLabel')}>

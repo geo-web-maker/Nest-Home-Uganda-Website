@@ -25,6 +25,8 @@ interface CommonProps {
   size?: ButtonSize;
   fullWidth?: boolean;
   arrow?: boolean;
+  /** Shows the spinner, sets aria-busy and blocks clicks while work is in flight. */
+  loading?: boolean;
   className?: string;
   children: ReactNode;
 }
@@ -49,7 +51,7 @@ function isInternal(href: string): boolean {
  */
 export function Button(props: ButtonProps) {
   const inherited = useContext(ButtonSizeContext);
-  const { variant = 'primary', size = inherited, fullWidth = false, arrow = false, className, children } = props;
+  const { variant = 'primary', size = inherited, fullWidth = false, arrow = false, loading = false, className, children } = props;
   const classes = cx(
     styles.button,
     styles[variant === 'danger-outline' ? 'dangerOutline' : variant],
@@ -68,20 +70,21 @@ export function Button(props: ButtonProps) {
       size: _s,
       fullWidth: _f,
       arrow: _a,
+      loading: _l,
       className: _c,
       children: _ch,
       ...rest
     } = props;
     if (isInternal(href)) {
       return (
-        <Link to={href} className={classes} data-variant={variant} data-size={size} {...rest}>
+        <Link to={href} className={classes} data-variant={variant} data-size={size} aria-busy={loading || undefined} {...rest}>
           {children}
           {arrow && <span className={styles.arrow} aria-hidden="true">→</span>}
         </Link>
       );
     }
     return (
-      <a href={href} className={classes} data-variant={variant} data-size={size} {...rest}>
+      <a href={href} className={classes} data-variant={variant} data-size={size} aria-busy={loading || undefined} {...rest}>
         {children}
         {arrow && <span className={styles.arrow} aria-hidden="true">→</span>}
       </a>
@@ -93,13 +96,15 @@ export function Button(props: ButtonProps) {
     size: _s,
     fullWidth: _f,
     arrow: _a,
+    loading: _l,
     className: _c,
     children: _ch,
     type = 'button',
+    disabled,
     ...rest
   } = props;
   return (
-    <button type={type} className={classes} data-variant={variant} data-size={size} {...rest}>
+    <button type={type} className={classes} data-variant={variant} data-size={size} disabled={disabled || loading} aria-busy={loading || undefined} {...rest}>
       {children}
       {arrow && <span className={styles.arrow} aria-hidden="true">→</span>}
     </button>

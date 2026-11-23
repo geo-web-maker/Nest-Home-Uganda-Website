@@ -1,0 +1,12 @@
+.note { display: flex; align-items: center; gap: 0.6em; color: var(--mut); }
+.spinner {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  animation: loading-spin var(--dur-slow, 400ms) linear infinite;
+}
+@keyframes loading-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; border-inline-end-color: currentColor; opacity: 0.5; } }

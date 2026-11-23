@@ -1,6 +1,7 @@
 import { Field } from '@shared/components/ui/Field';
 import type { FormEvent, Dispatch, SetStateAction } from 'react';
 import { Button } from '@shared/components/ui/Button';
+import { LoadingNote } from '../../../../components/admin/LoadingNote';
 type Row = Record<string, unknown>;
 type VisitReview = { visit?: Row; events?: Row[]; notes?: Row[]; flags?: Row[]; photos?: Row[]; annotations?: Row[]; audit?: Row[]; audit_locked?: boolean };
 type Props = {
@@ -22,7 +23,7 @@ export function VisitReviewPanel(props: Props) {
       <div><h2 id="visit-review-title">Visit review</h2><p>Visit ID: {props.visitId}</p></div>
       <Button type="button" variant="outline" onClick={props.onClose}>Close review</Button>
     </header>
-    {props.loading && <p role="status">Loading visit timeline and audit details.</p>}
+    {props.loading && <LoadingNote>Loading visit timeline and audit details.</LoadingNote>}
     {review?.visit && <>
       <dl className="care-review-summary">
         {(['status', 'nurse_id', 'client_id', 'scheduled_start', 'scheduled_end', 'adhoc'] as const).map((key) => <div key={key}><dt>{key.replaceAll('_', ' ')}</dt><dd>{printable(review.visit?.[key])}</dd></div>)}

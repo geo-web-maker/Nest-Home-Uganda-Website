@@ -12,6 +12,7 @@ import { hasScopes } from '../auth/hasScopes';
 import { TotpGate } from '@shared/components/security/TotpGate';
 import type { ExportFormat, ExportType, ReportsSummary } from './types';
 import styles from './ReportsPage.module.css';
+import { LoadingNote } from '../../../components/admin/LoadingNote';
 export function ReportsPage() {
   const { t } = useTranslation('admin');
   const { user } = useAuth();
@@ -76,7 +77,7 @@ export function ReportsPage() {
           </Button>
         </div>
       ) : !report.data ? (
-        <p aria-busy="true">{t('reports.loading')}</p>
+        <LoadingNote>{t('reports.loading')}</LoadingNote>
       ) : (
         <>
           <section className={styles.stats} aria-label={t('reports.statsLabel')}>

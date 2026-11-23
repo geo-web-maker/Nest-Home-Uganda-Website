@@ -13,6 +13,7 @@ import { whatsappUrl } from '@shared/lib/whatsapp';
 import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
 import styles from './EnquiryDetailPage.module.css';
+import { LoadingNote } from '../../../components/admin/LoadingNote';
 
 type EnquiryDetail = components['schemas']['EnquiryDetail'];
 type EnquiryUpdate = components['schemas']['EnquiryUpdate'];
@@ -75,7 +76,7 @@ export function EnquiryDetailPage() {
       </div>
     );
   const item = detail.data;
-  if (!item) return <p aria-busy="true">{t('enquiryDetail.loading')}</p>;
+  if (!item) return <LoadingNote>{t('enquiryDetail.loading')}</LoadingNote>;
   const selectedStatus = status ?? item.status;
   const saveStatus = () =>
     update.mutate({

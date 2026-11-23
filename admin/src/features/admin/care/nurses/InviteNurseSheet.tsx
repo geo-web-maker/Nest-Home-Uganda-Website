@@ -72,7 +72,7 @@ export function InviteNurseSheet({ onClose, onCreated }: { onClose: () => void; 
           </Field>
         )}
         <p>Only active accounts within your permitted reach are listed. The server re-checks the assignment.</p>
-        <div className="care-sheet-actions"><Button type="submit" disabled={busy}>{busy ? 'Creating invitation…' : 'Create invitation'}</Button><Button type="button" variant="outline" onClick={onClose} disabled={busy}>Cancel</Button></div>
+        <div className="care-sheet-actions"><Button type="submit" loading={busy}>{busy ? 'Creating invitation…' : 'Create invitation'}</Button><Button type="button" variant="outline" onClick={onClose} disabled={busy}>Cancel</Button></div>
       </form>
     </CareSheet>
   );

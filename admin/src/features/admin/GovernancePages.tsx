@@ -12,6 +12,7 @@ import { apiClient } from '@shared/lib/api/client';
 import { useAuth } from './auth/useAuth';
 import styles from './GovernancePages.module.css';
 import { FilterBar, filterBarGrow } from '../../components/admin/FilterBar';
+import { LoadingNote } from '../../components/admin/LoadingNote';
 
 type Release = {
   id: string;
@@ -84,7 +85,7 @@ export function AppReleasesPage() {
       {allowed && (
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Build store</h2>
-          {releases.isPending && <p role="status">Loading release records…</p>}
+          {releases.isPending && <LoadingNote>Loading release records…</LoadingNote>}
           {releases.isError && (
             <div role="alert" className={styles.sectionAlert}>
               <p>Release records could not be loaded. Check your access and API connection.</p>
@@ -200,9 +201,9 @@ export function PermissionsPage() {
   }
   return <section className={styles.page}>
     <PageHeader title="Permissions" />
-    {!current ? <p role="status">Loading current access…</p> : null}
+    {!current ? <LoadingNote>Loading current access…</LoadingNote> : null}
     {(users.isError || scopes.isError) ? <div role="alert"><p>The permission matrix could not be fully loaded. Your account may lack users:read or the API may be unavailable.</p><Button variant="outline" onClick={() => { void users.refetch(); void scopes.refetch(); }}>Retry</Button></div> : null}
-    {users.isPending || scopes.isPending ? <p role="status">Loading users and resource scopes…</p> : null}
+    {users.isPending || scopes.isPending ? <LoadingNote>Loading users and resource scopes…</LoadingNote> : null}
     {!users.isPending && !scopes.isPending && !users.isError && !scopes.isError ? <>
       <div className={styles.card}><p><strong>{userRows.length}</strong> users · <strong>{scopeRows.length}</strong> available scopes</p><Field label="Find a person" value={query} onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} placeholder="Name or email" /><p>Superadmins are marked explicitly; the check matrix shows direct scopes only. It does not simulate all server-side reach or policy logic.</p></div>
       {visibleUsers.length === 0 ? <p role="status">No people match “{query}”.</p> : <div className={styles.matrixWrap} role="region" aria-label="Permission matrix (scrolls sideways when there are many people)" tabIndex={0}>
@@ -241,7 +242,7 @@ export function CareSettingCataloguePage() {
   const groups = [...new Set(rows.map((row) => row.group))].sort();
   const filtered = rows.filter((row) => (group === 'all' || row.group === group) && `${row.id} ${row.group} ${row.type}`.toLowerCase().includes(query.toLowerCase()));
   return <section className={styles.page}><PageHeader title="Care setting catalogue" />
-    {settings.isPending ? <p role="status">Loading setting catalogue…</p> : null}
+    {settings.isPending ? <LoadingNote>Loading setting catalogue…</LoadingNote> : null}
     {settings.isError ? <div role="alert"><p>Catalogue unavailable. Confirm carecfg:read access and API connectivity.</p><Button variant="outline" onClick={() => void settings.refetch()}>Retry</Button></div> : null}
     {settings.data ? <><FilterBar label="Filter settings" meta={`${rows.length} registered settings`}><Field label="Search settings" type="search" className={filterBarGrow} value={query} onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} placeholder="Key, group or type" /><Field kind="select" label="Group" value={group} onChange={(e) => setGroup(e.target.value)}><option value="all">All groups</option>{groups.map((item) => <option key={item}>{item}</option>)}</Field></FilterBar>
     <DataTable
@@ -268,7 +269,7 @@ export function DataRetentionPage() {
   const keys = ['retention.coordinates_months', 'retention.photos_months', 'retention.sos_months', 'retention.requests_months'];
   const rows = (settings.data?.items ?? []).filter((item) => keys.includes(item.id));
   return <section className={styles.page}><PageHeader title="Data and retention" />
-    {(settings.isPending || readiness.isPending) ? <p role="status">Loading retention and readiness evidence…</p> : null}
+    {(settings.isPending || readiness.isPending) ? <LoadingNote>Loading retention and readiness evidence…</LoadingNote> : null}
     {(settings.isError || readiness.isError) ? <div role="alert"><p>Some retention evidence could not be loaded. No retention job or deletion success is inferred from settings alone.</p><Button variant="outline" onClick={() => { void settings.refetch(); void readiness.refetch(); }}>Retry</Button></div> : null}
     {settings.data ? <div className={styles.card}><DataTable
     columns={[
