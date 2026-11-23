@@ -274,11 +274,13 @@ async def explain_user(query: str, *, mailbox_id: str | None = None, app: str = 
 
     if app == "nurse":
         from app.modules.nurses.models import NurseProfile
+        has_scope = user.is_superadmin or "field:use" in user.scopes
+        steps.append(Check("field_access", PASS if has_scope else FAIL, "Has the field:use permission the nurse app needs." if has_scope else "Missing the field:use permission. The nurse app's /field/me and /field/timesheets answer 403 for this account."))
         profile = await NurseProfile.find_one(NurseProfile.user_id == user_id)
         if profile is None:
-            steps.append(Check("nurse_profile", FAIL, "This account has no nurse profile, so visit and timesheet notifications are never sent to it."))
+            steps.append(Check("nurse_profile", FAIL, "No nurse profile. The nurse app calls /field/me and /field/timesheets and the server answers 404 'Nurse profile not found' for exactly this reason. Create the profile under Care > Nurses, or sign in with a nurse account."))
         elif not profile.active:
-            steps.append(Check("nurse_profile", FAIL, "The nurse profile is inactive."))
+            steps.append(Check("nurse_profile", FAIL, "The nurse profile is inactive, which also makes /field/me and /field/timesheets answer 404. Reactivate it under Care > Nurses."))
         else:
             steps.append(Check("nurse_profile", PASS, f"Active nurse profile (staff number {profile.staff_number})."))
 
@@ -416,3 +418,27 @@ async def send_scenario(query: str, scenario: str) -> dict[str, Any]:
     return {"ok": bool(results) and all(r["status"] == "sent" for r in results), "mode": mode, "scenario": scenario,
             "critical": critical, "results": results, "note": note,
             "to": f"{user.name} <{user.email}>"}
+
+
+async def nurse_access_problems() -> dict[str, Any]:
+    """Accounts that can open the nurse app but would get 404/403 from /field/me and /field/timesheets."""
+    from app.modules.auth.models import User
+    from app.modules.nurses.models import NurseProfile
+
+    users = await User.find(User.is_active == True).to_list()  # noqa: E712
+    profiles = {p.user_id: p for p in await NurseProfile.find().to_list()}
+    problems = []
+    nurses_ok = 0
+    for user in users:
+        wants_field = user.is_superadmin or "field:use" in user.scopes
+        profile = profiles.get(str(user.id))
+        if profile is not None and profile.active and "field:use" in user.scopes:
+            nurses_ok += 1
+        elif profile is not None and profile.active and not wants_field:
+            problems.append({"user": user.name, "email": user.email, "problem": "Has an active nurse profile but is missing the field:use permission (403 in the nurse app)."})
+        elif profile is not None and not profile.active and "field:use" in user.scopes:
+            problems.append({"user": user.name, "email": user.email, "problem": "Nurse profile is inactive (404 in the nurse app)."})
+        elif profile is None and "field:use" in user.scopes:
+            problems.append({"user": user.name, "email": user.email, "problem": "Has the nurse permission but no nurse profile (404 in the nurse app)."})
+    return {"ok_count": nurses_ok, "problems": problems,
+            "note": "Accounts without field:use and without a nurse profile (for example office staff) are not listed: they are not meant to use the nurse app."}

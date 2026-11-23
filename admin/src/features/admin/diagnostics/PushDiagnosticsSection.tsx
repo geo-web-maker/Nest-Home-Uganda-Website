@@ -19,6 +19,7 @@ type Delivery = { id: string; user_id: string; category: string; title: string; 
 type SendResult = { ok: boolean; stage?: string; error?: string; detail?: string; help?: string; note?: string; http_status?: number; elapsed_ms?: number; validate_only?: boolean; message_name?: string; sender_setting?: string };
 type ScenarioResult = { ok: boolean; mode: string; note: string | null; to?: string; critical?: boolean; results: { device_id: string; status: string; error?: string | null; help?: string }[] };
 type Urgency = { category: string; label: string; value: 'default' | 'urgent' | 'normal' };
+type NurseAccess = { ok_count: number; problems: { user: string; email: string; problem: string }[]; note: string };
 type Pipeline = { mode: string; note: string | null; results: { device_id: string; status: string }[] };
 
 const BASE = '/admin/push/diagnostics';
@@ -33,7 +34,7 @@ const SCENARIOS = [
 ];
 const LABEL: Record<string, string> = {
   sender: 'Sender switched on', service_account: 'Firebase key', project: 'Firebase project', channels: 'Notification channels',
-  devices_admin: 'Admin app phones', devices_nurse: 'Nurse app phones', devices_unlabelled: 'Phones not yet labelled', nurse_profile: 'Nurse profile',
+  devices_admin: 'Admin app phones', devices_nurse: 'Nurse app phones', devices_unlabelled: 'Phones not yet labelled', nurse_profile: 'Nurse profile', field_access: 'Nurse app permission',
   priority: 'Priority', ttl: 'Time to live', devices: 'Registered phones', deliveries: 'Recent deliveries', google_auth: 'Google accepts the key',
   user: 'Person', test_account: 'Test account', mailbox: 'Mailbox membership', history: 'Delivery history', sender_excluded: 'Sender is not notified',
 };
@@ -67,6 +68,11 @@ export function PushDiagnosticsSection() {
   const [critical, setCritical] = useState(false);
   const [app, setApp] = useState<App>('any');
   const [urgency, setUrgency] = useState<Urgency[] | null>(null);
+  const [nurseAccess, setNurseAccess] = useState<NurseAccess | null>(null);
+  const [addEmail, setAddEmail] = useState('');
+  const [addStaff, setAddStaff] = useState('');
+  const [addSupervisor, setAddSupervisor] = useState('');
+  const [addDone, setAddDone] = useState('');
   const [scenario, setScenario] = useState('visit_assigned');
   const [scenarioResult, setScenarioResult] = useState<ScenarioResult | null>(null);
 
@@ -87,6 +93,15 @@ export function PushDiagnosticsSection() {
     setExplain(out.steps);
     if (out.devices) setDevices(out.devices);
   });
+  const addNurseProfile = async () => {
+    if (!(await dialogs.confirm(`Make ${addEmail} a nurse with staff number ${addStaff}? They keep every permission they have and gain the nurse app permissions.`))) return;
+    await act('add-nurse', async () => {
+      await apiClient.post('/admin/care/nurses/from-user', { user: addEmail.trim(), staff_number: addStaff.trim(), ...(addSupervisor.trim() ? { supervisor_id: addSupervisor.trim() } : {}) });
+      setAddDone(`${addEmail.trim()} now has a nurse profile. Ask them to sign out and in again in the nurse app.`);
+      setAddStaff(''); setAddSupervisor('');
+    });
+  };
+  const loadNurseAccess = () => act('nurse-access', async () => setNurseAccess(await apiClient.get<NurseAccess>(`${BASE}/nurse-access`)));
   const loadUrgency = () => act('urgency', async () => setUrgency((await apiClient.get<{ items: Urgency[] }>(`${BASE}/urgency`)).items));
   const saveUrgency = (item: Urgency, value: Urgency['value']) => act('urgency-save', async () => {
     await apiClient.put(`${BASE}/urgency`, { category: item.category, value });
@@ -143,6 +158,24 @@ export function PushDiagnosticsSection() {
           <Button variant="outline" disabled={busy !== ''} onClick={() => void googleAuth()}>{busy === 'google' ? 'Contacting Google…' : 'Test Google login'}</Button>
         </div>
         {checks ? <CheckList rows={checks} /> : null}
+        <p className={styles.help}>Finds accounts that would see "Nurse profile not found" (404) or "not allowed" (403) in the nurse app: no profile, inactive profile, or missing permission.</p>
+        <div className={styles.actions}><Button variant="outline" disabled={busy !== ''} onClick={() => void loadNurseAccess()}>{busy === 'nurse-access' ? 'Checking…' : 'Find nurse accounts that cannot load'}</Button></div>
+        {nurseAccess ? (
+          <Notice tone={nurseAccess.problems.length ? 'error' : 'success'}>
+            <p>{nurseAccess.ok_count} nurse account(s) are set up correctly. {nurseAccess.problems.length ? `${nurseAccess.problems.length} need attention:` : 'None need attention.'}</p>
+            {nurseAccess.problems.map((row) => <p key={row.email}><strong>{row.user}</strong> ({row.email}): {row.problem}</p>)}
+            <p>{nurseAccess.note}</p>
+          </Notice>
+        ) : null}
+        <h4>Add a nurse profile to an existing account</h4>
+        <p className={styles.help}>For an admin who is also a nurse. Super administrator only. The account keeps its admin permissions and gains the nurse app permissions.</p>
+        <div className={styles.fields}>
+          <label className={styles.field}>Account e-mail<input value={addEmail} onChange={(event) => setAddEmail(event.target.value)} autoComplete="off" /></label>
+          <label className={styles.field}>Staff number<input value={addStaff} onChange={(event) => setAddStaff(event.target.value)} autoComplete="off" /></label>
+          <label className={styles.field}>Supervisor user id (optional)<input value={addSupervisor} onChange={(event) => setAddSupervisor(event.target.value)} autoComplete="off" /></label>
+        </div>
+        <div className={styles.actions}><Button disabled={!addEmail.trim() || addStaff.trim().length < 2 || busy !== ''} onClick={() => void addNurseProfile()}>{busy === 'add-nurse' ? 'Adding…' : 'Add nurse profile'}</Button></div>
+        {addDone ? <Notice tone="success"><p>{addDone}</p></Notice> : null}
       </div>
 
       <div className={styles.block}>

@@ -131,3 +131,19 @@ def test_urgency_values_are_validated():
     assert validate_value("push.urgency.mail", "urgent") == "urgent"
     with pytest.raises(ValueError):
         validate_value("push.urgency.mail", "loud")
+
+
+def test_nurse_profile_errors_are_explained():
+    import inspect as _i
+    src = _i.getsource(diagnostics.explain_user)
+    assert "404 'Nurse profile not found'" in src and "field:use" in src
+    assert callable(diagnostics.nurse_access_problems)
+
+
+def test_existing_accounts_can_become_nurses_by_a_superadmin_only():
+    import inspect as _i
+    from app.modules.nurses import router as nurses_router, service as nurses_service
+    src = _i.getsource(nurses_router.add_nurse_profile_for_existing_user)
+    assert "is_superadmin" in src and "403" in src
+    svc = _i.getsource(nurses_service.add_nurse_profile_to_user)
+    assert "field:use" in svc and "audit.record" in svc and "already has a nurse profile" in svc

@@ -69,7 +69,7 @@ function NurseWorkspace() {
   const actionBusyRef = useRef(false);
   const navigate = useNavigate();
   const session = useSession();
-  const { profile: fieldProfile, setProfile: setFieldProfile, loadProfile, clearProfile } = useFieldProfile();
+  const { profile: fieldProfile, setProfile: setFieldProfile, loadProfile, clearProfile, accessProblem } = useFieldProfile();
   const syncInFlight = useRef(false);
   const manualPhotoUploadOverride = useRef<string | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
@@ -878,6 +878,8 @@ function NurseWorkspace() {
       ? <Card className="update-gate"><UpdateNotice currentVersion={appVersion} latestVersion={null} minimumVersion="0.0.0" hasReleases={true} /><p style={{ fontSize: '.82rem', color: 'var(--mut)', marginTop: 8 }}>{copy.update.contactSupervisor}</p></Card>
       : token && updateBlocked && versionInfo
         ? <Card className="update-gate"><UpdateNotice currentVersion={appVersion} latestVersion={versionInfo.latest} minimumVersion={versionInfo.min_supported} downloadPath={versionInfo.download_path} apkInfo={versionInfo.apk_info} hasReleases={versionInfo.has_releases ?? true} /><PillButton type="button" tone="ghost" showArrow={false} onClick={() => void checkForUpdate()}>{copy.update.checkAgain}</PillButton></Card>
+        : token && accessProblem === 'not_nurse'
+          ? <Card className="update-gate"><h2>{copy.notNurse.heading}</h2><p>{copy.notNurse.body}</p><PillButton type="button" tone="gold" onClick={() => void requestSignOut()}>{copy.notNurse.signOut}</PillButton></Card>
         : token && consentsRequired.length > 0
           ? <Card className="consent-gate"><h2>{copy.consent.heading}</h2><p>{copy.consent.explanation}</p>{consentsRequired.map((requirement) => <Card className="consent-requirement" key={`${requirement.type}:${requirement.version}`}><h3>{requirement.type.replaceAll('_', ' ')}</h3><p>{requirement.text}</p><p>{copy.consent.version} {requirement.version}</p><PillButton type="button" tone="gold" onClick={() => void acceptConsent(requirement)}>{copy.consent.accept}</PillButton></Card>)}</Card>
           : <NurseRoutes views={views} authenticated={Boolean(token)} />}

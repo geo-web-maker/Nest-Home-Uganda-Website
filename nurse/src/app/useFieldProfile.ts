@@ -21,6 +21,8 @@ export type FieldProfile = {
 /** Loads the authenticated profile and isolates local cache across shared-device accounts. */
 export function useFieldProfile() {
   const [profile, setProfile] = useState<FieldProfile | null>(null);
+  /** Set when the server says this account has no active nurse profile (404) or no field access (403). */
+  const [accessProblem, setAccessProblem] = useState<'not_nurse' | null>(null);
   useEffect(() => {
     const owner = localStorage.getItem('nest.nurse.cache-user-id');
     if (!owner) return;
@@ -37,7 +39,15 @@ export function useFieldProfile() {
     }).catch(() => undefined);
   }, []);
   const loadProfile = useCallback(async () => {
-    const next = await apiRequest<FieldProfile>('/field/me');
+    let next: FieldProfile;
+    try {
+      next = await apiRequest<FieldProfile>('/field/me');
+      setAccessProblem(null);
+    } catch (error) {
+      const status = typeof error === 'object' && error !== null && 'status' in error ? Number((error as { status?: unknown }).status) : -1;
+      if (status === 403 || status === 404) setAccessProblem('not_nurse');
+      throw error;
+    }
     const cachedOwner = localStorage.getItem('nest.nurse.cache-user-id');
     if (cachedOwner !== next.user_id) {
       await nurseDb.transaction('rw', nurseDb.visits, nurseDb.history, nurseDb.clients, nurseDb.consents, async () => {
@@ -61,6 +71,6 @@ export function useFieldProfile() {
     setProfile(next);
     return next;
   }, []);
-  const clearProfile = useCallback(() => setProfile(null), []);
-  return { profile, setProfile, loadProfile, clearProfile };
+  const clearProfile = useCallback(() => { setProfile(null); setAccessProblem(null); }, []);
+  return { profile, setProfile, loadProfile, clearProfile, accessProblem };
 }

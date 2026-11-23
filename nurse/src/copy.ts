@@ -75,6 +75,11 @@ export const copy = {
     tooManyAttempts: 'Too many sign-in attempts. Wait a few minutes and try again.',
     serverError: 'The server had a problem. Wait a moment and try again.',
   },
+  notNurse: {
+    heading: 'This account is not set up as a nurse',
+    body: 'Your sign-in worked, but there is no active nurse profile for this account, so visits and timesheets cannot load. Ask your supervisor to add or reactivate your nurse profile, or sign in with a nurse account.',
+    signOut: 'Sign out',
+  },
   setPassword: {
     heading: 'Set your password',
     tempAccepted: 'Your temporary password worked. Choose your own password to finish signing in.',

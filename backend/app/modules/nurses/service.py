@@ -95,6 +95,59 @@ async def invite_nurse(actor, payload: NurseInvite, ip_hash: str | None = None):
     return profile
 
 
+async def add_nurse_profile_to_user(actor, payload, ip_hash: str | None = None):
+    """Give an existing account a nurse profile and the nurse-app permissions, keeping every other permission.
+
+    This is how an admin who is also a nurse is set up. The account keeps its admin scopes and gains field:use and
+    sos:send. The person signs out and in again so the new permissions reach their session.
+    """
+    text = payload.user.strip().lower()
+    user = await User.find_one(User.email == text)
+    if user is None:
+        try:
+            user = await User.get(payload.user.strip())
+        except Exception:
+            user = None
+    if user is None or not user.is_active:
+        raise NotFound("No active account was found with that e-mail or id.")
+    user_id = str(user.id)
+    if await NurseProfile.find_one(NurseProfile.user_id == user_id):
+        raise Conflict("This account already has a nurse profile.")
+    if await NurseProfile.find_one(NurseProfile.staff_number == payload.staff_number):
+        raise Conflict("That staff number is already in use.")
+    if payload.supervisor_id:
+        supervisor = await auth_repo.user_by_id(payload.supervisor_id)
+        if supervisor is None or not supervisor.is_active:
+            raise ValidationFailed("No active user was found with that supervisor ID.", {"supervisor_id": "not_found_or_inactive"})
+    before_scopes = sorted(user.scopes)
+    user.scopes = sorted(set(user.scopes) | {"field:use", "sos:send", "mail:use"})
+    await user.save()
+    profile = NurseProfile(
+        user_id=user_id,
+        staff_number=payload.staff_number,
+        supervisor_id=payload.supervisor_id,
+        team_id=payload.team_id,
+        phone_e164=user.phone_e164,
+    )
+    try:
+        await profile.insert()
+    except DuplicateKeyError as exc:
+        user.scopes = before_scopes
+        await user.save()
+        raise Conflict("A nurse profile already exists for this account.") from exc
+    await audit.record(
+        actor,
+        "nurse.profile.add_to_existing_user",
+        "nurse_profile",
+        user_id,
+        user.name,
+        before={"scopes": before_scopes},
+        after={"staff_number": profile.staff_number, "supervisor_id": profile.supervisor_id, "scopes": sorted(user.scopes)},
+        ip_hash=ip_hash,
+    )
+    return profile
+
+
 async def create_nurse_direct(actor, payload: NurseDirectCreate, ip_hash: str | None = None):
     """Create an active nurse with the given password. No invite link or SMS is sent.
 

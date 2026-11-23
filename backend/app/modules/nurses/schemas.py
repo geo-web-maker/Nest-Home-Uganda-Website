@@ -20,6 +20,14 @@ class NurseInvite(BaseModel):
     team_id: str | None = None
 
 
+class NurseProfileForUser(BaseModel):
+    """Superadmin-only: give an EXISTING account (for example an admin who is also a nurse) a nurse profile."""
+    user: str = Field(min_length=3, max_length=200, description="The account's e-mail address or user id")
+    staff_number: str = Field(min_length=2, max_length=40)
+    supervisor_id: str | None = Field(default=None, min_length=8, max_length=160)
+    team_id: str | None = None
+
+
 class NurseDirectCreate(BaseModel):
     """Superadmin-only: create a nurse with a chosen password so the account works at once."""
 

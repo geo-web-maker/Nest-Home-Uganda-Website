@@ -17,12 +17,14 @@ from app.modules.nurses.schemas import (
     NurseDirectCreate,
     NurseInvite,
     NursePasswordSet,
+    NurseProfileForUser,
     NursePatch,
     NurseProfileResponse,
     SupervisorPatch,
 )
 from app.modules.nurses.service import (
     delete_nurse,
+    add_nurse_profile_to_user,
     create_nurse_direct,
     invite_nurse,
     patch_nurse,
@@ -121,6 +123,17 @@ async def create_nurse_with_password(
                 {"supervisor_id": "not_found_or_inactive"},
             )
     return await create_nurse_direct(principal, payload)
+
+
+@router.post("/from-user", response_model=NurseProfileResponse, status_code=201)
+async def add_nurse_profile_for_existing_user(
+    payload: NurseProfileForUser,
+    principal: Principal = Depends(require_scopes("nurses:write")),
+):
+    """Superadmin only: make an existing account (such as an admin who is also a nurse) a nurse."""
+    if not principal.is_superadmin:
+        raise HTTPException(status_code=403, detail="Super administrator access required")
+    return await add_nurse_profile_to_user(principal, payload)
 
 
 @router.post("/{user_id}/password")

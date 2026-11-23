@@ -151,3 +151,10 @@ async def set_urgency(body: UrgencyBody, response: Response, principal: CanDiagn
     from app.modules.settings.care_service import save_care_value
 
     return await save_care_value(f"push.urgency.{body.category}", body.value, principal.user_id)
+
+
+@router.get("/nurse-access")
+async def nurse_access(response: Response, principal: CanDiagnose, mail_totp: str | None = Cookie(default=None)):
+    """Accounts that would get 404/403 in the nurse app (no profile, inactive profile, or missing permission)."""
+    await _guard(principal, mail_totp, response)
+    return await diagnostics.nurse_access_problems()
