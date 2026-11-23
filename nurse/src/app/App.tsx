@@ -24,7 +24,7 @@ import { useSession } from './useSession';
 import { useToast } from './useToast';
 import { useFieldProfile, type FieldConsentRequirement, type FieldProfile } from './useFieldProfile';
 import { useHeartbeat } from '../features/heartbeat/useHeartbeat';
-import { copy, APP_VERSION } from '../copy';
+import { copy, APP_VERSION, getInstalledVersion } from '../copy';
 import { AppShell } from './AppShell';
 import { NurseRoutes } from './routes';
 import { MailScreen } from '../features/mail/MailScreen';
@@ -102,6 +102,10 @@ function NurseWorkspace() {
   /** True when the public /app-bundles/nurse/version endpoint says the installed version
    *  is below the minimum BEFORE the user has authenticated. Gates the login screen. */
   const [preLoginBlocked, setPreLoginBlocked] = useState(false);
+  // The real installed version (the APK's versionName on a phone). Until it is known, the build-stamped version is used.
+  const [installedVersion, setInstalledVersion] = useState<string | null>(null);
+  useEffect(() => { void getInstalledVersion().then(setInstalledVersion); }, []);
+  const appVersion = installedVersion ?? APP_VERSION;
   const [inbox, setInbox] = useState<Array<{ id: string; title: string; body: string; created_at?: string }>>([]);
   const [inboxMessage, setInboxMessage] = useState('');
   const [sosSmsHref, setSosSmsHref] = useState(() => buildSosSmsHref(buildSosSmsBody()));
@@ -358,7 +362,7 @@ function NurseWorkspace() {
         return;
       }
       const status = typeof error === 'object' && error !== null && 'status' in error ? Number((error as { status?: unknown }).status) : -1;
-      setLoginError(status === 0 ? copy.login.offlineServer : status === 401 ? copy.login.invalidCredentials : copy.login.failed);
+      setLoginError(status === 0 ? copy.login.offlineServer : status === 401 ? copy.login.invalidCredentials : status === 403 || status === 404 ? copy.login.notNurse : status === 429 ? copy.login.tooManyAttempts : status >= 500 ? copy.login.serverError : copy.login.failed);
     } finally {
       setBusy(false);
     }
@@ -824,10 +828,11 @@ function NurseWorkspace() {
   // If the installed version is below the minimum we block the login form entirely
   // so the nurse is directed to update before they can even attempt to sign in.
   useEffect(() => {
-    if (token) return; // already authenticated; the authenticated check takes over
+    if (token || installedVersion === null) return; // signed in: the authenticated check takes over; otherwise wait for the real version
     void (async () => {
       try {
-        const url = `/api/v1/app-bundles/nurse/version?current=${encodeURIComponent(APP_VERSION)}&platform=android`;
+        const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '');
+        const url = `${apiBase}/api/v1/app-bundles/nurse/version?current=${encodeURIComponent(installedVersion)}&platform=android`;
         const res = await fetch(url, { signal: AbortSignal.timeout(8_000) });
         if (!res.ok) return;
         const data = await res.json() as { blocked?: boolean };
@@ -836,7 +841,7 @@ function NurseWorkspace() {
         // Network unavailable — allow login attempt; the server will enforce the gate.
       }
     })();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [installedVersion]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (token && import.meta.env.VITE_NURSE_INBOX_ENABLED === 'true') void loadInbox(); }, [token]);
 
   const selectedVisit = (visitId: string) => visits.find((visit) => visit.id === visitId);
@@ -855,7 +860,7 @@ function NurseWorkspace() {
     onboarding: <Onboarding accepted={locationDisclosureAccepted} onAccept={acceptLocationDisclosure} onContinue={continueOnboarding} onEnableNotifications={() => void enableReminders()} showNotifications={Capacitor.isNativePlatform()} notificationsEnabled={visitRemindersEnabled} />,
     history: <HistoryScreen history={history} loading={historyLoading} hasMore={historyHasMore} onLoadMore={() => void loadMoreHistory()} pendingVisitIds={pendingHistoryVisitIds} />,
     timesheets: <TimesheetsScreen online={online} />,
-    profile: <ProfileScreen sosEnabled={sosEnabled} profile={fieldProfile} appVersion={APP_VERSION} versionInfo={versionInfo} remindersEnabled={visitRemindersEnabled} inboxEnabled={inboxEnabled} inbox={inbox} inboxMessage={inboxMessage} visits={visits} busy={busy} onSync={() => void sync()} onEnableReminders={() => void enableReminders()} onDisableReminders={() => void disableReminders()} onCheckUpdate={() => void checkForUpdate()} onLogout={() => void requestSignOut()} />,
+    profile: <ProfileScreen sosEnabled={sosEnabled} profile={fieldProfile} appVersion={appVersion} versionInfo={versionInfo} remindersEnabled={visitRemindersEnabled} inboxEnabled={inboxEnabled} inbox={inbox} inboxMessage={inboxMessage} visits={visits} busy={busy} onSync={() => void sync()} onEnableReminders={() => void enableReminders()} onDisableReminders={() => void disableReminders()} onCheckUpdate={() => void checkForUpdate()} onLogout={() => void requestSignOut()} />,
     documents: <DocumentsScreen />,
     mail: <MailScreen />,
     audit: <AuditScreen />,
@@ -864,15 +869,15 @@ function NurseWorkspace() {
     visit: (visitId: string) => { const visit = selectedVisit(visitId); return visit ? <VisitDetail visit={visit} photosEnabled={photosEnabled} onArrive={(item) => requestVisitAction(item, 'check_in')} onLeave={(item) => requestVisitAction(item, 'check_out')} onNote={openNote} onPhoto={openPhoto} /> : <Card><h2>{copy.generic.visitUnavailable}</h2><p>{copy.generic.visitUnavailableCopy}</p><PillButton type="button" tone="gold" onClick={() => void sync()}>{copy.generic.syncSchedule}</PillButton></Card>; },
     activeVisit: (visitId: string) => { const visit = selectedVisit(visitId); return visit && visit.status === 'in_progress' ? <ActiveVisit visit={visit} onNote={openNote} onPhoto={openPhoto} onLeave={(item) => requestVisitAction(item, 'check_out')} photosEnabled={photosEnabled} /> : <Card><h2>{copy.generic.activeVisitUnavailable}</h2><p>{copy.generic.activeVisitUnavailableCopy}</p><PillButton type="button" tone="gold" onClick={() => void sync()}>{copy.generic.syncSchedule}</PillButton></Card>; },
   };
-  const updateBlocked = preLoginBlocked || Boolean(versionInfo && isForcedUpdate(APP_VERSION, versionInfo.min_supported));
+  const updateBlocked = preLoginBlocked || Boolean(versionInfo && isForcedUpdate(appVersion, versionInfo.min_supported));
 
   refreshLocalRef.current = refreshLocal; syncRef.current = sync;
   return <CareFormsProvider value={careForms}><AppShell onDismissMessage={() => setMessage('')} online={online} queued={queued} authenticated={Boolean(token)} message={message} syncing={busy} sosEnabled={sosEnabled} smsHref={sosSmsHref} emergencyNumbers={fieldProfile?.settings?.emergency_numbers ?? []} supervisorPhone={fieldProfile?.supervisor_phone} liveFollowEnabled={Boolean(fieldProfile?.settings?.live_follow_enabled)} liveFollowMinutes={fieldProfile?.settings?.live_follow_minutes ?? 30} liveFollowIntervalSeconds={fieldProfile?.settings?.live_follow_interval_seconds ?? 30} sosHoldSeconds={fieldProfile?.settings?.sos_hold_seconds ?? 2} sosCancelWindowSeconds={fieldProfile?.settings?.sos_cancel_window_s ?? 5} onSendSos={sendSos} onStartSosFollow={startSosFollow} onPingSosFollow={pingSosFollow} onSafeNow={reportSafeNow}>
     {/* Pre-login update gate: block before the user can enter credentials */}
     {!token && preLoginBlocked
-      ? <Card className="update-gate"><UpdateNotice currentVersion={APP_VERSION} latestVersion={null} minimumVersion="0.0.0" hasReleases={true} /><p style={{ fontSize: '.82rem', color: 'var(--mut)', marginTop: 8 }}>{copy.update.contactSupervisor}</p></Card>
+      ? <Card className="update-gate"><UpdateNotice currentVersion={appVersion} latestVersion={null} minimumVersion="0.0.0" hasReleases={true} /><p style={{ fontSize: '.82rem', color: 'var(--mut)', marginTop: 8 }}>{copy.update.contactSupervisor}</p></Card>
       : token && updateBlocked && versionInfo
-        ? <Card className="update-gate"><UpdateNotice currentVersion={APP_VERSION} latestVersion={versionInfo.latest} minimumVersion={versionInfo.min_supported} downloadPath={versionInfo.download_path} apkInfo={versionInfo.apk_info} hasReleases={versionInfo.has_releases ?? true} /><PillButton type="button" tone="ghost" showArrow={false} onClick={() => void checkForUpdate()}>{copy.update.checkAgain}</PillButton></Card>
+        ? <Card className="update-gate"><UpdateNotice currentVersion={appVersion} latestVersion={versionInfo.latest} minimumVersion={versionInfo.min_supported} downloadPath={versionInfo.download_path} apkInfo={versionInfo.apk_info} hasReleases={versionInfo.has_releases ?? true} /><PillButton type="button" tone="ghost" showArrow={false} onClick={() => void checkForUpdate()}>{copy.update.checkAgain}</PillButton></Card>
         : token && consentsRequired.length > 0
           ? <Card className="consent-gate"><h2>{copy.consent.heading}</h2><p>{copy.consent.explanation}</p>{consentsRequired.map((requirement) => <Card className="consent-requirement" key={`${requirement.type}:${requirement.version}`}><h3>{requirement.type.replaceAll('_', ' ')}</h3><p>{requirement.text}</p><p>{copy.consent.version} {requirement.version}</p><PillButton type="button" tone="gold" onClick={() => void acceptConsent(requirement)}>{copy.consent.accept}</PillButton></Card>)}</Card>
           : <NurseRoutes views={views} authenticated={Boolean(token)} />}

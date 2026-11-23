@@ -71,6 +71,9 @@ export const copy = {
     failed: 'Sign-in failed. Check your details and connection.',
     invalidCredentials: 'Those sign-in details were not recognised. Check them and try again.',
     offlineServer: 'The server cannot be reached. Check your connection and try again.',
+    notNurse: 'Your password was accepted, but this account is not set up as a nurse. Ask your supervisor to add a nurse profile, or use the admin app.',
+    tooManyAttempts: 'Too many sign-in attempts. Wait a few minutes and try again.',
+    serverError: 'The server had a problem. Wait a moment and try again.',
   },
   setPassword: {
     heading: 'Set your password',
@@ -356,7 +359,9 @@ export function operationKindLabel(kind: string): string {
 import { App as _CapApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 
-export const APP_VERSION = '0.1.0'; // build-time fallback; runtime value from getInstalledVersion()
+declare const __BUNDLE_VERSION__: string | undefined;
+/** Version stamped into this build from the release tag / version.json. On a phone the real installed version comes from getInstalledVersion(). */
+export const APP_VERSION: string = typeof __BUNDLE_VERSION__ === 'string' && __BUNDLE_VERSION__ ? __BUNDLE_VERSION__ : '0.1.0';
 
 /** Returns the version installed on the device, falling back to the build-time constant on web. */
 export async function getInstalledVersion(): Promise<string> {
