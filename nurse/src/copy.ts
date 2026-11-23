@@ -262,7 +262,7 @@ export const copy = {
     reminderPrivacy: 'Optional local reminders use neutral text. Client names, addresses and health details are not included.', privacy: 'Permissions and privacy',
     locationPrivacy: 'Location is captured only when you confirm arrival or departure while the app is open. The app does not use background location.',
     notePrivacy: 'Visit notes should contain operational information only, not medical details.', inbox: 'Push inbox', inboxEnabled: 'Enabled', notConfigured: 'Not configured',
-    inboxUnavailable: 'The inbox is held behind a feature flag because the matching field inbox endpoint is not present in this project yet.', noNotifications: 'No notifications to show.',
+    inboxUnavailable: 'Notifications are not switched on in this version of the app yet.', noNotifications: 'No notifications to show.',
     savedWork: 'Sync and saved work', activeCached: 'active visit(s) are cached on this device.', syncNow: 'Sync now', signOutHeading: 'Sign out',
     signOutHint: 'If saved work is pending, you will be asked to confirm. Locally saved actions remain tied to this account.',
     deviceHelp: 'Device help', permissionsHelp: 'Permissions help', installGuide: 'Install on your iPhone', allowLocation: 'Location', locationPermissionHelp: 'Location is captured only when you confirm an action while this app is open. Background location capture is not implemented in this build.',
@@ -303,7 +303,7 @@ export const copy = {
     remindersEnabled: 'Visit reminders enabled.', remindersNotEnabled: 'Local reminders were not enabled. Visits remain available in the app.', notificationsUnavailable: 'Notifications could not be enabled. Visits remain available in the app.', remindersDisabled: 'Visit reminders are disabled on this device.',
     sosSent: 'Safety alert sent to the organisation. If in immediate danger, call the emergency number too.',
     sosQueued: 'Safety alert is saved to retry. Use the SMS composer or phone dialler if you need immediate help.',
-    inboxUnavailable: 'The inbox endpoint is not available yet. Enable this feature only after the backend route is deployed.',
+    inboxUnavailable: 'Could not load notifications. Check your connection and try again.',
   },
   safety: {
     buttonLabel: 'SOS', hold: 'Press and hold SOS for 2 seconds',

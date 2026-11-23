@@ -140,6 +140,7 @@ jobs:
         working-directory: ${{ env.APP }}
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_NURSE_INBOX_ENABLED: ${{ vars.VITE_NURSE_INBOX_ENABLED }}
           VITE_MAIL_STORAGE_URL: ${{ vars.VITE_MAIL_STORAGE_URL }}
         run: |
           npm ci --no-audit --no-fund

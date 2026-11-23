@@ -176,6 +176,7 @@ export function AppBuildsPanel() {
         {builds.data && builds.data.items.length > 0 ? (
           <>
             <p role="status">{anyActive ? 'A build is in progress. This list refreshes by itself.' : `Repository: ${builds.data.repo}`}</p>
+            <div className={styles.scrollBox} role="region" aria-label="Recent builds, scrollable" tabIndex={0}>
             <DataTable
               columns={[
                 { key: 'tag', header: 'Build', cell: (run: BuildRun) => run.tag },
@@ -187,6 +188,7 @@ export function AppBuildsPanel() {
               getRowKey={(run: BuildRun) => String(run.id)}
               labels={{ caption: 'Recent app builds', loading: 'Loading…', empty: 'Nothing to show.' }}
             />
+            </div>
             <Button variant="outline" onClick={() => void builds.refetch()} disabled={builds.isFetching}>{builds.isFetching ? 'Refreshing…' : 'Refresh'}</Button>
           </>
         ) : null}

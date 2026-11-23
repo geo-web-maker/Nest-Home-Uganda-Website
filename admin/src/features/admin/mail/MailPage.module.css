@@ -243,3 +243,15 @@
 /* Undo-send bar: stays in view above the phone bottom nav while the send is held. */
 .undoBar { position: fixed; z-index: 120; left: 50%; transform: translateX(-50%); bottom: calc(70px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: .5rem; max-width: calc(100vw - 1.5rem); padding: .6rem .8rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surf); color: var(--ink); box-shadow: var(--shadow-2, var(--shadow-1)); }
 @media (min-width: 1040px) { .undoBar { bottom: 1.5rem; } }
+
+/* Inbox workspace: the list and the reader are locked to the screen height and each scrolls on its own,
+   so a long list or a long message never stretches the page. --mail-chrome is the space the header and search bar use. */
+.layout {
+  --mail-chrome: 15rem;
+  height: clamp(26rem, calc(100dvh - var(--mail-chrome)), 64rem);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+}
+.listPanel { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.listPanel .list { flex: 1 1 auto; min-height: 0; max-height: none; overscroll-behavior: contain; }
+.readerPanel { min-height: 0; overflow: auto; overscroll-behavior: contain; }

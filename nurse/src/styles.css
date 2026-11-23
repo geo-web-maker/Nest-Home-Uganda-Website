@@ -1192,5 +1192,17 @@ a.mk-btn--ghost, a.mk-btn--ghost:hover { color: var(--ink); }
 @media (min-width: 1040px) { .mk-toast-region { bottom: 24px; } }
 
 /* Care forms header: label on the left, a standard pill button on the right, wrapping instead of squeezing. */
-.cf-home .mk-section-title { flex-wrap: wrap; gap: 8px 12px; }
+.cf-home > .mk-card__in { display: grid; gap: 14px; }
+.cf-home .mk-section-title { flex-wrap: wrap; gap: 8px 12px; min-width: 0; }
+.cf-home .mk-section-title .eyebrow { margin: 0; }
+.cf-home .cf-stats { min-width: 0; }
+.cf-home .cf-urgent { margin: 0; }
 .cf-open { flex: none; margin-left: auto; }
+
+/* Profile: disclosure boxes size to their content, and long messages wrap inside them. */
+.mk-profile-section .mk-card__in { align-content: start; grid-auto-rows: max-content; }
+.mk-profile-section details, .mk-profile-disclosure, .mk-mail-logs { align-self: start; height: auto; min-height: 0; min-width: 0; }
+.mk-profile-disclosure::details-content { height: auto; }
+.mk-mail-logs__summary { min-height: 52px; padding: 10px 15px; }
+.mk-mail-logs__body { padding: 0 15px 14px; margin-top: 0; }
+.mk-mail-logs__state, .mk-mail-log-item__err, .mk-mail-log-item__subject { overflow-wrap: anywhere; }

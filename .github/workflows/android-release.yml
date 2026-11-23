@@ -54,6 +54,7 @@ jobs:
       - run: npm run build
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_NURSE_INBOX_ENABLED: ${{ vars.VITE_NURSE_INBOX_ENABLED }}
           VITE_MAIL_STORAGE_URL: ${{ vars.VITE_MAIL_STORAGE_URL }}
           # Push is switched on only when the Firebase file secret exists, so a build without it never crashes.
           VITE_PUSH_ENABLED: ${{ secrets.NURSE_GOOGLE_SERVICES_JSON_BASE64 != '' && 'true' || '' }}

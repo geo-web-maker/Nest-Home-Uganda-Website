@@ -5,6 +5,7 @@ import type { FieldProfile } from '../app/useFieldProfile';
 import type { CachedVisit } from '../offline/db';
 import { UpdateNotice } from '../features/update/UpdateNotice';
 import { copy } from '../copy';
+import { apiRequest } from '../lib/api/client';
 import { ThemeSwitch } from '../components/ThemeSwitch';
 import { Card } from '../ui/Card';
 import { Avatar } from '../ui/Avatar';
@@ -34,12 +35,11 @@ function MailLogsDisclosure() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/v1/field/mail/delivery-log?limit=20');
-      if (!res.ok) throw new Error(`${res.status}`);
-      const data = await res.json() as { items?: MailLogEntry[] };
+      const data = await apiRequest<{ items?: MailLogEntry[] }>('/field/mail/delivery-log?limit=20');
       setLogs(data.items ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load logs.');
+      console.warn('[nurse] mail delivery log failed', err);
+      setError('The delivery log could not be loaded. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
