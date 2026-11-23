@@ -1206,3 +1206,17 @@ a.mk-btn--ghost, a.mk-btn--ghost:hover { color: var(--ink); }
 .mk-mail-logs__summary { min-height: 52px; padding: 10px 15px; }
 .mk-mail-logs__body { padding: 0 15px 14px; margin-top: 0; }
 .mk-mail-logs__state, .mk-mail-log-item__err, .mk-mail-log-item__subject { overflow-wrap: anywhere; }
+
+/* Status row fix: older rules aimed at a button inside the banner (justify-self: end, padding: 0) also matched the new link,
+   which shrank it and pushed everything to the right. Reset them so the link fills the whole row. */
+.mk-status-stack > .connection-banner > .mk-status-link,
+.connection-banner > .mk-status-link {
+  width: 100%;
+  justify-self: stretch;
+  grid-column: auto;
+  padding: 0 14px 0 16px;
+  padding-top: 0;
+  font-size: inherit;
+  white-space: normal;
+}
+.mk-status-link .mk-status-text { text-align: left; }
