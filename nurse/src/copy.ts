@@ -9,7 +9,7 @@ export const copy = {
   shell: {
     onlineLabel: 'Online', offlineLabel: 'Offline', backOnlineLabel: 'Back online',
     online: 'A connection is available.', offline: 'Saved actions will stay on this device until reconnection.',
-    waiting: 'waiting · Sync status', syncing: 'Syncing saved changes…', saved: 'All saved',
+    waiting: 'waiting to sync', syncing: 'Syncing saved changes…', saved: 'All saved',
     problem: 'One saved item needs attention.', syncStatus: 'Sync status', safetyAlert: 'Safety alert',
     sosDisabled: 'SOS is not enabled by your organisation.', mainNavigation: 'Main navigation',
     installHintLabel: 'Optional app installation help', installApp: 'Install app',

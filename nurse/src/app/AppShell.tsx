@@ -11,7 +11,6 @@ import { Banner } from '../ui/Banner';
 import { InstallHint } from '../pwa/InstallHint';
 import { UpdatePrompt } from '../pwa/UpdatePrompt';
 import { isProblemMessage } from './useToast';
-import { PillLink } from '../ui/PillLink';
 
 type Props = {
   children: ReactNode; online: boolean; queued: number; authenticated: boolean; message?: string; syncing?: boolean;
@@ -90,7 +89,9 @@ export function AppShell({ children, online, queued, authenticated, message, syn
     </div>
     {showConnection && <div className="mk-status-stack">
       <div className={`connection-banner mk-connection-banner${online ? ' is-online' : ' is-offline'}`} role="status" aria-live="polite">
-        <strong>{bannerLabel}</strong><span>{bannerText}</span><PillLink to="/sync" tone="ghost">{queued > 0 ? `${queued} ${copy.shell.waiting}` : copy.shell.syncStatus}</PillLink>
+        <Link to="/sync" className="mk-status-link" aria-label={`${bannerLabel}. ${bannerText}. ${copy.shell.syncStatus}`}>
+          <strong>{bannerLabel}</strong><span className="mk-status-text">{bannerText}</span><Icon name="arrow" size={16} />
+        </Link>
       </div>
     </div>}
     {authenticated && navigation('desktop-rail')}

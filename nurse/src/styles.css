@@ -1176,3 +1176,21 @@ a.mk-btn--ghost, a.mk-btn--ghost:hover { color: var(--ink); }
 .mk-history-chevron { flex: none; color: var(--mut); transition: transform var(--dur-fast) var(--ease-standard); }
 .mk-history-chevron.is-open { transform: rotate(90deg); }
 
+
+
+/* ---- Layout pass: status bar, notices and the Care forms action ---- */
+/* Connection status is one slim row. The whole row is the link to Sync status, so there is no squeezed button inside it. */
+.mk-status-stack > .connection-banner { display: block; padding: 0; border-radius: 999px; }
+.mk-status-link { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px 0 16px; border-radius: inherit; color: var(--ink); text-decoration: none; }
+.mk-status-link strong { flex: none; }
+.mk-status-link .mk-status-text { flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--mut); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
+.mk-status-link > svg { flex: none; color: var(--mut); }
+.mk-status-link:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+/* Notices float at the bottom, above the tab bar, so they can never cover the status row at the top. */
+.mk-toast-region { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); }
+@media (min-width: 1040px) { .mk-toast-region { bottom: 24px; } }
+
+/* Care forms header: label on the left, a standard pill button on the right, wrapping instead of squeezing. */
+.cf-home .mk-section-title { flex-wrap: wrap; gap: 8px 12px; }
+.cf-open { flex: none; margin-left: auto; }

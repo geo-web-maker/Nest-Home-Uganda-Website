@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { PillLink } from '../../ui/PillLink';
 import { Card } from '../../ui/Card';
 import { kampalaDateKey } from '../../lib/time';
 import type { CachedVisit } from '../../offline/db';
@@ -25,7 +25,7 @@ export function HomeSummaryCard({ visits }: { visits: CachedVisit[] }) {
   if (!care?.ready) return null;
   const s = summarise(care, visits);
   return <Card className="cf-home" aria-label="Care forms summary">
-    <div className="mk-section-title"><p className="eyebrow">Care forms</p><Link to="/documents" className="cf-link">Open Documents</Link></div>
+    <div className="mk-section-title"><p className="eyebrow">Care forms</p><PillLink to="/documents" tone="ghost" size="sm" className="cf-open">Open Documents</PillLink></div>
     <dl className="cf-stats"><div><dt>Needs signature</dt><dd>{s.needsSignature}</dd></div><div><dt>Due today</dt><dd>{s.dueToday}</dd></div><div><dt>Signed this week</dt><dd>{s.signedThisWeek}</dd></div></dl>
     {s.urgent && <p className="cf-urgent">{s.urgent}</p>}
   </Card>;
