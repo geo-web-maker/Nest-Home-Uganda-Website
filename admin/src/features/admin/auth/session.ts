@@ -11,6 +11,35 @@ import { authStore } from './authStore';
 let inFlight: Promise<boolean> | null = null;
 
 /**
+ * Opens the app on the stored user when the first restore could not reach the server. Only while a refresh
+ * credential is still on the device; a refusal from the server (401/403) never gets here.
+ */
+async function trustStoredSession(): Promise<boolean> {
+  const user = authStore.getUserSnapshot();
+  if (!user || authStore.getState().status !== 'loading') return false;
+  const hasCredential = Capacitor.isNativePlatform()
+    ? Boolean(await readNativeRefreshToken())
+    : Boolean(authStore.getCsrf());
+  if (!hasCredential || authStore.getState().status !== 'loading') return false;
+  authStore.setOfflineSession(user);
+  return true;
+}
+
+/** While running without a live token, try to get one whenever the network may be back. */
+export function installOfflineRecovery(): () => void {
+  const attempt = () => {
+    const { status, accessToken } = authStore.getState();
+    if (status === 'signedIn' && !accessToken && navigator.onLine) void refreshSession();
+  };
+  window.addEventListener('online', attempt);
+  const timer = window.setInterval(attempt, 30_000);
+  return () => {
+    window.removeEventListener('online', attempt);
+    window.clearInterval(timer);
+  };
+}
+
+/**
  * Thrown by `login` when the password was a staff-issued temporary one. No session exists yet:
  * the caller sends the user to the set-password screen with this one-time token.
  */
@@ -75,7 +104,9 @@ export function refreshSession(client: ApiClient = apiClient): Promise<boolean> 
         if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
           await clearNativeRefreshToken();
           authStore.clearSession();
-        } else if (authStore.getState().status === 'loading') authStore.markSignedOut();
+        } else if (!(await trustStoredSession()) && authStore.getState().status === 'loading') {
+          authStore.markSignedOut();
+        }
         return false;
       }
     }
@@ -96,7 +127,7 @@ export function refreshSession(client: ApiClient = apiClient): Promise<boolean> 
       // stays signed in, and a first load settles on the login screen without losing the token.
       if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
         authStore.clearSession();
-      } else if (authStore.getState().status === 'loading') {
+      } else if (!(await trustStoredSession()) && authStore.getState().status === 'loading') {
         authStore.markSignedOut();
       }
       return false;
@@ -113,11 +144,15 @@ const RESTORE_TIMEOUT_MS = 8000;
 export async function restoreSession(client: ApiClient = apiClient): Promise<void> {
   // If the restore never answers (a stuck native call, a sleeping server), show the sign-in screen instead of
   // leaving the app waiting forever. A restore that finishes later still signs the user in.
+  // No network at all: do not make the user wait for a request that cannot succeed.
+  if (!navigator.onLine && (await trustStoredSession())) return;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<void>((resolve) => {
     timer = setTimeout(() => {
-      if (authStore.getState().status === 'loading') authStore.markSignedOut();
-      resolve();
+      void trustStoredSession().then((trusted) => {
+        if (!trusted && authStore.getState().status === 'loading') authStore.markSignedOut();
+        resolve();
+      });
     }, RESTORE_TIMEOUT_MS);
   });
   try {

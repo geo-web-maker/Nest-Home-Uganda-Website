@@ -32,8 +32,32 @@ function writeCsrf(value: string | null): void {
   }
 }
 
+// A copy of the signed-in user (name, scopes) lets a cold start without a network open the app. It is not a
+// credential: the access token is never stored, and the session is only trusted while a refresh credential
+// still exists (the native refresh token, or the CSRF value that goes with the refresh cookie).
+const USER_KEY = 'nhc.session-user';
+
+function readUserSnapshot(): UserPublic | null {
+  try {
+    const raw = window.localStorage.getItem(USER_KEY);
+    return raw ? (JSON.parse(raw) as UserPublic) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeUserSnapshot(user: UserPublic | null): void {
+  try {
+    if (user) window.localStorage.setItem(USER_KEY, JSON.stringify(user));
+    else window.localStorage.removeItem(USER_KEY);
+  } catch {
+    // Storage blocked: offline start is simply unavailable.
+  }
+}
+
 let state: AuthState = { status: 'loading', accessToken: null, user: null };
 const listeners = new Set<() => void>();
+const clearedListeners = new Set<() => void>();
 
 function set(next: AuthState): void {
   state = next;
@@ -53,10 +77,24 @@ export const authStore = {
   getCsrf: readCsrf,
   setSession(session: Session): void {
     writeCsrf(session.csrf_token);
+    writeUserSnapshot(session.user);
     set({ status: 'signedIn', accessToken: session.access_token, user: session.user });
+  },
+  /** The stored copy of the last signed-in user, if any. */
+  getUserSnapshot: readUserSnapshot,
+  /** Signed in without a live token (no network at start). Calls retry the refresh when the network returns. */
+  setOfflineSession(user: UserPublic): void {
+    set({ status: 'signedIn', accessToken: null, user });
+  },
+  /** Runs after an explicit sign-out or a refused refresh, so cached data can be wiped with the session. */
+  onCleared(listener: () => void): () => void {
+    clearedListeners.add(listener);
+    return () => clearedListeners.delete(listener);
   },
   clearSession(): void {
     writeCsrf(null);
+    writeUserSnapshot(null);
+    clearedListeners.forEach((listener) => listener());
     set({ status: 'signedOut', accessToken: null, user: null });
   },
   /** Signed out for now, but the stored CSRF token is kept (a failed restore that may pass). */
@@ -66,6 +104,7 @@ export const authStore = {
   /** Back to the first-load state. Used by tests. */
   reset(): void {
     writeCsrf(null);
+    writeUserSnapshot(null);
     set({ status: 'loading', accessToken: null, user: null });
   },
 };

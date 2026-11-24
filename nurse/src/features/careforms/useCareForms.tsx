@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { apiRequest } from '../../lib/api/client';
 import { arriveBlocked as arriveBlockedRule, type PatientType, type Registration } from './rules';
+import { prefetchPdfs } from './pdfCache';
 import { applyLocal, overlayPending, pendingCareOps, queueSubmit, readBootstrap, readRegistrationCache, writeBootstrap, writeRegistrationCache, type Bootstrap, type DocRow, type SubmitPayload } from './store';
 
 export type CareForms = {
@@ -26,7 +27,7 @@ export function useCareForms({ userId, token, online, onQueued }: { userId: stri
     let b = await readBootstrap(userId);
     let reg = await readRegistrationCache<Registration>(userId);
     if (online && token) {
-      try { b = await apiRequest<Bootstrap>('/field/care-forms/bootstrap'); await writeBootstrap(userId, b); } catch { /* the cache stays usable offline */ }
+      try { b = await apiRequest<Bootstrap>('/field/care-forms/bootstrap'); await writeBootstrap(userId, b); void prefetchPdfs(b.documents); } catch { /* the cache stays usable offline */ }
       try { reg = await apiRequest<Registration>('/field/care-forms/me/registration'); await writeRegistrationCache(userId, reg); } catch { /* same */ }
     }
     if (b) setBoot(overlayPending(b, await pendingCareOps(userId)));

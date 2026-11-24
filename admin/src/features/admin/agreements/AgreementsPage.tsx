@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { LoadingNote } from '../../../components/admin/LoadingNote';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Notice } from '@shared/components/dialogs/Notice';
 import { Button } from '@shared/components/ui/Button';
@@ -604,7 +605,7 @@ function PreviewPanel({ id, reference }: { id: string; reference: string }) {
       <span className={styles.previewKey}>
         <i style={{ background: '#ffe066' }} />staff must fill<i style={{ background: '#d7f0dc' }} />filled<i style={{ background: '#dceaf8' }} />client fills
       </span>
-      <Button variant="outline" size="compact" onClick={() => void download()} disabled={downloading}>{downloading ? 'Preparing…' : 'Download highlighted copy (PDF)'}</Button>
+      <Button variant="outline" size="compact" onClick={() => void download()} disabled={downloading}>{downloading ? <LoadingNote inline>Preparing…</LoadingNote> : 'Download highlighted copy (PDF)'}</Button>
     </div>
     {error ? <Notice tone="error">{error}</Notice> : <div className={styles.preview}><iframe title="Rendered client agreement preview" srcDoc={html} sandbox="" /></div>}
   </>;

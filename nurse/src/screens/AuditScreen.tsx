@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { LoadingNote } from '../ui/Loading';
 import { apiRequest } from '../lib/api/client';
 import { Card } from '../ui/Card';
 import { Chip } from '../ui/Chip';
@@ -112,7 +113,7 @@ export function AuditScreen() {
 
     {unlocked && error && <Card className="empty-state"><h3>Activity history unavailable</h3><p>{error}</p><PillButton onClick={() => void load()}>Try again</PillButton></Card>}
     {unlocked && !loading && !error && items.length === 0 && <Card className="empty-state"><h3>No activity recorded yet</h3><p>Important actions and any errors linked to your account will appear here.</p></Card>}
-    {unlocked && loading && <Card><p>Loading your activity…</p></Card>}
+    {unlocked && loading && <Card><LoadingNote>Loading your activity…</LoadingNote></Card>}
     {unlocked && <div className="mk-history-list">{items.map(item => <Card key={item.id} className="history-card"><div className="mk-profile-section__heading"><strong>{item.item_label || item.action.replaceAll('.', ' ').replaceAll('_', ' ')}</strong><Chip kind={chipKind(item.severity)}>{item.severity || 'info'}</Chip></div><p>{item.message || `${item.action} · ${item.outcome || 'recorded'}`}</p><small>{when(item.at)} · {item.event_type || 'activity'}{item.http_status ? ` · HTTP ${item.http_status}` : ''}</small>{item.request_id && <p><small>Reference: <code>{item.request_id}</code></small></p>}</Card>)}</div>}
     <p className="muted">This view is limited to activity associated with your signed-in account. Clinical record contents and passwords are not displayed.</p>
   </section>;

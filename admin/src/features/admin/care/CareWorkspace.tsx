@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { LoadingNote } from '../../../components/admin/LoadingNote';
 import { pickNurse } from './pickers';
 import { dialogs } from '@shared/lib/dialogs';
 import { cellText, headerFor } from '@shared/lib/tableText';
@@ -439,7 +440,7 @@ export function CareWorkspace() {
       />
       {error && <p role="alert">{error}</p>}
       {actionMessage && <p role="status">{actionMessage}</p>}
-      {loading && <p role="status">{String(copy.loading ?? 'Loading care data')}</p>}
+      {loading && <LoadingNote>{String(copy.loading ?? 'Loading care data')}</LoadingNote>}
 
       {tab === 'places' && (
         <PlacesPanel

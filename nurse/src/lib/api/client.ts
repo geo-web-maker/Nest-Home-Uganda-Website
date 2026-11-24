@@ -23,11 +23,18 @@ export async function restoreNativeSession(): Promise<string | null> {
   if (!Capacitor.isNativePlatform()) return null;
   const refreshToken = await readRefreshToken();
   if (!refreshToken) return null;
-  const response = await fetch(`${apiBase}/api/v1/auth/native/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Client': 'native' },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  });
+  // A dead or captive network must not hang the restore forever: callers treat a thrown error as "offline, try later".
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15_000);
+  let response: Response;
+  try {
+    response = await fetch(`${apiBase}/api/v1/auth/native/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Client': 'native' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+      signal: controller.signal,
+    });
+  } finally { clearTimeout(timer); }
   if (response.status === 401 || response.status === 403) {
     await clearRefreshToken();
     return null;

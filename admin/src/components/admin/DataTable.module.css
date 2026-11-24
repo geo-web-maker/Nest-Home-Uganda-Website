@@ -176,3 +176,6 @@
   .skeleton span { animation: none; }
   .row, .link { transition: none; }
 }
+
+/* The centred loading line sits in the middle of its box, like the empty message. */
+.state > p { justify-content: center; }

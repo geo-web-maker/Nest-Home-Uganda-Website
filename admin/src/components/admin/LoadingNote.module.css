@@ -10,3 +10,4 @@
 }
 @keyframes loading-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; border-inline-end-color: currentColor; opacity: 0.5; } }
+.inline { display: inline-flex; }

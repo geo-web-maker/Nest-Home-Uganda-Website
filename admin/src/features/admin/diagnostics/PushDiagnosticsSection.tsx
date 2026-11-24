@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LoadingNote } from '../../../components/admin/LoadingNote';
 import { Notice } from '@shared/components/dialogs/Notice';
 import { SectionHeader } from '@shared/components/dialogs/SectionHeader';
 import { Badge } from '@shared/components/ui/Badge';
@@ -134,7 +135,7 @@ export function PushDiagnosticsSection() {
       <div className={styles.block}>
         <h3>Notification urgency</h3>
         <p className={styles.help}>Urgent notifications use the loud urgent channel and stay deliverable longer. Normal ones use the regular Updates channel. "Built-in" keeps the default rule: only safety alerts and critical care alerts are urgent. Every notification is sent at high priority either way.</p>
-        {urgency === null ? <div className={styles.actions}><Button variant="outline" disabled={busy !== ''} onClick={() => void loadUrgency()}>{busy === 'urgency' ? 'Loading…' : 'Load urgency settings'}</Button></div> : (
+        {urgency === null ? <div className={styles.actions}><Button variant="outline" disabled={busy !== ''} onClick={() => void loadUrgency()}>{busy === 'urgency' ? <LoadingNote inline>Loading…</LoadingNote> : 'Load urgency settings'}</Button></div> : (
           <div className={styles.fields}>
             {urgency.map((item) => (
               <label key={item.category} className={styles.field}>{item.label}
@@ -186,7 +187,7 @@ export function PushDiagnosticsSection() {
         </label>
         <div className={styles.actions}>
           <Button disabled={!person.trim() || busy !== ''} onClick={() => void runExplain()}>{busy === 'explain' ? 'Checking…' : 'Explain'}</Button>
-          <Button variant="outline" disabled={busy !== ''} onClick={() => void loadDevices()}>{busy === 'devices' ? 'Loading…' : person.trim() ? 'Show their phones' : 'Show all phones'}</Button>
+          <Button variant="outline" disabled={busy !== ''} onClick={() => void loadDevices()}>{busy === 'devices' ? <LoadingNote inline>Loading…</LoadingNote> : person.trim() ? 'Show their phones' : 'Show all phones'}</Button>
         </div>
         {explain ? <CheckList rows={explain} /> : null}
       </div>

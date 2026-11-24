@@ -20,6 +20,9 @@ export type SessionCallbacks = {
 /** Session mutation helpers; the caller owns profile hydration and logout warning UI. */
 export function useSession(callbacks: SessionCallbacks = {}) {
   const [token, setToken] = useState(() => sessionStorage.getItem('nurse_access_token') ?? '');
+  /** True when the phone holds a stored refresh token and a cached account but has no live access token yet
+   *  (cold start without a network). The app opens signed in and the token is refreshed in the background. */
+  const [offlineTrusted, setOfflineTrusted] = useState(false);
   const signIn = useCallback(async (identifier: string, password: string) => {
     const path = Capacitor.isNativePlatform() ? '/auth/native/login' : '/auth/login';
     const result = await apiRequest<SessionResponse | PasswordChangeResponse>(path, { method: 'POST', body: JSON.stringify({ email: identifier, password }) });
@@ -29,6 +32,7 @@ export function useSession(callbacks: SessionCallbacks = {}) {
     if (Capacitor.isNativePlatform() && body.refresh_token) await saveRefreshToken(body.refresh_token);
     if (!Capacitor.isNativePlatform() && body.csrf_token) sessionStorage.setItem('nurse_csrf_token', body.csrf_token);
     setToken(body.access_token);
+    setOfflineTrusted(false);
     await callbacks.onAuthenticated?.(body.access_token);
     callbacks.onMessage?.(copy.messages.signedIn);
     return body.access_token;
@@ -39,6 +43,7 @@ export function useSession(callbacks: SessionCallbacks = {}) {
     try { await clearRefreshToken(); } catch { /* Local sign-out must complete. */ }
     await callbacks.clearLocalSession?.();
     setToken('');
+    setOfflineTrusted(false);
   }, [callbacks]);
-  return { token, setToken, signIn, signOutLocal };
+  return { token, setToken, offlineTrusted, setOfflineTrusted, signIn, signOutLocal };
 }

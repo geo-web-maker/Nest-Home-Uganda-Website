@@ -104,12 +104,12 @@ export function TimesheetsScreen({ online }: { online: boolean }) {
           <p>{copy.timesheets.intro}</p>
         </div>
         <PillButton type="button" tone="ghost" size="sm" className="timesheets-retry" disabled={loading || !online} onClick={() => setReloadKey((value) => value + 1)}>
-          {loading ? copy.timesheets.loading : copy.timesheets.refresh}
+          {loading ? <><span className="mk-spinner" aria-hidden="true" /> {copy.timesheets.loading}</> : copy.timesheets.refresh}
         </PillButton>
       </header>
 
       {!online && <Banner tone="warn">{copy.timesheets.offline}</Banner>}
-      {online && loading && <Banner tone="info">{copy.timesheets.loading}</Banner>}
+      {online && loading && <Banner tone="info"><span className="mk-spinner" aria-hidden="true" /> {copy.timesheets.loading}</Banner>}
       {online && !loading && error && <Card className="mk-timesheets-empty" role="alert"><Banner tone="bad">{error}</Banner><PillButton tone="ghost" size="sm" onClick={() => setReloadKey((value) => value + 1)}>{copy.generic.retry}</PillButton></Card>}
       {online && !loading && !error && items.length === 0 && <Card className="mk-timesheets-empty"><h3>{copy.timesheets.emptyTitle}</h3><p>{copy.timesheets.empty}</p></Card>}
 

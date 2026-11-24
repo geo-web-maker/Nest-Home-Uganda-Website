@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { LoadingScreen } from '../../../components/admin/LoadingScreen';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -83,7 +84,7 @@ export function LoginPage() {
     }
   };
 
-  if (status === 'loading') return null;
+  if (status === 'loading') return <LoadingScreen label="Checking your session…" />;
   if (status === 'signedIn')
     return <Navigate to={landingPath(location.state, firstReachablePath(user))} replace />;
 

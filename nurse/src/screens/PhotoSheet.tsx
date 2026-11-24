@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { LoadingNote } from '../ui/Loading';
 import type { CachedVisit, LocalPhoto } from '../offline/db';
 import { copy } from '../copy';
 import { Banner } from '../ui/Banner';
@@ -52,7 +53,7 @@ function PhotoViewer({ source, title, onClose }: { source: ViewerSource; title: 
   }, [source]);
   return <Sheet placement="center" labelledBy="photo-viewer-title" className="photo-viewer">
     <div className="screen-heading"><h2 id="photo-viewer-title">{title}</h2><PillButton type="button" size="sm" tone="ghost" showArrow={false} onClick={onClose}>{copy.photos.closeViewer}</PillButton></div>
-    {url ? <img src={url} alt={copy.photos.reviewPhoto} /> : <p role="status">{copy.photos.serverPhotosLoading}</p>}
+    {url ? <img src={url} alt={copy.photos.reviewPhoto} /> : <LoadingNote>{copy.photos.serverPhotosLoading}</LoadingNote>}
   </Sheet>;
 }
 

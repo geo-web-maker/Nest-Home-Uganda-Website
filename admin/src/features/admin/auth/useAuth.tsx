@@ -12,7 +12,7 @@ import {
 import type { ReactNode } from 'react';
 import type { UserPublic } from '@shared/types';
 import { authStore } from './authStore';
-import { installAuthHooks, login, logout, restoreSession } from './session';
+import { installAuthHooks, installOfflineRecovery, login, logout, restoreSession } from './session';
 
 type AuthValue = {
   status: 'loading' | 'signedIn' | 'signedOut';
@@ -32,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void restoreSession();
   }, []);
+  useEffect(() => installOfflineRecovery(), []);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || state.status !== 'signedIn') return;

@@ -13,7 +13,7 @@
 .stage-summary-strip span { font-size: .84rem; color: var(--mut); }
 .stage-table-scroll { width: 100%; overflow-x: auto; }
 .stage-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
-.stage-table caption { padding-bottom: .75rem; text-align: left; font-weight: 650; }
+.stage-table caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } /* accessible name only */
 .stage-table th, .stage-table td { padding: .72rem .65rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .stage-table th { color: var(--mut); font-weight: 650; white-space: nowrap; }
 .stage-table tbody tr:last-child td { border-bottom: 0; }
@@ -104,3 +104,6 @@
 .stage-photo-placeholder { padding: 2rem 1rem; color: var(--mut); text-align: center; }
 .stage-photo-card > div { display: grid; gap: 0.4rem; padding: 0.85rem; }
 .stage-photo-card small { overflow-wrap: anywhere; color: var(--mut); }
+
+/* A table inside a panel: the panel is the box, so the table does not draw a second one (that put a panel inside a panel). */
+.stage-panel [data-datatable] { padding: 0; border: 0; border-radius: 0; background: transparent; }

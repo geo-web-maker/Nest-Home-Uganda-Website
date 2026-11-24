@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Spinner } from '../../../components/admin/LoadingNote';
+import { SectionHeader } from '@shared/components/dialogs/SectionHeader';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Button } from '@shared/components/ui/Button';
 import { apiClient } from '@shared/lib/api/client';
@@ -37,17 +39,17 @@ export function CareLiveDashboardPage() {
     <PageHeader title="Live care dashboard" actions={<Button variant="outline" onClick={() => void load()} disabled={loading}>Refresh</Button>} />
     {error && <Notice tone="error">{error}</Notice>}
     <div className="stage-summary-strip">
-      <div><strong>{loading ? '…' : Number(data?.visit_counts?.scheduled ?? 0)}</strong><span>Scheduled visits</span></div>
-      <div><strong>{loading ? '…' : Number(data?.visit_counts?.in_progress ?? 0)}</strong><span>In progress</span></div>
-      <div><strong>{loading ? '…' : Number(data?.open_alerts ?? 0)}</strong><span>Open alerts</span></div>
-      <div><strong>{loading ? '…' : Number(data?.critical_alerts ?? 0)}</strong><span>Critical open alerts</span></div>
-      <div><strong>{loading ? '…' : Number(data?.on_call_now ?? 0)}</strong><span>On-call recipients now</span></div>
+      <div><strong>{loading ? <Spinner /> : Number(data?.visit_counts?.scheduled ?? 0)}</strong><span>Scheduled visits</span></div>
+      <div><strong>{loading ? <Spinner /> : Number(data?.visit_counts?.in_progress ?? 0)}</strong><span>In progress</span></div>
+      <div><strong>{loading ? <Spinner /> : Number(data?.open_alerts ?? 0)}</strong><span>Open alerts</span></div>
+      <div><strong>{loading ? <Spinner /> : Number(data?.critical_alerts ?? 0)}</strong><span>Critical open alerts</span></div>
+      <div><strong>{loading ? <Spinner /> : Number(data?.on_call_now ?? 0)}</strong><span>On-call recipients now</span></div>
     </div>
     {data?.on_call_schedule_gap && <Notice tone="error">The approved on-call roster has no matching contact for the current time. The dispatch system may use the configured fallback contacts; review the roster before relying on it.</Notice>}
     {data?.on_call_schedule_enabled && !data?.on_call_schedule_gap && <p className="stage-label-note">Approved roster is active. {Number(data?.on_call_schedule_matches ?? 0)} scheduled contact number(s) match the current time.</p>}
     <div className="stage-grid">
-      <section className="stage-panel"><h2>Operational shortcuts</h2><p>Open the server-backed work queue that needs attention.</p><ButtonGroup spaced><Button href="/care/schedule">Schedule</Button><Button href="/care/alerts" variant="outline">Alerts</Button><Button href="/care/sos" variant="outline">SOS console</Button></ButtonGroup></section>
-      <section className="stage-panel"><h2>Recent visit outcomes</h2><div className="stage-chart">{['completed', 'missed', 'cancelled'].map((status) => <div key={status} className="stage-chart-row"><span>{status.replaceAll('_', ' ')}</span><div className="stage-chart-track"><span className="stage-chart-bar" style={{ width: `${Math.min(100, Number(data?.visit_counts?.[status] ?? 0) / Math.max(1, ...Object.values(data?.visit_counts ?? {}).map(Number)) * 100)}%` }} /></div><strong className="stage-count">{loading ? '…' : Number(data?.visit_counts?.[status] ?? 0)}</strong></div>)}</div><p className="stage-label-note">Counts are from the current API snapshot, not a historical trend.</p></section>
+      <section className="stage-panel"><SectionHeader title="Operational shortcuts" /><p>Open the server-backed work queue that needs attention.</p><ButtonGroup spaced><Button href="/care/schedule">Schedule</Button><Button href="/care/alerts" variant="outline">Alerts</Button><Button href="/care/sos" variant="outline">SOS console</Button></ButtonGroup></section>
+      <section className="stage-panel"><SectionHeader title="Recent visit outcomes" /><div className="stage-chart">{['completed', 'missed', 'cancelled'].map((status) => <div key={status} className="stage-chart-row"><span>{status.replaceAll('_', ' ')}</span><div className="stage-chart-track"><span className="stage-chart-bar" style={{ width: `${Math.min(100, Number(data?.visit_counts?.[status] ?? 0) / Math.max(1, ...Object.values(data?.visit_counts ?? {}).map(Number)) * 100)}%` }} /></div><strong className="stage-count">{loading ? <Spinner /> : Number(data?.visit_counts?.[status] ?? 0)}</strong></div>)}</div><p className="stage-label-note">Counts are from the current API snapshot, not a historical trend.</p></section>
     </div>
   </div>;
 }
@@ -60,11 +62,11 @@ export function CareExecutiveDashboardPage() {
   return <div className="stage-page">
     <PageHeader title="Executive care overview" actions={<Button variant="outline" onClick={() => void load()} disabled={loading}>Refresh</Button>} />
     {error && <Notice tone="error">{error}</Notice>}
-    <div className="stage-summary-strip"><div><strong>{loading ? '…' : total}</strong><span>Visits across returned statuses</span></div><div><strong>{loading ? '…' : Number(data?.visit_counts?.completed ?? 0)}</strong><span>Completed visits</span></div><div><strong>{loading ? '…' : Number(data?.open_alerts ?? 0)}</strong><span>Open alerts</span></div><div><strong>{loading ? '…' : Number(data?.critical_alerts ?? 0)}</strong><span>Critical alerts</span></div><div><strong>{loading ? '…' : Number(data?.on_call_now ?? 0)}</strong><span>On-call recipients now</span></div></div>
+    <div className="stage-summary-strip"><div><strong>{loading ? <Spinner /> : total}</strong><span>Visits across returned statuses</span></div><div><strong>{loading ? <Spinner /> : Number(data?.visit_counts?.completed ?? 0)}</strong><span>Completed visits</span></div><div><strong>{loading ? <Spinner /> : Number(data?.open_alerts ?? 0)}</strong><span>Open alerts</span></div><div><strong>{loading ? <Spinner /> : Number(data?.critical_alerts ?? 0)}</strong><span>Critical alerts</span></div><div><strong>{loading ? <Spinner /> : Number(data?.on_call_now ?? 0)}</strong><span>On-call recipients now</span></div></div>
     {data?.on_call_schedule_gap && <Notice tone="error">Approved on-call schedule gap: no scheduled contact matches the current time. Check configured fallback contacts and the roster.</Notice>}
     <div className="stage-grid">
-      <section className="stage-panel"><h2>Current visit status mix</h2><div className="stage-chart" aria-label="Current visit count by status">{rows.map((row) => <div className="stage-chart-row" key={row.status}><span>{row.status.replaceAll('_', ' ')}</span><div className="stage-chart-track"><span className="stage-chart-bar" style={{ width: `${row.count / max * 100}%` }} /></div><strong className="stage-count">{loading ? '…' : row.count}</strong></div>)}</div><p className="stage-label-note">Counts cover the returned page-wide/reach-scoped snapshot. Statuses with no records are shown as zero where returned by the API.</p></section>
-      <section className="stage-panel"><h2>Safety overview</h2><div className="stage-summary-strip" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}><div><strong>{loading ? '…' : Number(data?.open_alerts ?? 0)}</strong><span>Open alerts</span></div><div><strong>{loading ? '…' : Number(data?.critical_alerts ?? 0)}</strong><span>Critical alerts</span></div></div><ButtonGroup spaced><Button href="/care/alerts" variant="outline">Review alerts</Button><Button href="/care/timesheets" variant="outline">Timesheets</Button><Button href="/care/reports/visits" variant="outline">Visit reports</Button></ButtonGroup></section>
+      <section className="stage-panel"><SectionHeader title="Current visit status mix" /><div className="stage-chart" aria-label="Current visit count by status">{rows.map((row) => <div className="stage-chart-row" key={row.status}><span>{row.status.replaceAll('_', ' ')}</span><div className="stage-chart-track"><span className="stage-chart-bar" style={{ width: `${row.count / max * 100}%` }} /></div><strong className="stage-count">{loading ? <Spinner /> : row.count}</strong></div>)}</div><p className="stage-label-note">Counts cover the returned page-wide/reach-scoped snapshot. Statuses with no records are shown as zero where returned by the API.</p></section>
+      <section className="stage-panel"><SectionHeader title="Safety overview" /><div className="stage-summary-strip" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}><div><strong>{loading ? <Spinner /> : Number(data?.open_alerts ?? 0)}</strong><span>Open alerts</span></div><div><strong>{loading ? <Spinner /> : Number(data?.critical_alerts ?? 0)}</strong><span>Critical alerts</span></div></div><ButtonGroup spaced><Button href="/care/alerts" variant="outline">Review alerts</Button><Button href="/care/timesheets" variant="outline">Timesheets</Button><Button href="/care/reports/visits" variant="outline">Visit reports</Button></ButtonGroup></section>
     </div>
   </div>;
 }

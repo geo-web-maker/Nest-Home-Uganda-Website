@@ -1,4 +1,5 @@
 import { ProfileCareSection } from '../features/careforms/ProfileCareSection';
+import { LoadingNote } from '../ui/Loading';
 import { Link } from 'react-router-dom';
 import { useState, useCallback } from 'react';
 import type { FieldProfile } from '../app/useFieldProfile';
@@ -60,7 +61,7 @@ function MailLogsDisclosure() {
         <Icon name="mail" /><span>Mail delivery log</span>
       </summary>
       <div className="mk-mail-logs__body">
-        {loading && <p className="mk-mail-logs__state">Loading…</p>}
+        {loading && <LoadingNote>Loading…</LoadingNote>}
         {error  && <p className="mk-mail-logs__state mk-mail-logs__state--err">{error}</p>}
         {!loading && !error && logs.length === 0 && <p className="mk-mail-logs__state">No delivery records.</p>}
         {logs.map((log) => (

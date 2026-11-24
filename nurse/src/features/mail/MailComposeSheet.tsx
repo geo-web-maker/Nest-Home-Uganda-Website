@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from 'react';
+import { LoadingNote } from '../../ui/Loading';
 import { copy } from '../../copy';
 import { Banner } from '../../ui/Banner';
 import { PillButton } from '../../ui/PillButton';
@@ -143,7 +144,7 @@ export function MailComposeSheet({ value, problem, onDismissProblem, online, att
         <PillButton type="button" tone={format === 'html' ? 'forest' : 'ghost'} size="sm" showArrow={false} aria-pressed={format === 'html'} onClick={switchRich}>Rich text</PillButton>
         <PillButton type="button" tone={format === 'plain' ? 'forest' : 'ghost'} size="sm" showArrow={false} aria-pressed={format === 'plain'} onClick={requestPlain}>Plain text</PillButton>
       </div>
-      {format === 'html' ? <Suspense fallback={<p role="status">Loading editor…</p>}>
+      {format === 'html' ? <Suspense fallback={<LoadingNote>Loading editor…</LoadingNote>}>
         <LazyMailRichEditor
           value={value.bodyHtml || plainToHtml(value.body)}
           onChange={(html, text) => onChange({ ...value, bodyHtml: html, body: text, bodyFormat: 'html' })}

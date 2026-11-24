@@ -2,6 +2,7 @@ import type { MouseEvent, ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { cx } from '@shared/lib/cx';
 import { ButtonSizeProvider } from '@shared/components/ui/Button';
+import { LoadingNote } from './LoadingNote';
 import styles from './DataTable.module.css';
 
 export interface DataColumn<T> {
@@ -56,7 +57,7 @@ export function DataTable<T>({
   if (showLoading) {
     return (
       <div id={id} className={styles.state} aria-busy="true">
-        <p role="status">{labels.loading}</p>
+        <LoadingNote>{labels.loading}</LoadingNote>
         <div className={styles.skeleton} aria-hidden="true">
           <span />
           <span />
@@ -75,7 +76,7 @@ export function DataTable<T>({
   }
 
   return (
-    <div id={id} className={styles.wrap} aria-busy={loading}>
+    <div id={id} data-datatable="" className={styles.wrap} aria-busy={loading}>
       <ButtonSizeProvider value="compact">
       <table className={styles.table} role="table">
         <caption className={styles.caption}>{labels.caption}</caption>

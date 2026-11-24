@@ -1,12 +1,21 @@
 import type { ReactNode } from 'react';
 import styles from './LoadingNote.module.css';
 
-/** Inline loading message with a spinner. The text stays the accessible name; the spinner is decorative. */
-export function LoadingNote({ children }: { children: ReactNode }) {
+/** Bare spinner for places with no room for a message (a count still loading, a button label). Decorative. */
+export function Spinner() {
+  return <span className={styles.spinner} aria-hidden="true" />;
+}
+
+/**
+ * Loading message with a spinner. The text stays the accessible name; the spinner is decorative.
+ * `inline` renders a span so it can sit inside a paragraph, a heading note or a button.
+ */
+export function LoadingNote({ children, inline = false }: { children: ReactNode; inline?: boolean }) {
+  const Tag = inline ? 'span' : 'p';
   return (
-    <p className={styles.note} role="status" aria-busy="true">
-      <span className={styles.spinner} aria-hidden="true" />
+    <Tag className={inline ? `${styles.note} ${styles.inline}` : styles.note} role="status" aria-busy="true">
+      <Spinner />
       {children}
-    </p>
+    </Tag>
   );
 }

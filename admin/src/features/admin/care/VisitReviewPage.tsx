@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { LoadingNote } from '../../../components/admin/LoadingNote';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiClient } from '@shared/lib/api/client';
@@ -38,7 +39,7 @@ export function VisitReviewPage() {
     return (
       <>
         <PageHeader title="Visit review" />
-        <p>{error || 'Loading…'}</p>
+        {error ? <p role="alert">{error}</p> : <LoadingNote>Loading visit…</LoadingNote>}
       </>
     );
   const eventTimestamp = (event: any) => {

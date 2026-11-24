@@ -1220,3 +1220,14 @@ a.mk-btn--ghost, a.mk-btn--ghost:hover { color: var(--ink); }
   white-space: normal;
 }
 .mk-status-link .mk-status-text { text-align: left; }
+
+/* Standard waiting states (ui/Loading.tsx). */
+.mk-spinner { flex: none; display: inline-block; width: 1em; height: 1em; border: 2px solid currentColor; border-inline-end-color: transparent; border-radius: 50%; animation: mk-spin .8s linear infinite; }
+.mk-spinner--lg { width: 2.4rem; height: 2.4rem; border-width: 3px; color: var(--gold); }
+.mk-loading-note { display: flex; align-items: center; gap: .6em; margin: 0; padding: 4px 0; color: var(--mut); font-size: .9rem; }
+.mk-loading-screen { display: flex; min-height: 60vh; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; color: var(--mut); text-align: center; }
+.mk-loading-screen p { margin: 0; }
+@keyframes mk-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .mk-spinner { animation: none; border-inline-end-color: currentColor; opacity: .6; } }
+/* A spinner inside a button or banner label keeps its text colour and sits on the text baseline. */
+button .mk-spinner, .mk-banner .mk-spinner { vertical-align: -0.12em; margin-inline-end: .35em; }

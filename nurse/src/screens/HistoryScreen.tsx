@@ -67,6 +67,6 @@ export function HistoryScreen({ history, loading, hasMore, onLoadMore, pendingVi
         </Card>;
       })}</div>
     </section>)}
-    {hasMore && <PillButton className="history-load-more" tone="ghost" onClick={onLoadMore} disabled={loading}>{loading ? copy.history.loading : copy.history.loadMore}</PillButton>}
+    {hasMore && <PillButton className="history-load-more" tone="ghost" onClick={onLoadMore} disabled={loading}>{loading ? <><span className="mk-spinner" aria-hidden="true" /> {copy.history.loading}</> : copy.history.loadMore}</PillButton>}
   </section>;
 }

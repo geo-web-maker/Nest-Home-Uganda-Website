@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { apiAssetUrl, apiRequest } from '../../lib/api/client';
+import { apiRequest } from '../../lib/api/client';
+import { fetchAndCachePdf, readCachedPdf } from './pdfCache';
 import { Banner } from '../../ui/Banner';
 import { PillButton } from '../../ui/PillButton';
 import { PillLink } from '../../ui/PillLink';
@@ -18,9 +19,18 @@ export function DocumentViewer({ doc, clientName, onClose, onCorrect }: { doc: D
     let revoked = ''; let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch(apiAssetUrl(`/field/care-forms/${doc.id}/pdf`), { headers: { Authorization: `Bearer ${sessionStorage.getItem('nurse_access_token') ?? ''}` } });
-        if (!res.ok) throw new Error(res.status === 403 ? 'Open your Profile and check your UNMC details.' : 'The document could not be loaded.');
-        const blob = URL.createObjectURL(await res.blob()); revoked = blob; if (!cancelled) setUrl(blob);
+        let pdf: Blob | null = null;
+        let failure: unknown = null;
+        if (navigator.onLine && sessionStorage.getItem('nurse_access_token')) {
+          try { pdf = await fetchAndCachePdf(doc.id); } catch (e) { failure = e; }
+        }
+        if (!pdf) pdf = await readCachedPdf(doc.id); // offline, or the server could not be reached: use the saved copy
+        if (!pdf) {
+          const status = (failure as { status?: number } | null)?.status;
+          if (status === 403) throw new Error('Open your Profile and check your UNMC details.');
+          throw new Error(failure || navigator.onLine ? 'The document could not be loaded.' : 'This document has not been opened on this device yet. Connect to the internet once to view it.');
+        }
+        const blob = URL.createObjectURL(pdf); revoked = blob; if (!cancelled) setUrl(blob);
       } catch (e) { if (!cancelled) setError(e instanceof Error ? e.message : 'The document could not be loaded.'); }
     })();
     return () => { cancelled = true; if (revoked) URL.revokeObjectURL(revoked); };

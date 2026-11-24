@@ -22,7 +22,9 @@ import type { LiveFollowStartResult, SosSendResult } from '../features/sos/SosSh
 import { checkoutPhotoRequirementMissing } from '../features/photos/requirements';
 import { useSession } from './useSession';
 import { useToast } from './useToast';
-import { useFieldProfile, type FieldConsentRequirement, type FieldProfile } from './useFieldProfile';
+import { forgetCachedProfile, readCachedProfile, useFieldProfile, type FieldConsentRequirement, type FieldProfile } from './useFieldProfile';
+import { clearPdfCache } from '../features/careforms/pdfCache';
+import { LoadingScreen } from '../ui/Loading';
 import { useHeartbeat } from '../features/heartbeat/useHeartbeat';
 import { copy, APP_VERSION, getInstalledVersion } from '../copy';
 import { AppShell } from './AppShell';
@@ -80,6 +82,8 @@ function NurseWorkspace() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useToast(6_000);
   const token = session.token;
+  /** Signed in either with a live access token or, on a cold start without a network, on the strength of the stored refresh token. */
+  const signedIn = Boolean(token) || session.offlineTrusted;
   const setToken = session.setToken;
   const [currentUserId, setCurrentUserId] = useState('');
   const [consentsRequired, setConsentsRequired] = useState<ConsentRequirement[]>([]);
@@ -129,6 +133,8 @@ function NurseWorkspace() {
   const [noteVisitId, setNoteVisitId] = useState('');
   const [noteBody, setNoteBody] = useState('');
   const careForms = useCareForms({ userId: currentUserId, token, online, onQueued: () => { void refreshLocalRef.current(); void syncRef.current(); } });
+  const careRefreshRef = useRef<() => Promise<void>>(async () => undefined);
+  careRefreshRef.current = careForms.refresh;
   const refreshLocalRef = useRef<() => Promise<void>>(async () => undefined);
   const syncRef = useRef<() => Promise<void>>(async () => undefined);
   const refreshLocal = useCallback(async () => {
@@ -249,6 +255,7 @@ function NurseWorkspace() {
       setHistoryHasMore(historyResult.items.length === 50);
       const clientResult = await apiRequest<{ items: CachedClient[] }>('/field/clients');
       await cacheClients(clientResult.items);
+      void careRefreshRef.current(); // keep the signed-documents preload current for offline use
       await refreshLocal();
       setMessage(syncResult.photoRequirementBlockedCount > 0
         ? copy.photos.requiredUploadPending
@@ -300,16 +307,58 @@ function NurseWorkspace() {
     // Persistence is a best-effort enhancement. The app still handles storage denial gracefully.
     if (navigator.storage?.persist) void navigator.storage.persist().catch(() => false);
   }, []);
+  /** False only while the phone is deciding whether a stored session can be trusted (a few milliseconds, no network). */
+  const [bootChecked, setBootChecked] = useState(() => !Capacitor.isNativePlatform() || Boolean(sessionStorage.getItem('nurse_access_token')));
+  const restoringSession = useRef(false);
+  /** Refreshes the access token from the stored refresh token. Returns false only when the network could not be used. */
+  const restoreLiveSession = useCallback(async (): Promise<boolean> => {
+    if (restoringSession.current) return true;
+    restoringSession.current = true;
+    try {
+      const restored = await restoreNativeSession();
+      if (restored) { setToken(restored); session.setOfflineTrusted(false); setMessage(copy.messages.sessionRestored); }
+      else { session.setOfflineTrusted(false); } // the server rejected (or there is no) refresh token: back to the sign-in screen
+      return true;
+    } catch {
+      return false; // offline or the server is unreachable: the app stays open on the cached account and tries again later
+    } finally { restoringSession.current = false; }
+  }, [session.setOfflineTrusted, setToken]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || sessionStorage.getItem('nurse_access_token')) return;
     let active = true;
-    void restoreNativeSession().then((restored) => {
-      if (active && restored) { setToken(restored); setMessage(copy.messages.sessionRestored); }
-    }).catch(() => {
-      if (active) setMessage(copy.messages.sessionRestoreFailed);
-    });
+    void (async () => {
+      // Trust what is stored on the phone first, so a cold start without a network opens the app instead of the sign-in screen.
+      let owner: string | null = null;
+      try {
+        const refreshToken = await readRefreshToken();
+        owner = localStorage.getItem('nest.nurse.cache-user-id');
+        if (!active || !refreshToken) return;
+        if (owner) {
+          const cached = await readCachedProfile(owner);
+          if (cached && active) {
+            const accepted = new Set((await nurseDb.consents.toArray()).map((row) => `${row.type}:${row.version}`));
+            await applyProfile({ ...cached, consents_required: (cached.consents_required ?? []).filter((item) => !accepted.has(`${item.type}:${item.version}`)) });
+            session.setOfflineTrusted(true);
+            void refreshLocal();
+          }
+        }
+      } catch { /* an unreadable cache means the normal sign-in path */ } finally { if (active) setBootChecked(true); }
+      if (!active) return;
+      const reached = await restoreLiveSession();
+      if (active && !reached && !owner) setMessage(copy.messages.sessionRestoreFailed);
+    })();
     return () => { active = false; };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // While running on the cached account, keep trying to get a live token whenever the network may be back.
+    if (!Capacitor.isNativePlatform() || !session.offlineTrusted) return;
+    const attempt = () => { if (navigator.onLine && !sessionStorage.getItem('nurse_access_token')) void restoreLiveSession(); };
+    window.addEventListener('online', attempt);
+    const timer = window.setInterval(attempt, 30_000);
+    let handle: { remove: () => Promise<void> } | undefined; let active = true;
+    void CapacitorApp.addListener('appStateChange', ({ isActive }) => { if (isActive) attempt(); }).then((h) => { if (!active) void h.remove(); else handle = h; }).catch(() => undefined);
+    return () => { active = false; window.removeEventListener('online', attempt); window.clearInterval(timer); void handle?.remove(); };
+  }, [session.offlineTrusted, restoreLiveSession]);
   useEffect(() => () => { void stopPushRegistration.current?.(); }, []);
   async function registerPushIfOptedIn(userId = currentUserId) {
     if (!Capacitor.isNativePlatform() || !sessionStorage.getItem('nurse_access_token') || !userId) return;
@@ -411,6 +460,7 @@ function NurseWorkspace() {
     clearProfile();
     await clearSyncCursor(currentUserId);
     await nurseDb.visits.clear(); await nurseDb.history.clear(); await nurseDb.clients.clear(); await nurseDb.consents.clear(); await clearMailCache();
+    await forgetCachedProfile(currentUserId); await clearPdfCache();
     localStorage.removeItem('nest.nurse.cache-user-id');
     setCurrentUserId(''); setConsentsRequired([]); setAdhocAllowed(false); setPhotosEnabled(false); setSosEnabled(false); setAdhocOpen(false); setPhotoVisitId(''); setNoteVisitId(''); setActionVisit(null); setActionKind(null); setSafetyTimerEnabled(false); setLogoutGuardOpen(false); setLogoutPendingCount(0); setAllOperations([]); setLocalPhotos([]); setQueued(0); setPendingPhotoCount(0);
     setMessage(remoteRevoked ? copy.messages.signOutRemote : copy.messages.signOutLocal);
@@ -828,7 +878,7 @@ function NurseWorkspace() {
   // If the installed version is below the minimum we block the login form entirely
   // so the nurse is directed to update before they can even attempt to sign in.
   useEffect(() => {
-    if (token || installedVersion === null) return; // signed in: the authenticated check takes over; otherwise wait for the real version
+    if (signedIn || installedVersion === null) return; // signed in: the authenticated check takes over; otherwise wait for the real version
     void (async () => {
       try {
         const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '');
@@ -872,22 +922,23 @@ function NurseWorkspace() {
   const updateBlocked = preLoginBlocked || Boolean(versionInfo && isForcedUpdate(appVersion, versionInfo.min_supported));
 
   refreshLocalRef.current = refreshLocal; syncRef.current = sync;
-  return <CareFormsProvider value={careForms}><AppShell onDismissMessage={() => setMessage('')} online={online} queued={queued} authenticated={Boolean(token)} message={message} syncing={busy} sosEnabled={sosEnabled} smsHref={sosSmsHref} emergencyNumbers={fieldProfile?.settings?.emergency_numbers ?? []} supervisorPhone={fieldProfile?.supervisor_phone} liveFollowEnabled={Boolean(fieldProfile?.settings?.live_follow_enabled)} liveFollowMinutes={fieldProfile?.settings?.live_follow_minutes ?? 30} liveFollowIntervalSeconds={fieldProfile?.settings?.live_follow_interval_seconds ?? 30} sosHoldSeconds={fieldProfile?.settings?.sos_hold_seconds ?? 2} sosCancelWindowSeconds={fieldProfile?.settings?.sos_cancel_window_s ?? 5} onSendSos={sendSos} onStartSosFollow={startSosFollow} onPingSosFollow={pingSosFollow} onSafeNow={reportSafeNow}>
+  return <CareFormsProvider value={careForms}><AppShell onDismissMessage={() => setMessage('')} online={online} queued={queued} authenticated={signedIn} message={message} syncing={busy} sosEnabled={sosEnabled} smsHref={sosSmsHref} emergencyNumbers={fieldProfile?.settings?.emergency_numbers ?? []} supervisorPhone={fieldProfile?.supervisor_phone} liveFollowEnabled={Boolean(fieldProfile?.settings?.live_follow_enabled)} liveFollowMinutes={fieldProfile?.settings?.live_follow_minutes ?? 30} liveFollowIntervalSeconds={fieldProfile?.settings?.live_follow_interval_seconds ?? 30} sosHoldSeconds={fieldProfile?.settings?.sos_hold_seconds ?? 2} sosCancelWindowSeconds={fieldProfile?.settings?.sos_cancel_window_s ?? 5} onSendSos={sendSos} onStartSosFollow={startSosFollow} onPingSosFollow={pingSosFollow} onSafeNow={reportSafeNow}>
     {/* Pre-login update gate: block before the user can enter credentials */}
-    {!token && preLoginBlocked
+    {!bootChecked ? <LoadingScreen />
+    : !signedIn && preLoginBlocked
       ? <Card className="update-gate"><UpdateNotice currentVersion={appVersion} latestVersion={null} minimumVersion="0.0.0" hasReleases={true} /><p style={{ fontSize: '.82rem', color: 'var(--mut)', marginTop: 8 }}>{copy.update.contactSupervisor}</p></Card>
-      : token && updateBlocked && versionInfo
+      : signedIn && updateBlocked && versionInfo
         ? <Card className="update-gate"><UpdateNotice currentVersion={appVersion} latestVersion={versionInfo.latest} minimumVersion={versionInfo.min_supported} downloadPath={versionInfo.download_path} apkInfo={versionInfo.apk_info} hasReleases={versionInfo.has_releases ?? true} /><PillButton type="button" tone="ghost" showArrow={false} onClick={() => void checkForUpdate()}>{copy.update.checkAgain}</PillButton></Card>
-        : token && accessProblem === 'not_nurse'
+        : signedIn && accessProblem === 'not_nurse'
           ? <Card className="update-gate"><h2>{copy.notNurse.heading}</h2><p>{copy.notNurse.body}</p><PillButton type="button" tone="gold" onClick={() => void requestSignOut()}>{copy.notNurse.signOut}</PillButton></Card>
-        : token && consentsRequired.length > 0
+        : signedIn && consentsRequired.length > 0
           ? <Card className="consent-gate"><h2>{copy.consent.heading}</h2><p>{copy.consent.explanation}</p>{consentsRequired.map((requirement) => <Card className="consent-requirement" key={`${requirement.type}:${requirement.version}`}><h3>{requirement.type.replaceAll('_', ' ')}</h3><p>{requirement.text}</p><p>{copy.consent.version} {requirement.version}</p><PillButton type="button" tone="gold" onClick={() => void acceptConsent(requirement)}>{copy.consent.accept}</PillButton></Card>)}</Card>
-          : <NurseRoutes views={views} authenticated={Boolean(token)} />}
-    {token && actionVisit && actionKind === 'check_in' && <ArriveSheet visit={actionVisit} location={actionLocation} locationState={actionLocationState} busy={actionBusy} safetyTimerEnabled={safetyTimerEnabled} canEnableSafetyTimer={sosEnabled} onSafetyTimerChange={setSafetyTimerEnabled} onConfirm={() => void confirmVisitAction()} onCancel={() => { setActionVisit(null); setActionKind(null); setSafetyTimerEnabled(false); }} />}
-    {token && actionVisit && actionKind === 'check_out' && <LeaveSheet visit={actionVisit} finalNote={actionFinalNote} busy={actionBusy} onFinalNote={setActionFinalNote} onConfirm={() => void confirmVisitAction()} onCancel={() => { setActionVisit(null); setActionKind(null); }} onAddPhoto={() => { const visit = actionVisit; setActionVisit(null); setActionKind(null); if (visit) openPhoto(visit); }} canAddRequiredPhoto={canAddRequiredPhoto} requiredPhotoMissing={requiredPhotoMissing} />}
-    {token && noteVisitId && selectedVisit(noteVisitId) && <NoteSheet visit={selectedVisit(noteVisitId)!} value={noteBody} onChange={setNoteBody} onSubmit={saveVisitNote} onCancel={() => { setNoteVisitId(''); setNoteBody(''); }} />}
-    {token && photoVisitId && selectedVisit(photoVisitId) && <PhotoSheet visit={selectedVisit(photoVisitId)!} file={photoFile} onFile={setPhotoFile} onSubmit={savePhoto} onDiscardLocalPhoto={(id) => void discardSavedPhoto(id)} onRetakeLocalPhoto={(id) => void retakeSavedPhoto(id)} onCancel={() => { setPhotoVisitId(''); setPhotoFile(null); setServerPhotos([]); }} pendingPhotos={localPhotos.filter((photo) => photo.visitId === photoVisitId)} pendingCount={pendingPhotoCount} serverPhotos={serverPhotos} serverPhotosLoading={serverPhotosLoading} photosEnabled={photosEnabled} guidanceText={selectedVisit(photoVisitId)?.photo_rules?.guidance_text != null ? selectedVisit(photoVisitId)?.photo_rules?.guidance_text?.trim() ?? '' : fieldProfile?.settings?.photo_guidance_text || ''} wifiOnly={wifiOnlyUpload} onWifiOnly={(value) => { setWifiOnlyUpload(value); localStorage.setItem('nest.nurse.wifi-only-photos', String(value)); }} busy={busy} />}
-    {token && <SafetyTimerPrompt visit={safetyPromptVisit} onOpenVisit={(visit) => navigate(`/active/${encodeURIComponent(visit.id)}`)} />}
+          : <NurseRoutes views={views} authenticated={signedIn} />}
+    {signedIn && actionVisit && actionKind === 'check_in' && <ArriveSheet visit={actionVisit} location={actionLocation} locationState={actionLocationState} busy={actionBusy} safetyTimerEnabled={safetyTimerEnabled} canEnableSafetyTimer={sosEnabled} onSafetyTimerChange={setSafetyTimerEnabled} onConfirm={() => void confirmVisitAction()} onCancel={() => { setActionVisit(null); setActionKind(null); setSafetyTimerEnabled(false); }} />}
+    {signedIn && actionVisit && actionKind === 'check_out' && <LeaveSheet visit={actionVisit} finalNote={actionFinalNote} busy={actionBusy} onFinalNote={setActionFinalNote} onConfirm={() => void confirmVisitAction()} onCancel={() => { setActionVisit(null); setActionKind(null); }} onAddPhoto={() => { const visit = actionVisit; setActionVisit(null); setActionKind(null); if (visit) openPhoto(visit); }} canAddRequiredPhoto={canAddRequiredPhoto} requiredPhotoMissing={requiredPhotoMissing} />}
+    {signedIn && noteVisitId && selectedVisit(noteVisitId) && <NoteSheet visit={selectedVisit(noteVisitId)!} value={noteBody} onChange={setNoteBody} onSubmit={saveVisitNote} onCancel={() => { setNoteVisitId(''); setNoteBody(''); }} />}
+    {signedIn && photoVisitId && selectedVisit(photoVisitId) && <PhotoSheet visit={selectedVisit(photoVisitId)!} file={photoFile} onFile={setPhotoFile} onSubmit={savePhoto} onDiscardLocalPhoto={(id) => void discardSavedPhoto(id)} onRetakeLocalPhoto={(id) => void retakeSavedPhoto(id)} onCancel={() => { setPhotoVisitId(''); setPhotoFile(null); setServerPhotos([]); }} pendingPhotos={localPhotos.filter((photo) => photo.visitId === photoVisitId)} pendingCount={pendingPhotoCount} serverPhotos={serverPhotos} serverPhotosLoading={serverPhotosLoading} photosEnabled={photosEnabled} guidanceText={selectedVisit(photoVisitId)?.photo_rules?.guidance_text != null ? selectedVisit(photoVisitId)?.photo_rules?.guidance_text?.trim() ?? '' : fieldProfile?.settings?.photo_guidance_text || ''} wifiOnly={wifiOnlyUpload} onWifiOnly={(value) => { setWifiOnlyUpload(value); localStorage.setItem('nest.nurse.wifi-only-photos', String(value)); }} busy={busy} />}
+    {signedIn && <SafetyTimerPrompt visit={safetyPromptVisit} onOpenVisit={(visit) => navigate(`/active/${encodeURIComponent(visit.id)}`)} />}
     <LogoutGuard open={logoutGuardOpen} pendingItems={logoutPendingCount} onCancel={() => setLogoutGuardOpen(false)} onConfirm={() => { setLogoutGuardOpen(false); void signOut(); }} />
   </AppShell></CareFormsProvider>;
 }

@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { firstReachablePath, visibleNav } from '../nav';
 import { hasScopes } from './hasScopes';
 import { NoAccessPage } from './NoAccessPage';
+import { LoadingScreen } from '../../../components/admin/LoadingScreen';
 import { useAuth } from './useAuth';
 
 type GuardProps = { children?: ReactNode };
@@ -12,7 +13,7 @@ export function RequireAuth({ children }: GuardProps) {
   const { status, user } = useAuth();
   const location = useLocation();
 
-  if (status === 'loading') return <p role="status" style={{ padding: '1rem' }}>Loading…</p>;
+  if (status === 'loading') return <LoadingScreen label="Opening your workspace…" />;
   if (status === 'signedOut') {
     const from = `${location.pathname}${location.search}`;
     return <Navigate to="/login" state={{ from }} replace />;

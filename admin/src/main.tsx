@@ -14,13 +14,29 @@ import '@shared/design/fonts.css';
 import '@shared/design/global.css';
 import '@shared/design/motion.css';
 import { startWebBundleUpdates } from './admin-native/webBundle';
+import { OfflineNotice } from './admin-native/OfflineNotice';
+import { restoreQueryCache, startQueryPersistence } from './admin-native/queryPersistence';
 import { installUpgradeRequiredHandler } from './admin-native/upgradeRequired';
 
 initTheme();
 installUpgradeRequiredHandler();
 if (typeof window !== 'undefined') installClientErrorCapture();
-const queryClient = createQueryClient();
+// offlineFirst: a screen with saved data shows it at once, and one without fails fast instead of waiting forever.
+// gcTime outlasts a working day so saved results are not dropped from memory while the app stays open.
+const queryClient = createQueryClient({
+  defaultOptions: {
+    queries: { networkMode: 'offlineFirst', gcTime: 24 * 60 * 60 * 1000 },
+    mutations: { networkMode: 'always' }, // no write queue: fail at once offline rather than hang
+  },
+});
 
+async function start(): Promise<void> {
+  await restoreQueryCache(queryClient);
+  startQueryPersistence(queryClient);
+  render();
+}
+
+function render(): void {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <HelmetProvider>
@@ -32,8 +48,12 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/*" element={<AdminApp />} />
           </Routes>
         </BrowserRouter>
+        <OfflineNotice />
       </QueryClientProvider>
     </HelmetProvider>
   </StrictMode>,
 );
+}
+
+void start();
 startWebBundleUpdates('admin');

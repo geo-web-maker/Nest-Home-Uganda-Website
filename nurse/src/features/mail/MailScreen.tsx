@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { LoadingNote } from '../../ui/Loading';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { apiRequest, type ApiError } from '../../lib/api/client';
@@ -453,7 +454,7 @@ export function MailScreen() {
     <header className="screen-heading">
       <div><p className="eyebrow">{copy.mail.eyebrow}</p><h2 id="mail-heading">{copy.mail.title}</h2></div>
       <div className="screen-heading__actions">
-        <PillButton type="button" tone="ghost" size="sm" showArrow={false} disabled={!online || loading} onClick={() => void refresh()}>{loading ? copy.today.syncing : copy.mail.refresh}</PillButton>
+        <PillButton type="button" tone="ghost" size="sm" showArrow={false} disabled={!online || loading} onClick={() => void refresh()}>{loading ? <><span className="mk-spinner" aria-hidden="true" /> {copy.today.syncing}</> : copy.mail.refresh}</PillButton>
         <PillButton type="button" tone="gold" size="sm" showArrow={false} onClick={() => { setProblem(''); setComposer(blank(activeBoxId)); }} disabled={!activeBoxId || !ownerId}>{copy.mail.compose}</PillButton>
       </div>
     </header>
@@ -510,7 +511,7 @@ export function MailScreen() {
           {selected.origin === 'inbound' && <p className="mail-external-note">{copy.mail.externalBanner}</p>}
         </div>
       </details>
-      {!detail ? <p role="status">{copy.mail.loading}</p> : <NurseMailUiProvider><MailMessageView message={{
+      {!detail ? <LoadingNote>{copy.mail.loading}</LoadingNote> : <NurseMailUiProvider><MailMessageView message={{
         mailbox_message_id: selected.mailbox_message_id,
         message_id: selected.message_id,
         folder,
@@ -538,7 +539,7 @@ export function MailScreen() {
         {FOLDERS.map((name) => <PillButton key={name} type="button" tone={folder === name ? 'forest' : 'ghost'} size="sm" showArrow={false} aria-pressed={folder === name} onClick={() => { setFolder(name); setSelectedId(''); }}>{copy.mail.folders[name]}</PillButton>)}
       </div>
       <Card>
-        {loading && messages.length === 0 && <p role="status">{copy.mail.loading}</p>}
+        {loading && messages.length === 0 && <LoadingNote>{copy.mail.loading}</LoadingNote>}
         {!loading && messages.length === 0 && <p>{copy.mail.empty}</p>}
         <ul className="mail-list">
           {messages.map((message) => <MailRow key={message.mailbox_message_id} message={message} onOpen={() => void open(message)} onSwipe={(direction) => swipeMessage(message, direction)} />)}

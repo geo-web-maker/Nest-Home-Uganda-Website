@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { LoadingNote } from '../../../../components/admin/LoadingNote';
 import type * as Leaflet from 'leaflet';
 import { Button } from '@shared/components/ui/Button';
 import { Field } from '@shared/components/ui/Field';
@@ -293,7 +294,7 @@ export function MapPicker({ tileUrl, lat, lng, radius, onChange, markers = NO_MA
 
       <div className={styles.map}>
         <div ref={container} className={styles.canvas} role="application" aria-label="Map. Tap to place the pin, drag the pin to adjust." />
-        {mapState === 'loading' && <p className={styles.overlay}>Loading map…</p>}
+        {mapState === 'loading' && <p className={styles.overlay}><LoadingNote inline>Loading map…</LoadingNote></p>}
         {mapState === 'failed' && <p className={styles.overlay}>The map could not load. Enter the coordinates below instead.</p>}
         {mapState === 'ready' && !point && markers.length === 0 && !readOnly && (
           <p className={styles.hint}>Search above, use your location, or tap the map to drop a pin.</p>
