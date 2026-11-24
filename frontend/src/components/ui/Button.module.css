@@ -35,6 +35,18 @@
   border-color: var(--moss);
   color: var(--onf);
 }
+.danger {
+  --btn-hover: color-mix(in srgb, var(--danger) 86%, #000);
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--on-danger);
+}
+.dangerOutline {
+  --btn-hover: color-mix(in srgb, var(--danger) 14%, transparent);
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
 .header {
   min-height: 40px;
   padding-inline: 14px;

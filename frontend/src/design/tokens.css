@@ -13,6 +13,8 @@
   --gold-text: #8A4B00; /* orange is for shapes; use this for text on light backgrounds */
   --straw: #FCE6C4;
   --line: #CAD9D5;
+  --line-strong: #7E9893; /* 3:1 on white: use for input, select and button outlines */
+  --raised: #FFFFFF; /* menus, popovers, dialogs: one step above --surf */
   --onf: #F2F8F6;
   --wa: #25D366;
   --on-wa: #06260F;
@@ -20,6 +22,7 @@
   --on-straw: #2A2410;
   --on-leaf: #FFFFFF;
   --danger: #B3261E;
+  --on-danger: #FFFFFF;
   --serif: "Fraunces", Georgia, serif;
   --sans: "Figtree", system-ui, sans-serif;
   --script: "Cormorant Garamond", Georgia, serif;
@@ -31,29 +34,37 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0A1C1A;
-  --mint: #0F2523;
-  --surf: #112826;
-  --ink: #E6F0EE;
-  --mut: #9DB8B2;
-  --forest: #071F1C;
-  --leaf: #5CC5B8;
-  --moss: #2A736C;
+  /* Dark forest green, from the reference palette (#123524). Ladder, each step lighter: bg < mint < surf < raised. Edges use --line (3:1 on every step). */
+  --bg: #14301F;
+  --mint: #1A3B28;
+  --surf: #214A33;
+  --raised: #274F38;
+  --ink: #EAF3EC;
+  --mut: #BCD5C4;
+  --forest: #123524;
+  --leaf: #7FD6A8;
+  --moss: #4E9C78;
   --gold: #FBA94A;
   --gold-text: #FBA94A;
-  --straw: #3A3620;
-  --line: #1F4140;
+  --straw: #4A4426;
+  --line: #88B59A;
+  --line-strong: #95BFA6;
   --onf: #F2F8F6;
   --on-gold: #1B1706;
   --on-straw: #F0E7C9;
   --on-leaf: #06260F;
-  --danger: #F28B82;
+  --danger: #F9A199;
+  --on-danger: #3A0905;
+  /* Shadows are black here: the light theme's forest-tinted shadow is invisible on a dark page. */
+  --shadow-1: 0 1px 2px rgb(0 0 0 / .55), 0 2px 8px rgb(0 0 0 / .4);
+  --shadow-2: 0 2px 4px rgb(0 0 0 / .55), 0 12px 32px rgb(0 0 0 / .5);
 }
 
 /* Breakpoints: tablet @700px, desktop @1040px. */
 
 /* Motion tokens (Step 2A). Only these may carry raw ms or cubic-bezier values. */
 :root{
+  --action-gap:8px; /* the one gap between buttons in any action row, dialog footer or ButtonGroup */
   --dur-instant:100ms; --dur-fast:160ms; --dur-base:240ms; --dur-slow:400ms; --dur-reveal:560ms; --dur-hero:700ms;
   --ease-out:cubic-bezier(0.22,1,0.36,1);
   --ease-in-out:cubic-bezier(0.65,0,0.35,1);

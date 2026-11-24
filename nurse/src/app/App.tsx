@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
-import { apiRequest, restoreNativeSession } from '../lib/api/client';
+import { apiRequest, hasStoredWebCredential, restoreNativeSession } from '../lib/api/client';
 import { LogoutGuard } from './LogoutGuard';
 import { needsLogoutConfirmation } from './logoutGuard';
 import { isRemovedVisitConflict, isRetryableSyncFailure, retryAfterIso, syncFailureMessage } from '../offline/syncPolicy';
@@ -308,7 +308,7 @@ function NurseWorkspace() {
     if (navigator.storage?.persist) void navigator.storage.persist().catch(() => false);
   }, []);
   /** False only while the phone is deciding whether a stored session can be trusted (a few milliseconds, no network). */
-  const [bootChecked, setBootChecked] = useState(() => !Capacitor.isNativePlatform() || Boolean(sessionStorage.getItem('nurse_access_token')));
+  const [bootChecked, setBootChecked] = useState(() => Boolean(sessionStorage.getItem('nurse_access_token')) || (!Capacitor.isNativePlatform() && !hasStoredWebCredential()));
   const restoringSession = useRef(false);
   /** Refreshes the access token from the stored refresh token. Returns false only when the network could not be used. */
   const restoreLiveSession = useCallback(async (): Promise<boolean> => {
@@ -347,6 +347,13 @@ function NurseWorkspace() {
       const reached = await restoreLiveSession();
       if (active && !reached && !owner) setMessage(copy.messages.sessionRestoreFailed);
     })();
+    return () => { active = false; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // Browser (PWA): a stored CSRF twin means a refresh cookie may exist, so try to restore the session before showing sign-in.
+    if (Capacitor.isNativePlatform() || sessionStorage.getItem('nurse_access_token') || !hasStoredWebCredential()) return;
+    let active = true;
+    void restoreLiveSession().finally(() => { if (active) setBootChecked(true); });
     return () => { active = false; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {

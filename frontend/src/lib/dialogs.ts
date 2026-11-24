@@ -9,6 +9,8 @@ export type ChoiceOption = { value: string; label: string };
 export type ConfirmOptions = {
   /** Button text, for example "Delete" or "Revoke" instead of the generic "Confirm". */
   confirmLabel?: string;
+  /** Destructive action: the confirm button turns red and Cancel gets focus, so Enter does not delete. */
+  danger?: boolean;
 };
 
 export type PromptOptions = {
@@ -20,6 +22,8 @@ export type PromptOptions = {
   secret?: boolean;
   placeholder?: string;
   confirmLabel?: string;
+  /** Destructive action: the confirm button turns red. The input keeps focus so the reason can be typed. */
+  danger?: boolean;
 };
 
 export type FormField = {

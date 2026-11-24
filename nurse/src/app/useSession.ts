@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { apiRequest } from '../lib/api/client';
+import { clearStoredWebCredential, saveWebCredential } from '../lib/api/webCredential';
 import { clearRefreshToken, saveRefreshToken } from '../platform/secureTokenStorage';
 import { copy } from '../copy';
 
@@ -30,7 +31,7 @@ export function useSession(callbacks: SessionCallbacks = {}) {
     const body = result as SessionResponse;
     sessionStorage.setItem('nurse_access_token', body.access_token);
     if (Capacitor.isNativePlatform() && body.refresh_token) await saveRefreshToken(body.refresh_token);
-    if (!Capacitor.isNativePlatform() && body.csrf_token) sessionStorage.setItem('nurse_csrf_token', body.csrf_token);
+    if (!Capacitor.isNativePlatform() && body.csrf_token) { sessionStorage.setItem('nurse_csrf_token', body.csrf_token); saveWebCredential(body.csrf_token); }
     setToken(body.access_token);
     setOfflineTrusted(false);
     await callbacks.onAuthenticated?.(body.access_token);
@@ -39,6 +40,7 @@ export function useSession(callbacks: SessionCallbacks = {}) {
   }, [callbacks]);
   const signOutLocal = useCallback(async () => {
     sessionStorage.removeItem('nurse_csrf_token');
+    clearStoredWebCredential();
     sessionStorage.removeItem('nurse_access_token');
     try { await clearRefreshToken(); } catch { /* Local sign-out must complete. */ }
     await callbacks.clearLocalSession?.();
