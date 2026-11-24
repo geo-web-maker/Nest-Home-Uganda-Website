@@ -51,6 +51,24 @@ def kick(delay: float = KICK_DELAY_SECONDS) -> bool:
     return True
 
 
+
+def apply_letterhead(body_html: str | None, body_text: str) -> tuple[str, str]:
+    """Wrap a message in the Bloomwell letterhead at send time.
+
+    The stored draft and the Sent copy stay exactly as the person wrote them; only the
+    outgoing HTML and plain-text parts are wrapped, so the sanitiser never has to
+    handle the layout. `body_html` has already been through the mail sanitiser.
+    """
+    from app.core.email_layout import render_branded_email
+
+    return render_branded_email(
+        paragraphs="" if body_html else body_text,
+        content_html=body_html or "",
+        content_text=body_text if body_html else "",
+        footer_reason="This message was sent by Bloomwell Home Care Uganda.",
+    )
+
+
 async def _safe_drain() -> int:
     try:
         return await drain()
@@ -227,7 +245,7 @@ async def _drain_inner(limit: int) -> int | None:
                         log.exception("could not record uncertain mail delivery outcome")
             rows = await conn.fetch(
                 """SELECT o.*,m.subject,m.body_text,m.body_html,m.message_id_header,
-                         m.in_reply_to,m.references_header,m.render_notes,
+                         m.in_reply_to,m.references_header,m.render_notes,m.letterhead,
                          b.local_part,b.sending_suspended,b.state AS mailbox_state,b.is_test
                    FROM outbox o JOIN message m ON m.id=o.message_id
                    LEFT JOIN mailbox b ON b.id=o.from_mailbox_id
@@ -346,6 +364,9 @@ async def _drain_inner(limit: int) -> int | None:
                 headers["References"] = str(row["references_header"])
             elif row["message_id_header"]:
                 headers["References"] = str(row["message_id_header"])
+            send_html, send_text = row["body_html"], str(row["body_text"] or "")
+            if row["letterhead"]:
+                send_html, send_text = apply_letterhead(send_html, send_text)
             message = OutboundMessage(
                 from_address=from_address,
                 from_name=await get_value("mail.from_name"),
@@ -353,8 +374,8 @@ async def _drain_inner(limit: int) -> int | None:
                 cc=list(row["cc_addresses"] or []),
                 bcc=list(row["bcc_addresses"] or []),
                 subject=str(row["subject"] or ""),
-                html=row["body_html"],
-                text=str(row["body_text"] or ""),
+                html=send_html,
+                text=send_text,
                 reply_to=await get_value("mail.reply_to"),
                 headers=headers if provider.supports_threading_headers else {},
                 attachments=attachments,
@@ -367,8 +388,8 @@ async def _drain_inner(limit: int) -> int | None:
                     "from_address": from_address,
                     "from_name": await get_value("mail.from_name"),
                     "subject": row["subject"],
-                    "body_text": row["body_text"],
-                    "body_html": row["body_html"],
+                    "body_text": send_text,
+                    "body_html": send_html,
                     "reply_to": await get_value("mail.reply_to"),
                     "message_id_header": stable_message_id,
                     "in_reply_to": row["in_reply_to"],

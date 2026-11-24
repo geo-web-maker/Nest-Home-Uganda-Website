@@ -7,13 +7,13 @@ Invites and resets send a one-time link by email and/or SMS; staff may also issu
 import logging
 import secrets
 from datetime import UTC, datetime, timedelta
-from html import escape
 
 from beanie import PydanticObjectId
 from pymongo.errors import DuplicateKeyError
 
 from app.core.config import get_settings
 from app.core.deps import Principal
+from app.core.email_layout import render_branded_email
 from app.core.errors import Conflict, Forbidden, NotFound, ValidationFailed
 from app.core.pagination import Page, PageParams
 from app.core.security import hash_password, hash_token, new_opaque_token
@@ -89,11 +89,29 @@ async def _send_link(user: User, raw_token: str, *, invite: bool, minutes: int) 
     days = minutes // 1440
     valid = f"{days} days" if days else f"{minutes} minutes"
     subject = "You are invited to Bloomwell Home Care admin" if invite else "Reset your password"
+    first_name = (user.name or "").split()[0] if (user.name or "").strip() else "there"
+    if invite:
+        heading = "Welcome to the Bloomwell team"
+        intro = (
+            f"Hello {first_name}, an account has been created for you on the Bloomwell Home Care admin. "
+            "Choose a password to finish setting it up."
+        )
+        button = "Set my password"
+        preheader = "Your Bloomwell account is ready. Choose a password to get started."
+        reason = "You received this because a Bloomwell Home Care account was created for you."
+    else:
+        heading = "Reset your password"
+        intro = (
+            f"Hello {first_name}, we received a request to reset the password on your Bloomwell account. "
+            "Choose a new password using the button below. If you did not ask for this, you can ignore this email."
+        )
+        button = "Choose a new password"
+        preheader = "Use this link to choose a new Bloomwell password."
+        reason = "You received this because a password reset was requested for your Bloomwell account."
     note = f"This link works once and expires in {valid}."
-    text = f"Hello {user.name},\n\nSet your password here: {link}\n\n{note}"
-    html = (
-        f"<p>Hello {escape(user.name)},</p>"
-        f'<p><a href="{escape(link)}">Set your password</a></p><p>{note}</p>'
+    html, text = render_branded_email(
+        heading=heading, paragraphs=intro, preheader=preheader, note=note,
+        button_label=button, link=link, footer_reason=reason,
     )
     try:
         await get_email_provider().send([user.email], subject, html, text)

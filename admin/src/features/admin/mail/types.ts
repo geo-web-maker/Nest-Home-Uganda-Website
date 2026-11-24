@@ -50,6 +50,7 @@ export type MailDetail = {
   body_html?: string | null;
   quoted_html?: string | null;
   body_format?: 'plain' | 'html';
+  letterhead?: boolean;
   snippet?: string;
   has_remote_images?: boolean;
   can_download_original?: boolean;
@@ -76,6 +77,7 @@ export type ComposeSeed = {
   bodyHtml?: string;
   bodyFormat?: 'plain' | 'html';
   quotedHtml?: string | null;
+  letterhead?: boolean;
   attachments?: { id: string; filename: string; size: number; content_type?: string; scan_state?: string; blocked_reason?: string | null; disposition?: 'attachment' | 'inline'; content_id?: string | null }[];
   quote?: { kind: 'reply' | 'reply_all' | 'forward' | 'forward_attachment'; source_id: string; include_attachments?: boolean };
 };

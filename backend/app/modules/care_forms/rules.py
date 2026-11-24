@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
+from app.core.email_layout import render_branded_email
+
 FORM_IDS = tuple(f"{i:02d}" for i in range(1, 13))
 CLIENT_FORMS = frozenset({"03", "04", "05", "06", "11", "12"})
 OPTIONAL_CLIENT_FORMS = frozenset({"07"})
@@ -113,8 +115,13 @@ def unmc_expired(expiry: date | None, today: date | None = None) -> bool:
 
 
 COPY_SUBJECT = "Your signed document from Bloomwell Home Care"
-COPY_PLAIN = "Your signed document is attached. It is confidential. If you did not expect it, please tell us at the privacy address on the document."
-COPY_HTML = f"<p>{COPY_PLAIN}</p>"
+_COPY_INTRO = "Your signed document is attached. It is confidential. If you did not expect it, please tell us at the privacy address on the document."
+COPY_HTML, COPY_PLAIN = render_branded_email(
+    heading="Your signed document",
+    paragraphs=_COPY_INTRO,
+    preheader="A signed copy is attached to this email.",
+    footer_reason="You received this because a signed document was shared with you.",
+)
 
 
 def form_08_values(data: dict[str, Any]) -> dict[str, Any]:

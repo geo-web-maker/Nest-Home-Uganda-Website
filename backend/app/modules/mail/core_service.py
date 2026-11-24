@@ -195,7 +195,7 @@ async def read_message(user_id: str, item_id: str, *, include_admin_diagnostics:
                 m.id AS message_id, m.thread_id, m.message_id_header, m.in_reply_to,
                 m.references_header, m.from_address, m.from_name, m.subject,
                 m.body_text, m.body_html, m.quoted_html, m.quote_kind, m.quote_source_message_id,
-                m.body_format, m.snippet, m.render_notes, m.sanitizer_version, m.origin, m.size_bytes,
+                m.body_format, m.snippet, m.render_notes, m.sanitizer_version, m.origin, m.size_bytes, m.letterhead,
                 (m.raw_object_key IS NOT NULL OR m.sent_eml_key IS NOT NULL) AS can_download_original
               FROM mailbox_message mm JOIN message m ON m.id=mm.message_id
               JOIN mailbox_member mem ON mem.mailbox_id=mm.mailbox_id
@@ -325,7 +325,7 @@ async def read_message(user_id: str, item_id: str, *, include_admin_diagnostics:
             "is_starred", "received_at", "thread_id", "message_id_header", "in_reply_to",
             "references_header", "from_address", "from_name", "subject", "body_text",
             "body_html", "quoted_html", "quote_kind", "quote_source_message_id",
-            "body_format", "snippet", "origin", "size_bytes",
+            "body_format", "snippet", "origin", "size_bytes", "letterhead",
             "has_remote_images", "render_notes", "can_download_original", "recipients",
             "attachments", "delivery",
         )
@@ -833,6 +833,8 @@ async def create_draft(user_id: str, mailbox_id: str, payload: dict[str, Any], d
                         json.dumps(render_notes), POLICY_VERSION, total_size, reply_header,
                         quoted_html, quote_kind, quote_source_message_id,
                     )
+                if "letterhead" in payload:
+                    await conn.execute("UPDATE message SET letterhead=$2 WHERE id=$1", mid, bool(payload.get("letterhead")))
                 if quote:
                     action = "mail.reply.create" if quote_kind_requested in {"reply", "reply_all"} else "mail.forward.create"
                     await _audit(
@@ -855,6 +857,7 @@ async def create_draft(user_id: str, mailbox_id: str, payload: dict[str, Any], d
                     "status": "draft",
                     "body_html": body_html,
                     "body_text": text,
+                    "letterhead": bool(payload.get("letterhead")),
                     "quoted_html": preserved_quote_html,
                     "attachments": [dict(item) for item in attachment_output],
                 }

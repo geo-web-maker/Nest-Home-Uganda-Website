@@ -12,6 +12,7 @@ from pymongo import ReturnDocument
 
 from app.core.config import get_settings
 from app.core.deps import Principal
+from app.core.email_layout import render_branded_email
 from app.core.errors import Conflict, NotFound, ValidationFailed
 from app.core.storage import Bucket, get_storage
 from app.modules.agreements import render as agreement_render
@@ -1108,10 +1109,23 @@ async def email_document(doc: Invoice | Payment, principal: Principal, ip_hash: 
     doc_type = "invoice" if isinstance(doc, Invoice) else "receipt"
     amount = doc.total_ugx if isinstance(doc, Invoice) else doc.amount_ugx
     subject = f"Bloomwell {doc_type} {doc.reference}"
-    plain = f"Please find your {doc_type} attached. Amount: {render.money(amount)}. Verify: {url}"
-    body = (
-        f"<p>Please find your {doc_type} attached.</p><p>{render.money(amount)}</p>"
-        f'<p><a href="{url}">Verify this document</a></p>'
+    client_name = (doc.bill_to.name if isinstance(doc, Invoice) else (invoice.bill_to.name if invoice else "")) or ""
+    first_name = client_name.split()[0] if client_name.strip() else "there"
+    if doc_type == "invoice":
+        intro = f"Hello {first_name}, your invoice {doc.reference} from Bloomwell Home Care is attached as a PDF."
+        label = "Amount due"
+    else:
+        intro = f"Hello {first_name}, thank you. Your receipt {doc.reference} from Bloomwell Home Care is attached as a PDF."
+        label = "Amount received"
+    body, plain = render_branded_email(
+        heading=f"Your Bloomwell {doc_type}",
+        paragraphs=[intro, "You can check that this document is genuine at any time using the button below."],
+        preheader=f"Your {doc_type} {doc.reference} is attached.",
+        highlight_label=label,
+        highlight_value=render.money(amount),
+        button_label="Verify this document",
+        link=url,
+        footer_reason=f"You received this because Bloomwell Home Care issued you {'an' if doc_type == 'invoice' else 'a'} {doc_type}.",
     )
     if doc.is_test:
         subject = "[PRACTICE] " + subject

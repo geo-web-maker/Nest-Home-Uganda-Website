@@ -143,6 +143,7 @@ class MailDraftBody(BaseModel):
     in_reply_to: str | None = Field(default=None, max_length=998)
     quote: QuoteRequest | None = None
     remove_quote: bool = False
+    letterhead: bool = False
 
 
 class SendDraftBody(BaseModel):

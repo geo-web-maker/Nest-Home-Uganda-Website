@@ -271,6 +271,8 @@ export const adminEn = {
     subject: 'Subject',
     message: 'Message',
     externalWarning: 'Do not send client details to outside addresses.',
+    letterhead: 'Send on Bloomwell letterhead',
+    letterheadHint: 'Adds the Bloomwell header, logo and footer around your message. Your draft and Sent copy stay as you wrote them.',
     send: 'Send',
     sending: 'Sending…',
     saveDraft: 'Save draft',

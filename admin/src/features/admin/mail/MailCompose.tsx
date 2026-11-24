@@ -4,6 +4,7 @@ import { ButtonGroup } from '@shared/components/dialogs/ButtonGroup';
 import { Modal } from '@shared/components/dialogs/Modal';
 import { Notice } from '@shared/components/dialogs/Notice';
 import { Button } from '@shared/components/ui/Button';
+import { Checkbox } from '@shared/components/ui/Checkbox';
 import { Field } from '@shared/components/ui/Field';
 import { ConfirmPopup } from './ConfirmPopup';
 import { RecipientInput } from './RecipientInput';
@@ -67,6 +68,7 @@ export function MailCompose({ mailboxId, seed, onClose, onDone, onSendLater }: P
   const [format, setFormat] = useState<MailFormat>(initialFormat);
   const [quoteHtml, setQuoteHtml] = useState<string | null>(seed.quotedHtml ?? null);
   const [removeQuote, setRemoveQuote] = useState(false);
+  const [letterhead, setLetterhead] = useState(seed.letterhead ?? false);
   const [draftId, setDraftId] = useState(seed.draftId ?? '');
   const draftIdRef = useRef(seed.draftId ?? '');
   const [uploads, setUploads] = useState<Upload[]>((seed.attachments ?? []).map((file) => asMailAttachment(file)));
@@ -75,7 +77,7 @@ export function MailCompose({ mailboxId, seed, onClose, onDone, onSendLater }: P
   const [editorNotice, setEditorNotice] = useState('');
   const picker = useRef<HTMLInputElement>(null);
   const errorBox = useRef<HTMLDivElement>(null);
-  const initialSnapshot = useRef(JSON.stringify({ to: seed.to.join(', '), cc: seed.cc.join(', '), bcc: seed.bcc.join(', '), subject: seed.subject, body: initialFormat === 'plain' ? seed.body : '', bodyHtml: initialFormat === 'html' ? (seed.bodyHtml || plainToHtml(seed.body)) : '', bodyFormat: initialFormat, quotedHtml: seed.quotedHtml ?? null, removeQuote: false, attachments: (seed.attachments ?? []).map(asMailAttachment) }));
+  const initialSnapshot = useRef(JSON.stringify({ to: seed.to.join(', '), cc: seed.cc.join(', '), bcc: seed.bcc.join(', '), subject: seed.subject, body: initialFormat === 'plain' ? seed.body : '', bodyHtml: initialFormat === 'html' ? (seed.bodyHtml || plainToHtml(seed.body)) : '', bodyFormat: initialFormat, quotedHtml: seed.quotedHtml ?? null, removeQuote: false, letterhead: seed.letterhead ?? false, attachments: (seed.attachments ?? []).map(asMailAttachment) }));
   const [closeConfirm, setCloseConfirm] = useState(false);
 
   const toList = useMemo(() => parseRecipients(to), [to]);
@@ -86,7 +88,7 @@ export function MailCompose({ mailboxId, seed, onClose, onDone, onSendLater }: P
   const hasBody = format === 'html' ? htmlToText(bodyHtml).trim() !== '' : body.trim() !== '';
   const canSend = toList.length > 0 && bad.length === 0 && subject.trim() !== '' && (hasBody || Boolean(seed.quote || quoteHtml)) && busy === '' && !uploader.busy;
 
-  const dirty = JSON.stringify({ to, cc, bcc, subject, body: format === 'plain' ? body : '', bodyHtml: format === 'html' ? bodyHtml : '', bodyFormat: format, quotedHtml: quoteHtml, removeQuote, attachments: uploads }) !== initialSnapshot.current;
+  const dirty = JSON.stringify({ to, cc, bcc, subject, body: format === 'plain' ? body : '', bodyHtml: format === 'html' ? bodyHtml : '', bodyFormat: format, quotedHtml: quoteHtml, removeQuote, letterhead, attachments: uploads }) !== initialSnapshot.current;
 
   useEffect(() => {
     if (!dirty) return;
@@ -105,8 +107,9 @@ export function MailCompose({ mailboxId, seed, onClose, onDone, onSendLater }: P
     body_text: format === 'html' ? htmlToText(bodyHtml) : body,
     body_html: format === 'html' ? bodyHtml : null,
     in_reply_to: seed.inReplyTo ?? null,
+    letterhead,
     ...(removeQuote ? { remove_quote: true } : draftId || !seed.quote ? {} : { quote: seed.quote }),
-  }), [mailboxId, toList, ccList, bccList, subject, format, body, bodyHtml, seed.inReplyTo, removeQuote, draftId, seed.quote]);
+  }), [mailboxId, toList, ccList, bccList, subject, format, body, bodyHtml, seed.inReplyTo, letterhead, removeQuote, draftId, seed.quote]);
 
   /** A forward is meant to be edited, so the server-built quote moves into the editor and the saved copy is dropped. */
   const foldQuoteIntoBody = useCallback((quoted: string) => {
@@ -176,7 +179,7 @@ export function MailCompose({ mailboxId, seed, onClose, onDone, onSendLater }: P
       mailboxId,
       seed: {
         draftId: id, to: toList, cc: ccList, bcc: bccList, subject, body, bodyHtml: format === 'html' ? bodyHtml : undefined, bodyFormat: format,
-        quotedHtml: removeQuote ? null : quoteHtml, inReplyTo: seed.inReplyTo,
+        quotedHtml: removeQuote ? null : quoteHtml, inReplyTo: seed.inReplyTo, letterhead,
         attachments: uploads.map((file) => ({ id: file.id, filename: file.filename, size: file.size_bytes, content_type: file.content_type, scan_state: file.scan_state, blocked_reason: file.blocked_reason, disposition: file.disposition, content_id: file.content_id })),
       },
     });
@@ -261,6 +264,8 @@ export function MailCompose({ mailboxId, seed, onClose, onDone, onSendLater }: P
       {format === 'html' ? <Suspense fallback={<LoadingNote>Loading editor…</LoadingNote>}>
         <LazyMailRichEditor value={bodyHtml || '<p></p>'} onChange={(html, text) => { setBodyHtml(html); setBody(text); }} label={t('mail.message')} quotedHtml={quoteHtml && !removeQuote ? quoteHtml : null} quoteInitiallyExpanded={seed.quote?.kind === 'forward' || seed.quote?.kind === 'forward_attachment'} quoteLabel="Original message" removeQuoteLabel="Remove original message" onRemoveQuote={() => { setRemoveQuote(true); setQuoteHtml(null); }} onPasteImageBlocked={() => setEditorNotice('This image could not be added inline; it will be offered as a normal attachment.')} onPasteFiles={attach} onPasteImage={pasteImage} />
       </Suspense> : <Field kind="textarea" label={t('mail.message')} rows={10} value={body} onChange={(event) => setBody(event.target.value)} />}
+      <Checkbox label={t('mail.letterhead')} checked={letterhead} onChange={(event) => setLetterhead(event.target.checked)} />
+      {letterhead ? <p className={styles.hint}>{t('mail.letterheadHint')}</p> : null}
       <div className="mr-upload-actions">
         <input ref={picker} type="file" multiple hidden aria-label={t('mail.attach')} onChange={(event) => attach(event.target.files)} />
         <Button variant="outline" size="compact" disabled={busy !== '' || uploader.busy} onClick={() => picker.current?.click()}>{busy === 'attach' ? (uploadingName ? t('mail.attaching', { name: uploadingName.length > 28 ? `${uploadingName.slice(0, 25)}…` : uploadingName }) : t('mail.working')) : t('mail.attach')}</Button>

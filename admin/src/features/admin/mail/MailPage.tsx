@@ -201,6 +201,7 @@ export function MailPage() {
       bodyHtml: shown.body_html ?? undefined,
       bodyFormat: shown.body_format ?? 'plain',
       quotedHtml: shown.quoted_html ?? null,
+      letterhead: shown.letterhead ?? false,
       attachments: shown.attachments.map((file) => ({ ...file, size: file.size_bytes })),
     });
   };
