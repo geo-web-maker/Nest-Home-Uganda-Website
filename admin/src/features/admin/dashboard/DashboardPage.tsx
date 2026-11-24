@@ -7,6 +7,7 @@ import { Button } from '@shared/components/ui/Button';
 import { apiClient } from '@shared/lib/api/client';
 import type { DashboardData } from './types';
 import styles from './DashboardPage.module.css';
+import { friendlyError } from '../../../admin-native/connection';
 import { LoadingNote } from '../../../components/admin/LoadingNote';
 
 export function DashboardPage() {
@@ -35,9 +36,9 @@ export function DashboardPage() {
         title={t('nav.dashboard')}
         actions={<Button href="/enquiries">{t('dashboard.viewEnquiries')}</Button>}
       />
-      {data.isError ? (
+      {data.isError && !data.data ? (
         <div className={styles.error} role="alert">
-          <p>{t('dashboard.error')}</p>
+          <p>{t('dashboard.error')} {friendlyError(data.error, '')}</p>
           <Button variant="outline" onClick={() => void data.refetch()}>
             {t('common.retry')}
           </Button>
@@ -46,6 +47,11 @@ export function DashboardPage() {
         <LoadingNote>{t('dashboard.loading')}</LoadingNote>
       ) : (
         <>
+          {data.dataUpdatedAt ? (
+            <p className={styles.updated} role="status">
+              {data.isError ? `${friendlyError(data.error, '')} ` : ''}Last updated {new Date(data.dataUpdatedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}.
+            </p>
+          ) : null}
           <section className={styles.stats} aria-label={t('dashboard.statsLabel')}>
             {cards.map((card) => (
               <article className={styles.stat} key={card.key}>

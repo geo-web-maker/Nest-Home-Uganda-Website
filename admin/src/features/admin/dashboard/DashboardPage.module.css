@@ -109,3 +109,5 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+.updated { margin: 0 0 0.75rem; font-size: 0.85rem; opacity: 0.75; }

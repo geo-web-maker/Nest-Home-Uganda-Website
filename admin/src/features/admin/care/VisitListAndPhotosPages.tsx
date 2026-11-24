@@ -6,6 +6,8 @@ import { DataTable } from '../../../components/admin/DataTable';
 import { Button } from '@shared/components/ui/Button';
 import { Field } from '@shared/components/ui/Field';
 import { apiClient } from '@shared/lib/api/client';
+import { useCachedGet, savedLabel } from '../../../admin-native/cachedGet';
+import { friendlyError } from '../../../admin-native/connection';
 import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
 import './stage30-38.css';
@@ -42,28 +44,30 @@ export function VisitListPage() {
     const row = nurses.find((nurse) => String(nurse.user_id ?? nurse.id) === String(id));
     return row?.display_name ?? row?.staff_number ?? String(id ?? '—');
   };
+  const { get, staleAt } = useCachedGet();
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const result: any = await apiClient.get('/admin/care/visits', { params: { page: 1, page_size: 200, status: status || undefined } });
+      const result: any = await get('/admin/care/visits', { params: { page: 1, page_size: 200, status: status || undefined } });
       setRows(Array.isArray(result) ? result : result.items ?? []);
       const lookups: Promise<any>[] = [];
-      if (hasScopes(user, ['clients:read'])) lookups.push(apiClient.get('/admin/care/clients'));
+      if (hasScopes(user, ['clients:read'])) lookups.push(get('/admin/care/clients'));
       else lookups.push(Promise.resolve(null));
-      if (hasScopes(user, ['nurses:read'])) lookups.push(apiClient.get('/admin/care/nurses'));
+      if (hasScopes(user, ['nurses:read'])) lookups.push(get('/admin/care/nurses'));
       else lookups.push(Promise.resolve(null));
       const [clientsResult, nursesResult] = await Promise.all(lookups);
       setClients(clientsResult ? (Array.isArray(clientsResult) ? clientsResult : clientsResult.items ?? []) : []);
       setNurses(nursesResult ? (Array.isArray(nursesResult) ? nursesResult : nursesResult.items ?? []) : []);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Visits could not be loaded.');
+      setError(friendlyError(reason, 'Visits could not be loaded.'));
     } finally { setLoading(false); }
-  }, [status, user]);
+  }, [status, user, get]);
   useEffect(() => { void load(); }, [load]);
   const visible = useMemo(() => rows.filter((row) => !status || row.status === status), [rows, status]);
   return <div className="stage-page">
     <PageHeader title="Visits" actions={<><Button variant="outline" onClick={() => void load()}>Refresh</Button>{canSchedule && <Button onClick={() => navigate('/care/schedule')}>Open schedule</Button>}</>} />
     <FilterBar label="Filter visits" meta={`${visible.length} visit${visible.length === 1 ? '' : 's'} shown`}><Field label="Status" kind="select" value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option><option value="scheduled">Scheduled</option><option value="in_progress">In progress</option><option value="completed">Completed</option><option value="missed">Missed</option><option value="cancelled">Cancelled</option></Field></FilterBar>
+    {staleAt && <Notice role={null}>{savedLabel(staleAt)}</Notice>}
     {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}
     {loading ? <LoadingNote>Loading visits…</LoadingNote> : visible.length === 0 ? <section className="stage-panel"><p>No visits match this status.</p></section> : <section className="stage-panel"><DataTable
     columns={[

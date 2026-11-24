@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
 import { apiRequest, restoreNativeSession } from '../lib/api/client';
+import { hasStoredWebCredential, WEB_CSRF_KEY } from '../lib/api/webCredential';
 import { LogoutGuard } from './LogoutGuard';
 import { needsLogoutConfirmation } from './logoutGuard';
 import { isRemovedVisitConflict, isRetryableSyncFailure, retryAfterIso, syncFailureMessage } from '../offline/syncPolicy';
@@ -281,7 +282,12 @@ function NurseWorkspace() {
     const syncInterval = window.setInterval(() => { if (navigator.onLine && token) void sync(); }, 5 * 60 * 1000);
     let appStateHandle: { remove: () => Promise<void> } | undefined;
     if (Capacitor.isNativePlatform()) {
-      void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+      if (!Capacitor.isNativePlatform()) {
+      const onVisible = () => { if (document.visibilityState === 'visible') attempt(); };
+      document.addEventListener('visibilitychange', onVisible);
+      return () => { window.removeEventListener('online', attempt); window.clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); };
+    }
+    void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
         if (isActive) {
           setOnline(navigator.onLine);
           if (navigator.onLine && token) void sync();
@@ -324,7 +330,30 @@ function NurseWorkspace() {
     } finally { restoringSession.current = false; }
   }, [session.setOfflineTrusted, setToken]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (!Capacitor.isNativePlatform() || sessionStorage.getItem('nurse_access_token')) return;
+    if (sessionStorage.getItem('nurse_access_token')) return;
+    if (!Capacitor.isNativePlatform()) {
+      // Browser (PWA): a stored web credential is exchanged for a new access token; offline or on a server error the cached account stays open.
+      if (!hasStoredWebCredential()) return;
+      let webActive = true;
+      void (async () => {
+        const owner = localStorage.getItem('nest.nurse.cache-user-id');
+        try {
+          if (owner) {
+            const cached = await readCachedProfile(owner);
+            if (cached && webActive) {
+              const accepted = new Set((await nurseDb.consents.toArray()).map((row) => `${row.type}:${row.version}`));
+              await applyProfile({ ...cached, consents_required: (cached.consents_required ?? []).filter((item) => !accepted.has(`${item.type}:${item.version}`)) });
+              session.setOfflineTrusted(true);
+              void refreshLocal();
+            }
+          }
+        } catch { /* an unreadable cache means the normal sign-in path */ }
+        if (!webActive) return;
+        const reached = await restoreLiveSession();
+        if (webActive && !reached && !owner) setMessage(copy.messages.sessionRestoreFailed);
+      })();
+      return () => { webActive = false; };
+    }
     let active = true;
     void (async () => {
       // Trust what is stored on the phone first, so a cold start without a network opens the app instead of the sign-in screen.
@@ -351,7 +380,7 @@ function NurseWorkspace() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     // While running on the cached account, keep trying to get a live token whenever the network may be back.
-    if (!Capacitor.isNativePlatform() || !session.offlineTrusted) return;
+    if (!session.offlineTrusted) return;
     const attempt = () => { if (navigator.onLine && !sessionStorage.getItem('nurse_access_token')) void restoreLiveSession(); };
     window.addEventListener('online', attempt);
     const timer = window.setInterval(attempt, 30_000);
@@ -450,7 +479,7 @@ function NurseWorkspace() {
         }
       } catch { remoteRevoked = false; }
     } else {
-      const csrf = sessionStorage.getItem('nurse_csrf_token');
+      const csrf = sessionStorage.getItem('nurse_csrf_token') ?? localStorage.getItem(WEB_CSRF_KEY);
       if (csrf && navigator.onLine) {
         try { await apiRequest('/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrf } }); remoteRevoked = true; }
         catch { remoteRevoked = false; }

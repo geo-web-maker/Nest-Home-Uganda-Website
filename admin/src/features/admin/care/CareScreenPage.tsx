@@ -5,7 +5,9 @@ import { dialogs } from '@shared/lib/dialogs';
 import { cellText, headerFor } from '@shared/lib/tableText';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ApiError, apiClient } from '@shared/lib/api/client';
+import { apiClient, takeQueuedFlag } from '@shared/lib/api/client';
+import { useCachedGet, savedLabel } from '../../../admin-native/cachedGet';
+import { friendlyError } from '../../../admin-native/connection';
 import type { DataColumn } from '../../../components/admin/DataTable';
 import { CareTable } from './components/CareTable';
 import { CareSheet } from './components/CareSheet';
@@ -118,6 +120,7 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
   const { t } = useTranslation('admin');
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { get, staleAt } = useCachedGet();
   const [rows, setRows] = useState<Row[]>([]);
   const [nextCursor, setNextCursor] = useState('');
   const [loading, setLoading] = useState(true);
@@ -161,7 +164,7 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
     setLoading(true);
     setError('');
     try {
-      const result: any = await apiClient.get(endpoint[screen], {
+      const result: any = await get(endpoint[screen], {
         params:
           screen === 'audit'
             ? {
@@ -202,18 +205,18 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
       if (screen === 'settings') setSettings(result.items ?? []);
       if (screen === 'clients' && hasScopes(user, ['clients:write']) && hasScopes(user, ['agreements:read'])) {
         try {
-          const agreements: any = await apiClient.get('/admin/agreements', { params: { status: 'completed', limit: 100 } });
+          const agreements: any = await get('/admin/agreements', { params: { status: 'completed', limit: 100 } });
           setAgreementOptions(agreements.items ?? []);
         } catch { setAgreementOptions([]); }
       }
       if (screen === 'readiness') setReadiness(result);
       if (screen === 'visits') {
-        const c: any = await apiClient.get('/admin/care/clients');
-        const n: any = await apiClient.get('/admin/care/nurses');
+        const c: any = await get('/admin/care/clients');
+        const n: any = await get('/admin/care/nurses');
         setClientOptions(c.items ?? c ?? []);
         setNurseOptions(n.items ?? n ?? []);
         if (clientId) {
-          const p: any = await apiClient.get(
+          const p: any = await get(
             `/admin/care/clients/${encodeURIComponent(clientId)}/places`,
           );
           setPlaceOptions(p.items ?? []);
@@ -221,7 +224,7 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
       }
       if (screen === 'places') {
         try {
-          const cfg: any = await apiClient.get('/admin/care/settings');
+          const cfg: any = await get('/admin/care/settings');
           const map = cfg.items?.find((x: any) => x.id === 'care.map_tile_url');
           setMapTileUrl(String(map?.value ?? ''));
         } catch {
@@ -229,9 +232,7 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
         }
       }
     } catch (e) {
-      setError(
-        e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Request failed',
-      );
+      setError(friendlyError(e));
     } finally {
       setLoading(false);
     }
@@ -546,12 +547,11 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
       if (method === 'patch') await apiClient.patch(path, body);
       else if (method === 'put') await apiClient.put(path, body);
       else await apiClient.post(path, body);
+      if (takeQueuedFlag()) { setNotice('Saved on this device. It will send when the connection returns.'); return; }
       setNotice('Action completed.');
       await load();
     } catch (e) {
-      setError(
-        e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Action failed',
-      );
+      setError(friendlyError(e, 'Action failed'));
     }
   }
   function renderForm() {
@@ -967,6 +967,7 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
           </Button>
         }
       />
+      {staleAt && <Notice role={null}>{savedLabel(staleAt)}</Notice>}
       {error && (
         <Notice tone="error">
           {error}

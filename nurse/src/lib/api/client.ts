@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { clearRefreshToken, readRefreshToken, saveRefreshToken } from '../../platform/secureTokenStorage';
+import { WEB_CSRF_KEY, hasStoredWebCredential, clearStoredWebCredential, saveWebCredential } from './webCredential';
 import { BUILD_HEADER, CLIENT_BUILD, markUpgradeRequired } from '../clientBuild';
 const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 
@@ -19,31 +20,45 @@ function assertApiConfigured(): void {
   }
 }
 
+export { WEB_CSRF_KEY, hasStoredWebCredential, clearStoredWebCredential };
+
 export async function restoreNativeSession(): Promise<string | null> {
-  if (!Capacitor.isNativePlatform()) return null;
-  const refreshToken = await readRefreshToken();
-  if (!refreshToken) return null;
+  const native = Capacitor.isNativePlatform();
+  const refreshToken = native ? await readRefreshToken() : null;
+  const webCsrf = native ? null : (hasStoredWebCredential() ? localStorage.getItem(WEB_CSRF_KEY) : null);
+  if (native ? !refreshToken : !webCsrf) return null;
   // A dead or captive network must not hang the restore forever: callers treat a thrown error as "offline, try later".
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15_000);
   let response: Response;
   try {
-    response = await fetch(`${apiBase}/api/v1/auth/native/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Client': 'native' },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-      signal: controller.signal,
-    });
+    response = native
+      ? await fetch(`${apiBase}/api/v1/auth/native/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Client': 'native' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+        signal: controller.signal,
+      })
+      : await fetch(`${apiBase}/api/v1/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': webCsrf as string },
+        credentials: apiBase ? 'include' : 'same-origin',
+        signal: controller.signal,
+      });
   } finally { clearTimeout(timer); }
   if (response.status === 401 || response.status === 403) {
-    await clearRefreshToken();
+    if (native) await clearRefreshToken(); else clearStoredWebCredential();
     return null;
   }
   if (!response.ok) throw new Error(`Session restore failed (${response.status})`);
-  const refreshed = await response.json() as { access_token: string; refresh_token: string };
-  if (!refreshed.access_token || !refreshed.refresh_token) throw new Error('Session restore returned an incomplete token response.');
+  const refreshed = await response.json() as { access_token: string; refresh_token?: string; csrf_token?: string };
+  if (!refreshed.access_token || (native && !refreshed.refresh_token)) throw new Error('Session restore returned an incomplete token response.');
   sessionStorage.setItem('nurse_access_token', refreshed.access_token);
-  await saveRefreshToken(refreshed.refresh_token);
+  if (native) await saveRefreshToken(refreshed.refresh_token as string);
+  else if (refreshed.csrf_token) {
+    saveWebCredential(refreshed.csrf_token);
+    sessionStorage.setItem('nurse_csrf_token', refreshed.csrf_token);
+  }
   return refreshed.access_token;
 }
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {

@@ -5,23 +5,35 @@ import { authStore } from '../features/admin/auth/authStore';
 
 /**
  * Offline write queue. Only low-risk updates are saved while the device is offline: enquiry and application
- * status changes and notes. Care alerts, flags, SOS, visits, billing and anything involving money or an audit
- * trail are never queued; they must happen live. A write is saved only when the browser reports offline, so a
- * request that may already have reached the server is never saved or repeated.
+ * status changes and notes. Care acknowledge/resolve/approve and scheduling are queued too (see RULES);
+ * billing, money, deletes and settings are never queued. Writes are saved when the browser reports offline, or when the server
+ * is unreachable and the rule is marked safe to repeat; notes are never repeated.
  */
 type Op = { id?: number; userId: string; method: string; path: string; body: unknown; createdAt: number; state: 'queued' | 'failed'; error?: string };
 class WriteDb extends Dexie {
   ops!: Dexie.Table<Op, number>;
   constructor() { super('nest-admin-writes'); this.version(1).stores({ ops: '++id, userId' }); }
 }
-type Rule = { method: string; re: RegExp; local?: (qc: QueryClient, id: string, body: unknown) => void };
+type Rule = { method: string; re: RegExp; net?: boolean; local?: (qc: QueryClient, id: string, body: unknown) => void };
 const merge = (key: string) => (qc: QueryClient, id: string, body: unknown) =>
   qc.setQueryData(['admin', key, id], (old: unknown) => (old && typeof old === 'object' && body && typeof body === 'object' ? { ...old, ...body } : old));
+// `net: true` marks writes that are safe to repeat (they set a value or use an id the app generated), so they are
+// also saved when the server could not be reached. Notes are saved only when the device is offline.
 export const RULES: Rule[] = [
-  { method: 'PATCH', re: /^\/admin\/enquiries\/([^/]+)$/, local: merge('enquiry') },
+  { method: 'PATCH', re: /^\/admin\/enquiries\/([^/]+)$/, net: true, local: merge('enquiry') },
   { method: 'POST', re: /^\/admin\/enquiries\/[^/]+\/notes$/ },
-  { method: 'PATCH', re: /^\/admin\/applications\/([^/]+)$/, local: merge('application') },
+  { method: 'PATCH', re: /^\/admin\/applications\/([^/]+)$/, net: true, local: merge('application') },
   { method: 'POST', re: /^\/admin\/applications\/[^/]+\/notes$/ },
+  // Care: acknowledge / resolve / approve and scheduling with app-made ids. Money, deletes, device revokes,
+  // photo hiding, settings and data exports stay live-only.
+  { method: 'POST', re: /^\/admin\/care\/alerts\/[^/]+\/(acknowledge|resolve)$/, net: true },
+  { method: 'POST', re: /^\/admin\/care\/sos\/[^/]+\/acknowledge$/, net: true },
+  { method: 'POST', re: /^\/admin\/care\/flags\/[^/]+\/resolve$/, net: true },
+  { method: 'POST', re: /^\/admin\/care\/timesheets\/[^/]+\/(approve|send-back)$/, net: true },
+  { method: 'PATCH', re: /^\/admin\/care\/visits\/[^/]+$/, net: true },
+  { method: 'POST', re: /^\/admin\/care\/visits$/, net: true },
+  { method: 'POST', re: /^\/admin\/care\/clients$/, net: true },
+  { method: 'POST', re: /^\/admin\/care\/clients\/[^/]+\/(places|stays)$/, net: true },
 ];
 
 let db: WriteDb | null = null;
@@ -66,8 +78,9 @@ export async function flushWrites(qc: QueryClient): Promise<void> {
 }
 
 export function installWriteQueue(qc: QueryClient): void {
-  setOfflineWriteHook(async (method, path, body) => {
-    const rule = RULES.find((r) => r.method === method && r.re.test(path)); const owner = authStore.getUserSnapshot()?.id; const store = open();
+  setOfflineWriteHook(async (method, path, body, reason) => {
+    const rule = RULES.find((r) => r.method === method && r.re.test(path));
+    if (flushing || (rule && reason === 'network' && !rule.net)) return false; // never re-queue a write the flush is sending const owner = authStore.getUserSnapshot()?.id; const store = open();
     if (!rule || !owner || !store) return false;
     try { await store.ops.add({ userId: owner, method, path, body, createdAt: Date.now(), state: 'queued' }); } catch { return false; }
     const id = path.match(rule.re)?.[1]; if (rule.local && id) rule.local(qc, id, body);

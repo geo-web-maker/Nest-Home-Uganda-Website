@@ -22,3 +22,18 @@
 - Nurse: new `ui/Loading.tsx` (`LoadingNote`, `LoadingScreen`); mail, photos, audit, profile and editor waits use it. A short boot screen replaces the login flash while the stored session is checked.
 - Titles: table captions in the care workspace and the visit schedule are now accessible-name only (they showed as a stray second title). Panel `<h2>` titles on the care dashboard, SOS, drills and last-seen pages use `SectionHeader`. A table inside a `stage-panel` no longer draws a second box.
 - Every remaining loading text now animates: admin heading notes, map overlay, dashboard counts, diagnostics and download buttons (`LoadingNote inline`, `Spinner`); nurse timesheets, history and mail buttons and the timesheets banner (`mk-spinner`).
+
+## Admin offline pass 2 (not run or tested)
+- `admin-native/connection.ts` (new): states online / offline / server unreachable (`navigator.onLine` + `/health` ping + status-0 failures). `friendlyError()` turns status-0 errors into "You're offline." or "Connected, but the server isn't responding."; 403 keeps the server's message.
+- `OfflineNotice.tsx`: uses that state, shows the saved-data time and the count of changes waiting to send.
+- `DashboardPage.tsx`: a failed refetch no longer hides saved data; shows "Last updated".
+- `admin-native/cachedGet.ts` (new): care screens (`CareScreenPage`, Visits list) save each GET under `['admin','care','get',...]` and fall back to the saved copy when the network fails.
+- `_shared/lib/api/client.ts` and `frontend/src/lib/api/client.ts`: added `setOfflineWriteHook`, `setNetworkObserver`, `takeQueuedFlag`. Writes are handed to the queue when offline, or on a network failure for rules marked safe to repeat.
+- `writeQueue.ts`: now installed from `main.tsx`. New queued rules: alert acknowledge/resolve, SOS acknowledge, flag resolve, timesheet approve/send-back, visit create/reassign, client create, places/stays. Still live-only: billing, deletes, device revoke, photo hide, settings, data export.
+- Not changed: care detail pages (client/nurse/visit review) still fetch directly; existing admin tests were not updated or run.
+
+## Admin saved-copy fallback and nurse web restore (not run or tested)
+- `frontend/src/lib/api/client.ts` (synced to `admin/src/_shared`): new `setSavedCopyStore`. Every GET is saved after it succeeds and served back when the network fails (status 0). `savedCopy: false` opts a call out; `/auth/*` and `/mail/totp/*` are never saved; `onSavedCopy(savedAt)` reports a served copy.
+- `admin-native/savedCopies.ts` (new, installed from `main.tsx`): Dexie store per user, 7-day expiry, 300-row cap, replies over 1M characters skipped, wiped on sign-out. `cachedGet.ts` now reads the save time through `onSavedCopy`.
+- Nurse `lib/api/webCredential.ts` (new), `client.ts`: browser sign-in keeps its CSRF value (`WEB_CSRF_KEY`) and `restoreNativeSession()` exchanges the refresh cookie at `/auth/refresh` (401/403 clears it; network or server errors throw and keep it). `useSession.ts` saves and clears it; `App.tsx` restores on start, retries on reconnect and when the tab is shown, and logout falls back to the stored value.
+- Not changed: blobs (photos, exports) are not saved; the PWA shell caching is already in place.

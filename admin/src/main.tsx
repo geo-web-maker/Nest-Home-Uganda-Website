@@ -16,6 +16,9 @@ import '@shared/design/motion.css';
 import { startWebBundleUpdates } from './admin-native/webBundle';
 import { OfflineNotice } from './admin-native/OfflineNotice';
 import { restoreQueryCache, startQueryPersistence } from './admin-native/queryPersistence';
+import { installConnectionMonitor } from './admin-native/connection';
+import { installWriteQueue } from './admin-native/writeQueue';
+import { installSavedCopies } from './admin-native/savedCopies';
 import { installUpgradeRequiredHandler } from './admin-native/upgradeRequired';
 
 initTheme();
@@ -26,13 +29,16 @@ if (typeof window !== 'undefined') installClientErrorCapture();
 const queryClient = createQueryClient({
   defaultOptions: {
     queries: { networkMode: 'offlineFirst', gcTime: 24 * 60 * 60 * 1000 },
-    mutations: { networkMode: 'always' }, // no write queue: fail at once offline rather than hang
+    mutations: { networkMode: 'always' }, // writes go through apiClient, which saves allowed ones to the write queue when offline
   },
 });
 
 async function start(): Promise<void> {
   await restoreQueryCache(queryClient);
   startQueryPersistence(queryClient);
+  installConnectionMonitor();
+  installWriteQueue(queryClient);
+  installSavedCopies();
   render();
 }
 
