@@ -16,6 +16,7 @@ import { bottomNav, navItemFor, visibleNav, type AdminNavItem } from './nav';
 import styles from './AdminLayout.module.css';
 import { InstallHint } from '../../pwa/InstallHint';
 import { ApkUpdateBanner } from '../../admin-native/ApkUpdateBanner';
+import { ConnectionDot } from '../../admin-native/ConnectionDot';
 import { PushNotifier } from './PushNotifier';
 import './admin-spacing.css';
 
@@ -147,6 +148,8 @@ export function AdminLayout() {
             lightLabel={t('layout.light')}
             darkLabel={t('layout.dark')}
           />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <ConnectionDot />
           <div className={styles.user} ref={accountRef}>
             <button
               type="button"
@@ -179,6 +182,7 @@ export function AdminLayout() {
                 </button>
               </div>
             )}
+          </div>
           </div>
         </header>
         <main id="admin-main" ref={mainRef} tabIndex={-1} className={styles.main}>

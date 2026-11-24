@@ -31,9 +31,3 @@
 - `_shared/lib/api/client.ts` and `frontend/src/lib/api/client.ts`: added `setOfflineWriteHook`, `setNetworkObserver`, `takeQueuedFlag`. Writes are handed to the queue when offline, or on a network failure for rules marked safe to repeat.
 - `writeQueue.ts`: now installed from `main.tsx`. New queued rules: alert acknowledge/resolve, SOS acknowledge, flag resolve, timesheet approve/send-back, visit create/reassign, client create, places/stays. Still live-only: billing, deletes, device revoke, photo hide, settings, data export.
 - Not changed: care detail pages (client/nurse/visit review) still fetch directly; existing admin tests were not updated or run.
-
-## Admin saved-copy fallback and nurse web restore (not run or tested)
-- `frontend/src/lib/api/client.ts` (synced to `admin/src/_shared`): new `setSavedCopyStore`. Every GET is saved after it succeeds and served back when the network fails (status 0). `savedCopy: false` opts a call out; `/auth/*` and `/mail/totp/*` are never saved; `onSavedCopy(savedAt)` reports a served copy.
-- `admin-native/savedCopies.ts` (new, installed from `main.tsx`): Dexie store per user, 7-day expiry, 300-row cap, replies over 1M characters skipped, wiped on sign-out. `cachedGet.ts` now reads the save time through `onSavedCopy`.
-- Nurse `lib/api/webCredential.ts` (new), `client.ts`: browser sign-in keeps its CSRF value (`WEB_CSRF_KEY`) and `restoreNativeSession()` exchanges the refresh cookie at `/auth/refresh` (401/403 clears it; network or server errors throw and keep it). `useSession.ts` saves and clears it; `App.tsx` restores on start, retries on reconnect and when the tab is shown, and logout falls back to the stored value.
-- Not changed: blobs (photos, exports) are not saved; the PWA shell caching is already in place.

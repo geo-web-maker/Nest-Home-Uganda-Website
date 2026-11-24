@@ -47,31 +47,28 @@ export function GuideProvider({ app, userId, tours, fetchReset, children }: Prop
   const next = () => {
     if (!run) return;
     const cur = run.queue[0];
-    if (!cur) return;
     if (run.step + 1 < cur.steps.length) { setRun({ ...run, step: run.step + 1 }); return; }
     mark(cur);
     const rest = run.queue.slice(1);
-    const first = rest[0];
-    if (!first) { setRun(null); return; }
-    if (first.path && first.path !== pathname) navigate(first.path);
+    if (!rest.length) { setRun(null); return; }
+    if (rest[0].path && rest[0].path !== pathname) navigate(rest[0].path);
     setRun({ queue: rest, step: 0 });
   };
   const stop = (all: boolean) => {
-    const current = run?.queue[0];
-    if (current) mark(current);
+    if (run) mark(run.queue[0]);
     if (all) write({ ...ref.current, skipAll: true });
     setRun(null);
   };
   const api = useMemo<Api>(() => ({
     startPage: () => { const t = tours.find((x) => x.match(pathname)) ?? tours[0]; if (t) setRun({ queue: [t], step: 0 }); },
-    startAll: () => { const list = tours.filter((t) => t.path); if (!list.length) return; write({ done: {}, resetSeen: ref.current.resetSeen }); if (list[0]?.path && list[0].path !== pathname) navigate(list[0].path); setRun({ queue: list, step: 0 }); },
+    startAll: () => { const list = tours.filter((t) => t.path); if (!list.length) return; write({ done: {}, resetSeen: ref.current.resetSeen }); if (list[0].path !== pathname) navigate(list[0].path); setRun({ queue: list, step: 0 }); },
     skipAll: () => { write({ ...ref.current, skipAll: true }); setRun(null); },
   }), [tours, pathname, navigate, write]);
 
   const cur = run?.queue[0];
   return <Ctx.Provider value={api}>
     {children}
-    {run && cur && <Overlay key={`${cur.key}:${run.step}`} step={cur.steps[run.step]!} i={run.step} n={cur.steps.length} more={run.queue.length > 1}
+    {run && cur && <Overlay key={`${cur.key}:${run.step}`} step={cur.steps[run.step]} i={run.step} n={cur.steps.length} more={run.queue.length > 1}
       onNext={next} onBack={() => run.step > 0 && setRun({ ...run, step: run.step - 1 })} onSkip={() => stop(false)} onStop={() => stop(true)} />}
   </Ctx.Provider>;
 }

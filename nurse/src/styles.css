@@ -1231,3 +1231,16 @@ a.mk-btn--ghost, a.mk-btn--ghost:hover { color: var(--ink); }
 @media (prefers-reduced-motion: reduce) { .mk-spinner { animation: none; border-inline-end-color: currentColor; opacity: .6; } }
 /* A spinner inside a button or banner label keeps its text colour and sits on the text baseline. */
 button .mk-spinner, .mk-banner .mk-spinner { vertical-align: -0.12em; margin-inline-end: .35em; }
+
+/* Connection banner folds up into a chip in the top bar after a few seconds. */
+.mk-status-stack { grid-template-rows: 1fr; transition: grid-template-rows .3s ease, margin .3s ease, opacity .25s ease, visibility 0s; }
+.mk-status-stack > .connection-banner { min-height: 0; overflow: hidden; }
+.nurse-app .mk-status-stack.is-collapsed, .nurse-app:not(.nurse-app--guest) .mk-status-stack.is-collapsed { grid-template-rows: 0fr; margin-top: 0; margin-bottom: 0; opacity: 0; visibility: hidden; transition: grid-template-rows .3s ease, margin .3s ease, opacity .25s ease, visibility 0s .3s; }
+.shell-conn-chip { display: inline-flex; align-items: center; gap: 7px; min-width: 0; max-width: 46%; min-height: 32px; margin: 0 auto 0 10px; padding: 0 12px 0 10px; border: 1px solid color-mix(in srgb, var(--chip) 55%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--chip) 14%, transparent); color: inherit; font: inherit; font-size: .74rem; font-weight: 650; cursor: pointer; animation: shell-chip-in .3s ease; }
+.shell-conn-chip.is-ok { --chip: #3fb27f; }
+.shell-conn-chip.is-issue { --chip: #e8a23b; }
+.shell-conn-chip.is-offline { --chip: #e5584f; }
+.shell-conn-chip__dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--chip); box-shadow: 0 0 0 3px color-mix(in srgb, var(--chip) 28%, transparent); }
+.shell-conn-chip__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@keyframes shell-chip-in { from { opacity: 0; transform: translateY(8px) scale(.9); } }
+@media (prefers-reduced-motion: reduce) { .shell-conn-chip { animation: none; } .mk-status-stack { transition: none !important; } }

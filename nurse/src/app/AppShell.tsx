@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { copy } from '../copy';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { MARK_VIEWBOX, MARK_PETALS, MARK_LEAVES, MARK_CROSS } from '../ui/markPaths';
@@ -56,6 +56,19 @@ export function AppShell({ children, online, queued, authenticated, message, syn
   const showToast = Boolean(message) && !(message === copy.messages.syncStarted || message === copy.messages.notificationOpenedSyncing || syncProblem);
   const bannerLabel = backOnline ? copy.shell.backOnlineLabel : online ? copy.shell.onlineLabel : copy.shell.offlineLabel;
   const bannerText = syncing ? copy.shell.syncing : syncProblem ? copy.messages.syncFailed : queued > 0 ? `${queued} ${copy.shell.waiting}` : online ? copy.shell.saved : copy.shell.offline;
+  // The banner shows in full for a few seconds whenever the situation changes, then folds up into a small chip in the top bar.
+  const [minimized, setMinimized] = useState(false);
+  const [expandTick, setExpandTick] = useState(0);
+  const signature = `${online}|${queued > 0}|${syncProblem}`;
+  useEffect(() => {
+    if (!showConnection) return;
+    setMinimized(false);
+    const timer = window.setTimeout(() => setMinimized(true), 5000);
+    return () => window.clearTimeout(timer);
+  }, [signature, expandTick, showConnection]);
+  const collapsed = authenticated && showConnection && minimized;
+  const level = !online ? 'offline' : syncProblem || queued > 0 ? 'issue' : 'ok';
+  const chipText = !online ? copy.shell.offlineLabel : syncProblem ? 'Needs attention' : queued > 0 ? `${queued} ${copy.shell.waiting}` : syncing ? 'Syncing' : copy.shell.onlineLabel;
   const navigation = (className: string) => <nav className={className} aria-label={copy.shell.mainNavigation}>
     {NAV.map((item) => <Link key={item.to} to={item.to} aria-label={item.label} aria-current={navIsCurrent(location.pathname, item.to) ? 'page' : undefined}>
       <Icon name={item.icon} /><span className="nav-label" aria-hidden="true">{item.label}</span><span className="nav-short" aria-hidden="true">{item.short}</span>
@@ -76,6 +89,10 @@ export function AppShell({ children, online, queued, authenticated, message, syn
             <path className="shell-mark-leaf" d={MARK_LEAVES} />
             <path className="shell-mark-cross" d={MARK_CROSS} />
           </svg>
+          {collapsed && <button type="button" className={`shell-conn-chip is-${level}`} aria-label={`${chipText}. ${bannerText}. Show details`} aria-expanded="false"
+            onClick={() => { setMinimized(false); setExpandTick((t) => t + 1); }}>
+            <span className="shell-conn-chip__dot" aria-hidden="true" /><span className="shell-conn-chip__text">{chipText}</span>
+          </button>}
           <div className="shell-topbar__actions">
             <Link to="/app-center" className="shell-topbar__link" aria-label="App Center" aria-current={location.pathname === '/app-center' ? 'page' : undefined}><Icon name="download" /><span>App Center</span></Link>
             <ThemeToggle />
@@ -87,7 +104,7 @@ export function AppShell({ children, online, queued, authenticated, message, syn
       <UpdatePrompt />
       {showToast && <Banner className="mk-toast" floating onDismiss={onDismissMessage ?? (() => undefined)} tone={syncProblem ? 'warn' : isProblemMessage(message ?? '') ? 'bad' : 'info'} role={isProblemMessage(message ?? '') ? 'alert' : 'status'}>{message}</Banner>}
     </div>
-    {showConnection && <div className="mk-status-stack">
+    {showConnection && <div className={`mk-status-stack${collapsed ? ' is-collapsed' : ''}`} aria-hidden={collapsed || undefined}>
       <div className={`connection-banner mk-connection-banner${online ? ' is-online' : ' is-offline'}`} role="status" aria-live="polite">
         <Link to="/sync" className="mk-status-link" aria-label={`${bannerLabel}. ${bannerText}. ${copy.shell.syncStatus}`}>
           <strong>{bannerLabel}</strong><span className="mk-status-text">{bannerText}</span><Icon name="arrow" size={16} />
