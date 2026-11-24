@@ -282,12 +282,7 @@ function NurseWorkspace() {
     const syncInterval = window.setInterval(() => { if (navigator.onLine && token) void sync(); }, 5 * 60 * 1000);
     let appStateHandle: { remove: () => Promise<void> } | undefined;
     if (Capacitor.isNativePlatform()) {
-      if (!Capacitor.isNativePlatform()) {
-      const onVisible = () => { if (document.visibilityState === 'visible') attempt(); };
-      document.addEventListener('visibilitychange', onVisible);
-      return () => { window.removeEventListener('online', attempt); window.clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); };
-    }
-    void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+      void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
         if (isActive) {
           setOnline(navigator.onLine);
           if (navigator.onLine && token) void sync();
@@ -385,6 +380,11 @@ function NurseWorkspace() {
     window.addEventListener('online', attempt);
     const timer = window.setInterval(attempt, 30_000);
     let handle: { remove: () => Promise<void> } | undefined; let active = true;
+    if (!Capacitor.isNativePlatform()) {
+      const onVisible = () => { if (document.visibilityState === 'visible') attempt(); };
+      document.addEventListener('visibilitychange', onVisible);
+      return () => { window.removeEventListener('online', attempt); window.clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); };
+    }
     void CapacitorApp.addListener('appStateChange', ({ isActive }) => { if (isActive) attempt(); }).then((h) => { if (!active) void h.remove(); else handle = h; }).catch(() => undefined);
     return () => { active = false; window.removeEventListener('online', attempt); window.clearInterval(timer); void handle?.remove(); };
   }, [session.offlineTrusted, restoreLiveSession]);

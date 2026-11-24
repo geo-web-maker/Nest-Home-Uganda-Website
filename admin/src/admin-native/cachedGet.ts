@@ -9,7 +9,8 @@ import { ApiError, apiClient } from '@shared/lib/api/client';
 export function useCachedGet() {
   const qc = useQueryClient();
   const [staleAt, setStaleAt] = useState<number | null>(null);
-  const get = useCallback(async <T,>(path: string, params?: Record<string, string | number | boolean | null | undefined>): Promise<T> => {
+  const get = useCallback(async <T,>(path: string, options?: { params?: Record<string, string | number | boolean | null | undefined> }): Promise<T> => {
+    const params = options?.params;
     const key = ['admin', 'care', 'get', path, params ?? {}];
     try {
       // The shared client serves its own saved copy when the network fails and reports the save time here.
