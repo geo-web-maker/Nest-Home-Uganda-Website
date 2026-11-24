@@ -1,0 +1,18 @@
+.guide-root{position:fixed;inset:0;z-index:9000}
+.guide-catch{position:absolute;inset:0}
+.guide-dim{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+.guide-spot{position:absolute;border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);outline:2px solid var(--gold,#c9a24b);pointer-events:none;transition:all .2s ease}
+.guide-card{position:absolute;box-sizing:border-box;padding:16px;border:1px solid var(--line,#ddd);border-radius:14px;background:var(--surf,#fff);color:var(--ink,#111);box-shadow:0 12px 40px rgba(0,0,0,.28);animation:guide-in .18s ease}
+.guide-card h2{margin:4px 0 6px;font-size:1.05rem}.guide-card p{margin:0 0 12px;line-height:1.45}
+.guide-card .guide-count{margin:0;font-size:.75rem;color:var(--mut,#667)}
+.guide-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+.guide-actions button{min-height:40px;padding:0 14px;border:1px solid var(--line,#ccc);border-radius:999px;background:transparent;color:inherit;font:inherit}
+.guide-actions .guide-primary{background:var(--forest,#1f5a43);border-color:var(--forest,#1f5a43);color:var(--onf,#fff)}
+.guide-actions .guide-link{border-color:transparent;color:var(--mut,#667);margin-right:auto}
+.guide-help{position:relative;display:inline-flex}
+.guide-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:80;min-width:190px;padding:6px;border:1px solid var(--line,#ddd);border-radius:12px;background:var(--surf,#fff);box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.guide-menu button{display:block;width:100%;min-height:42px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:var(--ink,#111);font:inherit;text-align:left}
+.guide-menu button:hover,.guide-menu button:focus-visible{background:var(--bg,#f3f3f3)}
+@keyframes guide-in{from{opacity:0;translate:0 6px}}
+@media (prefers-reduced-motion:reduce){.guide-card{animation:none}.guide-spot{transition:none}}
+.guide-topbtn{width:36px;height:36px;border:1px solid var(--line,#ccc);border-radius:50%;background:transparent;color:var(--ink,#111);font:600 1rem/1 inherit;cursor:pointer}
