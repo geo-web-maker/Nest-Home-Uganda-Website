@@ -66,3 +66,8 @@ export async function flushQueue(send: (visitId: string, points: TrackPointPaylo
   }
   writeQueue(queued.filter((item) => !done.has(item.point.client_op_id)));
 }
+
+/** Removes every waiting sample from this device (sign-out). */
+export function clearQueue() {
+  try { localStorage.removeItem(KEY); } catch { /* storage blocked: nothing was kept */ }
+}

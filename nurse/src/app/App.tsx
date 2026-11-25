@@ -27,6 +27,7 @@ import { clearPdfCache } from '../features/careforms/pdfCache';
 import { LoadingScreen } from '../ui/Loading';
 import { useHeartbeat } from '../features/heartbeat/useHeartbeat';
 import { useVisitTracker } from '../features/tracking/useVisitTracker';
+import { finishVisitTracking } from '../features/tracking/finishTracking';
 import { copy, APP_VERSION, getInstalledVersion } from '../copy';
 import { AppShell } from './AppShell';
 import { NurseRoutes } from './routes';
@@ -430,6 +431,7 @@ function NurseWorkspace() {
     let remoteRevoked = false;
     try { await stopPushRegistration.current?.(); } catch { /* Local sign-out must still complete. */ }
     stopPushRegistration.current = null;
+    try { await finishVisitTracking(); } catch { /* Local sign-out must still complete. */ }
     if (Capacitor.isNativePlatform() && currentUserId && navigator.onLine && sessionStorage.getItem('nurse_access_token')) {
       const deviceKey = `nest.nurse.device-id:${currentUserId}`;
       const deviceId = localStorage.getItem(deviceKey);

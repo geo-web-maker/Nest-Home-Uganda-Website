@@ -42,7 +42,9 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const raw = (event.notification.data as { url?: string } | null)?.url || '/mail';
-  const target = new URL(normalizeAdminUrl(raw, self.location.origin), self.location.origin).href;
+  const resolved = new URL(normalizeAdminUrl(raw, self.location.origin), self.location.origin);
+  // A push may only open a page of this app; anything pointing elsewhere falls back to the mail screen.
+  const target = resolved.origin === self.location.origin ? resolved.href : new URL('/mail', self.location.origin).href;
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     const existing = windows.find((client) => client.url.startsWith(self.location.origin));
