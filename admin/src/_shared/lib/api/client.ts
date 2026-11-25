@@ -91,6 +91,19 @@ async function toApiError(response: Response, endpoint: string): Promise<ApiErro
 export type OfflineWriteHook = (method: string, path: string, body: unknown, reason: 'offline' | 'network') => Promise<boolean>;
 let offlineWriteHook: OfflineWriteHook | null = null;
 export function setOfflineWriteHook(hook: OfflineWriteHook | null): void { offlineWriteHook = hook; }
+/**
+ * Saved copies of GET replies. The admin installs a store (on-device, per signed-in user) so screens that fetch
+ * through this client still show their last data when the network fails. Public pages install none.
+ */
+export type SavedCopyStore = {
+  save(key: string, data: unknown): void;
+  load(key: string): Promise<{ data: unknown; savedAt: number } | null>;
+};
+let savedCopyStore: SavedCopyStore | null = null;
+export function setSavedCopyStore(store: SavedCopyStore | null): void { savedCopyStore = store; }
+let staleSavedAt: number | null = null;
+/** When the last GET was answered from a saved copy (ms since epoch), once; null if it was live. */
+export function takeStaleSavedAt(): number | null { const v = staleSavedAt; staleSavedAt = null; return v; }
 /** Told after every request whether the server answered, so the app can tell "offline" from "server unreachable". */
 let networkObserver: ((reachable: boolean) => void) | null = null;
 export function setNetworkObserver(fn: ((reachable: boolean) => void) | null): void { networkObserver = fn; }
@@ -172,10 +185,15 @@ export function createApiClient({
       queuedFlag = true;
       return undefined as T;
     }
+    const copyKey = method === 'GET' && savedCopyStore ? buildUrl(baseUrl, path, options.params) : null;
     let response: Response;
     try {
       response = await send(method, path, body, options, false);
     } catch (error) {
+      if (copyKey && savedCopyStore && error instanceof ApiError && error.status === 0) {
+        const saved = await savedCopyStore.load(copyKey).catch(() => null);
+        if (saved) { staleSavedAt = saved.savedAt; return saved.data as T; }
+      }
       if (canQueue && error instanceof ApiError && error.status === 0 && (await offlineWriteHook!(method, path, body, 'network'))) {
         queuedFlag = true;
         return undefined as T;
@@ -184,12 +202,15 @@ export function createApiClient({
     }
     if (!response.ok) throw await toApiError(response, `${method} ${API_PREFIX}${path}`);
     if (response.status === 204) return undefined as T;
+    let parsed: T;
     try {
-      return (await response.json()) as T;
+      parsed = (await response.json()) as T;
     } catch {
       // A 2xx that is not JSON is almost always a web page (the site's own shell or a proxy/CDN page), not the API.
       throw new ApiError(response.status, 'invalid_response', 'The reply was not from the Bloomwell API.', {}, undefined, `${method} ${API_PREFIX}${path}`);
     }
+    if (copyKey && savedCopyStore) savedCopyStore.save(copyKey, parsed);
+    return parsed;
   }
 
   return {

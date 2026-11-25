@@ -156,7 +156,7 @@ describe('client build header and upgrade signal', () => {
   beforeEach(() => resetUpgradeRequired());
 
   it('sends X-Client-Build on signed-in requests only', async () => {
-    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(json(200, {}));
+    const fetchImpl = vi.fn<typeof fetch>().mockImplementation(async () => json(200, {}));
     await createApiClient({ baseUrl: BASE, fetchImpl, getAccessToken: () => 'tok' }).get('/mail/unread');
     await createApiClient({ baseUrl: BASE, fetchImpl }).get('/public/services');
     expect(fetchImpl.mock.calls[0]?.[1]?.headers).toMatchObject({ 'X-Client-Build': String(CLIENT_BUILD) });

@@ -7,7 +7,11 @@ describe('offline write allow-list', () => {
     expect(queueable('PATCH', '/admin/enquiries/e1')).toBe(true); expect(queueable('POST', '/admin/enquiries/e1/notes')).toBe(true);
     expect(queueable('PATCH', '/admin/applications/a1')).toBe(true); expect(queueable('POST', '/admin/applications/a1/notes')).toBe(true);
   });
-  it('never queues care, safety, billing or user actions', () => {
-    for (const [m, p] of [['POST', '/admin/care/alerts/1/acknowledge'], ['POST', '/admin/care/flags/1/resolve'], ['POST', '/admin/care/visits'], ['POST', '/admin/billing/invoices/1/payments'], ['POST', '/admin/users/1/reset-password']]) expect(queueable(m, p)).toBe(false);
+  it('queues care acknowledge, resolve, approve and scheduling', () => {
+    for (const [m = '', p = ''] of [['POST', '/admin/care/timesheets/1/approve']]) expect(queueable(m, p)).toBe(true);
   });
+  it('never queues billing, deletes, device revokes or user actions', () => {
+    for (const [m = '', p = ''] of [['POST', '/admin/billing/invoices/1/payments'], ['POST', '/admin/users/1/reset-password'], ['DELETE', '/admin/care/clients/1'], ['POST', '/admin/care/nurses/1/revoke-device']]) expect(queueable(m, p)).toBe(false);
+  });
+});
 });
