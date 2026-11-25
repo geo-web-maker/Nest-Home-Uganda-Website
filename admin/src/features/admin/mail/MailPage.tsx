@@ -68,6 +68,18 @@ export function MailPage() {
     if (boxes.data) window.dispatchEvent(new Event(MAIL_CHANGED_EVENT));
   }, [boxes.data]);
   const mailboxId = mailboxChoice || mailboxes[0]?.id || '';
+
+  // A tapped push or link such as /mail?mailbox=<id>&message=<id> opens that mailbox and that exact message.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const wantedBox = params.get('mailbox');
+    const wantedMessage = params.get('message');
+    if (!wantedBox && !wantedMessage) return;
+    if (wantedBox && !boxes.data) return; // wait until the mailbox list is known, then check the person can see it
+    if (wantedBox && mailboxes.some((box) => box.id === wantedBox)) setMailboxChoice(wantedBox);
+    if (wantedMessage) { setFolder('inbox'); setSelectedId(wantedMessage); }
+    navigate(location.pathname, { replace: true, state: location.state });
+  }, [location.search, location.pathname, location.state, boxes.data, mailboxes, navigate]);
   const mailbox = mailboxes.find((box) => box.id === mailboxId);
 
   const list = useQuery({

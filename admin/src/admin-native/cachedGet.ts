@@ -9,11 +9,10 @@ import { ApiError, apiClient } from '@shared/lib/api/client';
 export function useCachedGet() {
   const qc = useQueryClient();
   const [staleAt, setStaleAt] = useState<number | null>(null);
-  const get = useCallback(async <T,>(path: string, options?: { params?: Record<string, string | number | boolean | null | undefined> }): Promise<T> => {
-    const params = options?.params;
+  const get = useCallback(async <T,>(path: string, params?: Record<string, string | number | boolean | null | undefined>): Promise<T> => {
     const key = ['admin', 'care', 'get', path, params ?? {}];
     try {
-      const data = await apiClient.get<T>(path, { params, savedCopy: false });
+      const data = await apiClient.get<T>(path, { params });
       qc.setQueryData(key, data); setStaleAt(null); return data;
     } catch (error) {
       if (error instanceof ApiError && error.status === 0) {

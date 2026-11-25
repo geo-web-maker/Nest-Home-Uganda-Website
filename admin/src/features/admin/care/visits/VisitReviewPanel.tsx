@@ -3,7 +3,7 @@ import type { FormEvent, Dispatch, SetStateAction } from 'react';
 import { Button } from '@shared/components/ui/Button';
 import { LoadingNote } from '../../../../components/admin/LoadingNote';
 type Row = Record<string, unknown>;
-type VisitReview = { visit?: Row; events?: Row[]; notes?: Row[]; flags?: Row[]; photos?: Row[]; annotations?: Row[]; audit?: Row[]; audit_locked?: boolean };
+type VisitReview = { visit?: Row; events?: Row[]; track?: Row[]; notes?: Row[]; flags?: Row[]; photos?: Row[]; annotations?: Row[]; audit?: Row[]; audit_locked?: boolean };
 type Props = {
   visitId: string; review: VisitReview | null; loading: boolean; busy: boolean;
   photoPanelOpen: boolean; setPhotoPanelOpen: Dispatch<SetStateAction<boolean>>;
@@ -28,6 +28,22 @@ export function VisitReviewPanel(props: Props) {
       <dl className="care-review-summary">
         {(['status', 'nurse_id', 'client_id', 'scheduled_start', 'scheduled_end', 'adhoc'] as const).map((key) => <div key={key}><dt>{key.replaceAll('_', ' ')}</dt><dd>{printable(review.visit?.[key])}</dd></div>)}
       </dl>
+      <section aria-labelledby="visit-track-title"><h3 id="visit-track-title">Work-time location record</h3>
+        {(review.track ?? []).length === 0 ? <p>No location samples were recorded during this visit.</p> : <>
+          <p>{review.track?.length} samples recorded while the visit timer was running. Samples taken with the app closed are marked as background.</p>
+          <ol className="care-timeline">
+            {(review.track ?? []).map((item, index) => {
+              const seconds = Number(item.elapsed_s ?? 0);
+              const clock = `${String(Math.floor(seconds / 3600)).padStart(2, '0')}:${String(Math.floor((seconds % 3600) / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+              const hasFix = typeof item.lat === 'number' && typeof item.lng === 'number';
+              return <li key={String(item.id ?? index)}>
+                <strong>{clock} into the visit{item.background ? ' · background' : ''}</strong><time>{printable(item.device_time)}</time>
+                <p>{hasFix ? <a href={`https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lng}`} target="_blank" rel="noopener noreferrer">{Number(item.lat).toFixed(5)}, {Number(item.lng).toFixed(5)}</a> : `No location (${String(item.state ?? 'unavailable').replace('_', ' ')})`}{hasFix ? ` · accuracy ${Math.round(Number(item.accuracy_m ?? 0))} m${item.state === 'low_accuracy' ? ' (low)' : ''}` : ''}</p>
+              </li>;
+            })}
+          </ol>
+        </>}
+      </section>
       <section aria-labelledby="visit-events-title"><h3 id="visit-events-title">Visit timeline</h3>
         {[...(review.events ?? [])].sort((a, b) => String(a.at ?? a.created_at ?? '').localeCompare(String(b.at ?? b.created_at ?? ''))).length === 0 ? <p>No visit events are recorded.</p> : <ol className="care-timeline">
           {[...(review.events ?? [])].sort((a, b) => String(a.at ?? a.created_at ?? '').localeCompare(String(b.at ?? b.created_at ?? ''))).map((item, index) => <li key={String(item.id ?? `${item.type ?? 'event'}-${index}`)}>

@@ -45,33 +45,30 @@ export function GuideProvider({ app, userId, tours, fetchReset, children }: Prop
 
   const mark = (t: Tour) => write({ ...ref.current, done: { ...ref.current.done, [t.key]: t.version } });
   const next = () => {
-    const cur = run?.queue[0];
-    if (!run || !cur) return;
+    if (!run) return;
+    const cur = run.queue[0];
     if (run.step + 1 < cur.steps.length) { setRun({ ...run, step: run.step + 1 }); return; }
     mark(cur);
     const rest = run.queue.slice(1);
     if (!rest.length) { setRun(null); return; }
-    const first = rest[0];
-    if (first?.path && first.path !== pathname) navigate(first.path);
+    if (rest[0].path && rest[0].path !== pathname) navigate(rest[0].path);
     setRun({ queue: rest, step: 0 });
   };
   const stop = (all: boolean) => {
-    const cur = run?.queue[0];
-    if (cur) mark(cur);
+    if (run) mark(run.queue[0]);
     if (all) write({ ...ref.current, skipAll: true });
     setRun(null);
   };
   const api = useMemo<Api>(() => ({
     startPage: () => { const t = tours.find((x) => x.match(pathname)) ?? tours[0]; if (t) setRun({ queue: [t], step: 0 }); },
-    startAll: () => { const list = tours.filter((t) => t.path); const first = list[0]; if (!first) return; write({ done: {}, resetSeen: ref.current.resetSeen }); if (first.path !== pathname) navigate(first.path); setRun({ queue: list, step: 0 }); },
+    startAll: () => { const list = tours.filter((t) => t.path); if (!list.length) return; write({ done: {}, resetSeen: ref.current.resetSeen }); if (list[0].path !== pathname) navigate(list[0].path); setRun({ queue: list, step: 0 }); },
     skipAll: () => { write({ ...ref.current, skipAll: true }); setRun(null); },
   }), [tours, pathname, navigate, write]);
 
   const cur = run?.queue[0];
-  const curStep = cur && run ? cur.steps[run.step] : undefined;
   return <Ctx.Provider value={api}>
     {children}
-    {run && cur && curStep && <Overlay key={`${cur.key}:${run.step}`} step={curStep} i={run.step} n={cur.steps.length} more={run.queue.length > 1}
+    {run && cur && <Overlay key={`${cur.key}:${run.step}`} step={cur.steps[run.step]} i={run.step} n={cur.steps.length} more={run.queue.length > 1}
       onNext={next} onBack={() => run.step > 0 && setRun({ ...run, step: run.step - 1 })} onSkip={() => stop(false)} onStop={() => stop(true)} />}
   </Ctx.Provider>;
 }

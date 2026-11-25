@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { LoadingNote } from '../../ui/Loading';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
@@ -65,6 +66,19 @@ export function MailScreen() {
   const [notice, setNotice] = useState('');
   const [externalLink, setExternalLink] = useState<string | null>(null);
   const flushing = useRef(false);
+  const routerLocation = useLocation();
+  const routerNavigate = useNavigate();
+  // A tapped push such as /mail?mailbox=<id>&message=<id> opens that mailbox and that exact message once the list is loaded.
+  const [wantedMessageId, setWantedMessageId] = useState('');
+  useEffect(() => {
+    const params = new URLSearchParams(routerLocation.search);
+    const box = params.get('mailbox');
+    const message = params.get('message');
+    if (!box && !message) return;
+    if (box) { setBoxChoice(box); setFolder('inbox'); }
+    if (message) setWantedMessageId(message);
+    routerNavigate(routerLocation.pathname, { replace: true });
+  }, [routerLocation.search, routerLocation.pathname, routerNavigate]);
   const uploadClient = useMemo(() => ({
     post: <T,>(path: string, body: unknown) => apiRequest<T>(path, { method: 'POST', body: JSON.stringify(body ?? {}) }),
   }), []);
@@ -203,6 +217,16 @@ export function MailScreen() {
       setError(copy.mail.error);
     }
   };
+  useEffect(() => {
+    if (!wantedMessageId) return;
+    const target = messages.find((message) => message.mailbox_message_id === wantedMessageId);
+    if (target) { setWantedMessageId(''); void open(target); }
+    else {
+      const giveUp = window.setTimeout(() => setWantedMessageId(''), 15_000); // not in this list: leave the person on the mailbox
+      return () => window.clearTimeout(giveUp);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantedMessageId, messages]);
 
   const change = async (message: CachedMessage, changes: Record<string, unknown>, leaves = false) => {
     if (!navigator.onLine) { setNotice(copy.mail.offlineAction); return; }

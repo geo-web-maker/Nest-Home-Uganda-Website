@@ -25,7 +25,7 @@ describe('public theme helper', () => {
     setTheme('dark');
     expect(window.localStorage.getItem('nest-theme')).toBe('dark');
     expect(document.documentElement.dataset.theme).toBe('dark');
-    expect(meta.content).toBe('#123524');
+    expect(meta.content).toBe('#071F1C');
     setTheme('light');
     expect(meta.content).toBe('#0B2E2A');
   });

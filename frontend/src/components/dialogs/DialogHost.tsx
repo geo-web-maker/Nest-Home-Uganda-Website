@@ -73,7 +73,7 @@ export function DialogHost() {
   }
 
   if (current.kind === 'prompt') {
-    const { minLength = 0, multiline = false, secret = false, placeholder, confirmLabel = 'OK', danger = false } = current.options;
+    const { minLength = 0, multiline = false, secret = false, placeholder, confirmLabel = 'OK' } = current.options;
     const valid = minLength > 0 ? text.trim().length >= minLength : true;
     const submit = () => { if (valid) finish(text); };
     return (
@@ -109,7 +109,7 @@ export function DialogHost() {
           ) : null}
           {minLength > 0 && !valid ? <p style={hintStyle}>At least {minLength} characters ({text.trim().length} so far).</p> : null}
           <ButtonGroup>
-            <Button type="submit" variant={danger ? 'danger' : 'primary'} disabled={!valid}>{confirmLabel}</Button>
+            <Button type="submit" disabled={!valid}>{confirmLabel}</Button>
             <Button type="button" variant="outline" onClick={cancel}>Cancel</Button>
           </ButtonGroup>
         </form>
@@ -152,12 +152,11 @@ export function DialogHost() {
   }
 
   const confirmLabel = current.kind === 'confirm' ? current.options.confirmLabel ?? 'Confirm' : 'OK';
-  const danger = current.kind === 'confirm' && Boolean(current.options.danger);
   return (
     <Modal id="app-dialog-title" title={title} subtitle={current.message} onClose={cancel} closeLabel="Cancel" hideClose={current.kind === 'confirm'} role={current.kind === 'confirm' ? 'alertdialog' : 'dialog'}>
       <ButtonGroup>
-        <Button type="button" variant={danger ? 'danger' : 'primary'} autoFocus={!danger} onClick={() => finish(true)}>{confirmLabel}</Button>
-        {current.kind === 'confirm' && <Button type="button" variant="outline" autoFocus={danger} onClick={cancel}>Cancel</Button>}
+        <Button type="button" autoFocus onClick={() => finish(true)}>{confirmLabel}</Button>
+        {current.kind === 'confirm' && <Button type="button" variant="outline" onClick={cancel}>Cancel</Button>}
       </ButtonGroup>
     </Modal>
   );

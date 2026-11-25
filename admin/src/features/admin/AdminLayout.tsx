@@ -16,7 +16,7 @@ import { bottomNav, navItemFor, visibleNav, type AdminNavItem } from './nav';
 import styles from './AdminLayout.module.css';
 import { InstallHint } from '../../pwa/InstallHint';
 import { ApkUpdateBanner } from '../../admin-native/ApkUpdateBanner';
-import { ConnectionDot } from '../../admin-native/ConnectionDot';
+import { AvatarStatusDot } from '../../admin-native/AvatarStatusDot';
 import { PushNotifier } from './PushNotifier';
 import './admin-spacing.css';
 
@@ -149,7 +149,6 @@ export function AdminLayout() {
             darkLabel={t('layout.dark')}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <ConnectionDot />
           <div className={styles.user} ref={accountRef}>
             <button
               type="button"
@@ -166,7 +165,7 @@ export function AdminLayout() {
                   <span className={styles.userNote}>{t('layout.superadmin')}</span>
                 )}
               </span>
-              <span className={styles.initial} aria-hidden="true">{initial}</span>
+              <span className={styles.initial} aria-hidden="true">{initial}<AvatarStatusDot /></span>
             </button>
             {accountOpen && (
               <div id="admin-account-menu" className={styles.accountMenu} role="menu" aria-label="Account">

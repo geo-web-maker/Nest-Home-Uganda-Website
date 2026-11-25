@@ -18,7 +18,6 @@ import { OfflineNotice } from './admin-native/OfflineNotice';
 import { restoreQueryCache, startQueryPersistence } from './admin-native/queryPersistence';
 import { installConnectionMonitor } from './admin-native/connection';
 import { installWriteQueue } from './admin-native/writeQueue';
-import { installSavedCopies } from './admin-native/savedCopies';
 import { installUpgradeRequiredHandler } from './admin-native/upgradeRequired';
 
 initTheme();
@@ -38,7 +37,6 @@ async function start(): Promise<void> {
   startQueryPersistence(queryClient);
   installConnectionMonitor();
   installWriteQueue(queryClient);
-  installSavedCopies();
   render();
 }
 

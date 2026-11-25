@@ -8,14 +8,6 @@ function renderInRouter(ui: React.ReactElement) {
   return render(<MemoryRouter>{ui}</MemoryRouter>);
 }
 
-describe('Button danger variants', () => {
-  it('marks danger and danger-outline buttons with their variant', () => {
-    renderInRouter(<><Button variant="danger">Delete</Button><Button variant="danger-outline">Void</Button></>);
-    expect(screen.getByRole('button', { name: 'Delete' })).toHaveAttribute('data-variant', 'danger');
-    expect(screen.getByRole('button', { name: 'Void' })).toHaveAttribute('data-variant', 'danger-outline');
-  });
-});
-
 describe('Button', () => {
   it('renders a button element with type button when there is no href', async () => {
     const onClick = vi.fn();

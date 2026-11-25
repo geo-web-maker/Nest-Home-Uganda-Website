@@ -124,7 +124,7 @@ export function applyAndroidOverrides({ androidDir, overridesDir, versionCode, v
   // Website updates (WebBundle) and full-APK updates (NativeUpdater), both Java: the Capacitor template has no Kotlin.
   const appId = process.env.CAP_APP_ID_NURSE ?? 'ug.nesthomecare.nurse';
   const sharedDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'android-shared');
-  installNativePlugins({ mainDir: main, appId, sharedDir });
+  installNativePlugins({ mainDir: main, appId, sharedDir, visitTracker: true });
   applyBranding({ mainDir: main, sharedDir, app: 'nurse' });
 
   return { manifestPath, gradlePath, versionCode, versionName };

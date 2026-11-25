@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { BrowserRouter, useNavigate } from 'react-router-dom';
-import { apiRequest, hasStoredWebCredential, restoreNativeSession } from '../lib/api/client';
+import { apiRequest, restoreNativeSession } from '../lib/api/client';
 import { LogoutGuard } from './LogoutGuard';
 import { needsLogoutConfirmation } from './logoutGuard';
 import { isRemovedVisitConflict, isRetryableSyncFailure, retryAfterIso, syncFailureMessage } from '../offline/syncPolicy';
@@ -26,6 +26,7 @@ import { forgetCachedProfile, readCachedProfile, useFieldProfile, type FieldCons
 import { clearPdfCache } from '../features/careforms/pdfCache';
 import { LoadingScreen } from '../ui/Loading';
 import { useHeartbeat } from '../features/heartbeat/useHeartbeat';
+import { useVisitTracker } from '../features/tracking/useVisitTracker';
 import { copy, APP_VERSION, getInstalledVersion } from '../copy';
 import { AppShell } from './AppShell';
 import { NurseRoutes } from './routes';
@@ -61,7 +62,7 @@ async function currentLocation(): Promise<LocationSnapshot> { return captureLoca
 
 /** A tapped notification may only open one of the nurse app's own screens. */
 function safeNotificationPath(value: unknown): string | null {
-  return typeof value === 'string' && /^\/(visit\/[\w-]+|history|timesheets|documents|mail|audit|profile)?$/.test(value) ? value : null;
+  return typeof value === 'string' && /^\/((visit|active)\/[\w-]+|history|timesheets|documents|audit|profile|mail(\?[\w=&%.-]*)?)?$/.test(value) ? value : null;
 }
 
 export function App() { return <BrowserRouter><NurseWorkspace /></BrowserRouter>; }
@@ -308,7 +309,7 @@ function NurseWorkspace() {
     if (navigator.storage?.persist) void navigator.storage.persist().catch(() => false);
   }, []);
   /** False only while the phone is deciding whether a stored session can be trusted (a few milliseconds, no network). */
-  const [bootChecked, setBootChecked] = useState(() => Boolean(sessionStorage.getItem('nurse_access_token')) || (!Capacitor.isNativePlatform() && !hasStoredWebCredential()));
+  const [bootChecked, setBootChecked] = useState(() => !Capacitor.isNativePlatform() || Boolean(sessionStorage.getItem('nurse_access_token')));
   const restoringSession = useRef(false);
   /** Refreshes the access token from the stored refresh token. Returns false only when the network could not be used. */
   const restoreLiveSession = useCallback(async (): Promise<boolean> => {
@@ -347,13 +348,6 @@ function NurseWorkspace() {
       const reached = await restoreLiveSession();
       if (active && !reached && !owner) setMessage(copy.messages.sessionRestoreFailed);
     })();
-    return () => { active = false; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    // Browser (PWA): a stored CSRF twin means a refresh cookie may exist, so try to restore the session before showing sign-in.
-    if (Capacitor.isNativePlatform() || sessionStorage.getItem('nurse_access_token') || !hasStoredWebCredential()) return;
-    let active = true;
-    void restoreLiveSession().finally(() => { if (active) setBootChecked(true); });
     return () => { active = false; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -879,6 +873,7 @@ function NurseWorkspace() {
   const pendingHistoryVisitIds = useMemo(() => [...new Set(allOperations.filter((operation) => operation.ownerUserId === currentUserId && operation.visitId && ['queued', 'sending', 'needs_attention'].includes(operation.state)).map((operation) => operation.visitId!).filter(Boolean))], [allOperations, currentUserId]);
   const safetyPromptVisit = useMemo(() => visits.find((visit) => visit.safety_state === 'armed' && (visit.status === 'in_progress' || visit.safety_checkout_pending)), [visits]);
   useHeartbeat(Boolean(token), activeVisit?.id);
+  useVisitTracker(Boolean(token), activeVisit ? { id: activeVisit.id, startedAt: activeVisit.check_in_at } : undefined, (path) => { const target = safeNotificationPath(path); if (target) navigate(target); });
   useEffect(() => { if (token) void checkForUpdate(); }, [token]);
 
   // Pre-login version check using the public endpoint — no credentials required.

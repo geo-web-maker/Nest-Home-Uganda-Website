@@ -30,8 +30,6 @@ export type RequestOptions = {
   retryOn401?: boolean;
   /** Extra request headers, for example `X-CSRF-Token` on refresh and logout. */
   headers?: Record<string, string>;
-  /** Set false for a GET that keeps its own saved copy, so the shared saved-copy store is skipped. */
-  savedCopy?: boolean;
 };
 
 export type ApiClientOptions = {
@@ -96,13 +94,6 @@ export function setOfflineWriteHook(hook: OfflineWriteHook | null): void { offli
 /** Told after every request whether the server answered, so the app can tell "offline" from "server unreachable". */
 let networkObserver: ((reachable: boolean) => void) | null = null;
 export function setNetworkObserver(fn: ((reachable: boolean) => void) | null): void { networkObserver = fn; }
-/** Device store for GET replies: each successful GET is saved, and read back when the network fails. */
-export type SavedCopyStore = {
-  save(key: string, data: unknown): void;
-  load(key: string): Promise<{ data: unknown; savedAt: number } | null>;
-};
-let savedCopyStore: SavedCopyStore | null = null;
-export function setSavedCopyStore(store: SavedCopyStore | null): void { savedCopyStore = store; }
 let queuedFlag = false;
 /** True once if the last write was saved for later instead of sent. */
 export function takeQueuedFlag(): boolean { const v = queuedFlag; queuedFlag = false; return v; }
@@ -181,16 +172,10 @@ export function createApiClient({
       queuedFlag = true;
       return undefined as T;
     }
-    const copyStore = method === 'GET' && options.savedCopy !== false ? savedCopyStore : null;
-    const copyKey = copyStore ? buildUrl('', path, options.params) : '';
     let response: Response;
     try {
       response = await send(method, path, body, options, false);
     } catch (error) {
-      if (copyStore && error instanceof ApiError && error.status === 0) {
-        const saved = await copyStore.load(copyKey).catch(() => null);
-        if (saved) return saved.data as T;
-      }
       if (canQueue && error instanceof ApiError && error.status === 0 && (await offlineWriteHook!(method, path, body, 'network'))) {
         queuedFlag = true;
         return undefined as T;
@@ -200,9 +185,7 @@ export function createApiClient({
     if (!response.ok) throw await toApiError(response, `${method} ${API_PREFIX}${path}`);
     if (response.status === 204) return undefined as T;
     try {
-      const parsed = (await response.json()) as T;
-      copyStore?.save(copyKey, parsed);
-      return parsed;
+      return (await response.json()) as T;
     } catch {
       // A 2xx that is not JSON is almost always a web page (the site's own shell or a proxy/CDN page), not the API.
       throw new ApiError(response.status, 'invalid_response', 'The reply was not from the Bloomwell API.', {}, undefined, `${method} ${API_PREFIX}${path}`);

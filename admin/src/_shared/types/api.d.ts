@@ -630,78 +630,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/app-releases/builds": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Builds */
-        get: operations["list_builds_api_v1_admin_app_releases_builds_get"];
-        put?: never;
-        /** Start Build */
-        post: operations["start_build_api_v1_admin_app_releases_builds_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/app-releases/builds/batch": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Start Builds */
-        post: operations["start_builds_api_v1_admin_app_releases_builds_batch_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/app-releases/builds/versions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Build Versions */
-        get: operations["build_versions_api_v1_admin_app_releases_builds_versions_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/app-releases/preflight": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Release Preflight
-         * @description Check what a release needs before a build (superadmin with a verified authenticator).
-         */
-        post: operations["release_preflight_api_v1_admin_app_releases_preflight_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/admin/applications": {
         parameters: {
             query?: never;
@@ -845,23 +773,6 @@ export interface paths {
         patch: operations["admin_update_api_v1_admin_articles__item_id__patch"];
         trace?: never;
     };
-    "/api/v1/admin/billing/deletions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Deletions */
-        get: operations["list_deletions_api_v1_admin_billing_deletions_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/admin/billing/invoices": {
         parameters: {
             query?: never;
@@ -897,23 +808,6 @@ export interface paths {
         head?: never;
         /** Patch Invoice */
         patch: operations["patch_invoice_api_v1_admin_billing_invoices__invoice_id__patch"];
-        trace?: never;
-    };
-    "/api/v1/admin/billing/invoices/{invoice_id}/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Delete Issued Invoice */
-        post: operations["delete_issued_invoice_api_v1_admin_billing_invoices__invoice_id__delete_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/v1/admin/billing/invoices/{invoice_id}/email": {
@@ -1052,23 +946,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/billing/payments/{payment_id}/delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Delete Receipt */
-        post: operations["delete_receipt_api_v1_admin_billing_payments__payment_id__delete_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/admin/billing/payments/{payment_id}/email": {
         parameters: {
             query?: never;
@@ -1182,77 +1059,6 @@ export interface paths {
         put?: never;
         /** Resolve Alert */
         post: operations["resolve_alert_api_v1_admin_care_alerts__alert_id__resolve_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/care/care-forms": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Admin List */
-        get: operations["admin_list_api_v1_admin_care_care_forms_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/care/care-forms/08-orders": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Set Order */
-        put: operations["set_order_api_v1_admin_care_care_forms_08_orders_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/care/care-forms/copy-log": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Copy Log */
-        get: operations["copy_log_api_v1_admin_care_care_forms_copy_log_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/care/care-forms/{instance_id}/pdf": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Admin Care Form Pdf
-         * @description Admin read-only access to a client's sealed care document; enforce the same reach boundary as the client page.
-         */
-        get: operations["admin_care_form_pdf_api_v1_admin_care_care_forms__instance_id__pdf_get"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1694,23 +1500,6 @@ export interface paths {
         patch: operations["change_supervisor_api_v1_admin_care_nurses__user_id__supervisor_patch"];
         trace?: never;
     };
-    "/api/v1/admin/care/nurses/{user_id}/unmc/verify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Verify Unmc */
-        post: operations["verify_unmc_api_v1_admin_care_nurses__user_id__unmc_verify_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/admin/care/ops/status": {
         parameters: {
             query?: never;
@@ -1995,26 +1784,6 @@ export interface paths {
         put?: never;
         /** Resolve Sos Case */
         post: operations["resolve_sos_case_api_v1_admin_care_sos__case_id__resolve_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/care/switch-app": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Switch To Nurse App
-         * @description Only dual-scope staff can obtain the nurse app URL from the admin session.
-         */
-        get: operations["switch_to_nurse_app_api_v1_admin_care_switch_app_get"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2783,142 +2552,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/test-accounts/client/checks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Client Checks */
-        post: operations["client_checks_api_v1_admin_test_accounts_client_checks_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/test-accounts/client/days": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Client Days */
-        post: operations["client_days_api_v1_admin_test_accounts_client_days_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/test-accounts/client/disable": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Client Disable */
-        post: operations["client_disable_api_v1_admin_test_accounts_client_disable_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/test-accounts/client/enable": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Client Enable */
-        post: operations["client_enable_api_v1_admin_test_accounts_client_enable_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/test-accounts/client/location": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Client Location */
-        post: operations["client_location_api_v1_admin_test_accounts_client_location_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/test-accounts/client/scenario": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Client Scenario */
-        post: operations["client_scenario_api_v1_admin_test_accounts_client_scenario_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/test-accounts/client/type": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Client Type */
-        post: operations["client_type_api_v1_admin_test_accounts_client_type_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/admin/test-accounts/client/visits": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Client Add Visit */
-        post: operations["client_add_visit_api_v1_admin_test_accounts_client_visits_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/admin/test-accounts/config": {
         parameters: {
             query?: never;
@@ -3162,118 +2795,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/app-bundles/releases": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Publish Release With Key
-         * @description CI publishes a release with a long-lived key that can do nothing else.
-         *
-         *     Disabled (404) unless NEST_RELEASE_PUBLISH_KEY is set to a value of at least 32 characters.
-         */
-        post: operations["publish_release_with_key_api_v1_app_bundles_releases_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/app-bundles/{app}/apk": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Latest Apk
-         * @description Newest active APK for an app when it is newer than the installed versionName, else {"update": false}.
-         *
-         *     Also returns ``blocked`` (the installed version is below the minimum supported) and
-         *     ``min_supported`` so callers can gate the login screen before the user authenticates.
-         */
-        get: operations["latest_apk_api_v1_app_bundles__app__apk_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/app-bundles/{app}/latest": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Latest Web Bundle
-         * @description Newest active web bundle this installed APK can run, or {"update": false}.
-         */
-        get: operations["latest_web_bundle_api_v1_app_bundles__app__latest_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/app-bundles/{app}/next-version": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Next Web Version
-         * @description CI asks which number the web update it is about to build will get (release key required).
-         *
-         *     The number is the next step of the web counter of the newest published Android app, so every
-         *     push gets the next number by itself and a new APK starts the counter again.
-         */
-        get: operations["next_web_version_api_v1_app_bundles__app__next_version_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/app-bundles/{app}/version": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Latest Version Public
-         * @description Unauthenticated version-policy summary for pre-login update checks.
-         *
-         *     Returns the minimum supported version, whether the caller is blocked, and whether
-         *     any release records exist. Download URLs are not included; use /apk or /latest for those.
-         *     Safe to call before the user authenticates — rate-limited, no credentials required.
-         */
-        get: operations["latest_version_public_api_v1_app_bundles__app__version_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/auth/accept-invite": {
         parameters: {
             query?: never;
@@ -3464,26 +2985,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/field/app/apk": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * App Apk Download
-         * @description Short-lived signed URL for the latest APK. Expires in 10 minutes.
-         */
-        get: operations["app_apk_download_api_v1_field_app_apk_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/field/app/version": {
         parameters: {
             query?: never;
@@ -3515,180 +3016,6 @@ export interface paths {
         get: operations["field_audit_api_v1_field_audit_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/field/care-forms": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Documents */
-        get: operations["list_documents_api_v1_field_care_forms_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/field/care-forms/bootstrap": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Bootstrap */
-        get: operations["bootstrap_api_v1_field_care_forms_bootstrap_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/field/care-forms/drafts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Save Draft */
-        put: operations["save_draft_api_v1_field_care_forms_drafts_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/field/care-forms/me/registration": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** My Registration */
-        get: operations["my_registration_api_v1_field_care_forms_me_registration_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Update My Registration */
-        patch: operations["update_my_registration_api_v1_field_care_forms_me_registration_patch"];
-        trace?: never;
-    };
-    "/api/v1/field/care-forms/submit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Submit
-         * @description Offline-safe: the app queues one op that saves the draft and applies whichever signatures were captured.
-         */
-        post: operations["submit_api_v1_field_care_forms_submit_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/field/care-forms/trackers/{client_id}/week": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Tracker Week */
-        get: operations["tracker_week_api_v1_field_care_forms_trackers__client_id__week_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/field/care-forms/{instance_id}/countersign": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Countersign */
-        post: operations["countersign_api_v1_field_care_forms__instance_id__countersign_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/field/care-forms/{instance_id}/pdf": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Pdf */
-        get: operations["get_pdf_api_v1_field_care_forms__instance_id__pdf_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/field/care-forms/{instance_id}/resend": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Resend */
-        post: operations["resend_api_v1_field_care_forms__instance_id__resend_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/field/care-forms/{instance_id}/signatures": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Client Sign */
-        post: operations["client_sign_api_v1_field_care_forms__instance_id__signatures_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3834,33 +3161,6 @@ export interface paths {
         put?: never;
         /** Mark Inbox Read */
         post: operations["mark_inbox_read_api_v1_field_inbox__notification_id__read_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/field/mail/delivery-log": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Field Mail Delivery Log
-         * @description Return recent outbound mail delivery events for the authenticated nurse.
-         *
-         *     Covers messages where the nurse's staff email address (or the mailbox address
-         *     linked to their account) appears as an outbox sender.  Uses the mail DB pool
-         *     so it stays read-only and isolated from the main database.
-         *
-         *     Returns a lightweight summary: recipient, subject, delivery status, timestamp and
-         *     any provider error.  Full message bodies are not included.
-         */
-        get: operations["field_mail_delivery_log_api_v1_field_mail_delivery_log_get"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4233,41 +3533,6 @@ export interface paths {
         };
         /** Health */
         get: operations["health_api_v1_health_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/mail/admin/client-policy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Client Policy */
-        get: operations["get_client_policy_api_v1_mail_admin_client_policy_get"];
-        /** Put Client Policy */
-        put: operations["put_client_policy_api_v1_mail_admin_client_policy_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/mail/admin/client-traffic": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Client Traffic */
-        get: operations["get_client_traffic_api_v1_mail_admin_client_traffic_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5066,7 +4331,7 @@ export interface paths {
          * @description Open shared mailboxes with their assigned members, for the shared-mailbox admin screen.
          *
          *     Members carry the person's current name and email, and `missing: true` when that user no
-         *     longer exists, so the screen never shows a bare id it cannot act on. Read-only, so no TOTP.
+         *     longer exists, so the screen never shows a bare id it cannot act on.
          */
         get: operations["list_shared_api_v1_mail_shared_get"];
         put?: never;
@@ -5226,29 +4491,6 @@ export interface paths {
         put?: never;
         /** Totp Verify */
         post: operations["totp_verify_api_v1_mail_totp_verify_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/mail/unread": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Unread
-         * @description Total unread for the sidebar badge. Reads MongoDB only, so polling it never wakes Neon.
-         *
-         *     The first call for a person (or one that finds MongoDB unreadable) counts in Postgres once
-         *     and stores the result; every later call is Mongo only.
-         */
-        get: operations["unread_api_v1_mail_unread_get"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6016,22 +5258,10 @@ export interface components {
              * @default true
              */
             active: boolean;
-            /** Apk Key */
-            apk_key?: string | null;
-            /**
-             * App
-             * @default nurse
-             * @enum {string}
-             */
-            app: "nurse" | "admin";
-            /** Bundle Key */
-            bundle_key?: string | null;
             /** Download Path */
             download_path?: string | null;
             /** Id */
             id: string;
-            /** Min Native Version Code */
-            min_native_version_code?: number | null;
             /** Min Supported Version */
             min_supported_version: string;
             /**
@@ -6044,14 +5274,8 @@ export interface components {
              * @default
              */
             release_notes: string;
-            /** Sha256 */
-            sha256?: string | null;
-            /** Size Bytes */
-            size_bytes?: number | null;
             /** Version */
             version: string;
-            /** Version Code */
-            version_code?: number | null;
         };
         /** ApplicationDetail */
         ApplicationDetail: {
@@ -6433,34 +5657,6 @@ export interface components {
              */
             website: string;
         };
-        /** BuildBatch */
-        BuildBatch: {
-            /** Items */
-            items: components["schemas"]["BuildItem"][];
-        };
-        /** BuildItem */
-        BuildItem: {
-            /** Target */
-            target: string;
-            /**
-             * Version
-             * @default
-             */
-            version: string;
-        };
-        /** BuildStart */
-        BuildStart: {
-            /**
-             * Target
-             * @enum {string}
-             */
-            target: "nurse-apk" | "admin-apk" | "nurse-web" | "admin-web";
-            /**
-             * Version
-             * @default
-             */
-            version: string;
-        };
         /** CareRecipientIn */
         CareRecipientIn: {
             /**
@@ -6494,24 +5690,6 @@ export interface components {
             /** Version */
             version: string;
         };
-        /** ClientDaysBody */
-        ClientDaysBody: {
-            /**
-             * Back To Today
-             * @default false
-             */
-            back_to_today: boolean;
-            /**
-             * Days
-             * @default 0
-             */
-            days: number;
-        };
-        /** ClientEnableBody */
-        ClientEnableBody: {
-            /** Patient Type */
-            patient_type?: ("General" | "Mama" | "Baby") | null;
-        };
         /** ClientErrorPayload */
         ClientErrorPayload: {
             /** Message */
@@ -6535,8 +5713,6 @@ export interface components {
         };
         /** ClientIn */
         ClientIn: {
-            /** Agreement Id */
-            agreement_id?: string | null;
             /** Assigned Nurse Ids */
             assigned_nurse_ids?: string[];
             /** Display Name */
@@ -6549,12 +5725,6 @@ export interface components {
              */
             notes_for_nurse: string;
             /**
-             * Patient Type
-             * @default General
-             * @enum {string}
-             */
-            patient_type: "Mama" | "Baby" | "General";
-            /**
              * Photo Allowed
              * @default false
              */
@@ -6565,95 +5735,6 @@ export interface components {
             photo_required?: string | null;
             /** Supervisor Id */
             supervisor_id?: string | null;
-        };
-        /** ClientLocationBody */
-        ClientLocationBody: {
-            /** Lat */
-            lat: number;
-            /** Lng */
-            lng: number;
-            /**
-             * Radius M
-             * @default 150
-             */
-            radius_m: number;
-        };
-        /**
-         * ClientPolicyBody
-         * @description Only the fields sent are changed.
-         */
-        ClientPolicyBody: {
-            /** Block Unversioned */
-            block_unversioned?: boolean | null;
-            /** Blocked User Ids */
-            blocked_user_ids?: string[] | null;
-            /** Legacy Min Interval Seconds */
-            legacy_min_interval_seconds?: number | null;
-            /** Min Build */
-            min_build?: number | null;
-        };
-        /** ClientScenarioBody */
-        ClientScenarioBody: {
-            /** Name */
-            name: string;
-        };
-        /** ClientSignIn */
-        ClientSignIn: {
-            /** Detail */
-            detail?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Esign Consent
-             * @default false
-             */
-            esign_consent: boolean;
-            /** Evidence */
-            evidence?: {
-                [key: string]: unknown;
-            };
-            /** Image */
-            image?: string | null;
-            /** Method */
-            method: string;
-            /** Name */
-            name: string;
-            /** Role */
-            role: string;
-            /** Signer Email */
-            signer_email?: string | null;
-        };
-        /** ClientTypeBody */
-        ClientTypeBody: {
-            /**
-             * Patient Type
-             * @enum {string}
-             */
-            patient_type: "General" | "Mama" | "Baby";
-        };
-        /** ClientVisitBody */
-        ClientVisitBody: {
-            /**
-             * At
-             * @default 09:00
-             */
-            at: string;
-            /**
-             * Day
-             * @default 0
-             */
-            day: number;
-            /**
-             * Length
-             * @default 60
-             */
-            length: number;
-            /**
-             * State
-             * @default scheduled
-             * @enum {string}
-             */
-            state: "scheduled" | "in_progress" | "completed" | "overdue_checkout";
         };
         /** ConfigBody */
         ConfigBody: {
@@ -6839,19 +5920,6 @@ export interface components {
         Done: {
             /** Status */
             status: string;
-        };
-        /** DraftIn */
-        DraftIn: {
-            /** Client Id */
-            client_id: string;
-            /** Data */
-            data?: {
-                [key: string]: unknown;
-            };
-            /** Form Id */
-            form_id: string;
-            /** Visit Id */
-            visit_id?: string | null;
         };
         /** EnquiriesPerDay */
         EnquiriesPerDay: {
@@ -7852,16 +6920,6 @@ export interface components {
             supervisor_id?: string | null;
             /** Team Id */
             team_id?: string | null;
-            /** Unmc Category */
-            unmc_category?: string | null;
-            /** Unmc Licence Expiry */
-            unmc_licence_expiry?: string | null;
-            /** Unmc Number */
-            unmc_number?: string | null;
-            /** Unmc Verified At */
-            unmc_verified_at?: string | null;
-            /** Unmc Verified By */
-            unmc_verified_by?: string | null;
             /** User Id */
             user_id: string;
         };
@@ -7952,40 +7010,8 @@ export interface components {
             supervisor_name?: string | null;
             /** Team Id */
             team_id: string | null;
-            /** Unmc Category */
-            unmc_category?: string | null;
-            /** Unmc Licence Expiry */
-            unmc_licence_expiry?: string | null;
-            /** Unmc Number */
-            unmc_number?: string | null;
-            /** Unmc Verified At */
-            unmc_verified_at?: string | null;
-            /** Unmc Verified By */
-            unmc_verified_by?: string | null;
             /** User Id */
             user_id: string;
-        };
-        /** NurseSignIn */
-        NurseSignIn: {
-            /** Evidence */
-            evidence?: {
-                [key: string]: unknown;
-            };
-            /** Image */
-            image?: string | null;
-            /** Method */
-            method: string;
-        };
-        /** OrderIn */
-        OrderIn: {
-            /** Client Id */
-            client_id: string;
-            /** Nurse Id */
-            nurse_id: string;
-            /** Order */
-            order?: {
-                [key: string]: string;
-            };
         };
         /** OtpRequest */
         OtpRequest: {
@@ -8471,15 +7497,6 @@ export interface components {
         ReasonIn: {
             /** Reason */
             reason: string;
-        };
-        /** RegistrationIn */
-        RegistrationIn: {
-            /** Unmc Category */
-            unmc_category?: string | null;
-            /** Unmc Licence Expiry */
-            unmc_licence_expiry?: string | null;
-            /** Unmc Number */
-            unmc_number?: string | null;
         };
         /** ReportsSummary */
         ReportsSummary: {
@@ -8988,23 +8005,6 @@ export interface components {
              * Format: date
              */
             starts_on: string;
-        };
-        /** SubmitIn */
-        SubmitIn: {
-            /** Client Id */
-            client_id: string;
-            client_signature?: components["schemas"]["ClientSignIn"] | null;
-            /** Data */
-            data?: {
-                [key: string]: unknown;
-            };
-            /** Form Id */
-            form_id: string;
-            nurse_signature?: components["schemas"]["NurseSignIn"] | null;
-            /** Op Id */
-            op_id: string;
-            /** Visit Id */
-            visit_id?: string | null;
         };
         /** SupervisorPatch */
         SupervisorPatch: {
@@ -10714,143 +9714,6 @@ export interface operations {
             };
         };
     };
-    list_builds_api_v1_admin_app_releases_builds_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    start_build_api_v1_admin_app_releases_builds_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BuildStart"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    start_builds_api_v1_admin_app_releases_builds_batch_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BuildBatch"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    build_versions_api_v1_admin_app_releases_builds_versions_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    release_preflight_api_v1_admin_app_releases_preflight_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: {
-                mail_totp?: string | null;
-            };
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     admin_list_api_v1_admin_applications_get: {
         parameters: {
             query?: {
@@ -11341,39 +10204,6 @@ export interface operations {
             };
         };
     };
-    list_deletions_api_v1_admin_billing_deletions_get: {
-        parameters: {
-            query?: {
-                include_test?: boolean;
-                page?: number;
-                page_size?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_invoices_api_v1_admin_billing_invoices_get: {
         parameters: {
             query?: {
@@ -11516,43 +10346,6 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["InvoiceIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_issued_invoice_api_v1_admin_billing_invoices__invoice_id__delete_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                invoice_id: string;
-            };
-            cookie?: {
-                mail_totp?: string | null;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VoidIn"];
             };
         };
         responses: {
@@ -11844,43 +10637,6 @@ export interface operations {
             };
         };
     };
-    delete_receipt_api_v1_admin_billing_payments__payment_id__delete_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                payment_id: string;
-            };
-            cookie?: {
-                mail_totp?: string | null;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VoidIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     email_payment_api_v1_admin_billing_payments__payment_id__email_post: {
         parameters: {
             query?: never;
@@ -12090,132 +10846,6 @@ export interface operations {
                 "application/json": components["schemas"]["NoteBody"];
             };
         };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    admin_list_api_v1_admin_care_care_forms_get: {
-        parameters: {
-            query: {
-                client_id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    set_order_api_v1_admin_care_care_forms_08_orders_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["OrderIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    copy_log_api_v1_admin_care_care_forms_copy_log_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    admin_care_form_pdf_api_v1_admin_care_care_forms__instance_id__pdf_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                instance_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -13226,37 +11856,6 @@ export interface operations {
             };
         };
     };
-    verify_unmc_api_v1_admin_care_nurses__user_id__unmc_verify_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     ops_status_api_v1_admin_care_ops_status_get: {
         parameters: {
             query?: never;
@@ -13782,26 +12381,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    switch_to_nurse_app_api_v1_admin_care_switch_app_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
                 };
             };
         };
@@ -15938,278 +14517,6 @@ export interface operations {
             };
         };
     };
-    client_checks_api_v1_admin_test_accounts_client_checks_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: {
-                mail_totp?: string | null;
-            };
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    client_days_api_v1_admin_test_accounts_client_days_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: {
-                mail_totp?: string | null;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ClientDaysBody"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    client_disable_api_v1_admin_test_accounts_client_disable_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: {
-                mail_totp?: string | null;
-            };
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    client_enable_api_v1_admin_test_accounts_client_enable_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: {
-                mail_totp?: string | null;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ClientEnableBody"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    client_location_api_v1_admin_test_accounts_client_location_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: {
-                mail_totp?: string | null;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ClientLocationBody"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    client_scenario_api_v1_admin_test_accounts_client_scenario_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: {
-                mail_totp?: string | null;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ClientScenarioBody"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    client_type_api_v1_admin_test_accounts_client_type_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: {
-                mail_totp?: string | null;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ClientTypeBody"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    client_add_visit_api_v1_admin_test_accounts_client_visits_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: {
-                mail_totp?: string | null;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ClientVisitBody"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     update_config_api_v1_admin_test_accounts_config_put: {
         parameters: {
             query?: never;
@@ -16842,175 +15149,6 @@ export interface operations {
             };
         };
     };
-    publish_release_with_key_api_v1_app_bundles_releases_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Release-Key"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AppReleaseCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    latest_apk_api_v1_app_bundles__app__apk_get: {
-        parameters: {
-            query: {
-                current: string;
-            };
-            header?: never;
-            path: {
-                app: "nurse" | "admin";
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    latest_web_bundle_api_v1_app_bundles__app__latest_get: {
-        parameters: {
-            query: {
-                native_code: number;
-                current: string;
-            };
-            header?: never;
-            path: {
-                app: "nurse" | "admin";
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    next_web_version_api_v1_app_bundles__app__next_version_get: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Release-Key"?: string | null;
-            };
-            path: {
-                app: "nurse" | "admin";
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    latest_version_public_api_v1_app_bundles__app__version_get: {
-        parameters: {
-            query: {
-                current: string;
-                platform?: string;
-            };
-            header?: never;
-            path: {
-                app: "nurse" | "admin";
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     accept_invite_api_v1_auth_accept_invite_post: {
         parameters: {
             query?: never;
@@ -17365,37 +15503,6 @@ export interface operations {
             };
         };
     };
-    app_apk_download_api_v1_field_app_apk_get: {
-        parameters: {
-            query?: {
-                platform?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     app_version_api_v1_field_app_version_get: {
         parameters: {
             query?: {
@@ -17440,341 +15547,6 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_documents_api_v1_field_care_forms_get: {
-        parameters: {
-            query?: {
-                client_id?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    bootstrap_api_v1_field_care_forms_bootstrap_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    save_draft_api_v1_field_care_forms_drafts_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DraftIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    my_registration_api_v1_field_care_forms_me_registration_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    update_my_registration_api_v1_field_care_forms_me_registration_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RegistrationIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    submit_api_v1_field_care_forms_submit_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SubmitIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    tracker_week_api_v1_field_care_forms_trackers__client_id__week_get: {
-        parameters: {
-            query: {
-                start: string;
-            };
-            header?: never;
-            path: {
-                client_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    countersign_api_v1_field_care_forms__instance_id__countersign_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                instance_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NurseSignIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_pdf_api_v1_field_care_forms__instance_id__pdf_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                instance_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    resend_api_v1_field_care_forms__instance_id__resend_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                instance_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    client_sign_api_v1_field_care_forms__instance_id__signatures_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                instance_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ClientSignIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18018,37 +15790,6 @@ export interface operations {
             path: {
                 notification_id: string;
             };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    field_mail_delivery_log_api_v1_field_mail_delivery_log_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -18687,81 +16428,6 @@ export interface operations {
         };
     };
     health_api_v1_health_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    get_client_policy_api_v1_mail_admin_client_policy_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    put_client_policy_api_v1_mail_admin_client_policy_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: {
-                mail_totp?: string | null;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ClientPolicyBody"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_client_traffic_api_v1_mail_admin_client_traffic_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -20346,7 +18012,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -20357,6 +18025,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -20504,7 +18181,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                mail_totp?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -20515,6 +18194,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -20886,26 +18574,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    unread_api_v1_mail_unread_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
                 };
             };
         };

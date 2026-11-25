@@ -66,7 +66,6 @@ export async function flushWrites(qc: QueryClient): Promise<void> {
     for (const r of rows) {
       try {
         const call = (apiClient as unknown as Record<string, (p: string, b?: unknown) => Promise<unknown>>)[r.method.toLowerCase()];
-        if (!call) { await store.ops.update(r.id!, { state: 'failed', error: 'Unsupported method' }); continue; }
         await call(r.path, r.body); await store.ops.delete(r.id!); sent = true;
       } catch (error) {
         const code = error instanceof ApiError ? error.status : 0;
@@ -81,8 +80,7 @@ export async function flushWrites(qc: QueryClient): Promise<void> {
 export function installWriteQueue(qc: QueryClient): void {
   setOfflineWriteHook(async (method, path, body, reason) => {
     const rule = RULES.find((r) => r.method === method && r.re.test(path));
-    if (flushing || (rule && reason === 'network' && !rule.net)) return false; // never re-queue a write the flush is sending
-    const owner = authStore.getUserSnapshot()?.id; const store = open();
+    if (flushing || (rule && reason === 'network' && !rule.net)) return false; // never re-queue a write the flush is sending const owner = authStore.getUserSnapshot()?.id; const store = open();
     if (!rule || !owner || !store) return false;
     try { await store.ops.add({ userId: owner, method, path, body, createdAt: Date.now(), state: 'queued' }); } catch { return false; }
     const id = path.match(rule.re)?.[1]; if (rule.local && id) rule.local(qc, id, body);

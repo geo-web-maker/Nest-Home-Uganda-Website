@@ -78,10 +78,19 @@ test('hardens the application element', () => {
   assert.match(merged, /android:networkSecurityConfig="@xml\/network_security_config"/);
 });
 
-test('background location is never requested', () => {
+test('background location permission is never requested; only the visit timer service may run in the background', () => {
   const overrides = fs.readFileSync(path.join(realOverrides, 'AndroidManifest.xml'), 'utf8');
   assert.doesNotMatch(overrides, /ACCESS_BACKGROUND_LOCATION/);
-  assert.doesNotMatch(overrides, /FOREGROUND_SERVICE/);
+  // The visit timer is a foreground service of type location, started while the app is open.
+  assert.match(overrides, /android\.permission\.FOREGROUND_SERVICE"/);
+  assert.match(overrides, /android\.permission\.FOREGROUND_SERVICE_LOCATION"/);
+});
+
+test('the visit tracker service is declared as a location foreground service, once', async () => {
+  const { addTrackerService } = await import('../lib/webBundleAndroid.mjs');
+  const once = addTrackerService('<manifest><application></application></manifest>');
+  assert.match(once, /<service android:name="\.VisitTrackerService"[^>]*foregroundServiceType="location"/);
+  assert.equal(addTrackerService(once), once);
 });
 
 test('copies the network config, writes the notification icon and stamps the version', () => {

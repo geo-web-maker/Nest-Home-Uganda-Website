@@ -1,8 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { clearRefreshToken, readRefreshToken, saveRefreshToken } from '../../platform/secureTokenStorage';
 import { BUILD_HEADER, CLIENT_BUILD, markUpgradeRequired } from '../clientBuild';
-import { WEB_CSRF_KEY, clearStoredWebCredential, hasStoredWebCredential, saveWebCredential } from './webCredential';
-export { WEB_CSRF_KEY, hasStoredWebCredential };
 const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 
 /** Resolve short-lived API asset paths against the configured API origin (including native builds). */
@@ -21,31 +19,8 @@ function assertApiConfigured(): void {
   }
 }
 
-/** Browser (PWA) restore: exchange the HttpOnly refresh cookie for a new access token, using the stored CSRF twin. */
-async function restoreWebSession(): Promise<string | null> {
-  const csrf = localStorage.getItem(WEB_CSRF_KEY);
-  if (!csrf) return null;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15_000);
-  let response: Response;
-  try {
-    response = await fetch(`${apiBase}/api/v1/auth/refresh`, {
-      method: 'POST',
-      headers: { 'X-CSRF-Token': csrf },
-      credentials: apiBase ? 'include' : 'same-origin',
-      signal: controller.signal,
-    });
-  } finally { clearTimeout(timer); }
-  if (response.status === 401 || response.status === 403) { clearStoredWebCredential(); return null; }
-  if (!response.ok) throw new Error(`Session restore failed (${response.status})`);
-  const refreshed = await response.json() as { access_token?: string; csrf_token?: string };
-  if (!refreshed.access_token) throw new Error('Session restore returned an incomplete token response.');
-  sessionStorage.setItem('nurse_access_token', refreshed.access_token);
-  if (refreshed.csrf_token) saveWebCredential(refreshed.csrf_token);
-  return refreshed.access_token;
-}
 export async function restoreNativeSession(): Promise<string | null> {
-  if (!Capacitor.isNativePlatform()) return restoreWebSession();
+  if (!Capacitor.isNativePlatform()) return null;
   const refreshToken = await readRefreshToken();
   if (!refreshToken) return null;
   // A dead or captive network must not hang the restore forever: callers treat a thrown error as "offline, try later".
