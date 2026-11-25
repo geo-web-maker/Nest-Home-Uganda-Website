@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Icon } from './Icon';
 type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'size'> & {
@@ -6,8 +7,11 @@ type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'size'> & {
   size?: 'default' | 'sm' | 'full';
   showArrow?: boolean;
 };
-export function PillButton({ children, tone = 'gold', size = 'default', showArrow = true, className = '', ...props }: Props) {
-  return <button className={`mk-btn mk-btn--${tone}${size === 'default' ? '' : ` mk-btn--${size}`}${showArrow ? '' : ' mk-btn--plain'}${className ? ` ${className}` : ''}`} {...props}>
+export const PillButton = forwardRef<HTMLButtonElement, Props>(function PillButton(
+  { children, tone = 'gold', size = 'default', showArrow = true, className = '', ...props },
+  ref,
+) {
+  return <button ref={ref} className={`mk-btn mk-btn--${tone}${size === 'default' ? '' : ` mk-btn--${size}`}${showArrow ? '' : ' mk-btn--plain'}${className ? ` ${className}` : ''}`} {...props}>
     <span>{children}</span>{showArrow && <i aria-hidden="true"><Icon name="arrow" size={17} /></i>}
   </button>;
-}
+});

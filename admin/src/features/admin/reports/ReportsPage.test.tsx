@@ -5,7 +5,7 @@ import { apiClient } from '@shared/lib/api/client';
 import { useAuth } from '../auth/useAuth';
 import { ReportsPage } from './ReportsPage';
 
-vi.mock('../../../lib/api/client', () => ({ apiClient: { get: vi.fn() } }));
+vi.mock('@shared/lib/api/client', () => ({ apiClient: { get: vi.fn() } }));
 vi.mock('../auth/useAuth', () => ({ useAuth: vi.fn() }));
 
 function signIn(scopes: string[]) {

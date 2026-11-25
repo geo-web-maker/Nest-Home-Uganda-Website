@@ -9,6 +9,7 @@ import { Notice } from '@shared/components/dialogs/Notice';
 import { DataTable } from '../../../components/admin/DataTable';
 import { Modal } from '@shared/components/dialogs/Modal';
 import { Button } from '@shared/components/ui/Button';
+import { Checkbox } from '@shared/components/ui/Checkbox';
 import { Field } from '@shared/components/ui/Field';
 import { TotpGate } from '@shared/components/security/TotpGate';
 import { apiClient } from '@shared/lib/api/client';
@@ -653,17 +654,15 @@ export function BillingPage() {
             }}
           />
         </>
-        <label className={styles.practiceFilter}>
-          <input
-            type="checkbox"
-            checked={includeTest}
-            onChange={(event) => {
-              setIncludeTest(event.target.checked);
-              setPage(1);
-            }}
-          />
-          {t('billing.includePractice')}
-        </label>
+        <Checkbox
+          className={styles.practiceFilter}
+          checked={includeTest}
+          onChange={(event) => {
+            setIncludeTest(event.target.checked);
+            setPage(1);
+          }}
+          label={t('billing.includePractice')}
+        />
       </FilterBar>
       <div className={styles.list}>
         {receiptsView ? (
@@ -778,7 +777,7 @@ export function BillingPage() {
             rows={rows}
             getRowKey={(row) => row.id}
             id="billing-record-list"
-            getRowHref={(row) => `/admin/billing?invoice=${row.id}`}
+            getRowHref={(row) => `/billing?invoice=${row.id}`}
             loading={loading}
             labels={{
               caption: t('billing.tableCaption'),
@@ -889,14 +888,12 @@ export function BillingPage() {
               {agreementNote} {t('billing.agreementHelp')}
             </p>
           ) : null}
-          <label className={styles.practiceFilter}>
-            <input
-              type="checkbox"
-              checked={isTest}
-              onChange={(event) => setIsTest(event.target.checked)}
-            />
-            {t('billing.practiceDocument')}
-          </label>
+          <Checkbox
+            className={styles.practiceFilter}
+            checked={isTest}
+            onChange={(event) => setIsTest(event.target.checked)}
+            label={t('billing.practiceDocument')}
+          />
           <h3>{t('billing.items')}</h3>
           {items.map((item, index) => (
             <div className={styles.itemRow} key={index}>
@@ -1187,21 +1184,20 @@ export function BillingPage() {
               value={paymentAmount}
               onChange={(event) => setPaymentAmount(event.target.value)}
             />
-            <label>
-              {t('billing.paymentMethod')}
-              <select
-                value={paymentMethod}
-                onChange={(event) => setPaymentMethod(event.target.value)}
-              >
-                {['mtn_momo', 'airtel_money', 'bank_transfer', 'cash', 'cheque', 'other'].map(
-                  (m) => (
-                    <option key={m} value={m}>
-                      {t(`billing.methods.${m}`)}
-                    </option>
-                  ),
-                )}
-              </select>
-            </label>
+            <Field
+              kind="select"
+              label={t('billing.paymentMethod')}
+              value={paymentMethod}
+              onChange={(event) => setPaymentMethod(event.target.value)}
+            >
+              {['mtn_momo', 'airtel_money', 'bank_transfer', 'cash', 'cheque', 'other'].map(
+                (m) => (
+                  <option key={m} value={m}>
+                    {t(`billing.methods.${m}`)}
+                  </option>
+                ),
+              )}
+            </Field>
             {paymentMethod !== 'cash' ? (
               <Field
                 label={t('billing.payerReference')}

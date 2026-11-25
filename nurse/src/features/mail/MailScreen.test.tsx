@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiRequest } from '../../lib/api/client';
 import { nurseDb } from '../../offline/db';
+import { MemoryRouter } from 'react-router-dom';
 import { MailScreen } from './MailScreen';
 import { destroyMailKey } from './mailCrypto';
 import { ensureWebCrypto } from './testSupport';
@@ -39,8 +40,12 @@ beforeAll(ensureWebCrypto);
 beforeEach(() => { vi.clearAllMocks(); sendFails = null; setOnline(true); localStorage.setItem('nest.nurse.cache-user-id', 'u1'); api(); });
 afterEach(async () => { vi.unstubAllGlobals(); cleanup(); await nurseDb.meta.clear(); await destroyMailKey(); localStorage.clear(); });
 
+function renderMailScreen() {
+  return render(<MemoryRouter><MailScreen /></MemoryRouter>);
+}
+
 async function openCompose() {
-  render(<MailScreen />);
+  renderMailScreen();
   await screen.findByText('Rota change');
   fireEvent.click(button('Compose'));
   return screen.findByRole('dialog', { name: 'Compose' });
@@ -59,7 +64,7 @@ const sendNow = async (dialog: HTMLElement) => {
 
 describe('nurse MailScreen', () => {
   it('uses the shared screen heading and lists the inbox with an unread flag', async () => {
-    render(<MailScreen />);
+    renderMailScreen();
     expect(await screen.findByRole('heading', { level: 2, name: 'Mail' })).toBeInTheDocument();
     expect(await screen.findByText('Rota change')).toBeInTheDocument();
     expect(screen.getByText('Unread')).toBeInTheDocument();
@@ -67,7 +72,7 @@ describe('nurse MailScreen', () => {
   });
 
   it('opens a message, warns about an external sender, marks it read and lists attachments', async () => {
-    render(<MailScreen />);
+    renderMailScreen();
     fireEvent.click(await screen.findByRole('button', { name: /Rota change/ }));
     expect(await screen.findByText(/came from an external address/)).toBeInTheDocument();
     expect(await screen.findByText('rota.pdf')).toBeInTheDocument();
@@ -78,7 +83,7 @@ describe('nurse MailScreen', () => {
 
   it('downloads an attachment through a fresh link', async () => {
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
-    render(<MailScreen />);
+    renderMailScreen();
     fireEvent.click(await screen.findByRole('button', { name: /Rota change/ }));
     await screen.findByText('rota.pdf');
     fireEvent.click(button('Download'));
@@ -87,7 +92,7 @@ describe('nurse MailScreen', () => {
   });
 
   it('stars, and moves to trash, through PATCH', async () => {
-    render(<MailScreen />);
+    renderMailScreen();
     fireEvent.click(await screen.findByRole('button', { name: /Rota change/ }));
     await screen.findByText('rota.pdf');
     fireEvent.click(button('Star'));
@@ -98,7 +103,7 @@ describe('nurse MailScreen', () => {
   });
 
   it('reports an external message as spam through the report-spam route', async () => {
-    render(<MailScreen />);
+    renderMailScreen();
     fireEvent.click(await screen.findByRole('button', { name: /Rota change/ }));
     await screen.findByText('rota.pdf');
     fireEvent.click(button('More options'));
@@ -107,7 +112,7 @@ describe('nurse MailScreen', () => {
   });
 
   it('replies with recipient, subject and thread link filled in, and sends through one server draft', async () => {
-    render(<MailScreen />);
+    renderMailScreen();
     fireEvent.click(await screen.findByRole('button', { name: /Rota change/ }));
     await screen.findByText('rota.pdf');
     fireEvent.click(button('Reply'));
@@ -200,7 +205,7 @@ describe('nurse MailScreen', () => {
 
   it('discards a draft and deletes its server copy', async () => {
     await putDraft({ id: 'd1', ownerId: 'u1', mailboxId: 'b1', to: ['sam@mail.test'], subject: 'Old', body: 'x', state: 'failed', serverDraftId: 'srv-9', savedAt: '2026-10-31T09:00:00Z' });
-    render(<MailScreen />);
+    renderMailScreen();
     fireEvent.click(await screen.findByRole('button', { name: 'Discard' }));
     await waitFor(() => expect(calls().some(([p, i]) => p === '/mail/drafts/srv-9' && i?.method === 'DELETE')).toBe(true));
     await waitFor(async () => expect(await listDrafts('u1')).toHaveLength(0));
@@ -208,14 +213,14 @@ describe('nurse MailScreen', () => {
 
   it("does not show another person's drafts", async () => {
     await putDraft({ id: 'd2', ownerId: 'someone-else', mailboxId: 'b9', to: ['x@mail.test'], subject: 'Private', body: 'x', state: 'queued', savedAt: '2026-10-31T09:00:00Z' });
-    render(<MailScreen />);
+    renderMailScreen();
     await screen.findByText('Rota change');
     expect(screen.queryByText('Private')).toBeNull();
     expect(posted('/mail/drafts')).toHaveLength(0);
   });
 
   it('offline: shows the saved messages with a warning and disables actions that need the server', async () => {
-    render(<MailScreen />);
+    renderMailScreen();
     fireEvent.click(await screen.findByRole('button', { name: /Rota change/ }));
     await screen.findByText('rota.pdf');
     setOnline(false);
@@ -229,7 +234,7 @@ describe('nurse MailScreen', () => {
 
   it('says what to do when there is no mailbox', async () => {
     vi.mocked(apiRequest).mockImplementation((async (path: string) => (path === '/mail/mailboxes' ? { items: [] } : {})) as typeof apiRequest);
-    render(<MailScreen />);
+    renderMailScreen();
     expect(await screen.findByText(/do not have a mailbox yet/)).toBeInTheDocument();
     expect(button('Compose')).toBeDisabled();
   });
@@ -279,7 +284,7 @@ describe('nurse MailScreen', () => {
   const rowItem = async () => (await screen.findByRole('button', { name: /Rota change/ })).closest('li') as HTMLElement;
 
   it('swipes left to trash and right to star', async () => {
-    render(<MailScreen />);
+    renderMailScreen();
     const row = await rowItem();
     swipe(row, 220, 80);
     await waitFor(() => expect(calls().some(([p, i]) => p === '/mail/messages/m1' && i?.body === '{"folder":"trash"}')).toBe(true));
@@ -288,7 +293,7 @@ describe('nurse MailScreen', () => {
   });
 
   it('ignores a short or mostly vertical swipe', async () => {
-    render(<MailScreen />);
+    renderMailScreen();
     const row = await rowItem();
     swipe(row, 200, 150);
     swipe(row, 200, 90, 120);
@@ -297,7 +302,7 @@ describe('nurse MailScreen', () => {
   });
 
   it('offline: a swipe makes no request and tells the person to connect', async () => {
-    render(<MailScreen />);
+    renderMailScreen();
     const row = await rowItem();
     setOnline(false);
     act(() => { window.dispatchEvent(new Event('offline')); });
@@ -319,7 +324,7 @@ describe('nurse MailScreen', () => {
 
   it('keeps Compose off when no signed-in owner is known, so nothing is ever saved under a blank name', async () => {
     localStorage.removeItem('nest.nurse.cache-user-id');
-    render(<MailScreen />);
+    renderMailScreen();
     await screen.findByText('Rota change');
     expect(button('Compose')).toBeDisabled();
   });

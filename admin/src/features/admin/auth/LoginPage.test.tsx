@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { ApiError } from '@shared/lib/api/client';
 import { LoginPage } from './LoginPage';
 import { useAuth } from './useAuth';
@@ -23,15 +24,17 @@ function setup(
 ) {
   vi.mocked(useAuth).mockReturnValue({ status, user, login: loginFn, logout: vi.fn() });
   return render(
+    <HelmetProvider>
     <MemoryRouter initialEntries={[{ pathname: '/login', state: from ? { from } : null }]}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="" element={<p>admin home</p>} />
+        <Route path="/" element={<p>admin home</p>} />
         <Route path="/careers" element={<p>careers screen</p>} />
         <Route path="/enquiries" element={<p>enquiries screen</p>} />
         <Route path="*" element={<p>elsewhere</p>} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
+    </HelmetProvider>,
   );
 }
 
@@ -101,9 +104,9 @@ describe('LoginPage', () => {
     },
   );
 
-  it('renders nothing while the first session restore is running', () => {
-    const { container } = setup('loading');
-    expect(container).toBeEmptyDOMElement();
+  it('shows a clear loading state while the first session restore is running', () => {
+    setup('loading');
+    expect(screen.getByRole('status')).toHaveTextContent('Checking your session');
   });
 
   it('sends a signed-in user to /admin, or back to the admin page they came from', () => {
@@ -112,13 +115,23 @@ describe('LoginPage', () => {
   });
 
   it('goes back to the admin page the user came from', () => {
-    setup('signedIn', '/enquiries');
+    setup('signedIn', '/enquiries?status=new', login, {
+      id: '1', name: 'A', email: 'a@example.test', scopes: ['enquiries:read'], is_superadmin: false,
+    });
     expect(screen.getByText('enquiries screen')).toBeInTheDocument();
   });
 
-  it('ignores a `from` outside the admin', () => {
+  it('ignores a `from` outside the implemented navigation', () => {
     setup('signedIn', '/somewhere-else');
     expect(screen.getByText('admin home')).toBeInTheDocument();
+  });
+
+  it('does not send a user to an admin screen they cannot access', () => {
+    setup('signedIn', '/enquiries', login, {
+      id: '1', name: 'A', email: 'a@example.test', scopes: ['jobs:read'], is_superadmin: false,
+    });
+    expect(screen.queryByText('enquiries screen')).not.toBeInTheDocument();
+    expect(screen.getByText('careers screen')).toBeInTheDocument();
   });
 
   it('lands on the first reachable screen when there is no `from`', () => {

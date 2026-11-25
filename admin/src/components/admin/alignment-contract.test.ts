@@ -33,8 +33,8 @@ const rel = (file: string) => relative(admin, file).replaceAll('\\', '/');
 const offenders = (files: string[], pattern: RegExp) => files.filter((f) => pattern.test(readFileSync(f, 'utf8'))).map(rel);
 
 describe('button and input alignment contract', () => {
-  const field = read('components', 'ui', 'Field.module.css');
-  const button = read('components', 'ui', 'Button.module.css');
+  const field = read('_shared', 'components', 'ui', 'Field.module.css');
+  const button = read('_shared', 'components', 'ui', 'Button.module.css');
   const bar = read('components', 'admin', 'FilterBar.module.css');
 
   it('lets a container remove the Field gap, which is what pushed buttons below inputs', () => {
@@ -101,8 +101,8 @@ describe('admin pages do not draw their own filter rows', () => {
 });
 
 describe('text sits on one line across an input and the button beside it', () => {
-  const field = read('components', 'ui', 'Field.module.css');
-  const button = read('components', 'ui', 'Button.module.css');
+  const field = read('_shared', 'components', 'ui', 'Field.module.css');
+  const button = read('_shared', 'components', 'ui', 'Button.module.css');
   const careScreen = read('features', 'admin', 'care', 'care-screen.css');
   const schedule = read('features', 'admin', 'care', 'stage30-38.css');
 

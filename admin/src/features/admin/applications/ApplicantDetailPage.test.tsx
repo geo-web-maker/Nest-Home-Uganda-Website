@@ -6,7 +6,7 @@ import { apiClient } from '@shared/lib/api/client';
 import { useAuth } from '../auth/useAuth';
 import { ApplicantDetailPage } from './ApplicantDetailPage';
 
-vi.mock('../../../lib/api/client', () => ({
+vi.mock('@shared/lib/api/client', () => ({
   apiClient: { get: vi.fn(), patch: vi.fn(), post: vi.fn() },
 }));
 vi.mock('../auth/useAuth', () => ({ useAuth: vi.fn() }));

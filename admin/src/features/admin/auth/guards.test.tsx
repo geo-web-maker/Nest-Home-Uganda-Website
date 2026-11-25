@@ -15,10 +15,10 @@ function LoginProbe() {
 
 function setup(
   path: string,
-  auth: { status: 'loading' | 'signedIn' | 'signedOut'; scopes?: string[]; superadmin?: boolean },
+  auth: { status: 'loading' | 'signedIn' | 'signedOut'; scopes?: string[]; superadmin?: boolean; missingUser?: boolean },
 ) {
   const user =
-    auth.status === 'signedIn'
+    auth.status === 'signedIn' && !auth.missingUser
       ? {
           id: '1',
           name: 'Ada',
@@ -39,7 +39,7 @@ function setup(
         <Routes>
           <Route path="/login" element={<LoginProbe />} />
           <Route element={<RequireAuth />}>
-            <Route path="" element={<p>dashboard</p>} />
+            <Route index element={<RequireScopes scopes={scopesFor('/')}><p>dashboard</p></RequireScopes>} />
             <Route element={<RequireScopes scopes={scopesFor('/enquiries')} />}>
               <Route path="/enquiries" element={<p>enquiries</p>} />
               <Route path="/enquiries/:id" element={<p>enquiry detail</p>} />
@@ -57,16 +57,16 @@ function setup(
 describe('route guards', () => {
   it('sends a signed-out visitor to login and remembers the page', () => {
     setup('/enquiries?status=new', { status: 'signedOut' });
-    expect(screen.getByText('login, from /admin/enquiries?status=new')).toBeInTheDocument();
+    expect(screen.getByText('login, from /enquiries?status=new')).toBeInTheDocument();
   });
 
   it('shows a loading message while the session is being restored', () => {
     setup('', { status: 'loading' });
-    expect(screen.getByRole('status')).toHaveTextContent('Loading…');
+    expect(screen.getByRole('status')).toHaveTextContent('Opening your workspace');
   });
 
   it('shows the plain no-access page with the business phone when no screen is reachable', () => {
-    setup('', { status: 'signedIn', scopes: ['enquiries:write'] });
+    setup('/', { status: 'signedIn', missingUser: true });
     expect(
       screen.getByRole('heading', { name: 'No access has been granted to this account' }),
     ).toBeInTheDocument();

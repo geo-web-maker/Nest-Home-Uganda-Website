@@ -48,6 +48,7 @@ function isApiArgument(root, file, sourceText) {
     }
   }
   if (/features\/admin\/users\/UsersPage\.test\.tsx$/.test(file)) return true; // Mocked apiClient paths and assertions.
+  if (/features\/admin\/billing\/downloadOptions\.test\.tsx?$/.test(file)) return true; // API URL fixtures and assertions for billing document downloads.
   if (/features\/admin\/(?:GovernancePages|activity\/ActivityPage|care\/CareWorkspace|care\/clients\/ClientDetailPage|settings\/SettingsPage)\.test\.tsx$/.test(file)) return true; // Mocked API request paths in tests.
   if (/features\/admin\/care\/AlertAndTimesheetPages\.tsx$/.test(file)) return true; // Local path variable is passed to apiClient.post/get.
   for (let p = root.parent; p; p = p.parent) {

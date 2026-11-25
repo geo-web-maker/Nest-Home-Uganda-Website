@@ -4,6 +4,9 @@ import { Notice } from '@shared/components/dialogs/Notice';
 import { SectionHeader } from '@shared/components/dialogs/SectionHeader';
 import { Badge } from '@shared/components/ui/Badge';
 import { Button } from '@shared/components/ui/Button';
+import { Checkbox } from '@shared/components/ui/Checkbox';
+import { Field } from '@shared/components/ui/Field';
+import { FilterTabs } from '../../../components/admin/FilterTabs';
 import { apiClient } from '@shared/lib/api/client';
 import { dialogs } from '@shared/lib/dialogs';
 import { CHECK_TONE } from '../mail/settings';
@@ -125,11 +128,13 @@ export function PushDiagnosticsSection() {
     <section className={styles.panel} aria-label="Push notification diagnostics">
       <SectionHeader title="Push notification diagnostics" note="Every action asks for your authenticator code. Tokens are never shown in full." />
       {error ? <Notice tone="error"><p>{error}</p></Notice> : null}
-      <div className={styles.actions} role="group" aria-label="Which app to test">
-        {APPS.map((item) => (
-          <button key={item.value} type="button" className={`${styles.pill} ${app === item.value ? styles.pillOn : ''}`} aria-pressed={app === item.value} onClick={() => { setApp(item.value); setDevices(null); setExplain(null); }}>{item.label}</button>
-        ))}
-      </div>
+      <FilterTabs
+        label="Which app to test"
+        value={app}
+        tabs={APPS}
+        className={styles.actions}
+        onChange={(value) => { setApp(value as App); setDevices(null); setExplain(null); }}
+      />
       {app === 'nurse' ? <Notice tone="info"><p>The nurse app only registers for push after the nurse turns on Visit reminders, allows notifications, and is on a build made with the nurse Firebase config. No phone row means one of those is missing.</p></Notice> : null}
 
       <div className={styles.block}>
@@ -138,13 +143,11 @@ export function PushDiagnosticsSection() {
         {urgency === null ? <div className={styles.actions}><Button variant="outline" disabled={busy !== ''} onClick={() => void loadUrgency()}>{busy === 'urgency' ? <LoadingNote inline>Loading…</LoadingNote> : 'Load urgency settings'}</Button></div> : (
           <div className={styles.fields}>
             {urgency.map((item) => (
-              <label key={item.category} className={styles.field}>{item.label}
-                <select value={item.value} disabled={busy !== ''} onChange={(event) => void saveUrgency(item, event.target.value as Urgency['value'])}>
-                  <option value="default">Built-in rule</option>
-                  <option value="urgent">Always urgent</option>
-                  <option value="normal">Always normal</option>
-                </select>
-              </label>
+              <Field key={item.category} kind="select" label={item.label} value={item.value} disabled={busy !== ''} onChange={(event) => void saveUrgency(item, event.target.value as Urgency['value'])}>
+                <option value="default">Built-in rule</option>
+                <option value="urgent">Always urgent</option>
+                <option value="normal">Always normal</option>
+              </Field>
             ))}
           </div>
         )}
@@ -198,7 +201,7 @@ export function PushDiagnosticsSection() {
           <label className={styles.field}>Title<input value={title} maxLength={120} onChange={(event) => setTitle(event.target.value)} /></label>
           <label className={styles.field}>Message<input value={body} maxLength={300} onChange={(event) => setBody(event.target.value)} /></label>
         </div>
-        <label><input type="checkbox" checked={critical} onChange={(event) => setCritical(event.target.checked)} /> Send on the urgent channel</label>
+        <Checkbox checked={critical} onChange={(event) => setCritical(event.target.checked)} label="Send on the urgent channel" />
         <p className={styles.help}>"Dry run" asks Google to validate the key, project and token without delivering anything. "Send" shows Google's exact answer. Close the app first, so Android shows the notification.</p>
         {devices === null ? <p className={styles.help}>Load phones in step 2 to pick one.</p> : devices.length === 0 ? <Notice tone="info"><p>No registered phones. Log in on the phone first.</p></Notice> : (
           <ul className={styles.checkList}>
@@ -228,11 +231,9 @@ export function PushDiagnosticsSection() {
       <div className={styles.block}>
         <h3>4. Real notification scenarios</h3>
         <p className={styles.help}>Sends the notifications people actually get (visit, timesheet, safety alert, mail) to the e-mail entered in step 2, through the real pipeline. Titles start with "Test:".</p>
-        <label className={styles.field}>Scenario
-          <select value={scenario} onChange={(event) => setScenario(event.target.value)}>
-            {SCENARIOS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-          </select>
-        </label>
+        <Field kind="select" className={styles.field} label="Scenario" value={scenario} onChange={(event) => setScenario(event.target.value)}>
+          {SCENARIOS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+        </Field>
         <div className={styles.actions}><Button disabled={!person.trim() || busy !== ''} onClick={() => void runScenario()}>{busy === 'scenario' ? 'Sending…' : 'Send scenario'}</Button></div>
         {scenarioResult ? (
           <Notice tone={scenarioResult.ok ? 'success' : 'error'}>

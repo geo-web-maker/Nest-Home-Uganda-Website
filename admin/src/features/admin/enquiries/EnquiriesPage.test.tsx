@@ -9,7 +9,7 @@ vi.mock('./useEnquiries', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./useEnquiries')>()),
   useEnquiries: vi.fn(),
 }));
-vi.mock('../../../lib/queries/services', () => ({
+vi.mock('@shared/lib/queries/services', () => ({
   useServices: () => ({
     data: [
       { id: 'a'.repeat(24), name: 'Postnatal care' },

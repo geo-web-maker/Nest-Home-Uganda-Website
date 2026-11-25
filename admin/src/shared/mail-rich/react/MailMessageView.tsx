@@ -1,5 +1,5 @@
 /* GENERATED from shared/mail-rich. Edit there, then run: node scripts/sync-mail-rich.mjs */
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { MailAttachment, MailMessageView as Message } from '../core/types';
 import { AttachmentList } from './AttachmentList';
@@ -34,39 +34,6 @@ export function MailMessageView({
   const [retrying, setRetrying] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
-  // Keep the More menu fully on screen. The bar wraps on phones, so the trigger can sit at the left edge
-  // while the menu is wider than the space beside it; place it against the viewport, not the trigger's edge.
-  useLayoutEffect(() => {
-    if (!menuOpen) return undefined;
-    const place = () => {
-      const trigger = menuRef.current?.querySelector('.mr-more-trigger');
-      const list = listRef.current;
-      if (!trigger || !list) return;
-      const pad = 8;
-      const bottomReserve = 76; // phone bottom navigation
-      const t = trigger.getBoundingClientRect();
-      const vw = document.documentElement.clientWidth;
-      const vh = window.innerHeight;
-      list.style.position = 'fixed';
-      list.style.insetInlineEnd = 'auto';
-      list.style.maxHeight = 'none';
-      const w = list.offsetWidth;
-      const h = list.offsetHeight;
-      const below = vh - t.bottom - 4 - bottomReserve;
-      const above = t.top - 4 - pad;
-      const placeBelow = h <= below || below >= above;
-      const room = Math.max(120, placeBelow ? below : above);
-      const height = Math.min(h, room);
-      list.style.maxHeight = `${room}px`;
-      list.style.left = `${Math.max(pad, Math.min(t.right - w, vw - w - pad))}px`;
-      list.style.top = `${placeBelow ? t.bottom + 4 : Math.max(pad, t.top - 4 - height)}px`;
-    };
-    place();
-    window.addEventListener('resize', place);
-    window.addEventListener('scroll', place, true);
-    return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true); };
-  }, [menuOpen]);
   useEffect(() => {
     if (!menuOpen) return undefined;
     const close = (event: Event) => { if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false); };
@@ -84,7 +51,7 @@ export function MailMessageView({
     <div className="mr-more" ref={menuRef}>
       <button type="button" className="mr-more-trigger" aria-haspopup="menu" aria-expanded={menuOpen} aria-label={labels.moreOptions} title={labels.moreOptions} onClick={() => setMenuOpen((open) => !open)}><span aria-hidden="true">⋯</span></button>
       {menuOpen ? (
-        <ul className="mr-menu" role="menu" aria-label={labels.moreOptions} ref={listRef}>
+        <ul className="mr-menu" role="menu" aria-label={labels.moreOptions}>
           {menuActions.map((action) => (
             <li role="none" key={action.key}><button type="button" role="menuitem" disabled={action.disabled} onClick={() => { setMenuOpen(false); action.onSelect(); }}><span className="mr-menu-check" aria-hidden="true" />{action.label}</button></li>
           ))}

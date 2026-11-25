@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { apiClient, ApiError } from '@shared/lib/api/client';
 import { SharedMailboxesPage } from './SharedMailboxesPage';
 
-vi.mock('../../../lib/api/client', async (importOriginal) => ({
+vi.mock('@shared/lib/api/client', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@shared/lib/api/client')>()),
   apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), put: vi.fn(), delete: vi.fn(), getBlob: vi.fn() },
 }));

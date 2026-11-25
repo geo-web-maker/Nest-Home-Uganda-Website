@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { ApiError, apiClient } from '@shared/lib/api/client';
 import { SetPasswordPage } from './SetPasswordPage';
 
@@ -9,9 +10,11 @@ const GOOD = 'a-long-password-1';
 
 function setup(url = `/set-password?token=${TOKEN}`) {
   return render(
-    <MemoryRouter initialEntries={[url]}>
-      <SetPasswordPage />
-    </MemoryRouter>,
+    <HelmetProvider>
+      <MemoryRouter initialEntries={[url]}>
+        <SetPasswordPage />
+      </MemoryRouter>
+    </HelmetProvider>,
   );
 }
 

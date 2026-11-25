@@ -1,10 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiClient } from '@shared/lib/api/client';
 import { CreateNurseSheet } from './CreateNurseSheet';
 
-vi.mock('../../../../lib/api/client', async (importOriginal) => {
+vi.mock('@shared/lib/api/client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shared/lib/api/client')>();
   return { ...actual, apiClient: { get: vi.fn(), post: vi.fn() } };
 });
@@ -14,6 +15,16 @@ beforeEach(() => {
   vi.mocked(apiClient.post).mockResolvedValue({} as never);
   vi.mocked(apiClient.get).mockResolvedValue([{ id: 'supervisor-0001', name: 'Sam Supervisor', email: 'sam@example.com', is_superadmin: false }] as never);
 });
+
+
+function setup(onClose = vi.fn(), onCreated = vi.fn()) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <CreateNurseSheet onClose={onClose} onCreated={onCreated} />
+    </QueryClientProvider>,
+  );
+}
 
 async function fill(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(/^Full name/), 'Grace Nurse');
@@ -27,7 +38,7 @@ describe('CreateNurseSheet', () => {
   it('posts the details with the password and leaves the supervisor out when none is chosen', async () => {
     const user = userEvent.setup();
     const onCreated = vi.fn();
-    render(<CreateNurseSheet onClose={vi.fn()} onCreated={onCreated} />);
+    setup(vi.fn(), onCreated);
     await fill(user);
     await user.click(screen.getByRole('button', { name: 'Create nurse' }));
     await waitFor(() => expect(onCreated).toHaveBeenCalled());
@@ -39,7 +50,7 @@ describe('CreateNurseSheet', () => {
 
   it('sends the chosen supervisor and can reveal the password', async () => {
     const user = userEvent.setup();
-    render(<CreateNurseSheet onClose={vi.fn()} onCreated={vi.fn()} />);
+    setup();
     await fill(user);
     expect(screen.getByLabelText(/^Password/)).toHaveAttribute('type', 'password');
     await user.click(screen.getByLabelText('Show password'));
@@ -54,7 +65,7 @@ describe('CreateNurseSheet', () => {
     const user = userEvent.setup();
     const onCreated = vi.fn();
     vi.mocked(apiClient.post).mockRejectedValue(new Error('A user with this email already exists.'));
-    render(<CreateNurseSheet onClose={vi.fn()} onCreated={onCreated} />);
+    setup(vi.fn(), onCreated);
     await fill(user);
     await user.click(screen.getByRole('button', { name: 'Create nurse' }));
     expect(await screen.findByText('A user with this email already exists.')).toBeInTheDocument();

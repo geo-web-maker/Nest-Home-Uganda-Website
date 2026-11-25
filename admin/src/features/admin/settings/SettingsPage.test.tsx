@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { apiClient } from '@shared/lib/api/client';
 import { SettingsPage } from './SettingsPage';
 const authMock = vi.hoisted(() => ({ scopes: ['settings:read', 'settings:write'] as string[] }));
-vi.mock('../../../lib/api/client', () => ({
+vi.mock('@shared/lib/api/client', () => ({
   apiClient: { get: vi.fn(), patch: vi.fn(), post: vi.fn() },
 }));
 vi.mock('../auth/useAuth', () => ({

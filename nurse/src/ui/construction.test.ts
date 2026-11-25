@@ -23,6 +23,7 @@ const rel = (path: string) => relative(srcRoot, path).replaceAll('\\', '/');
 
 /** Bespoke interactive surfaces that are not pill buttons: row toggles, thumbnails, the SOS hold button. */
 const bespokeButtons: Record<string, number> = {
+  'app/AppShell.tsx': 1,
   'features/careforms/CareFormsCard.tsx': 1,
   'features/careforms/DocumentsScreen.tsx': 2,
   'features/careforms/FormSheet.tsx': 2,

@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { ApiError, apiClient } from '@shared/lib/api/client';
 import { MailSmtpTrace } from './MailSmtpTrace';
 
-vi.mock('../../../lib/api/client', async (importOriginal) => {
+vi.mock('@shared/lib/api/client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shared/lib/api/client')>();
   return { ...actual, apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), put: vi.fn(), delete: vi.fn(), getBlob: vi.fn() } };
 });

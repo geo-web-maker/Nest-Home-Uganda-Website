@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { apiClient } from '@shared/lib/api/client';
 import { useAuth } from '../auth/useAuth';
 import { EnquiryDetailPage } from './EnquiryDetailPage';
-vi.mock('../../../lib/api/client', () => ({
+vi.mock('@shared/lib/api/client', () => ({
   apiClient: { get: vi.fn(), patch: vi.fn(), post: vi.fn() },
 }));
 vi.mock('../auth/useAuth', () => ({ useAuth: vi.fn() }));

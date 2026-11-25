@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@shared/components/ui/Button';
+import { DataTable } from '../../../../components/admin/DataTable';
 import { apiClient } from '@shared/lib/api/client';
 import '../clients/care-forms-admin.css';
-import { LoadingNote } from '../../../../components/admin/LoadingNote';
 
 type CopyLogRow = { instance_id: string; client_id: string; status: 'sent' | 'failed' | 'skipped'; reason?: string | null; recipient_hint?: string | null; at: string };
 function when(value: string): string {
@@ -24,6 +24,18 @@ export function CareFormsCopyLog() {
   useEffect(() => { void load(); }, [load]);
   return <section className="care-form cf-copy-log" aria-labelledby="cf-copy-log-title">
     <div className="cf-admin-head"><div><h2 id="cf-copy-log-title">Automatic client-copy log</h2><p>Delivery state and masked recipient hint only. Health information is never included in email bodies or this log.</p></div><Button type="button" variant="outline" onClick={() => void load()} disabled={loading}>Refresh</Button></div>
-    {loading ? <LoadingNote>Loading copy log…</LoadingNote> : error ? <p role="alert">{error}</p> : items.length === 0 ? <p>No automatic copies have been attempted.</p> : <div className="cf-copy-log__table-wrap"><table><thead><tr><th>Time</th><th>Delivery</th><th>Recipient</th><th>Reason</th><th>Document reference</th></tr></thead><tbody>{items.map((row, index) => <tr key={`${row.instance_id}:${row.at}:${index}`}><td>{when(row.at)}</td><td><span className={`cf-copy-status is-${row.status}`}>{row.status}</span></td><td>{row.recipient_hint || '—'}</td><td>{row.reason || '—'}</td><td><code>{row.instance_id}</code></td></tr>)}</tbody></table></div>}
+    {error ? <p role="alert">{error}</p> : <DataTable<CopyLogRow>
+      columns={[
+        { key: 'time', header: 'Time', cell: (row) => when(row.at) },
+        { key: 'delivery', header: 'Delivery', cell: (row) => <span className={`cf-copy-status is-${row.status}`}>{row.status}</span> },
+        { key: 'recipient', header: 'Recipient', cell: (row) => row.recipient_hint || '—' },
+        { key: 'reason', header: 'Reason', cell: (row) => row.reason || '—' },
+        { key: 'reference', header: 'Document reference', cell: (row) => <code>{row.instance_id}</code> },
+      ]}
+      rows={items}
+      getRowKey={(row) => `${row.instance_id}:${row.at}`}
+      loading={loading}
+      labels={{ caption: 'Automatic client-copy delivery log', loading: 'Loading copy log…', empty: 'No automatic copies have been attempted.' }}
+    />}
   </section>;
 }

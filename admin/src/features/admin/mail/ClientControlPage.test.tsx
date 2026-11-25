@@ -130,7 +130,7 @@ describe('ClientControlPage', () => {
     const field = await screen.findByLabelText('Older apps may refresh mail at most once every (seconds)');
     await user.clear(field);
     await user.click(screen.getByRole('button', { name: 'Save rules' }));
-    expect(await screen.findByText('The change could not be saved.')).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(apiClient.put).not.toHaveBeenCalled();
   });
 

@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiClient } from '@shared/lib/api/client';
 import { RecipientInput } from './RecipientInput';
 
-vi.mock('../../../lib/api/client', () => ({ apiClient: { get: vi.fn() } }));
+vi.mock('@shared/lib/api/client', () => ({ apiClient: { get: vi.fn() } }));
 
 function Harness({ initial = '' }: { initial?: string }) {
   const [value, setValue] = useState(initial);

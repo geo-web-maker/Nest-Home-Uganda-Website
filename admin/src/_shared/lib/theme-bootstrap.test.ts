@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const html = fs.readFileSync(path.resolve(here, '../../index.html'), 'utf8');
+const htmlPath = [path.resolve(here, '../../index.html'), path.resolve(here, '../../../index.html')].find((candidate) => fs.existsSync(candidate));
+if (!htmlPath) throw new Error('Could not locate the app index.html for the theme bootstrap test.');
+const html = fs.readFileSync(htmlPath, 'utf8');
 
 describe('public HTML theme bootstrap', () => {
   it('applies a valid saved theme before the application root is parsed', () => {

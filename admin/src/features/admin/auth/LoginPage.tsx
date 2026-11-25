@@ -11,7 +11,7 @@ import { Button } from '@shared/components/ui/Button';
 import { Field } from '@shared/components/ui/Field';
 import { ApiError } from '@shared/lib/api/client';
 import styles from './LoginPage.module.css';
-import { firstReachablePath } from '../nav';
+import { firstReachablePath, navItemFor, visibleNav } from '../nav';
 import { PasswordChangeRequiredError } from './session';
 import { useAuth } from './useAuth';
 
@@ -21,11 +21,19 @@ type LoginValues = { email: string; password: string };
 
 // Only paths inside the admin are honoured, so a crafted link cannot send a user elsewhere.
 // Otherwise the user lands on their first reachable screen.
-function landingPath(state: unknown, fallback: string | null): string {
+function landingPath(state: unknown, fallback: string | null, user: Parameters<typeof visibleNav>[0]): string {
   const from = (state as { from?: unknown } | null)?.from;
-  return typeof from === 'string' && from.startsWith('/') && !from.startsWith('//')
-    ? from
-    : (fallback ?? DEFAULT_LANDING);
+  if (typeof from !== 'string' || !from.startsWith('/')) return fallback ?? DEFAULT_LANDING;
+
+  try {
+    const target = new URL(from, 'https://admin.invalid');
+    if (target.origin !== 'https://admin.invalid') return fallback ?? DEFAULT_LANDING;
+    const item = navItemFor(target.pathname);
+    const canReach = item && visibleNav(user).some((entry) => entry.path === item.path);
+    return canReach ? `${target.pathname}${target.search}${target.hash}` : fallback ?? DEFAULT_LANDING;
+  } catch {
+    return fallback ?? DEFAULT_LANDING;
+  }
 }
 
 export function LoginPage() {
@@ -86,7 +94,7 @@ export function LoginPage() {
 
   if (status === 'loading') return <LoadingScreen label="Checking your session…" />;
   if (status === 'signedIn')
-    return <Navigate to={landingPath(location.state, firstReachablePath(user))} replace />;
+    return <Navigate to={landingPath(location.state, firstReachablePath(user), user)} replace />;
 
   return (
     <main className={styles.screen}>

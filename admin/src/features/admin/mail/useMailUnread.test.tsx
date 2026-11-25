@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { apiClient } from '@shared/lib/api/client';
 import { MAIL_CHANGED_EVENT, MAIL_UNREAD_FOCUS_GAP_MS, MAIL_UNREAD_POLL_MS, useMailUnread } from './useMailUnread';
 
-vi.mock('../../../lib/api/client', () => ({ apiClient: { get: vi.fn() } }));
+vi.mock('@shared/lib/api/client', () => ({ apiClient: { get: vi.fn() } }));
 
 beforeEach(() => vi.resetAllMocks());
 

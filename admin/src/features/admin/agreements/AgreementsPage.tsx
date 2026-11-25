@@ -424,10 +424,13 @@ export function AgreementsPage() {
         actions={canWrite ? <div className={styles.actionRow}>
           <Button onClick={() => void create()} disabled={busy}>New agreement</Button>
           <Button variant="outline" onClick={() => void create(true)} disabled={busy}>New practice agreement</Button>
-          <div className={styles.modeSwitch} role="group" aria-label="Agreements to show">
-            <button type="button" className={styles.modeOption} aria-pressed={!showPractice} onClick={() => { if (showPractice) { setShowPractice(false); setSelected(null); } }}>Real</button>
-            <button type="button" className={styles.modeOption} aria-pressed={showPractice} onClick={() => { if (!showPractice) { setShowPractice(true); setSelected(null); } }}>Practice</button>
-          </div>
+          <FilterTabs
+            label="Agreements to show"
+            value={showPractice ? 'practice' : 'real'}
+            className={styles.modeSwitch}
+            tabs={[{ value: 'real', label: 'Real' }, { value: 'practice', label: 'Practice' }]}
+            onChange={(value) => { setShowPractice(value === 'practice'); setSelected(null); }}
+          />
         </div> : undefined} />
       {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}
       {notice && <Notice tone="success" floating onDismiss={() => setNotice('')}>{notice}</Notice>}

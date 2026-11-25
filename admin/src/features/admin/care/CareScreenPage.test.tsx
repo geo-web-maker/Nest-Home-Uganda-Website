@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CARE_SCREEN_PATHS, CARE_SCREEN_SCOPES, CareScreenPage } from './CareScreenPage';
@@ -11,7 +12,7 @@ const careMocks = vi.hoisted(() => ({
 vi.mock('../auth/useAuth', () => ({
   useAuth: () => ({ user: careMocks.user, status: 'signedIn' }),
 }));
-vi.mock('../../../lib/api/client', async (importOriginal) => {
+vi.mock('@shared/lib/api/client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shared/lib/api/client')>();
   return {
     ...actual,
@@ -23,6 +24,11 @@ vi.mock('../../../lib/api/client', async (importOriginal) => {
     },
   };
 });
+
+function renderCareScreen() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={client}><MemoryRouter><CareScreenPage screen="timesheets" /></MemoryRouter></QueryClientProvider>);
+}
 
 describe('Track D care routes', () => {
   it('declares every Track D screen and its read scope', () => {
@@ -69,11 +75,7 @@ describe('care mutation scope boundaries', () => {
   });
 
   it('allows viewing timesheets but hides review and adjustment actions without timesheets:write', async () => {
-    render(
-      <MemoryRouter>
-        <CareScreenPage screen="timesheets" />
-      </MemoryRouter>,
-    );
+    renderCareScreen();
 
     expect(await screen.findByRole('table', { name: 'Timesheets table' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument();
@@ -83,11 +85,7 @@ describe('care mutation scope boundaries', () => {
 
   it('shows timesheet review actions only when timesheets:write is present', async () => {
     careMocks.user.scopes = ['timesheets:read', 'timesheets:write'];
-    render(
-      <MemoryRouter>
-        <CareScreenPage screen="timesheets" />
-      </MemoryRouter>,
-    );
+    renderCareScreen();
 
     expect(await screen.findByRole('button', { name: 'Approve' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Send back' })).toBeInTheDocument();
@@ -100,11 +98,7 @@ describe('care screen navigation', () => {
     careMocks.user.scopes = ['timesheets:read', 'nurses:read', 'clients:read'];
     careMocks.get.mockReset();
     careMocks.get.mockResolvedValue([]);
-    render(
-      <MemoryRouter>
-        <CareScreenPage screen="timesheets" />
-      </MemoryRouter>,
-    );
+    renderCareScreen();
     expect(await screen.findByRole('heading', { name: 'Timesheets' })).toBeInTheDocument();
     expect(screen.queryByRole('tablist', { name: 'Care screens' })).not.toBeInTheDocument();
     expect(screen.queryByRole('tab')).not.toBeInTheDocument();

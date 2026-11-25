@@ -9,7 +9,7 @@ import { PermissionsPage } from './GovernancePages';
 vi.mock('./auth/useAuth', () => ({
   useAuth: () => ({ status: 'signedIn', user: { id: '1', name: 'Root', email: 'root@x.test', scopes: [], is_superadmin: true } }),
 }));
-vi.mock('../../lib/api/client', async (importOriginal) => {
+vi.mock('@shared/lib/api/client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shared/lib/api/client')>();
   return { ...actual, apiClient: { get: vi.fn() } };
 });

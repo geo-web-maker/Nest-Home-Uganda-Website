@@ -1,5 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { IconButton } from '../ui/IconButton';
+import { PillButton } from '../ui/PillButton';
+import { Sheet } from '../ui/Sheet';
 import './guide.css';
 
 /** In-app guidance. Local-first so it works offline; an optional server timestamp lets staff re-assign it to a user. */
@@ -104,16 +107,25 @@ function Overlay({ step, i, n, more, onNext, onBack, onSkip, onStop }: { step: S
   return <div className="guide-root">
     <div className="guide-catch" />
     {rect ? <div className="guide-spot" style={{ top: rect.top - 6, left: rect.left - 6, width: rect.width + 12, height: rect.height + 12 }} /> : <div className="guide-dim" />}
-    <section className="guide-card" style={style} role="dialog" aria-modal="true" aria-labelledby="guide-t" aria-describedby="guide-b">
+    <Sheet
+      labelledBy="guide-t"
+      describedBy="guide-b"
+      placement="center"
+      handle={false}
+      className="guide-card"
+      backdropClassName="guide-sheet-backdrop"
+      tabIndex={-1}
+      style={style}
+    >
       <p className="guide-count" aria-live="polite">{i + 1} of {n}</p>
       <h2 id="guide-t">{step.title}</h2><p id="guide-b">{step.body}</p>
       <div className="guide-actions">
-        <button type="button" className="guide-link" onClick={onSkip}>{more ? 'Skip this page' : 'Skip'}</button>
-        {more && <button type="button" className="guide-link" onClick={onStop}>Stop tour</button>}
-        {i > 0 && <button type="button" onClick={onBack}>Back</button>}
-        <button type="button" ref={nextRef} className="guide-primary" onClick={onNext}>{i + 1 < n ? 'Next' : more ? 'Next page' : 'Done'}</button>
+        <PillButton type="button" tone="ghost" size="sm" showArrow={false} className="guide-link" onClick={onSkip}>{more ? 'Skip this page' : 'Skip'}</PillButton>
+        {more && <PillButton type="button" tone="ghost" size="sm" showArrow={false} className="guide-link" onClick={onStop}>Stop tour</PillButton>}
+        {i > 0 && <PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={onBack}>Back</PillButton>}
+        <PillButton type="button" tone="forest" size="sm" showArrow={false} className="guide-primary" ref={nextRef} onClick={onNext}>{i + 1 < n ? 'Next' : more ? 'Next page' : 'Done'}</PillButton>
       </div>
-    </section>
+    </Sheet>
   </div>;
 }
 
@@ -130,11 +142,11 @@ export function GuideHelp({ className = '' }: { className?: string }) {
   if (!g) return null;
   const pick = (fn: () => void) => () => { setOpen(false); fn(); };
   return <div className="guide-help" ref={box} data-guide="help">
-    <button type="button" className={className} aria-label="Help and tips" aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen((v) => !v)}>?</button>
+    <IconButton type="button" className={className} label="Help and tips" aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen((v) => !v)}>?</IconButton>
     {open && <div className="guide-menu" role="menu">
-      <button role="menuitem" type="button" onClick={pick(g.startPage)}>Tips for this page</button>
-      <button role="menuitem" type="button" onClick={pick(g.startAll)}>Take the full tour</button>
-      <button role="menuitem" type="button" onClick={pick(g.skipAll)}>Turn off tips</button>
+      <PillButton role="menuitem" type="button" tone="ghost" size="full" showArrow={false} onClick={pick(g.startPage)}>Tips for this page</PillButton>
+      <PillButton role="menuitem" type="button" tone="ghost" size="full" showArrow={false} onClick={pick(g.startAll)}>Take the full tour</PillButton>
+      <PillButton role="menuitem" type="button" tone="ghost" size="full" showArrow={false} onClick={pick(g.skipAll)}>Turn off tips</PillButton>
     </div>}
   </div>;
 }

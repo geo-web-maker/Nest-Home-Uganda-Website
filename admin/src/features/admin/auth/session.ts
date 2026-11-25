@@ -9,6 +9,25 @@ import type { TokenResponse } from '@shared/types';
 import { authStore } from './authStore';
 
 let inFlight: Promise<boolean> | null = null;
+const SESSION_REFRESH_TIMEOUT_MS = 8_000;
+
+/** A stalled refresh must not leave the shared promise pending forever. Abort the HTTP request
+ * where possible, and settle the caller even when a custom/native client ignores AbortSignal. */
+async function withRefreshTimeout<T>(request: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new ApiError(0, 'network_error', `Session refresh timed out after ${SESSION_REFRESH_TIMEOUT_MS / 1000} seconds. Check your connection and try again.`));
+    }, SESSION_REFRESH_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([Promise.resolve().then(() => request(controller.signal)), timeout]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
 
 /**
  * Opens the app on the stored user when the first restore could not reach the server. Only while a refresh
@@ -17,9 +36,14 @@ let inFlight: Promise<boolean> | null = null;
 async function trustStoredSession(): Promise<boolean> {
   const user = authStore.getUserSnapshot();
   if (!user || authStore.getState().status !== 'loading') return false;
-  const hasCredential = Capacitor.isNativePlatform()
-    ? Boolean(await readNativeRefreshToken())
-    : Boolean(authStore.getCsrf());
+  let hasCredential = false;
+  try {
+    hasCredential = Capacitor.isNativePlatform()
+      ? Boolean(await withRefreshTimeout(() => readNativeRefreshToken()))
+      : Boolean(authStore.getCsrf());
+  } catch {
+    return false;
+  }
   if (!hasCredential || authStore.getState().status !== 'loading') return false;
   authStore.setOfflineSession(user);
   return true;
@@ -82,17 +106,25 @@ export function refreshSession(client: ApiClient = apiClient): Promise<boolean> 
   if (inFlight) return inFlight;
   inFlight = (async () => {
     if (Capacitor.isNativePlatform()) {
-      const refreshToken = await readNativeRefreshToken();
+      let refreshToken: string | null;
+      try {
+        refreshToken = await withRefreshTimeout(() => readNativeRefreshToken());
+      } catch {
+        if (!(await trustStoredSession()) && authStore.getState().status === 'loading') {
+          authStore.markSignedOut();
+        }
+        return false;
+      }
       if (!refreshToken) {
         authStore.clearSession();
         return false;
       }
       try {
-        const session = await client.post<NativeSession>(
+        const session = await withRefreshTimeout((signal) => client.post<NativeSession>(
           '/auth/native/refresh',
           { refresh_token: refreshToken },
-          { retryOn401: false, headers: { 'X-Client': 'native' } },
-        );
+          { retryOn401: false, headers: { 'X-Client': 'native' }, signal },
+        ));
         await saveNativeRefreshToken(session.refresh_token);
         authStore.setSession({
           access_token: session.access_token,
@@ -116,10 +148,11 @@ export function refreshSession(client: ApiClient = apiClient): Promise<boolean> 
       return false;
     }
     try {
-      const session = await client.post<TokenResponse>('/auth/refresh', undefined, {
+      const session = await withRefreshTimeout((signal) => client.post<TokenResponse>('/auth/refresh', undefined, {
         retryOn401: false,
         headers: { 'X-CSRF-Token': csrf },
-      });
+        signal,
+      }));
       authStore.setSession(session);
       return true;
     } catch (error) {
@@ -139,27 +172,16 @@ export function refreshSession(client: ApiClient = apiClient): Promise<boolean> 
 }
 
 /** First load: renew the session from the refresh cookie, or settle on signed out. */
-const RESTORE_TIMEOUT_MS = 8000;
-
 export async function restoreSession(client: ApiClient = apiClient): Promise<void> {
-  // If the restore never answers (a stuck native call, a sleeping server), show the sign-in screen instead of
-  // leaving the app waiting forever. A restore that finishes later still signs the user in.
-  // No network at all: do not make the user wait for a request that cannot succeed.
-  if (!navigator.onLine && (await trustStoredSession())) return;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<void>((resolve) => {
-    timer = setTimeout(() => {
-      void trustStoredSession().then((trusted) => {
-        if (!trusted && authStore.getState().status === 'loading') authStore.markSignedOut();
-        resolve();
-      });
-    }, RESTORE_TIMEOUT_MS);
-  });
-  try {
-    await Promise.race([refreshSession(client), timeout]);
-  } finally {
-    clearTimeout(timer);
+  // No network at all: restore from a credential-backed offline snapshot or settle immediately.
+  // Do not send a request that cannot succeed; refreshSession owns the timeout for online requests.
+  if (!navigator.onLine) {
+    if (!(await trustStoredSession()) && authStore.getState().status === 'loading') {
+      authStore.markSignedOut();
+    }
+    return;
   }
+  await refreshSession(client);
 }
 
 export async function login(

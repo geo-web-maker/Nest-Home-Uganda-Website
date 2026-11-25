@@ -44,7 +44,8 @@ describe('mail screens use the shared admin components', () => {
 describe('mail stylesheet', () => {
   const css = read('MailPage.module.css');
   const tokens = readFileSync(join(designDir, 'tokens.css'), 'utf8');
-  const defined = new Set([...tokens.matchAll(/(--[a-z0-9-]+)\s*:/g)].map((match) => match[1]));
+  // MailPage has one component-local sizing token; count local declarations alongside shared design tokens.
+  const defined = new Set([...`${tokens}\n${css}`.matchAll(/(--[a-z0-9-]+)\s*:/g)].map((match) => match[1]));
 
   it('only reads colour, shadow and spacing tokens that tokens.css defines', () => {
     const used = [...css.matchAll(/var\((--[a-z0-9-]+)/g)].map((match) => match[1]);

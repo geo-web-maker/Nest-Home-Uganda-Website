@@ -65,9 +65,16 @@ describe('session', () => {
       user: USER,
     });
     expect(window.localStorage.getItem('nhc.csrf')).toBe('csrf-1');
+    expect(authStore.getUserSnapshot()).toMatchObject({ id: 'u1', name: 'Ada', scopes: ['enquiries:read'] });
     const stored = JSON.stringify({ ...window.localStorage });
     expect(stored).not.toContain('access-1');
     expect(stored).not.toContain('ada@example.test');
+  });
+
+  it('migrates an older cached user snapshot without retaining its email', () => {
+    window.localStorage.setItem('nhc.session-user', JSON.stringify(USER));
+    expect(authStore.getUserSnapshot()).toMatchObject({ id: 'u1', name: 'Ada', scopes: ['enquiries:read'], email: '' });
+    expect(window.localStorage.getItem('nhc.session-user')).not.toContain('ada@example.test');
   });
 
   it('refresh sends the stored CSRF token in X-CSRF-Token and replaces the session', async () => {
@@ -76,10 +83,11 @@ describe('session', () => {
     post.mockResolvedValue(session(2));
 
     await expect(refreshSession(client)).resolves.toBe(true);
-    expect(post).toHaveBeenCalledWith('/auth/refresh', undefined, {
+    expect(post).toHaveBeenCalledWith('/auth/refresh', undefined, expect.objectContaining({
       retryOn401: false,
       headers: { 'X-CSRF-Token': 'csrf-1' },
-    });
+      signal: expect.any(AbortSignal),
+    }));
     expect(authStore.getState().accessToken).toBe('access-2');
     expect(authStore.getCsrf()).toBe('csrf-2');
   });
@@ -125,6 +133,36 @@ describe('session', () => {
     await restoreSession(client);
     expect(post).not.toHaveBeenCalled();
     expect(authStore.getState().status).toBe('signedOut');
+  });
+
+  it('does not wait for a network refresh when offline and no trusted snapshot exists', async () => {
+    const { client, post } = mockClient();
+    vi.stubGlobal('navigator', { onLine: false });
+    try {
+      await restoreSession(client);
+      expect(post).not.toHaveBeenCalled();
+      expect(authStore.getState().status).toBe('signedOut');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('opens the cached user offline when a refresh credential is present', async () => {
+    const { client, post } = mockClient();
+    window.localStorage.setItem('nhc.csrf', 'csrf-1');
+    window.localStorage.setItem('nhc.session-user', JSON.stringify(USER));
+    vi.stubGlobal('navigator', { onLine: false });
+    try {
+      await restoreSession(client);
+      expect(post).not.toHaveBeenCalled();
+      expect(authStore.getState()).toMatchObject({
+        status: 'signedIn',
+        accessToken: null,
+        user: { id: 'u1', name: 'Ada', email: '' },
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('settles a first load on signed out but keeps the token when the network fails', async () => {

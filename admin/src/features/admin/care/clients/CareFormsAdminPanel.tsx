@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@shared/components/ui/Button';
+import { Modal } from '@shared/components/dialogs/Modal';
 import { apiClient } from '@shared/lib/api/client';
 import './care-forms-admin.css';
 import { LoadingNote } from '../../../../components/admin/LoadingNote';
@@ -79,9 +80,14 @@ export function CareFormsAdminPanel({ clientId }: { clientId: string }) {
         <Button type="button" variant="outline" disabled={doc.status !== 'signed' || opening} onClick={() => void openPdf(doc)}>{opening && active?.id === doc.id ? 'Opening…' : 'View signed PDF'}</Button>
       </article>)}
     </div>}
-    {active && <div className="cf-admin-viewer" role="dialog" aria-modal="true" aria-labelledby="cf-admin-viewer-title">
-      <div className="cf-admin-viewer__header"><div><h3 id="cf-admin-viewer-title">{active.form_id === 'tracker' ? 'Weekly tracker' : `Form ${active.form_id}`} · version {active.version}</h3><p>Signed {when(active.signed_at)}</p></div><Button type="button" variant="outline" onClick={closeViewer}>Close</Button></div>
+    {active && <Modal
+      id="cf-admin-viewer-title"
+      title={`${active.form_id === 'tracker' ? 'Weekly tracker' : `Form ${active.form_id}`} · version ${active.version}`}
+      subtitle={`Signed ${when(active.signed_at)}`}
+      onClose={closeViewer}
+      className="cf-admin-viewer"
+    >
       {pdfError ? <p role="alert">{pdfError}</p> : pdfUrl ? <><div className="cf-admin-viewer__actions"><a href={pdfUrl} download={`care-form-${active.form_id}-v${active.version}.pdf`}>Download PDF</a></div><iframe title="Sealed care document" src={pdfUrl} /></> : <p role="status">Preparing secure document view…</p>}
-    </div>}
+    </Modal>}
   </section>;
 }

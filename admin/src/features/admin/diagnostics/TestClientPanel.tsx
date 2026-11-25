@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@shared/components/ui/Button';
+import { Field } from '@shared/components/ui/Field';
 import { Notice } from '@shared/components/dialogs/Notice';
 import { apiClient } from '@shared/lib/api/client';
 import { cx } from '@shared/lib/cx';
@@ -98,20 +99,16 @@ export function TestClientPanel({ status, onChanged }: { status: TestClientStatu
             <Button size="compact" variant="outline" disabled={run.isPending} onClick={() => run.mutate({ path: '/checks', note: 'Checks ran.' })}>Run alert and timesheet checks now</Button>
           </div>
           <div className={styles.fields}>
-            <label className={styles.field}>Scenario
-              <select value={scenarioName} onChange={(e) => setScenario(e.target.value)}>
-                {Object.entries(s.scenarios).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-              </select>
-            </label>
+            <Field kind="select" className={styles.field} label="Scenario" value={scenarioName} onChange={(e) => setScenario(e.target.value)}>
+              {Object.entries(s.scenarios).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+            </Field>
             <p className={styles.help}>{s.scenarios[scenarioName]?.about}</p>
             <div className={styles.actions}>
               <Button size="compact" variant="outline" disabled={run.isPending} onClick={() => run.mutate({ path: '/scenario', body: { name: scenarioName }, note: 'Scenario applied. The days are back to today.' })}>Apply scenario</Button>
             </div>
-            <label className={styles.field}>Patient type
-              <select value={patientType} onChange={(e) => { setType(e.target.value); run.mutate({ path: '/type', body: { patient_type: e.target.value }, note: 'Patient type changed.' }); }}>
-                {s.patient_types.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </label>
+            <Field kind="select" className={styles.field} label="Patient type" value={patientType} onChange={(e) => { setType(e.target.value); run.mutate({ path: '/type', body: { patient_type: e.target.value }, note: 'Patient type changed.' }); }}>
+              {s.patient_types.map((t) => <option key={t} value={t}>{t}</option>)}
+            </Field>
           </div>
           <fieldset className={styles.block}>
             <legend><strong>Client home (for check-in checks)</strong></legend>

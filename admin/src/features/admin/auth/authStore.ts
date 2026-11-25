@@ -32,15 +32,36 @@ function writeCsrf(value: string | null): void {
   }
 }
 
-// A copy of the signed-in user (name, scopes) lets a cold start without a network open the app. It is not a
-// credential: the access token is never stored, and the session is only trusted while a refresh credential
-// still exists (the native refresh token, or the CSRF value that goes with the refresh cookie).
+// A minimal identity/scope snapshot lets a cold start without a network open the app. Email is
+// deliberately excluded because it is personal data that the offline shell does not need. The
+// access token is never stored, and the session is trusted only while a refresh credential exists.
 const USER_KEY = 'nhc.session-user';
+type CachedUser = Pick<UserPublic, 'id' | 'name' | 'scopes' | 'is_superadmin'>;
 
 function readUserSnapshot(): UserPublic | null {
   try {
     const raw = window.localStorage.getItem(USER_KEY);
-    return raw ? (JSON.parse(raw) as UserPublic) : null;
+    if (!raw) return null;
+    const value: unknown = JSON.parse(raw);
+    if (!value || typeof value !== 'object') return null;
+    const candidate = value as Partial<CachedUser> & { scopes?: unknown };
+    if (
+      typeof candidate.id !== 'string' ||
+      typeof candidate.name !== 'string' ||
+      typeof candidate.is_superadmin !== 'boolean' ||
+      !Array.isArray(candidate.scopes) ||
+      !candidate.scopes.every((scope) => typeof scope === 'string')
+    ) return null;
+    const cached: CachedUser = {
+      id: candidate.id,
+      name: candidate.name,
+      scopes: candidate.scopes as string[],
+      is_superadmin: candidate.is_superadmin,
+    };
+    // Migrate snapshots written by older builds: strip email and any other fields the offline shell
+    // does not need, even when the user has not signed in again since the upgrade.
+    try { window.localStorage.setItem(USER_KEY, JSON.stringify(cached)); } catch { /* Storage can be read-only. */ }
+    return { ...cached, email: '' };
   } catch {
     return null;
   }
@@ -48,8 +69,15 @@ function readUserSnapshot(): UserPublic | null {
 
 function writeUserSnapshot(user: UserPublic | null): void {
   try {
-    if (user) window.localStorage.setItem(USER_KEY, JSON.stringify(user));
-    else window.localStorage.removeItem(USER_KEY);
+    if (user) {
+      const cached: CachedUser = {
+        id: user.id,
+        name: user.name,
+        scopes: [...user.scopes],
+        is_superadmin: user.is_superadmin,
+      };
+      window.localStorage.setItem(USER_KEY, JSON.stringify(cached));
+    } else window.localStorage.removeItem(USER_KEY);
   } catch {
     // Storage blocked: offline start is simply unavailable.
   }

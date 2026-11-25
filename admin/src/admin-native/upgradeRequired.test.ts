@@ -52,6 +52,9 @@ describe('installUpgradeRequiredHandler', () => {
     markUpgradeRequired();
     await vi.waitFor(() => expect(first.calls).toContain('reload'));
     stop();
+    // The first 426 remains latched until the next page load. Reset the signal before testing
+    // that the removed listener is not called by a later event.
+    resetUpgradeRequired();
     const second = makeDeps();
     const stopSecond = installUpgradeRequiredHandler(second.deps);
     stopSecond();

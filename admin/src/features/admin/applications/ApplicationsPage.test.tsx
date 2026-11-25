@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { apiClient } from '@shared/lib/api/client';
 import { ApplicationsPage } from './ApplicationsPage';
-vi.mock('../../../lib/api/client', () => ({ apiClient: { get: vi.fn() } }));
+vi.mock('@shared/lib/api/client', () => ({ apiClient: { get: vi.fn() } }));
 function setup() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(

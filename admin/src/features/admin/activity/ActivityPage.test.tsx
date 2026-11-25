@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { apiClient } from '@shared/lib/api/client';
 import { ActivityPage } from './ActivityPage';
-vi.mock('../../../lib/api/client', () => ({ apiClient: { get: vi.fn(), post: vi.fn() } }));
+vi.mock('@shared/lib/api/client', () => ({ apiClient: { get: vi.fn(), post: vi.fn() } }));
 const emptyPage = { items: [], total: 0, page: 1, page_size: 25 };
 function setup(activityResult: unknown = emptyPage, status = { enabled: true, verified: true }) {
   vi.mocked(apiClient.get).mockImplementation(async (path) => (

@@ -8,7 +8,7 @@ import { VisitSchedulePage } from './VisitSchedulePage';
 vi.mock('../auth/useAuth', () => ({
   useAuth: () => ({ status: 'signedIn', user: { id: '1', name: 'Root', email: 'r@x.test', scopes: ['visits:read'], is_superadmin: false } }),
 }));
-vi.mock('../../../lib/api/client', async (importOriginal) => {
+vi.mock('@shared/lib/api/client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@shared/lib/api/client')>();
   return { ...actual, apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn() } };
 });

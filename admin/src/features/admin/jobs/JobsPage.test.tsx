@@ -7,7 +7,7 @@ import { useAuth } from '../auth/useAuth';
 import { JobsPage } from './JobsPage';
 import { JobEditorPage } from './JobEditorPage';
 
-vi.mock('../../../lib/api/client', () => ({
+vi.mock('@shared/lib/api/client', () => ({
   apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn() },
 }));
 vi.mock('../auth/useAuth', () => ({ useAuth: vi.fn() }));

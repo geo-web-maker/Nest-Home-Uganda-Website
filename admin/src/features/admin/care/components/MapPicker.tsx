@@ -275,7 +275,7 @@ export function MapPicker({ tileUrl, lat, lng, radius, onChange, markers = NO_MA
         <ul className={styles.results} aria-label="Search results">
           {results.map((result) => (
             <li key={`${result.lat},${result.lng}`}>
-              <button type="button" onClick={() => choose(result)}>{result.label}</button>
+              <Button type="button" variant="outline" size="compact" className={styles.resultButton} onClick={() => choose(result)}>{result.label}</Button>
             </li>
           ))}
         </ul>

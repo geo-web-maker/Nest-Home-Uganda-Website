@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { apiClient } from '@shared/lib/api/client';
 import { MailSetupCheck } from './MailSetupCheck';
 
-vi.mock('../../../lib/api/client', () => ({
+vi.mock('@shared/lib/api/client', () => ({
   apiClient: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), put: vi.fn(), delete: vi.fn(), getBlob: vi.fn() },
 }));
 

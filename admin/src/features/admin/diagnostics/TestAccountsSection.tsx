@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@shared/components/ui/Button';
+import { Checkbox } from '@shared/components/ui/Checkbox';
+import { Field } from '@shared/components/ui/Field';
 import { Notice } from '@shared/components/dialogs/Notice';
 import { SectionHeader } from '@shared/components/dialogs/SectionHeader';
 import { apiClient } from '@shared/lib/api/client';
@@ -133,17 +135,13 @@ export function TestAccountsSection() {
                         </Button>
                       </div>
                       <div className={styles.fields}>
-                        <label className={styles.field}>Preset
-                          <select value={item.preset} onChange={(e) => e.target.value !== 'custom' && change.mutate({ path: `/${item.key}/access`, body: { preset: e.target.value } })}>
-                            {item.preset === 'custom' ? <option value="custom">custom</option> : null}
-                            {Object.keys(data.presets).map((name) => <option key={name} value={name}>{name}</option>)}
-                          </select>
-                        </label>
-                        <label className={styles.field}>Reach
-                          <select value={item.reach} onChange={(e) => change.mutate({ path: `/${item.key}/access`, body: { reach: e.target.value } })}>
-                            {data.reaches.map((r) => <option key={r} value={r}>{r}</option>)}
-                          </select>
-                        </label>
+                        <Field kind="select" className={styles.field} label="Preset" value={item.preset} onChange={(e) => e.target.value !== 'custom' && change.mutate({ path: `/${item.key}/access`, body: { preset: e.target.value } })}>
+                          {item.preset === 'custom' ? <option value="custom">custom</option> : null}
+                          {Object.keys(data.presets).map((name) => <option key={name} value={name}>{name}</option>)}
+                        </Field>
+                        <Field kind="select" className={styles.field} label="Reach" value={item.reach} onChange={(e) => change.mutate({ path: `/${item.key}/access`, body: { reach: e.target.value } })}>
+                          {data.reaches.map((r) => <option key={r} value={r}>{r}</option>)}
+                        </Field>
                       </div>
                       <div className={styles.actions}>
                         <Button variant="outline" size="compact" onClick={() => { setCustom(custom === item.key ? null : item.key); setDraft(item.scopes); }}>
@@ -153,10 +151,7 @@ export function TestAccountsSection() {
                       {custom === item.key ? (
                         <div className={styles.scopes}>
                           {data.catalogue.map((s) => (
-                            <label key={s.id}>
-                              <input type="checkbox" checked={draft.includes(s.id)} onChange={(e) => setDraft(e.target.checked ? [...draft, s.id] : draft.filter((x) => x !== s.id))} />{' '}
-                              {s.group}: {s.label} <code>{s.id}</code>
-                            </label>
+                            <Checkbox key={s.id} label={<>{s.group}: {s.label} <code>{s.id}</code></>} checked={draft.includes(s.id)} onChange={(e) => setDraft(e.target.checked ? [...draft, s.id] : draft.filter((x) => x !== s.id))} />
                           ))}
                           <div className={styles.actions}>
                             <Button size="compact" disabled={change.isPending} onClick={() => change.mutate({ path: `/${item.key}/access`, body: { scopes: draft } })}>Save scopes</Button>
