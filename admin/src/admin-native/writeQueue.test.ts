@@ -14,4 +14,3 @@ describe('offline write allow-list', () => {
     for (const [m = '', p = ''] of [['POST', '/admin/billing/invoices/1/payments'], ['POST', '/admin/users/1/reset-password'], ['DELETE', '/admin/care/clients/1'], ['POST', '/admin/care/nurses/1/revoke-device']]) expect(queueable(m, p)).toBe(false);
   });
 });
-});
