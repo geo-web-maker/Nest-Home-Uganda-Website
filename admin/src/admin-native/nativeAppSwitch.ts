@@ -44,5 +44,5 @@ export function readNativeHandoffRequest(url: string, currentApp: 'admin' | 'nur
   const scheme = `nhc-${currentApp}`;
   const match = new RegExp(`^${scheme}://request-handoff\\?challenge=([A-Za-z0-9_-]{43})&return_scheme=nhc-(admin|nurse)$`).exec(url);
   if (!match || match[2] === currentApp) return null;
-  return { challenge: match[1], returnApp: match[2] as 'admin' | 'nurse' };
+  return { challenge: match[1] as string, returnApp: match[2] as 'admin' | 'nurse' };
 }

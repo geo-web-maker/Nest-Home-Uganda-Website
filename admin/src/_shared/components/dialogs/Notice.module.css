@@ -12,6 +12,11 @@
   color: var(--danger);
 }
 
+.warning {
+  border-color: var(--gold, #c98a1b);
+  background: var(--cream, #fff8e8);
+}
+
 .success {
   border-color: var(--leaf);
   background: var(--mint);

@@ -2,7 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { cx } from '../../lib/cx';
 import styles from './Notice.module.css';
 
-export type NoticeTone = 'info' | 'error' | 'success';
+export type NoticeTone = 'info' | 'warning' | 'error' | 'success';
 
 interface NoticeProps {
   tone?: NoticeTone;

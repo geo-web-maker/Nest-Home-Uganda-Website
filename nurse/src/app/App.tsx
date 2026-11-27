@@ -59,7 +59,7 @@ import { DocumentsScreen } from '../features/careforms/DocumentsScreen';
 import { PillButton } from '../ui/PillButton';
 import { SsoRelay } from './SsoRelay';
 import { fetchAppAccess, startPull, redeem } from '../platform/appSwitch';
-import { isNativeAppSwitchAvailable, readNativeHandoffCode, requestOtherAppHandoff } from '../platform/nativeAppSwitch';
+import { isNativeAppSwitchAvailable, requestOtherAppHandoff } from '../platform/nativeAppSwitch';
 import { ADMIN_NATIVE_APP_ID } from '../platform/identity';
 
 type ConsentRequirement = FieldConsentRequirement;
@@ -113,6 +113,7 @@ function NurseWorkspace() {
   /** True when the public /app-bundles/nurse/version endpoint says the installed version
    *  is below the minimum BEFORE the user has authenticated. Gates the login screen. */
   const [preLoginBlocked, setPreLoginBlocked] = useState(false);
+  const [preLoginMinimum, setPreLoginMinimum] = useState('0.0.0');
   // The real installed version (the APK's versionName on a phone). Until it is known, the build-stamped version is used.
   const [installedVersion, setInstalledVersion] = useState<string | null>(null);
   useEffect(() => { void getInstalledVersion().then(setInstalledVersion); }, []);
@@ -950,14 +951,19 @@ function NurseWorkspace() {
   // so the nurse is directed to update before they can even attempt to sign in.
   useEffect(() => {
     if (signedIn || installedVersion === null) return; // signed in: the authenticated check takes over; otherwise wait for the real version
+    // The browser/PWA build is never version-locked server-side, and must not be judged by the Android policy.
+    const platform = Capacitor.getPlatform();
+    if (platform !== 'android' && platform !== 'ios') { setPreLoginBlocked(false); return; }
     void (async () => {
       try {
         const apiBase = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '');
-        const url = `${apiBase}/api/v1/app-bundles/nurse/version?current=${encodeURIComponent(installedVersion)}&platform=android`;
+        const url = `${apiBase}/api/v1/app-bundles/nurse/version?current=${encodeURIComponent(installedVersion)}&platform=${platform}`;
         const res = await fetch(url, { signal: AbortSignal.timeout(8_000) });
         if (!res.ok) return;
-        const data = await res.json() as { blocked?: boolean };
-        if (data.blocked) setPreLoginBlocked(true);
+        const data = await res.json() as { blocked?: boolean; min_supported?: string };
+        // Only lock the login form when the server confirms the installed build is below the minimum.
+        if (data.blocked && typeof data.min_supported === 'string' && isForcedUpdate(installedVersion, data.min_supported)) { setPreLoginMinimum(data.min_supported); setPreLoginBlocked(true); }
+        else setPreLoginBlocked(false);
       } catch {
         // Network unavailable — allow login attempt; the server will enforce the gate.
       }
@@ -998,7 +1004,7 @@ function NurseWorkspace() {
     {/* Pre-login update gate: block before the user can enter credentials */}
     {!bootChecked ? <LoadingScreen />
     : !signedIn && preLoginBlocked
-      ? <Card className="update-gate"><UpdateNotice currentVersion={appVersion} latestVersion={null} minimumVersion="0.0.0" hasReleases={true} /><p style={{ fontSize: '.82rem', color: 'var(--mut)', marginTop: 8 }}>{copy.update.contactSupervisor}</p></Card>
+      ? <Card className="update-gate"><UpdateNotice currentVersion={appVersion} latestVersion={null} minimumVersion={preLoginMinimum} hasReleases={true} /><p style={{ fontSize: '.82rem', color: 'var(--mut)', marginTop: 8 }}>{copy.update.contactSupervisor}</p></Card>
       : signedIn && updateBlocked && versionInfo
         ? <Card className="update-gate"><UpdateNotice currentVersion={appVersion} latestVersion={versionInfo.latest} minimumVersion={versionInfo.min_supported} downloadPath={versionInfo.download_path} apkInfo={versionInfo.apk_info} hasReleases={versionInfo.has_releases ?? true} /><PillButton type="button" tone="ghost" showArrow={false} onClick={() => void checkForUpdate()}>{copy.update.checkAgain}</PillButton></Card>
         : signedIn && accessProblem === 'not_nurse'

@@ -134,7 +134,7 @@ export function OtherAppSuggestion({ userId, access, visibleOnThisPage = false, 
   const getApp = native && installed === false && entry.apk_available;
   return <section className="care-form other-app-suggestion" aria-label={t('appSwitch.suggestionTitle')}>
     <div className="app-center-block">
-      <div className="page-header"><div><h2>{t('appSwitch.suggestionTitle')}</h2><p>{getApp ? t('appSwitch.getNurseHelp') : t('appSwitch.openNurseHelp')}</p></div><Button variant="outline" size="sm" type="button" onClick={dismiss}>{t('appSwitch.dismiss')}</Button></div>
+      <div className="page-header"><div><h2>{t('appSwitch.suggestionTitle')}</h2><p>{getApp ? t('appSwitch.getNurseHelp') : t('appSwitch.openNurseHelp')}</p></div><Button variant="outline" size="compact" type="button" onClick={dismiss}>{t('appSwitch.dismiss')}</Button></div>
       {installError && <Notice tone="error">{installError}</Notice>}
       {getApp ? <Button variant="forest" type="button" disabled={offerLoading || installing} onClick={() => setInstallOpen(true)}>{offerLoading ? t('appSwitch.checkingApk') : t('appSwitch.getNurse')}</Button>
         : <Button variant="forest" type="button" onClick={() => void openOtherApp()}>{t('appSwitch.openNurse')}</Button>}

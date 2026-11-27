@@ -6,6 +6,7 @@ import {
 } from '../../../admin-native/secureTokenStorage';
 import { ApiError, apiClient, setAuthHooks, type ApiClient } from '@shared/lib/api/client';
 import type { TokenResponse } from '@shared/types';
+import type { SessionBody } from '../../../admin-native/appSwitch';
 import { authStore } from './authStore';
 
 let inFlight: Promise<boolean> | null = null;
@@ -185,7 +186,7 @@ export async function restoreSession(client: ApiClient = apiClient): Promise<voi
 }
 
 /** Apply a normal login-shaped response produced by the cross-app handoff endpoint. */
-export async function applyHandoffSession(session: NativeSession | TokenResponse): Promise<void> {
+export async function applyHandoffSession(session: SessionBody): Promise<void> {
   if (Capacitor.isNativePlatform()) {
     if (!(session as NativeSession).refresh_token) throw new Error('The native handoff response did not contain a refresh token.');
     await saveNativeRefreshToken((session as NativeSession).refresh_token);
@@ -193,7 +194,7 @@ export async function applyHandoffSession(session: NativeSession | TokenResponse
     return;
   }
   if (!('csrf_token' in session) || !session.csrf_token) throw new Error('The web handoff response did not contain a CSRF token.');
-  authStore.setSession(session as TokenResponse);
+  authStore.setSession(session as unknown as TokenResponse);
 }
 
 export async function loginWithHandoff(

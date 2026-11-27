@@ -62,7 +62,7 @@ describe('pushToApp automatic SSO policy', () => {
       automatic_sso: { master_enabled: effectiveEnabled, user_enabled: effectiveEnabled, admin_allowed: effectiveEnabled, effective_enabled: effectiveEnabled },
     };
     const get = vi.fn(async () => access);
-    const result = await pushToApp('nurse', { currentApp: 'admin', get, post });
+    const result = await pushToApp('nurse', { currentApp: 'admin', get: get as never, post: post as never });
     return { result, post, assign };
   }
 
