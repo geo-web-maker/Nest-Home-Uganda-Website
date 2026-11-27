@@ -6,7 +6,7 @@ import { hasScopes } from './hasScopes';
 import { NoAccessPage } from './NoAccessPage';
 import { LoadingScreen } from '../../../components/admin/LoadingScreen';
 import { useAuth } from './useAuth';
-import { apiClient } from '@shared/lib/api/client';
+import { ApiError, apiClient } from '@shared/lib/api/client';
 import type { AppAccess } from '../../../admin-native/appSwitch';
 
 type GuardProps = { children?: ReactNode };
@@ -29,19 +29,27 @@ function RequireAdminAppAccess({ children, userId }: GuardProps & { userId: stri
   const [access, setAccess] = useState<AppAccess | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // The server has no /auth/app-access route (older backend deploy). Fall back to the account's own scopes;
+  // every admin endpoint still enforces its scope server-side.
+  const [legacyBackend, setLegacyBackend] = useState(false);
 
   useEffect(() => {
     let live = true;
-    setLoading(true); setError(''); setAccess(null);
+    setLoading(true); setError(''); setAccess(null); setLegacyBackend(false);
     apiClient.get<AppAccess>('/auth/app-access')
       .then((result) => { if (live) setAccess(result); })
-      .catch((reason) => { if (live) setError(reason instanceof Error ? reason.message : 'Admin app access could not be verified.'); })
+      .catch((reason) => {
+        if (!live) return;
+        if (reason instanceof ApiError && reason.status === 404) { setLegacyBackend(true); return; }
+        setError(reason instanceof Error ? reason.message : 'Admin app access could not be verified.');
+      })
       .finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
   }, [userId]);
 
   if (loading) return <LoadingScreen label="Checking application access…" />;
   // Fail closed if the central capability check cannot be verified. The user can retry or sign out.
+  if (legacyBackend) return visibleNav(user).length > 0 ? <>{children ?? <Outlet />}</> : <NoAccessPage />;
   if (error || !access?.admin.allowed) return <NoAccessPage access={access} accessError={error} />;
   if (visibleNav(user).length === 0) return <NoAccessPage access={access} />;
   return <>{children ?? <Outlet />}</>;
