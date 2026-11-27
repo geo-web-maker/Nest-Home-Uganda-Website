@@ -1,11 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import type { FieldErrors } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { Checkbox } from '../../../components/ui/Checkbox';
-import { Chip } from '../../../components/ui/Chip';
 import { Field } from '../../../components/ui/Field';
 import { plainWhatsappUrl } from '../../../lib/whatsapp';
 import type { BookingCopy } from '../../../locales/en/booking';
@@ -14,6 +13,7 @@ import type { BookingResult } from './bookingApi';
 import styles from './BookingForm.module.css';
 import { NOTE_MAX, RELATIONSHIPS, START_OPTIONS, createBookingSchema } from './bookingSchema';
 import type { BookingPayload, BookingValues } from './bookingSchema';
+import { BookingServiceSelector } from './BookingServiceSelector';
 
 export type BookingFormProps = {
   copy: BookingCopy;
@@ -203,41 +203,12 @@ export function BookingForm({
         ))}
       </Field>
 
-      <Controller
+      <BookingServiceSelector
         control={control}
-        name="service_ids"
-        render={({ field }) => (
-          <fieldset
-            className={styles.care}
-            aria-describedby={errors.service_ids ? 'care-error' : undefined}
-          >
-            <legend className={styles.legend}>
-              {copy.careNeeded} {copy.required}
-            </legend>
-            <div className={styles.chips} ref={firstChipRef}>
-              {services.map((service) => (
-                <Chip
-                  key={service.id}
-                  selected={field.value.includes(service.id)}
-                  onToggle={() =>
-                    field.onChange(
-                      field.value.includes(service.id)
-                        ? field.value.filter((id) => id !== service.id)
-                        : [...field.value, service.id],
-                    )
-                  }
-                >
-                  {service.name}
-                </Chip>
-              ))}
-            </div>
-            {errors.service_ids ? (
-              <p id="care-error" className={styles.error} role="alert">
-                {errors.service_ids.message}
-              </p>
-            ) : null}
-          </fieldset>
-        )}
+        errors={errors}
+        services={services}
+        copy={copy}
+        firstChipRef={firstChipRef}
       />
 
       <Field

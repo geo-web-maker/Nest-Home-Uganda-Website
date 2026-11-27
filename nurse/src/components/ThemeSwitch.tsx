@@ -4,17 +4,39 @@ import { getTheme, setTheme, type Theme } from '../lib/theme';
 import { Card } from '../ui/Card';
 import { PillButton } from '../ui/PillButton';
 
+/** Appearance card on the profile: one button that flips between light and dark. */
 export function ThemeSwitch() {
   const [theme, updateTheme] = useState<Theme>(() => getTheme());
-  const choose = (next: Theme) => {
+  const dark = theme === 'dark';
+  const toggle = () => {
+    const next: Theme = dark ? 'light' : 'dark';
     setTheme(next);
     updateTheme(next);
   };
   return <Card className="theme-panel" aria-labelledby="theme-heading">
     <h3 id="theme-heading">{copy.theme.heading}</h3>
-    <div className="theme-choice" role="group" aria-label={copy.theme.label}>
-      <PillButton type="button" tone="ghost" size="sm" showArrow={false} aria-pressed={theme === 'light'} onClick={() => choose('light')}>{copy.theme.light}</PillButton>
-      <PillButton type="button" tone="ghost" size="sm" showArrow={false} aria-pressed={theme === 'dark'} onClick={() => choose('dark')}>{copy.theme.dark}</PillButton>
+    <div className="theme-choice">
+      <PillButton
+        type="button"
+        tone="ghost"
+        size="full"
+        showArrow={false}
+        aria-label={`${copy.theme.label}: ${dark ? copy.theme.light : copy.theme.dark}`}
+        aria-pressed={dark}
+        onClick={toggle}
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" style={{ marginInlineEnd: 8, verticalAlign: 'middle' }}>
+          {dark ? (
+            <>
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+            </>
+          ) : (
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+          )}
+        </svg>
+        {dark ? copy.theme.dark : copy.theme.light}
+      </PillButton>
     </div>
   </Card>;
 }

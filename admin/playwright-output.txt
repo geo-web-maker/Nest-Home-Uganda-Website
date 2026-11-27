@@ -1,0 +1,169 @@
+
+Running 94 tests using 6 workers
+
+  ✓   1 [desktop] › e2e/admin-native.spec.ts:23:3 › admin mobile/native shell contract › keeps the admin shell usable at tablet width before Android packaging (2.6s)
+  ✓   4 [desktop] › e2e/admin-native.spec.ts:5:3 › admin mobile/native shell contract › uses the branded admin document title and mobile navigation (3.5s)
+  ✓   5 [desktop] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/nurses (5.4s)
+  ✓   3 [desktop] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/visits (5.9s)
+  ✓   6 [desktop] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/clients (5.9s)
+  ✓   2 [desktop] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/places (6.8s)
+  ✓   7 [desktop] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/flags (5.0s)
+  ✓   8 [desktop] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/team (4.8s)
+  ✓   9 [desktop] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/photos (4.5s)
+  ✓  11 [desktop] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/timesheets (4.2s)
+  ✓  10 [desktop] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/alerts (4.8s)
+  ✓  12 [desktop] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/sos (4.5s)
+  ✓  13 [desktop] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/reports/visits (4.3s)
+  ✓  14 [desktop] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/settings (4.3s)
+  ✓  18 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 320px /care/nurses (2.0s)
+  ✓  15 [desktop] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/readiness (4.0s)
+  ✓  19 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 320px /care/visits (2.0s)
+  ✓  16 [desktop] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/data-requests (4.8s)
+  ✓  20 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 320px /care/alerts (2.1s)
+  ✓  17 [desktop] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /activity (4.6s)
+  ✓  21 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 320px /care/sos (2.2s)
+  ✓  22 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 360px /care/nurses (2.4s)
+  ✓  23 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 360px /care/visits (2.2s)
+  ✓  24 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 360px /care/sos (2.8s)
+  ✓  26 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 390px /care/nurses (2.9s)
+  ✓  25 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 360px /care/alerts (3.3s)
+  ✓  27 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 390px /care/visits (3.0s)
+  ✓  28 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 390px /care/alerts (2.7s)
+  ✓  29 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 390px /care/sos (3.0s)
+  ✓  30 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 768px /care/nurses (2.3s)
+  ✓  31 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 768px /care/visits (2.6s)
+  ✓  32 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 768px /care/alerts (2.5s)
+  ✓  33 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 768px /care/sos (2.7s)
+  ✓  34 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 820px /care/nurses (2.7s)
+  ✓  35 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 820px /care/visits (2.5s)
+  ✓  36 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 820px /care/alerts (2.7s)
+  ✓  37 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 820px /care/sos (2.6s)
+  ✓  38 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 1280px /care/nurses (2.6s)
+  ✓  39 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 1280px /care/visits (2.6s)
+  ✓  40 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 1280px /care/alerts (2.6s)
+  ✓  42 [desktop] › e2e/legacy-admin-redirect.spec.ts:3:1 › legacy /admin/login redirects to /login (1.2s)
+  ✓  41 [desktop] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 1280px /care/sos (2.8s)
+  ✓  44 [desktop] › e2e/navigation-admin.spec.ts:4:1 › the admin area loads and asks for a sign-in (1.3s)
+  ✓  46 [desktop] › e2e/reference-fidelity-admin.spec.ts:45:3 › admin route coverage and responsive shell › admin navigation switches correctly between phone, tablet and desktop layouts (3.0s)
+  ✓  47 [desktop] › e2e/reference-fidelity-admin.spec.ts:82:3 › admin website and care operations vs reference mockup › groups implemented sections, exposes system controls, and saves typed gateway mode (3.5s)
+  ✓  49 [mobile] › e2e/admin-native.spec.ts:23:3 › admin mobile/native shell contract › keeps the admin shell usable at tablet width before Android packaging (2.0s)
+  ✓  45 [desktop] › e2e/reference-fidelity-admin.spec.ts:5:3 › admin route coverage and responsive shell › every implemented admin navigation entry opens its corresponding screen (5.6s)
+  ✓  48 [mobile] › e2e/admin-native.spec.ts:5:3 › admin mobile/native shell contract › uses the branded admin document title and mobile navigation (2.4s)
+  ✓  53 [mobile] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/flags (4.4s)
+  ✘  43 [desktop] › e2e/mail-rich.spec.ts:4:1 › admin reads formatted mail and composes a table-backed message through the shared editor (10.0s)
+  ✓  50 [mobile] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/nurses (4.8s)
+  ✓  52 [mobile] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/clients (4.7s)
+  ✓  51 [mobile] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/places (5.2s)
+  ✓  54 [mobile] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/visits (4.8s)
+  ✓  55 [mobile] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/team (4.7s)
+  ✓  56 [mobile] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/alerts (4.4s)
+  ✓  58 [mobile] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/sos (4.6s)
+  ✓  57 [mobile] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/timesheets (4.8s)
+  ✓  59 [mobile] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/reports/visits (4.9s)
+  ✓  60 [mobile] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/photos (5.1s)
+  ✓  61 [mobile] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/settings (4.3s)
+  ✓  62 [mobile] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/readiness (4.3s)
+  ✓  65 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 320px /care/nurses (1.8s)
+  ✓  64 [mobile] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /activity (4.2s)
+  ✓  63 [mobile] › e2e/care-a11y.spec.ts:24:3 › authenticated axe audit: /care/data-requests (4.3s)
+  ✓  66 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 320px /care/visits (2.2s)
+  ✓  68 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 320px /care/sos (2.4s)
+  ✓  67 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 320px /care/alerts (2.9s)
+  ✓  69 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 360px /care/nurses (2.7s)
+  ✓  70 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 360px /care/alerts (2.6s)
+  ✓  71 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 360px /care/visits (2.9s)
+  ✓  72 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 360px /care/sos (2.5s)
+  ✓  73 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 390px /care/nurses (2.7s)
+  ✓  74 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 390px /care/visits (2.8s)
+  ✓  76 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 390px /care/sos (3.0s)
+  ✓  75 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 390px /care/alerts (3.2s)
+  ✓  77 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 768px /care/nurses (3.1s)
+  ✓  78 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 768px /care/visits (2.9s)
+  ✓  79 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 768px /care/alerts (2.8s)
+  ✓  80 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 768px /care/sos (2.7s)
+  ✓  81 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 820px /care/nurses (2.8s)
+  ✓  82 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 820px /care/visits (3.0s)
+  ✓  83 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 820px /care/alerts (2.8s)
+  ✓  84 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 820px /care/sos (2.9s)
+  ✓  85 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 1280px /care/nurses (2.7s)
+  ✓  89 [mobile] › e2e/legacy-admin-redirect.spec.ts:3:1 › legacy /admin/login redirects to /login (1.5s)
+  ✓  86 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 1280px /care/visits (2.8s)
+  ✓  87 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 1280px /care/alerts (2.6s)
+  ✓  88 [mobile] › e2e/care-responsive.spec.ts:14:5 › authenticated care responsive layout 1280px /care/sos (2.7s)
+  ✓  91 [mobile] › e2e/navigation-admin.spec.ts:4:1 › the admin area loads and asks for a sign-in (1.2s)
+  ✓  93 [mobile] › e2e/reference-fidelity-admin.spec.ts:45:3 › admin route coverage and responsive shell › admin navigation switches correctly between phone, tablet and desktop layouts (2.4s)
+  ✓  94 [mobile] › e2e/reference-fidelity-admin.spec.ts:82:3 › admin website and care operations vs reference mockup › groups implemented sections, exposes system controls, and saves typed gateway mode (2.4s)
+  ✓  92 [mobile] › e2e/reference-fidelity-admin.spec.ts:5:3 › admin route coverage and responsive shell › every implemented admin navigation entry opens its corresponding screen (3.9s)
+  ✘  90 [mobile] › e2e/mail-rich.spec.ts:4:1 › admin reads formatted mail and composes a table-backed message through the shared editor (30.3s)
+
+
+  1) [desktop] › e2e/mail-rich.spec.ts:4:1 › admin reads formatted mail and composes a table-backed message through the shared editor 
+
+    Error: expect(received).toBeTruthy()
+
+    Received: false
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      49 |   await dialog.getByRole('button', { name: 'Send' }).click();
+      50 |   // A single-recipient message without attachments sends straight away; no review popup.
+    > 51 |   await expect.poll(() => outbound.some((item) => item.path === '/api/v1/mail/drafts/draft-1/send')).toBeTruthy();
+         |                                                                                                      ^
+      52 |   const savedDraft = outbound.find((item) => item.path === '/api/v1/mail/drafts' && item.method === 'POST');
+      53 |   expect(savedDraft?.body).toMatchObject({ to: ['recipient@example.test'], format: 'html' });
+      54 | });
+        at /home/sgk/Projects from Github/geo-web-maker/Nest-Home-Uganda-Website/admin/e2e/mail-rich.spec.ts:51:102
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/mail-rich-admin-reads-form-7806b-e-through-the-shared-editor-desktop/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/mail-rich-admin-reads-form-7806b-e-through-the-shared-editor-desktop/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/mail-rich-admin-reads-form-7806b-e-through-the-shared-editor-desktop/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/mail-rich-admin-reads-form-7806b-e-through-the-shared-editor-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [mobile] › e2e/mail-rich.spec.ts:4:1 › admin reads formatted mail and composes a table-backed message through the shared editor 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('navigation', { name: 'Admin' }).getByRole('link', { name: 'Mail', exact: true })
+
+
+       at admin-fixtures.ts:164
+
+      162 |     return;
+      163 |   }
+    > 164 |   await page.getByRole('navigation', { name: 'Admin' }).getByRole('link', { name: label, exact: true }).click();
+          |                                                                                                         ^
+      165 | }
+      166 |
+        at navigateToAdminPath (/home/sgk/Projects from Github/geo-web-maker/Nest-Home-Uganda-Website/admin/e2e/admin-fixtures.ts:164:105)
+        at /home/sgk/Projects from Github/geo-web-maker/Nest-Home-Uganda-Website/admin/e2e/mail-rich.spec.ts:30:3
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/mail-rich-admin-reads-form-7806b-e-through-the-shared-editor-mobile/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/mail-rich-admin-reads-form-7806b-e-through-the-shared-editor-mobile/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/mail-rich-admin-reads-form-7806b-e-through-the-shared-editor-mobile/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/mail-rich-admin-reads-form-7806b-e-through-the-shared-editor-mobile/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    [desktop] › e2e/mail-rich.spec.ts:4:1 › admin reads formatted mail and composes a table-backed message through the shared editor 
+    [mobile] › e2e/mail-rich.spec.ts:4:1 › admin reads formatted mail and composes a table-backed message through the shared editor 
+  92 passed (1.4m)

@@ -1,5 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
-import { LoadingNote } from '../../../components/admin/LoadingNote';
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Notice } from '@shared/components/dialogs/Notice';
 import { Button } from '@shared/components/ui/Button';
@@ -7,20 +6,26 @@ import { ButtonGroup } from '@shared/components/dialogs/ButtonGroup';
 import { FilterBar } from '../../../components/admin/FilterBar';
 import { FilterTabs } from '../../../components/admin/FilterTabs';
 import { Field } from '@shared/components/ui/Field';
-import { Checkbox } from '@shared/components/ui/Checkbox';
 import { StatusBadge } from '@shared/components/ui/Badge';
 import { apiClient, ApiError } from '@shared/lib/api/client';
 import { createPasskey, passkeysSupported, type PasskeyCreationOptions } from '@shared/lib/webauthn';
 import { useAuth } from '../auth/useAuth';
 import styles from './AgreementsPage.module.css';
-import { dialogs } from '@shared/lib/dialogs';
-import { AgreementFieldInput } from '@shared/features/agreements/AgreementFieldInput';
-import { SignatureMethodPicker, credentialProblem, type SignatureChoice } from '@shared/features/agreements/SignatureMethodPicker';
-import { OWNER_LABEL, SCHEDULE_SECTIONS, fieldLabel, fieldMeta, isBlank, isHiddenField, notInFormNote, paymentOptionKind, type FieldSection, type ScheduleTab } from '@shared/features/agreements/fieldMeta';
-import { DateCalculator, type CalcDateField } from '@shared/features/agreements/DateCalculator';
+import { AgreementCountersignPanel } from './AgreementCountersignPanel';
+import { AgreementDeliveryPanel } from './AgreementDeliveryPanel';
+import { AgreementLifecycleActions } from './AgreementLifecycleActions';
+import { MessageTemplatePanel } from './MessageTemplatePanel';
 
-type Owner = 'staff' | 'clinical' | 'client' | 'either';
-type AgreementField = { value: unknown; owner: Owner; revision: number; entered_by_staff: boolean; updated_at?: string | null; updated_by?: string | null };
+import { dialogs } from '@shared/lib/dialogs';
+import { useAgreementMessageTemplates } from './useAgreementMessageTemplates';
+import { credentialProblem, type SignatureChoice } from '@shared/features/agreements/SignatureMethodPicker';
+import { fieldLabel, isBlank, paymentOptionKind, type ScheduleTab } from '@shared/features/agreements/fieldMeta';
+import { AgreementSchedulePanel } from './AgreementSchedulePanel';
+import { AgreementLinkPanel } from './AgreementLinkPanel';
+import { AgreementPreviewPanel } from './AgreementPreviewPanel';
+import { AgreementTimeline } from './AgreementTimeline';
+import type { AgreementField, FieldConflict } from './agreementFieldTypes';
+
 type AgreementRow = {
   id: string; reference: string; status: string; client_name?: string | null; patient_name?: string | null;
   client_email?: string | null; client_phone?: string | null; assigned_nurse_id?: string | null;
@@ -34,19 +39,18 @@ type AgreementDetail = AgreementRow & {
   fill_mode?: 'self' | 'assisted' | null;
   assistance?: { state: 'none' | 'requested' | 'ready'; requested_at?: string | null; ready_at?: string | null; note?: string | null };
 };
-type LinkInfo = { state: 'live' | 'legacy' | 'none'; link_id: string | null; generation: number; url: string | null; expires_at: string | null; earlier_links_still_valid: number };
+type LinkInfo = {
+  state: 'live' | 'legacy' | 'none';
+  link_id: string | null;
+  generation: number;
+  url: string | null;
+  expires_at: string | null;
+  earlier_links_still_valid: number;
+};
 type AgreementList = { items: AgreementRow[]; total: number };
-type Preview = { html: string };
-type TemplateMessage = { subject: string; preheader: string; body: string; button: string; footer_note: string; version: number; is_default: boolean };
-type AgreementTemplateVersion = { version: number; published: boolean; template_hash: string; published_at?: string | null; source_file?: string | null };
-type MessagePreview = { subject?: string; html?: string; text?: string; body?: string; characters?: number; segments?: number; gsm7?: boolean };
-type MessageStage = 'agreement_sent' | 'otp_sign' | 'otp_view' | 'reminder_1' | 'reminder_2' | 'expiring_soon' | 'expired' | 'changes_requested' | 'assistance_requested' | 'staff_revised' | 'client_signed_client' | 'client_signed_staff' | 'completed_client' | 'voided' | 'amendment_sent' | 'payment_due';
-
 // Mirrors the server rule (the server enforces it): never sent, or already closed.
 const DELETABLE_STATUSES = new Set(['draft', 'changes_requested', 'expired', 'voided']);
 
-const stages: MessageStage[] = ['agreement_sent', 'otp_sign', 'otp_view', 'reminder_1', 'reminder_2', 'expiring_soon', 'expired', 'changes_requested', 'assistance_requested', 'staff_revised', 'client_signed_client', 'client_signed_staff', 'completed_client', 'voided', 'amendment_sent', 'payment_due'];
-const smsStages = new Set<MessageStage>(['agreement_sent', 'otp_sign', 'otp_view', 'reminder_1', 'reminder_2', 'expiring_soon', 'staff_revised', 'client_signed_client', 'completed_client', 'voided', 'amendment_sent', 'payment_due']);
 const tabs = [
   { id: 'parties', label: 'Parties' }, { id: 'schedule_a', label: 'Schedule A' },
   { id: 'schedule_b', label: 'Schedule B' }, { id: 'schedule_c', label: 'Schedule C' },
@@ -56,18 +60,6 @@ const tabs = [
 type Tab = typeof tabs[number]['id'];
 
 function label(path: string): string { return fieldLabel(path); }
-
-/** Only the editable parts of a message template; the server rejects the extra keys a loaded template carries (version, is_default…). */
-function editableMessage(message: TemplateMessage) {
-  return { subject: message.subject, preheader: message.preheader, body: message.body, button: message.button, footer_note: message.footer_note };
-}
-
-/** The server's message plus the fields it rejected, so "check the highlighted fields" says which. */
-function errorWithFields(cause: unknown, fallback: string): string {
-  if (!(cause instanceof Error)) return fallback;
-  const detail = cause instanceof ApiError ? Object.entries(cause.fields).map(([name, why]) => `${name}: ${why}`).join('; ') : '';
-  return detail ? `${cause.message} (${detail})` : cause.message;
-}
 
 /** The server names every field that blocked a send (ApiError.fields); list them so staff know what to fill in. */
 function missingFieldsMessage(cause: unknown, fallback: string): string {
@@ -79,7 +71,9 @@ function missingFieldsMessage(cause: unknown, fallback: string): string {
   const more = names.length > 6 ? ` and ${names.length - 6} more` : '';
   return `${cause.message} Missing: ${shown}${more}.`;
 }
-function isScheduleTab(value: string): value is ScheduleTab { return value === 'parties' || value === 'schedule_a' || value === 'schedule_b' || value === 'schedule_c'; }
+function isScheduleTab(value: string): value is ScheduleTab {
+  return ['parties', 'schedule_a', 'schedule_b', 'schedule_c'].includes(value);
+}
 function outstanding(fields: Record<string, AgreementField>, paths: string[]): string[] {
   const option = paymentOptionKind(valueText(fields['schedule_b.payment_option']?.value));
   return paths.filter((path) => {
@@ -111,16 +105,17 @@ export function AgreementsPage() {
   const [notice, setNotice] = useState('');
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [enteredStaff, setEnteredStaff] = useState<Record<string, boolean>>({});
-  const [conflicts, setConflicts] = useState<Record<string, { local: string; remote: string; revision: number }>>({});
+  const [conflicts, setConflicts] = useState<Record<string, FieldConflict>>({});
   const [pick, setPick] = useState<{ email: boolean; sms: boolean }>({ email: true, sms: true });
   const channels = (pick.email && pick.sms ? 'both' : pick.email ? 'email' : pick.sms ? 'sms' : 'both') as 'email' | 'sms' | 'both';
   const noChannel = !pick.email && !pick.sms;
-  const [messageStage, setMessageStage] = useState<MessageStage>('agreement_sent');
-  const [messageChannel, setMessageChannel] = useState<'email' | 'sms'>('email');
-  const [message, setMessage] = useState<TemplateMessage | null>(null);
-  const [messagePreview, setMessagePreview] = useState<MessagePreview | null>(null);
-  const [templateJson, setTemplateJson] = useState('');
-  const [templateInfo, setTemplateInfo] = useState<{ version?: number; published?: boolean; template_hash?: string; clauses?: Record<string, string>; source_file?: string | null; versions?: AgreementTemplateVersion[]; published_version?: number | null } | null>(null);
+  const messageTemplates = useAgreementMessageTemplates({ setBusy, setError, setNotice });
+  const {
+    messageStage, messageChannel, message, messagePreview, templateJson, templateInfo,
+    setMessage, setTemplateJson, loadMessage, changeMessageStage, changeMessageChannel, saveMessage,
+    previewMessage, testSendMessage, resetMessage, openTemplate, installSourceTemplate,
+    loadTemplateVersion, saveTemplateDraft, publishTemplate,
+  } = messageTemplates;
   const [bloomwellName, setBloomwellName] = useState('');
   const signatureCanvas = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
@@ -131,7 +126,11 @@ export function AgreementsPage() {
   useEffect(() => { let live = true; void passkeysSupported().then((ok) => { if (live) setBiometricAvailable(ok); }); return () => { live = false; }; }, []);
   const canWrite = Boolean(user?.is_superadmin || user?.scopes.includes('agreements:write'));
   const canManageTemplates = Boolean(user?.is_superadmin || user?.scopes.includes('agreements:templates'));
-  const canViewNotifications = Boolean(user?.is_superadmin || user?.scopes.includes('agreements:notifications') || user?.scopes.includes('agreements:templates'));
+  const canViewNotifications = Boolean(
+    user?.is_superadmin ||
+      user?.scopes.includes('agreements:notifications') ||
+      user?.scopes.includes('agreements:templates'),
+  );
   const canSign = Boolean(user?.is_superadmin || user?.scopes.includes('agreements:sign'));
   const canVoid = Boolean(user?.is_superadmin || user?.scopes.includes('agreements:void'));
   const visibleTabs = tabs.filter((entry) => entry.id === 'messages' ? canViewNotifications : entry.id === 'template' ? canManageTemplates : true);
@@ -195,96 +194,11 @@ export function AgreementsPage() {
     try {
       const result = await apiClient.post<{ delivery: Record<string, boolean> }>(`/admin/agreements/${detail.id}/send`, { channels, expires_days: 14 });
       await loadDetail(detail.id); await loadList();
-      setNotice(`Agreement sent. Delivery: ${Object.entries(result.delivery).map(([k, v]) => `${k} ${v ? 'sent' : 'failed'}`).join(', ') || 'none requested'}.`);
+      const deliverySummary = Object.entries(result.delivery)
+        .map(([channel, sent]) => `${channel} ${sent ? 'sent' : 'failed'}`)
+        .join(', ');
+      setNotice(`Agreement sent. Delivery: ${deliverySummary || 'none requested'}.`);
     } catch (cause) { setError(missingFieldsMessage(cause, 'The agreement could not be sent.')); }
-    finally { setBusy(false); }
-  };
-
-  const loadMessage = async (stage: MessageStage, channel: 'email' | 'sms') => {
-    setMessageStage(stage); setMessageChannel(channel); setError('');
-    try {
-      const result = await apiClient.get<TemplateMessage>(`/admin/agreements/message-templates/${stage}/${channel}`);
-      setMessage(result);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not load this message template.'); }
-  };
-
-  const saveMessage = async () => {
-    if (!message) return;
-    setBusy(true); setError('');
-    try {
-      await apiClient.put(`/admin/agreements/message-templates/${messageStage}/${messageChannel}`, editableMessage(message));
-      await loadMessage(messageStage, messageChannel); setMessagePreview(null); setNotice('Message template saved and audited.');
-    } catch (cause) { setError(errorWithFields(cause, 'Could not save this message.')); }
-    finally { setBusy(false); }
-  };
-
-  const previewMessage = async () => {
-    if (!message) return;
-    setBusy(true); setError('');
-    try {
-      const result = await apiClient.post<MessagePreview>(`/admin/agreements/message-templates/${messageStage}/${messageChannel}/preview`, editableMessage(message));
-      setMessagePreview(result);
-    } catch (cause) { setError(errorWithFields(cause, 'Could not preview this message.')); }
-    finally { setBusy(false); }
-  };
-
-  const testSendMessage = async () => {
-    setBusy(true); setError('');
-    try {
-      const result = await apiClient.post<{ sent: boolean; message: string }>(`/admin/agreements/message-templates/${messageStage}/${messageChannel}/test-send`, {});
-      setNotice(result.message);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'The test message could not be sent.'); }
-    finally { setBusy(false); }
-  };
-
-  const openTemplate = async () => {
-    setBusy(true); setError('');
-    try {
-      const result = await apiClient.get<{ version?: number; published?: boolean; template_hash?: string; clauses?: Record<string, string>; source_file?: string | null; versions?: AgreementTemplateVersion[]; published_version?: number | null }>('/admin/agreements/template/current');
-      setTemplateInfo(result); setTemplateJson(JSON.stringify(result.clauses ?? {}, null, 2));
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not load template versions.'); }
-    finally { setBusy(false); }
-  };
-
-  const installSourceTemplate = async () => {
-    if (!await dialogs.confirm('Install the latest agreement wording? If a version is already live, it is saved as a new draft version and nothing live changes.', { confirmLabel: 'Install as draft' })) return;
-    setBusy(true); setError(''); setNotice('');
-    try {
-      const result = await apiClient.post<{ created: number; message: string }>('/admin/agreements/template/seed', {});
-      await openTemplate();
-      setNotice(result.created ? 'Latest wording installed as a draft. Choose it under "Load version", review it, then press "Publish selected version".' : result.message);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'The latest wording could not be installed. Verify your authenticator in Mail settings and try again.'); }
-    finally { setBusy(false); }
-  };
-
-  const loadTemplateVersion = async (version: number) => {
-    setBusy(true); setError('');
-    try {
-      const result = await apiClient.get<{ version: number; published: boolean; template_hash: string; clauses: Record<string, string>; source_file?: string | null; published_at?: string | null }>(`/admin/agreements/template/${version}`);
-      setTemplateInfo((current) => ({ ...current, ...result }));
-      setTemplateJson(JSON.stringify(result.clauses, null, 2));
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not load this template version.'); }
-    finally { setBusy(false); }
-  };
-
-  const saveTemplateDraft = async () => {
-    setBusy(true); setError('');
-    try {
-      const clauses = JSON.parse(templateJson) as Record<string, string>;
-      const result = await apiClient.post<{ version: number; template_hash: string }>('/admin/agreements/template/drafts', { clauses });
-      await openTemplate();
-      setNotice(`Draft template v${result.version} saved. Check the clause text against the signed source before publishing.`);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Template JSON is invalid or could not be saved.'); }
-    finally { setBusy(false); }
-  };
-
-  const publishTemplate = async () => {
-    if (!templateInfo?.version) { setError('Save a draft template before publishing.'); return; }
-    setBusy(true); setError('');
-    try {
-      await apiClient.post(`/admin/agreements/template/${templateInfo.version}/publish`, {});
-      await openTemplate(); setNotice(`Template v${templateInfo.version} published.`);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not publish the template.'); }
     finally { setBusy(false); }
   };
 
@@ -294,7 +208,11 @@ export function AgreementsPage() {
   }), [detail, tab]);
 
   const performResend = async (id: string, via?: 'email' | 'sms' | 'both') => {
-    if (!await dialogs.confirm('Send the client their agreement link again? It is the same link, so any earlier message still works.', { confirmLabel: 'Send again' })) return;
+    const confirmed = await dialogs.confirm(
+      'Send the client their agreement link again? It is the same link, so any earlier message still works.',
+      { confirmLabel: 'Send again' },
+    );
+    if (!confirmed) return;
     setBusy(true); setError(''); setNotice('');
     try {
       const result = await apiClient.post<{ delivery: Record<string, boolean> }>(
@@ -312,7 +230,11 @@ export function AgreementsPage() {
   };
   const markAssistanceReady = async () => {
     if (!detail) return;
-    if (!await dialogs.confirm('Send the client a new link now? They will verify again, see the details you entered, and sign. Consent items in Schedule C stay theirs to complete.', { confirmLabel: 'Details are ready' })) return;
+    const confirmed = await dialogs.confirm(
+      'Send the client a new link now? They will verify again, see the details you entered, and sign. Consent items in Schedule C stay theirs to complete.',
+      { confirmLabel: 'Details are ready' },
+    );
+    if (!confirmed) return;
     setBusy(true); setError(''); setNotice('');
     try {
       const result = await apiClient.post<{ delivery: Record<string, boolean> }>(`/admin/agreements/${detail.id}/assistance/ready`, {});
@@ -323,25 +245,56 @@ export function AgreementsPage() {
     finally { setBusy(false); }
   };
   const performDeletePractice = async () => {
-    if (!await dialogs.confirm('Delete ALL practice agreements and their files? Real agreements are not touched.', { confirmLabel: 'Delete all', danger: true })) return;
+    const confirmed = await dialogs.confirm(
+      'Delete ALL practice agreements and their files? Real agreements are not touched.',
+      { confirmLabel: 'Delete all', danger: true },
+    );
+    if (!confirmed) return;
     setBusy(true); setError('');
-    try { const r = await apiClient.delete<{ deleted: number }>('/admin/agreements/practice'); setSelected(''); setDetail(null); await loadList(); setNotice(`${r?.deleted ?? 0} practice agreement(s) deleted.`); }
+    try {
+      const result = await apiClient.delete<{ deleted: number }>('/admin/agreements/practice');
+      setSelected('');
+      setDetail(null);
+      await loadList();
+      setNotice(`${result?.deleted ?? 0} practice agreement(s) deleted.`);
+    }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not delete the practice agreements.'); }
     finally { setBusy(false); }
   };
 
   const performDelete = async (id: string, reference: string) => {
-    if (!await dialogs.confirm(`Permanently delete agreement ${reference}? This removes it and any stored files, and cannot be undone.`, { confirmLabel: 'Delete', danger: true })) return;
+    const confirmed = await dialogs.confirm(
+      `Permanently delete agreement ${reference}? This removes it and any stored files, and cannot be undone.`,
+      { confirmLabel: 'Delete', danger: true },
+    );
+    if (!confirmed) return;
     setBusy(true); setError('');
-    try { await apiClient.delete(`/admin/agreements/${id}`); if (selected === id) { setSelected(''); setDetail(null); } await loadList(); setNotice(`${reference} deleted.`); }
+    try {
+      await apiClient.delete(`/admin/agreements/${id}`);
+      if (selected === id) {
+        setSelected('');
+        setDetail(null);
+      }
+      await loadList();
+      setNotice(`${reference} deleted.`);
+    }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not delete the agreement.'); }
     finally { setBusy(false); }
   };
   const performVoid = async (id: string) => {
-    const reason = await dialogs.prompt('Reason for cancelling this agreement (required):', '', { minLength: 3, multiline: true, confirmLabel: 'Cancel agreement', danger: true });
+    const reason = await dialogs.prompt(
+      'Reason for cancelling this agreement (required):',
+      '',
+      { minLength: 3, multiline: true, confirmLabel: 'Cancel agreement', danger: true },
+    );
     if (!reason?.trim()) return;
     setBusy(true); setError('');
-    try { await apiClient.post(`/admin/agreements/${id}/void`, { reason }); await loadList(); if (selected === id) await loadDetail(id); setNotice('Agreement cancelled.'); }
+    try {
+      await apiClient.post(`/admin/agreements/${id}/void`, { reason });
+      await loadList();
+      if (selected === id) await loadDetail(id);
+      setNotice('Agreement cancelled.');
+    }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not cancel the agreement.'); }
     finally { setBusy(false); }
   };
@@ -350,7 +303,10 @@ export function AgreementsPage() {
 
   const signaturePoint = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
-    return { x: (event.clientX - rect.left) * (event.currentTarget.width / rect.width), y: (event.clientY - rect.top) * (event.currentTarget.height / rect.height) };
+    return {
+      x: (event.clientX - rect.left) * (event.currentTarget.width / rect.width),
+      y: (event.clientY - rect.top) * (event.currentTarget.height / rect.height),
+    };
   };
   const beginSignature = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -407,7 +363,11 @@ export function AgreementsPage() {
   };
   const createAmendment = async () => {
     if (!detail) return;
-    const variation_clause = await dialogs.prompt('Which clause number or named clause will this amendment vary?', '', { minLength: 1, confirmLabel: 'Create amendment' });
+    const variation_clause = await dialogs.prompt(
+      'Which clause number or named clause will this amendment vary?',
+      '',
+      { minLength: 1, confirmLabel: 'Create amendment' },
+    );
     if (!variation_clause?.trim()) return;
     setBusy(true); setError('');
     try {
@@ -438,249 +398,262 @@ export function AgreementsPage() {
         <section className={styles.listPanel} aria-label="Agreement list">
           <FilterBar label="Agreement filters">
             {canWrite && <>
-              <Field label="Enquiry ID for next agreement (optional)" value={sourceEnquiryId} onChange={(e) => setSourceEnquiryId(e.target.value)} placeholder="Paste enquiry ID" />
-              <Field label="Assigned clinical nurse user ID (optional)" value={assignedNurseId} onChange={(e) => setAssignedNurseId(e.target.value)} placeholder="Paste staff user ID" />
+              <Field
+                label="Enquiry ID for next agreement (optional)"
+                value={sourceEnquiryId}
+                onChange={(event) => setSourceEnquiryId(event.target.value)}
+                placeholder="Paste enquiry ID"
+              />
+              <Field
+                label="Assigned clinical nurse user ID (optional)"
+                value={assignedNurseId}
+                onChange={(event) => setAssignedNurseId(event.target.value)}
+                placeholder="Paste staff user ID"
+              />
             </>}
             <Field label="Search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Reference or client" />
             <Field kind="select" label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="">All statuses</option>
-              {['draft','sent','client_in_progress','client_signed','completed','changes_requested','expired','voided'].map((s) => <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>)}
+              {['draft', 'sent', 'client_in_progress', 'client_signed', 'completed', 'changes_requested', 'expired', 'voided'].map((value) => (
+                <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>
+              ))}
             </Field>
           </FilterBar>
-          {canVoid && showPractice && <div className={styles.practiceBar}><span>Showing practice agreements</span><Button variant="danger-outline" size="compact" onClick={() => void performDeletePractice()} disabled={busy}>Delete all practice</Button></div>}
-          {rows.length === 0 ? <div className={styles.empty}><h2>No agreements yet</h2><p>Create an agreement from a client enquiry, review the staff-only care and fee sections, then send a secure link. Clients complete and sign in their browser.</p>{canWrite && <Button onClick={() => void create()} variant="outline">Create first agreement</Button>}</div> : (
+          {canVoid && showPractice && (
+            <div className={styles.practiceBar}>
+              <span>Showing practice agreements</span>
+              <Button
+                variant="danger-outline"
+                size="compact"
+                onClick={() => void performDeletePractice()}
+                disabled={busy}
+              >
+                Delete all practice
+              </Button>
+            </div>
+          )}
+          {rows.length === 0 ? (
+            <div className={styles.empty}>
+              <h2>No agreements yet</h2>
+              <p>
+                Create an agreement from a client enquiry, review the staff-only care and fee sections, then send a secure link.
+                Clients complete and sign in their browser.
+              </p>
+              {canWrite && (
+                <Button onClick={() => void create()} variant="outline">
+                  Create first agreement
+                </Button>
+              )}
+            </div>
+          ) : (
             <ul className={styles.rows}>{rows.map((row) => <li key={row.id} className={selected === row.id ? styles.selected : ''}>
               <Button type="button" variant="outline" size="compact" className={styles.rowMain} onClick={() => { setSelected(row.id); setTab('parties'); }}>
-                <strong>{row.reference}{row.is_test ? ' (PRACTICE)' : ''}</strong><span>{row.client_name || 'Client not named'}</span><small>{row.patient_name ? `Patient: ${row.patient_name}` : 'Patient details pending'}</small>
+                <strong>{row.reference}{row.is_test ? ' (PRACTICE)' : ''}</strong>
+                <span>{row.client_name || 'Client not named'}</span>
+                <small>{row.patient_name ? `Patient: ${row.patient_name}` : 'Patient details pending'}</small>
                 <StatusBadge status={statusTone(row.status)}>{row.status.replaceAll('_', ' ')}</StatusBadge>
               </Button>
-              {(canWrite || canVoid) && <ButtonGroup size="compact" align="end">{canWrite && <Button variant="outline" onClick={() => void performResend(row.id)} disabled={busy || !['draft','sent','client_in_progress','changes_requested','expired'].includes(row.status)}>Resend</Button>}{canVoid && <Button variant="danger-outline" onClick={() => void performVoid(row.id)} disabled={busy || row.status === 'completed' || row.status === 'voided'}>Void</Button>}{canVoid && (DELETABLE_STATUSES.has(row.status) || row.is_test) && <Button variant="danger-outline" onClick={() => void performDelete(row.id, row.reference)} disabled={busy}>Delete</Button>}</ButtonGroup>}
+              {(canWrite || canVoid) && (
+                <ButtonGroup size="compact" align="end">
+                  {canWrite && (
+                    <Button
+                      variant="outline"
+                      onClick={() => void performResend(row.id)}
+                      disabled={busy || !['draft', 'sent', 'client_in_progress', 'changes_requested', 'expired'].includes(row.status)}
+                    >
+                      Resend
+                    </Button>
+                  )}
+                  {canVoid && (
+                    <Button
+                      variant="danger-outline"
+                      onClick={() => void performVoid(row.id)}
+                      disabled={busy || row.status === 'completed' || row.status === 'voided'}
+                    >
+                      Void
+                    </Button>
+                  )}
+                  {canVoid && (DELETABLE_STATUSES.has(row.status) || row.is_test) && (
+                    <Button variant="danger-outline" onClick={() => void performDelete(row.id, row.reference)} disabled={busy}>
+                      Delete
+                    </Button>
+                  )}
+                </ButtonGroup>
+              )}
             </li>)}</ul>
           )}
         </section>
 
         <section className={styles.editorPanel} aria-label="Agreement editor">
-          {!selected || !detail ? <div className={styles.empty}><h2>Select an agreement</h2><p>Open an item from the list or create a new agreement.</p></div> : <>
-            <div className={styles.editorHeading}><div><h2>{detail.reference}</h2><p>{detail.client_name || 'Client details pending'} · {detail.status.replaceAll('_', ' ')}</p></div><StatusBadge status={statusTone(detail.status)}>{detail.status.replaceAll('_', ' ')}</StatusBadge></div>
-            {detail.assistance?.state === 'requested' && <Notice tone="info"><strong>The client asked you to fill this in for them.</strong>{detail.assistance.note ? <> Their note: “{detail.assistance.note}”.</> : null} Complete the details in the tabs below (fields entered here are marked as entered by staff), then press the button. The client is messaged once, when you press it, not after each save. Schedule C consent items cannot be entered by staff; the client completes those when they review.{canWrite && <> <Button size="compact" onClick={() => void markAssistanceReady()} disabled={busy}>Details are ready: notify client</Button></>}</Notice>}
-            {detail.assistance?.state === 'ready' && ['sent', 'client_in_progress'].includes(detail.status) && <Notice tone="info">Details were completed by staff{detail.assistance.ready_at ? ` on ${new Date(detail.assistance.ready_at).toLocaleString()}` : ''}. Waiting for the client to review and sign.</Notice>}
+          {!selected || !detail ? (
+            <div className={styles.empty}>
+              <h2>Select an agreement</h2>
+              <p>Open an item from the list or create a new agreement.</p>
+            </div>
+          ) : <>
+            <div className={styles.editorHeading}>
+              <div>
+                <h2>{detail.reference}</h2>
+                <p>{detail.client_name || 'Client details pending'} · {detail.status.replaceAll('_', ' ')}</p>
+              </div>
+              <StatusBadge status={statusTone(detail.status)}>{detail.status.replaceAll('_', ' ')}</StatusBadge>
+            </div>
+            {detail.assistance?.state === 'requested' && (
+              <Notice tone="info">
+                <strong>The client asked you to fill this in for them.</strong>
+                {detail.assistance.note ? <> Their note: “{detail.assistance.note}”.</> : null}
+                {' '}
+                Complete the details in the tabs below (fields entered here are marked as entered by
+                staff), then press the button. The client is messaged once, when you press it, not
+                after each save. Schedule C consent items cannot be entered by staff; the client
+                completes those when they review.
+                {canWrite && (
+                  <Button size="compact" onClick={() => void markAssistanceReady()} disabled={busy}>
+                    Details are ready: notify client
+                  </Button>
+                )}
+              </Notice>
+            )}
+            {detail.assistance?.state === 'ready' && ['sent', 'client_in_progress'].includes(detail.status) && (
+              <Notice tone="info">
+                Details were completed by staff
+                {detail.assistance.ready_at ? ` on ${new Date(detail.assistance.ready_at).toLocaleString()}` : ''}.
+                {' '}Waiting for the client to review and sign.
+              </Notice>
+            )}
             <FilterTabs label="Agreement sections" value={tab}
               tabs={visibleTabs.map((entry) => {
-                const count = isScheduleTab(entry.id) ? outstanding(detail.fields, Object.keys(detail.fields).filter((path) => path.startsWith(entry.id === 'parties' ? 'client.' : `${entry.id}.`) || (entry.id === 'parties' && path.startsWith('patient.')))).length : 0;
+                const sectionPaths = Object.keys(detail.fields).filter((path) =>
+                  path.startsWith(entry.id === 'parties' ? 'client.' : `${entry.id}.`) ||
+                  (entry.id === 'parties' && path.startsWith('patient.')),
+                );
+                const count = isScheduleTab(entry.id)
+                  ? outstanding(detail.fields, sectionPaths).length
+                  : 0;
                 return { value: entry.id, label: count ? `${entry.label} (${count})` : entry.label };
               })}
-              onChange={(value) => { setTab(value as typeof tab); if (value === 'messages') void loadMessage(messageStage, messageChannel); if (value === 'template') void openTemplate(); }} />
+              onChange={(value) => {
+                setTab(value as typeof tab);
+                if (value === 'messages') void loadMessage(messageStage, messageChannel);
+                if (value === 'template') void openTemplate();
+              }}
+            />
             <div className={styles.editorBody}>
-            {isScheduleTab(tab) && (() => {
-              const config = SCHEDULE_SECTIONS[tab];
-              const known = new Set(config.sections.flatMap((section) => section.paths));
-              const leftovers = displayedFields.map(([path]) => path).filter((path) => !known.has(path) && !isHiddenField(path));
-              const sections: FieldSection[] = leftovers.length ? [...config.sections, { id: 'other', title: 'Other fields', paths: leftovers }] : config.sections;
-              const currencyField = detail.fields['schedule_b.currency'];
-              const currency = (drafts['schedule_b.currency'] ?? valueText(currencyField?.value)) || 'UGX';
-              const needed = outstanding(detail.fields, sections.flatMap((section) => section.paths));
-              const renderField = (path: string) => {
-                const field = detail.fields[path];
-                if (!field) return null;
-                const meta = fieldMeta(path);
-                if (meta.showWhen && !meta.showWhen((other) => drafts[other] ?? valueText(detail.fields[other]?.value))) return null;
-                const local = drafts[path] ?? valueText(field.value);
-                const locked = ['voided', 'expired', 'client_signed', 'completed'].includes(detail.status);
-                const readOnly = !canWrite || locked || field.owner === 'client';
-                const conflict = conflicts[path];
-                const blank = isBlank(field.value);
-                const staffNeeds = blank && path !== 'schedule_b.payment_option' && (field.owner === 'staff' || field.owner === 'clinical');
-                const skipNote = notInFormNote(path, field.owner);
-                return <div className={`${styles.field} ${meta.kind === 'long' ? styles.wide : ''} ${staffNeeds ? styles.fieldNeeded : !blank ? styles.fieldDone : ''}`} key={path}>
-                  <label htmlFor={`agreement-${path}`}>
-                    <span>{meta.label}{meta.required && <abbr title="Required before sending" className={styles.req}> *</abbr>}</span>
-                    <span className={`${styles.pill} ${styles[`owner_${field.owner}`]}`}>{OWNER_LABEL[field.owner] ?? field.owner}</span>
-                  </label>
-                  {skipNote && <p className={styles.notInForm}><strong>Not in the agreement form.</strong> {skipNote}</p>}
-                  {meta.help && <p className={styles.fieldHelp}>{meta.help}</p>}
-                  <AgreementFieldInput path={path} id={`agreement-${path}`} value={local} readOnly={readOnly} currency={currency}
-                    allowNA={field.owner !== 'client'} onChange={(value) => setDrafts((old) => ({ ...old, [path]: value }))} />
-                  <div className={styles.fieldFoot}>
-                    <span className={blank ? (staffNeeds ? styles.statusNeeded : styles.statusWaiting) : styles.statusDone}>
-                      {!blank ? '✓ Saved' : staffNeeds ? (skipNote ? 'Fill or mark N/A to skip' : 'Needed before sending') : field.owner === 'client' ? 'Waiting for client' : 'Optional'}
-                      {field.entered_by_staff ? ' · entered by staff' : ''}{field.updated_at ? ` · last edited ${new Date(field.updated_at).toLocaleString()}${field.updated_by && field.updated_by !== 'client' ? ` by staff ${field.updated_by.slice(-4)}` : field.updated_by === 'client' ? ' by client' : ''}` : ''}
-                    </span>
-                    {!readOnly && <Button size="compact" variant="outline" onClick={() => void saveField(path)} disabled={busy || local === valueText(field.value)}>Save</Button>}
-                  </div>
-                  {field.owner === 'either' && !readOnly && <Checkbox label="Entered by staff on client's behalf" checked={enteredStaff[path] ?? (detail.assistance?.state === 'requested' || field.entered_by_staff)} onChange={(e) => setEnteredStaff((old) => ({ ...old, [path]: e.target.checked }))} />}
-                  {conflict && <div className={styles.conflict}><p><strong>Another saver updated this field.</strong><br />Current saved value: {conflict.remote || '—'}<br />Your unsaved value: {conflict.local || '—'}</p><Button size="compact" onClick={() => void saveField(path, { value: conflict.local, revision: conflict.revision })} disabled={busy}>Keep my value</Button><Button size="compact" variant="outline" onClick={() => { setDrafts((old) => ({ ...old, [path]: conflict.remote })); setConflicts((old) => { const next = { ...old }; delete next[path]; return next; }); }}>Use saved value</Button></div>}
-                </div>;
-              };
-              const dateLocked = ['voided', 'expired', 'client_signed', 'completed'].includes(detail.status);
-              const calcDateFields: CalcDateField[] = Object.entries(detail.fields)
-                .filter(([path]) => fieldMeta(path).kind === 'date' && !isHiddenField(path))
-                .map(([path, field]) => ({ path, label: label(path), value: drafts[path] ?? valueText(field.value), writable: canWrite && !dateLocked && field.owner !== 'client' }));
-              const computed = detail.schedule_b_computed ?? {};
-              const money = (key: string) => typeof computed[key] === 'number' ? Number(computed[key]).toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—';
-              return <div className={styles.schedule}>
-                <div className={styles.guide}>
-                  <h3>{config.title}</h3>
-                  <p>{config.intro}</p>
-                  {(needed.length > 0 || tab === 'schedule_a' || tab === 'schedule_b') && <p className={needed.length ? styles.guideNeeded : styles.guideDone}>{needed.length ? `${needed.length} staff field${needed.length === 1 ? '' : 's'} still to complete or mark N/A before sending.` : '✓ Everything staff need to enter here is complete.'}</p>}
-                </div>
-                {(tab === 'schedule_a' || tab === 'schedule_b') && <DateCalculator busy={busy} fields={calcDateFields} onUse={(path, iso) => { const current = detail.fields[path]; if (current) void saveField(path, { value: iso, revision: current.revision }); }} />}
-                {sections.map((section) => {
-                  const paths = section.paths.filter((path) => detail.fields[path]);
-                  if (!paths.length) return null;
-                  const done = paths.filter((path) => !isBlank(detail.fields[path]?.value)).length;
-                  return <section className={styles.sectionCard} key={section.id} aria-label={section.title}>
-                    <header className={styles.sectionHead}><h4>{section.title}</h4><span className={styles.count}>{done} of {paths.length} filled</span></header>
-                    {section.hint && <p className={styles.fieldHelp}>{section.hint}</p>}
-                    <div className={styles.fields}>{paths.map(renderField)}</div>
-                  </section>;
+            {isScheduleTab(tab) && (
+              <AgreementSchedulePanel
+                detail={detail}
+                tab={tab}
+                displayedFields={displayedFields}
+                drafts={drafts}
+                conflicts={conflicts}
+                enteredStaff={enteredStaff}
+                canWrite={canWrite}
+                busy={busy}
+                onDraftChange={(path, value) => setDrafts((old) => ({ ...old, [path]: value }))}
+                onSaveField={(path, override) => void saveField(path, override)}
+                onEnteredByStaffChange={(path, checked) =>
+                  setEnteredStaff((old) => ({ ...old, [path]: checked }))
+                }
+                onClearConflict={(path) => setConflicts((old) => {
+                  const next = { ...old };
+                  delete next[path];
+                  return next;
                 })}
-                {tab === 'schedule_b' && <div className={styles.feeBox}>
-                  <strong>Live fee calculation</strong>
-                  <dl className={styles.feeTable}>
-                    <div><dt>Booking fee (non-refundable, additional)</dt><dd>UGX {money('booking_fee')}</dd></div>
-                    <div><dt>Total service fees</dt><dd>{String(computed.currency ?? currency)} {money('total_service_fees')}</dd></div>
-                    <div><dt>Advance (50%)</dt><dd>{String(computed.currency ?? currency)} {money('advance')}</dd></div>
-                    <div><dt>Balance (50%)</dt><dd>{String(computed.currency ?? currency)} {money('balance')}</dd></div>
-                    {computed.total_payable_if_ugx !== null && computed.total_payable_if_ugx !== undefined && <div className={styles.feeTotal}><dt>Total payable (UGX)</dt><dd>UGX {money('total_payable_if_ugx')}</dd></div>}
-                  </dl>
-                  <small>Updates when you save the currency or total fee. The UGX 50,000 booking fee is additional to the service fees and excluded from the 50/50 split (clauses 8.2 and 8.4). USD fees stay separate; no exchange rate is assumed.</small>
-                </div>}
-              </div>;
-            })()}
-            {tab === 'preview' && <PreviewPanel id={detail.id} reference={detail.reference} />}
-            {tab === 'timeline' && <Timeline events={detail.events} />}
-            {tab === 'send' && <div className={styles.sendPanel}>
-              {canWrite && <><h3>Send agreement for review</h3><p>Messages contain a secure link only. No patient name, care details or fees are sent by email or SMS.</p><fieldset><legend>Send via (tick one or more)</legend><Checkbox checked={pick.email} onChange={(e) => setPick({ ...pick, email: e.target.checked })} label="Email" />{' '}<Checkbox checked={pick.sms} onChange={(e) => setPick({ ...pick, sms: e.target.checked })} label="SMS" />{noChannel && <p role="alert">Tick at least one way to send.</p>}</fieldset><p>Link expiry: 14 days. Reminders: 48 hours and day 5. Expiry warning: 48 hours before expiry.</p><Button onClick={() => void send()} disabled={busy || noChannel || !['draft','changes_requested','expired'].includes(detail.status)}>Validate and send</Button>{['sent','client_in_progress'].includes(detail.status) && <><p>Client did not get it? Resend sends the same link again by the channel selected above. Nothing earlier stops working.</p><LinkPanel id={detail.id} link={detail.link} onChanged={() => void loadDetail(detail.id)} resend={<Button variant="outline" onClick={() => void performResend(detail.id, channels)} disabled={busy || noChannel}>Resend link</Button>} /></>}</>}
-              {canSign && detail.status === 'client_signed' && <section className={styles.countersign}><h3>Bloomwell countersignature</h3><p>By countersigning, the system seals the agreement and stores its PDF in private storage.</p><Field label="Authorised signatory name" value={bloomwellName} onChange={(e) => setBloomwellName(e.target.value)} /><SignatureMethodPicker method={signMethod} onMethod={(next) => { setSignMethod(next); setError(''); }} biometricAvailable={biometricAvailable} mode="staff" password={signPassword} onPassword={setSignPassword} confirm="" onConfirm={() => undefined}
-                drawPanel={<canvas ref={signatureCanvas} className={styles.signaturePad} width={800} height={160} aria-label="Bloomwell countersignature area" onPointerDown={beginSignature} onPointerMove={moveSignature} onPointerUp={() => { drawing.current = false; }} onPointerCancel={() => { drawing.current = false; }} />} /><ButtonGroup>{signMethod === 'drawn' && <Button variant="outline" onClick={clearSignature}>Clear signature</Button>}<Button onClick={() => void countersign()} disabled={busy}>Countersign and seal</Button></ButtonGroup></section>}
-              {canVoid && (DELETABLE_STATUSES.has(detail.status) || detail.is_test) && <><ButtonGroup><Button variant="danger-outline" onClick={() => void performDelete(detail.id, detail.reference)} disabled={busy}>Delete agreement</Button></ButtonGroup><p className={styles.hint}>Deleting removes this agreement permanently. Sent or signed agreements must be voided first; completed agreements cannot be deleted.</p></>}
-              {canWrite && detail.status === 'completed' && <ButtonGroup><Button variant="outline" onClick={() => void createAmendment()} disabled={busy}>Create amendment</Button><Button variant="outline" onClick={() => void openSealedPdf()} disabled={busy}>Download internal sealed PDF</Button></ButtonGroup>}
-            </div>}
-            {tab === 'messages' && <div className={styles.messagePanel}>
-              <h3>Message templates</h3><FilterBar label="Message template">
-                <Field kind="select" label="Stage" value={messageStage} onChange={(e) => { const next = e.target.value as MessageStage; void loadMessage(next, smsStages.has(next) ? messageChannel : 'email'); }}>{stages.map((s) => <option key={s} value={s}>{s}</option>)}</Field>
-                <Field kind="select" label="Channel" value={messageChannel} onChange={(e) => void loadMessage(messageStage, e.target.value as 'email'|'sms')}><option value="email">Email</option><option value="sms" disabled={!smsStages.has(messageStage)}>SMS</option></Field>
-              </FilterBar>
-              {message && <><p>{message.is_default ? 'Using code default' : `Custom version ${message.version}`}</p>{messageChannel === 'email' && <Field label="Subject" value={message.subject} onChange={(e) => setMessage({ ...message, subject: e.target.value })} />}<Field label="Preheader" value={message.preheader} onChange={(e) => setMessage({ ...message, preheader: e.target.value })} /><Field kind="textarea" label="Message body" rows={7} value={message.body} onChange={(e) => setMessage({ ...message, body: e.target.value })} />{messageChannel === 'email' && <><Field label="Button label" value={message.button} onChange={(e) => setMessage({ ...message, button: e.target.value })} /><Field kind="textarea" label="Footer note" rows={2} value={message.footer_note} onChange={(e) => setMessage({ ...message, footer_note: e.target.value })} /></>}<p>{messageChannel === 'sms' ? `${message.body.length} characters · ${message.body.length <= 160 ? 1 : message.body.length <= 306 ? 2 : 'over limit'} segments` : 'Email links are inserted by the shared branded layout.'}</p><ButtonGroup><Button onClick={() => void saveMessage()} disabled={busy}>Save message</Button><Button variant="outline" onClick={() => void previewMessage()} disabled={busy}>Preview</Button><Button variant="outline" onClick={() => void testSendMessage()} disabled={busy}>Send test to me</Button><Button variant="outline" onClick={() => void apiClient.post(`/admin/agreements/message-templates/${messageStage}/${messageChannel}/reset`, {}).then(() => loadMessage(messageStage, messageChannel))} disabled={busy}>Reset to default</Button></ButtonGroup>{messagePreview && <section className={styles.messagePreview}><h4>{messagePreview.subject ?? 'SMS preview'}</h4>{messagePreview.html ? <iframe title="Email message preview" srcDoc={messagePreview.html} sandbox="" /> : <p>{messagePreview.body}</p>}{messagePreview.gsm7 === false && <Notice tone="info">The rendered message contains characters outside GSM-7.</Notice>}{messagePreview.segments !== undefined && <small>{messagePreview.characters} characters · {messagePreview.segments} GSM-7 segment(s)</small>}</section>}</>}
-            </div>}
-            {tab === 'template' && <div className={styles.messagePanel}>
-              <h3>Agreement clause versions</h3>
-              {templateInfo?.versions?.length ? <Field kind="select" label="Load version" value={templateInfo.version ?? ''} onChange={(e) => void loadTemplateVersion(Number(e.target.value))}>{templateInfo.versions.map((version) => <option key={version.version} value={version.version}>v{version.version} · {version.published ? 'published' : 'draft'}{version.version === templateInfo.published_version ? ' · active' : ''}</option>)}</Field> : null}
-              {templateInfo && <p>Version {templateInfo.version ?? '—'} · {templateInfo.published ? 'published' : 'draft / not published'} · {templateInfo.template_hash ?? 'No template hash'}{templateInfo.source_file ? ` · Source: ${templateInfo.source_file}` : ''}</p>}
-              <p>The source PDF is loaded as a versioned clause map. Review the complete wording and schedules against the original signed source before publishing. The two required company email corrections are checked server-side.</p>
-              <Field kind="textarea" label="Clause template JSON" className={styles.templateEditor} rows={16} value={templateJson} onChange={(e) => setTemplateJson(e.target.value)} spellCheck={false} />
-              <p>Publishing and voiding require the existing authenticator session. Each of these actions asks for your authenticator code in a pop-up.</p>
-              <ButtonGroup>{canManageTemplates && <Button variant="outline" onClick={() => void installSourceTemplate()} disabled={busy}>Install latest wording as draft</Button>}<Button onClick={() => void saveTemplateDraft()} disabled={busy}>Save new draft version</Button><Button variant="outline" onClick={() => void publishTemplate()} disabled={busy || !templateInfo?.version || templateInfo.published}>Publish selected version</Button></ButtonGroup>
-            </div>}
+              />
+            )}
+            {tab === 'preview' && <AgreementPreviewPanel id={detail.id} reference={detail.reference} />}
+            {tab === 'timeline' && <AgreementTimeline events={detail.events} />}
+            {tab === 'send' && detail && (
+              <div className={styles.sendPanel}>
+                <AgreementDeliveryPanel
+                  status={detail.status}
+                  canWrite={canWrite}
+                  busy={busy}
+                  noChannel={noChannel}
+                  channels={pick}
+                  onChannelsChange={setPick}
+                  onSend={() => void send()}
+                  resendPanel={
+                    <AgreementLinkPanel
+                      id={detail.id}
+                      link={detail.link}
+                      onChanged={() => void loadDetail(detail.id)}
+                      resend={
+                        <Button
+                          variant="outline"
+                          onClick={() => void performResend(detail.id, channels)}
+                          disabled={busy || noChannel}
+                        >
+                          Resend link
+                        </Button>
+                      }
+                    />
+                  }
+                />
+                <AgreementCountersignPanel
+                  canSign={canSign}
+                  status={detail.status}
+                  busy={busy}
+                  signatoryName={bloomwellName}
+                  onSignatoryNameChange={setBloomwellName}
+                  method={signMethod}
+                  onMethodChange={(next) => {
+                    setSignMethod(next);
+                    setError('');
+                  }}
+                  biometricAvailable={biometricAvailable}
+                  password={signPassword}
+                  onPasswordChange={setSignPassword}
+                  signatureCanvas={signatureCanvas}
+                  onBeginSignature={beginSignature}
+                  onMoveSignature={moveSignature}
+                  onEndSignature={() => {
+                    drawing.current = false;
+                  }}
+                  onClearSignature={clearSignature}
+                  onCountersign={() => void countersign()}
+                />
+                <AgreementLifecycleActions
+                  status={detail.status}
+                  isTest={detail.is_test}
+                  canWrite={canWrite}
+                  canVoid={canVoid}
+                  busy={busy}
+                  onDelete={() => void performDelete(detail.id, detail.reference)}
+                  onCreateAmendment={() => void createAmendment()}
+                  onOpenSealedPdf={() => void openSealedPdf()}
+                />
+              </div>
+            )}
+            {(tab === 'messages' || tab === 'template') && (
+              <MessageTemplatePanel
+                tab={tab}
+                messageStage={messageStage}
+                messageChannel={messageChannel}
+                message={message}
+                messagePreview={messagePreview}
+                onMessageStageChange={changeMessageStage}
+                onMessageChannelChange={(channel) => void changeMessageChannel(channel)}
+                onMessageChange={setMessage}
+                onSaveMessage={() => void saveMessage()}
+                onPreviewMessage={() => void previewMessage()}
+                onTestSendMessage={() => void testSendMessage()}
+                onResetMessage={() => void resetMessage()}
+                templateInfo={templateInfo}
+                templateJson={templateJson}
+                onTemplateJsonChange={setTemplateJson}
+                onLoadTemplateVersion={(version) => void loadTemplateVersion(version)}
+                canManageTemplates={canManageTemplates}
+                onInstallSourceTemplate={() => void installSourceTemplate()}
+                onSaveTemplateDraft={() => void saveTemplateDraft()}
+                onPublishTemplate={() => void publishTemplate()}
+                busy={busy}
+              />
+            )}
             </div>
           </>}
         </section>
       </div>
     </div>
   );
-}
-
-function PreviewPanel({ id, reference }: { id: string; reference: string }) {
-  const [html, setHtml] = useState('');
-  const [error, setError] = useState('');
-  const [highlight, setHighlight] = useState(true);
-  const [downloading, setDownloading] = useState(false);
-  useEffect(() => {
-    let live = true;
-    void apiClient.get<Preview>(`/admin/agreements/${id}/preview-data`, { params: { highlight: highlight ? 'true' : 'false' } })
-      .then((value) => { if (live) { setHtml(value.html); setError(''); } })
-      .catch((cause: unknown) => { if (live) setError(cause instanceof Error ? cause.message : 'Preview unavailable.'); });
-    return () => { live = false; };
-  }, [id, highlight]);
-  const download = async () => {
-    setDownloading(true); setError('');
-    try {
-      const blob = await apiClient.getBlob(`/admin/agreements/${id}/review-pdf`);
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${reference}-review.pdf`;
-      document.body.appendChild(anchor); anchor.click(); anchor.remove(); URL.revokeObjectURL(url);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not download the review copy.'); }
-    finally { setDownloading(false); }
-  };
-  return <>
-    <div className={styles.previewBar}>
-      <Checkbox label="Highlight fields" checked={highlight} onChange={(e) => setHighlight(e.target.checked)} />
-      <span className={styles.previewKey}>
-        <i style={{ background: '#ffe066' }} />staff must fill<i style={{ background: '#d7f0dc' }} />filled<i style={{ background: '#dceaf8' }} />client fills
-      </span>
-      <Button variant="outline" size="compact" onClick={() => void download()} disabled={downloading}>{downloading ? <LoadingNote inline>Preparing…</LoadingNote> : 'Download highlighted copy (PDF)'}</Button>
-    </div>
-    {error ? <Notice tone="error">{error}</Notice> : <div className={styles.preview}><iframe title="Rendered client agreement preview" srcDoc={html} sandbox="" /></div>}
-  </>;
-}
-
-function LinkPanel({ id, link, onChanged, resend }: { id: string; link?: LinkInfo; onChanged: () => void; resend?: ReactNode }) {
-  const [msg, setMsg] = useState('');
-  const [busy, setBusy] = useState(false);
-  const copy = async () => {
-    setBusy(true); setMsg('');
-    try {
-      const fresh = await apiClient.get<LinkInfo>(`/admin/agreements/${id}/link`);
-      if (!fresh.url) throw new Error('No link is available yet.');
-      await navigator.clipboard.writeText(fresh.url);
-      setMsg(`Link copied (ID ${fresh.link_id}). Paste it into WhatsApp or anywhere else.`);
-      onChanged();
-    } catch (cause) { setMsg(cause instanceof Error ? cause.message : 'Could not copy the link.'); }
-    finally { setBusy(false); }
-  };
-  const replaceAll = async () => {
-    if (!await dialogs.confirm('Withdraw ALL earlier links and create a brand-new one? Anyone using an old link will see "withdrawn". The new link is not sent automatically.', { confirmLabel: 'Withdraw and replace' })) return;
-    setBusy(true); setMsg('');
-    try {
-      const fresh = await apiClient.post<LinkInfo>(`/admin/agreements/${id}/link/revoke`, {});
-      setMsg(`New link created (ID ${fresh.link_id}). Use Copy link or Resend link to give it to the client.`);
-      onChanged();
-    } catch (cause) { setMsg(cause instanceof Error ? cause.message : 'Could not replace the link.'); }
-    finally { setBusy(false); }
-  };
-  return <div className={styles.linkPanel}>
-    <h3>Client link</h3>
-    <p>Link ID: <strong>{link?.link_id ?? 'none'}</strong>{link?.state === 'legacy' ? ' (older long link)' : ''}{link?.expires_at ? ` · expires ${new Date(link.expires_at).toLocaleDateString()}` : ''}</p>
-    <p className={styles.linkHint}>If the client reports a problem, ask for the code on their screen. Its middle part should match this ID.</p>
-    {msg && <p role="status" className={styles.linkMsg}>{msg}</p>}
-    <div className={styles.linkActions}>
-      <Button variant="outline" onClick={() => void copy()} disabled={busy}>Copy link</Button>
-      {resend}
-    </div>
-    <div className={styles.linkActions}>
-      <Button variant="danger-outline" onClick={() => void replaceAll()} disabled={busy}>Withdraw all links and create a new one</Button>
-    </div>
-  </div>;
-}
-function describeEvent(event: AgreementDetail['events'][number]): { title: string; summary?: string; tone: string } {
-  const d = event.detail ?? {};
-  const type = event.type;
-  if (type === 'field_changed') {
-    const path = String(d.path ?? '');
-    const from = valueText(d.old_value) || 'empty';
-    const to = valueText(d.new_value) || 'empty';
-    return { title: `${label(path)} updated`, summary: `${from.length > 60 ? `${from.slice(0, 60)}…` : from} → ${to.length > 60 ? `${to.slice(0, 60)}…` : to}${d.overwrote_newer_revision ? ' (replaced a newer edit)' : ''}`, tone: 'edit' };
-  }
-  const tone = /sign|complet/.test(type) ? 'done' : /void|expire|delete/.test(type) ? 'closed' : /sent|resend|revised|remind|link/.test(type) ? 'send' : 'info';
-  const reason = typeof d.reason === 'string' ? d.reason : undefined;
-  return { title: type.replaceAll('_', ' ').replace(/^./, (c) => c.toUpperCase()), summary: reason ? `Reason: ${reason}` : undefined, tone };
-}
-function Timeline({ events }: { events: AgreementDetail['events'] }) {
-  const ordered = [...events].map((event, index) => ({ event, index })).sort((a, b) => new Date(b.event.at).getTime() - new Date(a.event.at).getTime() || b.index - a.index);
-  if (!ordered.length) return <p className={styles.empty}>No activity yet.</p>;
-  let lastDay = '';
-  return <div className={styles.historyScroll}><ol className={styles.history}>{ordered.map(({ event, index }) => {
-    const when = new Date(event.at);
-    const day = when.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-    const heading = day !== lastDay ? <li className={styles.historyDay} key={`day-${day}-${index}`} aria-hidden="true">{day}</li> : null;
-    lastDay = day;
-    const info = describeEvent(event);
-    const who = event.actor === 'client' ? 'Client' : event.actor === 'system' ? 'System' : `Staff ${String(event.actor).slice(-4)}`;
-    return <Fragment key={`${event.type}-${event.at}-${index}`}>{heading}<li className={`${styles.historyItem} ${styles[`tone_${info.tone}`] ?? ''}`}>
-      <div className={styles.historyHead}><strong>{info.title}</strong><time dateTime={event.at}>{when.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</time></div>
-      {info.summary && <p className={styles.historySummary}>{info.summary}</p>}
-      <small>{who}</small>
-      <details><summary>Details</summary><pre>{JSON.stringify(event.detail, null, 2)}</pre></details>
-    </li></Fragment>;
-  })}</ol></div>;
 }

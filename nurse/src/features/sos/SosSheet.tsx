@@ -231,10 +231,13 @@ export function SosControl({
         onPointerUp={clearHold}
         onPointerLeave={clearHold}
         onPointerCancel={clearHold}
+        onContextMenu={(event) => event.preventDefault()}
+        onDragStart={(event) => event.preventDefault()}
         onKeyDown={(event) => { if (event.key === ' ' || event.key === 'Enter') beginHold(); }}
         onKeyUp={clearHold}
         title={enabled ? holdLabel : copy.shell.sosDisabled}
       >{copy.safety.buttonLabel}</button>
+      {!enabled && <p className="sos-disabled-note" role="note">{copy.shell.sosDisabled}</p>}
       {open && (
           <Sheet role="alertdialog" labelledBy="sos-title" describedBy="sos-description" className="sos-sheet">
             <h2 id="sos-title">{sent ? copy.safety.recorded : copy.safety.dialog}</h2>

@@ -11,6 +11,8 @@ export type AdminNavItem = {
   scopes: readonly string[];
   /** Key into `icons.tsx`. */
   icon: string;
+  /** Listed only for Superadmins: the screen itself refuses everyone else, so do not offer it. */
+  superadminOnly?: boolean;
   /** Groups follow nest-all-features-mockups.html; gated care-record screens are deliberately omitted. */
   group: 'website' | 'careOperations' | 'monitoring' | 'safety' | 'setup';
 };
@@ -68,7 +70,7 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { path: '/care/data-requests', labelKey: 'dataRequests', scopes: ['system:manage'], icon: 'dataRequest', group: 'setup' },
   { path: '/app-releases', labelKey: 'appReleases', scopes: ['system:manage'], icon: 'release', group: 'setup' },
   { path: '/backups', labelKey: 'backupsHealth', scopes: ['system:manage'], icon: 'backup', group: 'setup' },
-  { path: '/cross-app-auth', labelKey: 'crossAppAuth', scopes: ['system:manage'], icon: 'permissions', group: 'setup' },
+  { path: '/cross-app-auth', labelKey: 'crossAppAuth', scopes: ['system:manage'], icon: 'crossApp', group: 'setup', superadminOnly: true },
   { path: '/mail/shared', labelKey: 'mailShared', scopes: ['mail:shared:manage'], icon: 'sharedMail', group: 'setup' },
   { path: '/mail/settings', labelKey: 'mailSettings', scopes: ['mail:settings:manage'], icon: 'mailSettings', group: 'setup' },
   { path: '/mail/clients', labelKey: 'clientControl', scopes: ['mail:settings:manage'], icon: 'clientControl', group: 'setup' },
@@ -98,6 +100,7 @@ export function scopesFor(path: string): readonly string[] {
 }
 
 function canReach(item: AdminNavItem, user: Access | null): boolean {
+  if (item.superadminOnly && !user?.is_superadmin) return false;
   if (item.path === '/settings') {
     return hasScopes(user, item.scopes) || hasScopes(user, ['system:manage']);
   }

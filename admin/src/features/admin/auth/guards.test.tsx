@@ -1,12 +1,28 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { ApiError, apiClient } from '@shared/lib/api/client';
 import { createQueryClient } from '@shared/lib/queries/queryClient';
 import { scopesFor } from '../nav';
 import { RequireAuth, RequireScopes } from './guards';
 import { useAuth } from './useAuth';
 
 vi.mock('./useAuth', () => ({ useAuth: vi.fn() }));
+vi.mock('@shared/lib/api/client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@shared/lib/api/client')>();
+  return { ...actual, apiClient: { ...actual.apiClient, get: vi.fn() } };
+});
+
+const entry = (allowed: boolean) => ({ allowed, url: null, android_package: '', apk_available: false });
+const appAccess = (adminAllowed: boolean) => ({ admin: entry(adminAllowed), nurse: entry(false), handoff_enabled: false });
+
+/** The shell asks the server for app access before it renders; every other request fails quietly. */
+function serveAppAccess(result: () => Promise<unknown>) {
+  vi.mocked(apiClient.get).mockImplementation(((path: string) =>
+    path === '/auth/app-access' ? result() : Promise.reject(new Error('offline'))) as never);
+}
+
+beforeEach(() => serveAppAccess(async () => appAccess(true)));
 
 function LoginProbe() {
   const state = useLocation().state as { from?: string } | null;
@@ -65,10 +81,10 @@ describe('route guards', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Opening your workspace');
   });
 
-  it('shows the plain no-access page with the business phone when no screen is reachable', () => {
+  it('shows the plain no-access page with the business phone when no screen is reachable', async () => {
     setup('/', { status: 'signedIn', missingUser: true });
     expect(
-      screen.getByRole('heading', { name: 'No access has been granted to this account' }),
+      await screen.findByRole('heading', { name: 'No access has been granted to this account' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '0787 499 988' })).toHaveAttribute(
       'href',
@@ -77,19 +93,33 @@ describe('route guards', () => {
     expect(screen.queryByText('dashboard')).toBeNull();
   });
 
-  it('lets a user with the scope reach the list and its detail route', () => {
+  it('lets a user with the scope reach the list and its detail route', async () => {
     setup('/enquiries/abc', { status: 'signedIn', scopes: ['enquiries:read'] });
-    expect(screen.getByText('enquiry detail')).toBeInTheDocument();
+    expect(await screen.findByText('enquiry detail')).toBeInTheDocument();
   });
 
-  it('blocks a route without the scope and sends the user to their first reachable screen', () => {
+  it('blocks a route without the scope and sends the user to their first reachable screen', async () => {
     setup('/users', { status: 'signedIn', scopes: ['enquiries:read'] });
+    expect(await screen.findByText('enquiries')).toBeInTheDocument();
     expect(screen.queryByText('users')).toBeNull();
     expect(screen.getByText('enquiries')).toBeInTheDocument();
   });
 
-  it('lets a superadmin reach every guarded route', () => {
+  it('lets a superadmin reach every guarded route', async () => {
     setup('/users', { status: 'signedIn', superadmin: true });
-    expect(screen.getByText('users')).toBeInTheDocument();
+    expect(await screen.findByText('users')).toBeInTheDocument();
+  });
+
+  it('shows no access when the server says this account is not allowed in the admin app', async () => {
+    serveAppAccess(async () => appAccess(false));
+    setup('/enquiries', { status: 'signedIn', scopes: ['enquiries:read'] });
+    expect(await screen.findByRole('heading', { name: 'No access has been granted to this account' })).toBeInTheDocument();
+    expect(screen.queryByText('enquiries')).toBeNull();
+  });
+
+  it('falls back to the account scopes when an older backend has no app-access route', async () => {
+    serveAppAccess(() => Promise.reject(new ApiError(404, 'not_found', 'Not found')));
+    setup('/enquiries', { status: 'signedIn', scopes: ['enquiries:read'] });
+    expect(await screen.findByText('enquiries')).toBeInTheDocument();
   });
 });

@@ -44,6 +44,7 @@
   --forest: #123524;
   --leaf: #7FD6A8;
   --moss: #4E9C78;
+  --btn-moss: #2B7452; /* darker fill so light button text reaches 4.5:1 */
   --gold: #FBA94A;
   --gold-text: #FBA94A;
   --straw: #4A4426;

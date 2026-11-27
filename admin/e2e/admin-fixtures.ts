@@ -72,6 +72,22 @@ export async function mockAdminApi(page: Page, options: { scopes?: string[] } = 
       })(route);
       return;
     }
+    // Every admin screen waits for the central app-access check (auth/guards.tsx), so the mock must allow admin.
+    if (path === '/api/v1/auth/app-access' && method === 'GET') {
+      await json(200, {
+        admin: { allowed: true, url: null, android_package: 'ug.nesthome.admin', apk_available: false },
+        nurse: { allowed: false, url: null, android_package: 'ug.nesthome.nurse', apk_available: false },
+        handoff_enabled: false,
+        suggestions_allowed: false,
+        automatic_sso: { master_enabled: false, user_enabled: false, admin_allowed: false, effective_enabled: false },
+      })(route);
+      return;
+    }
+    // The audit log is behind TotpGate; report an enrolled, verified authenticator so the real screen renders.
+    if (path === '/api/v1/mail/totp/status' && method === 'GET') {
+      await json(200, { enabled: true, verified: true })(route);
+      return;
+    }
     if (path === '/api/v1/admin/dashboard' && method === 'GET') {
       await json(200, {
         stats: {
@@ -137,5 +153,16 @@ export async function navigateToAdminPath(page: Page, path: string) {
   const label = LABEL_BY_ADMIN_PATH[path];
   if (!label) throw new Error(`No UI navigation label configured for ${path}`);
   if (path === '/' && page.url().endsWith('/')) return;
+  // Wait for whichever navigation this layout renders, so the phone/desktop check below is not a race.
+  const shortcutsNav = page.getByRole('navigation', { name: 'Admin shortcuts' });
+  await shortcutsNav.or(page.getByRole('complementary')).first().waitFor();
+  // On a phone the sidebar is hidden: only four shortcuts are in the bottom bar and the rest live under More.
+  if (await page.getByRole('navigation', { name: 'Admin shortcuts' }).isVisible()) {
+    const shortcut = page.getByRole('navigation', { name: 'Admin shortcuts' }).getByRole('link', { name: label, exact: true });
+    if (await shortcut.count()) { await shortcut.click(); return; }
+    await page.getByRole('button', { name: /more/i }).click();
+    await page.locator('#admin-more').getByRole('link', { name: label, exact: true }).click();
+    return;
+  }
   await page.getByRole('navigation', { name: 'Admin' }).getByRole('link', { name: label, exact: true }).click();
 }

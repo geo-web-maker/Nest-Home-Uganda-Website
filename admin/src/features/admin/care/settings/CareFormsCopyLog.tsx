@@ -23,7 +23,7 @@ export function CareFormsCopyLog() {
   }, []);
   useEffect(() => { void load(); }, [load]);
   return <section className="care-form cf-copy-log" aria-labelledby="cf-copy-log-title">
-    <div className="cf-admin-head"><div><h2 id="cf-copy-log-title">Automatic client-copy log</h2><p>Delivery state and masked recipient hint only. Health information is never included in email bodies or this log.</p></div><Button type="button" variant="outline" onClick={() => void load()} disabled={loading}>Refresh</Button></div>
+    <div className="cf-admin-head"><div><h2 id="cf-copy-log-title">Automatic client-copy log</h2><p>Delivery state and masked recipient hint only. Health information is never included in email bodies or this log.</p></div><Button type="button" variant="outline" loading={loading} onClick={() => void load()}>Refresh</Button></div>
     {error ? <p role="alert">{error}</p> : <DataTable<CopyLogRow>
       columns={[
         { key: 'time', header: 'Time', cell: (row) => when(row.at) },

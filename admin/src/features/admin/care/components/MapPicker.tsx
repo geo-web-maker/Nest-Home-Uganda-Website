@@ -257,7 +257,7 @@ export function MapPicker({ tileUrl, lat, lng, radius, onChange, markers = NO_MA
     <section className={styles.wrap} aria-label="Map location picker">
       {/* No onSubmit: the picker lives inside other forms, and forms cannot nest. */}
       {!readOnly && (<>
-      <div className={styles.search}>
+      <div className={styles.placeSearch}>
         <Field
           label="Search a place or landmark"
           type="search"
@@ -266,7 +266,7 @@ export function MapPicker({ tileUrl, lat, lng, radius, onChange, markers = NO_MA
           onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); void searchAddress(); } }}
           placeholder="For example, a trading centre, church or school"
         />
-        <Button type="button" variant="outline" onClick={() => void searchAddress()} disabled={searching}>
+        <Button type="button" variant="outline" className={styles.searchButton} onClick={() => void searchAddress()} disabled={searching}>
           {searching ? 'Searching…' : 'Search'}
         </Button>
       </div>
@@ -285,14 +285,14 @@ export function MapPicker({ tileUrl, lat, lng, radius, onChange, markers = NO_MA
         <Button type="button" variant="outline" onClick={useMyLocation} disabled={locating}>
           {locating ? 'Finding location…' : 'Use my current location'}
         </Button>
-        <Button type="button" variant="outline" onClick={() => setSatellite((value) => !value)} aria-pressed={satellite}>
-          {satellite ? 'Show street map' : 'Show satellite'}
-        </Button>
       </div>
 
       </>)}
 
       <div className={styles.map}>
+        <button type="button" className={styles.layerToggle} onClick={() => setSatellite((value) => !value)} aria-pressed={satellite}>
+          {satellite ? 'Show street map' : 'Show satellite'}
+        </button>
         <div ref={container} className={styles.canvas} role="application" aria-label="Map. Tap to place the pin, drag the pin to adjust." />
         {mapState === 'loading' && <p className={styles.overlay}><LoadingNote inline>Loading map…</LoadingNote></p>}
         {mapState === 'failed' && <p className={styles.overlay}>The map could not load. Enter the coordinates below instead.</p>}

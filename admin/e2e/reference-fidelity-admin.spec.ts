@@ -49,7 +49,7 @@ test.describe('admin route coverage and responsive shell', () => {
     for (const width of [320, 390]) {
       await page.setViewportSize({ width, height: 820 });
       await expect(page.getByRole('navigation', { name: 'Admin shortcuts' })).toBeVisible();
-      await expect(page.locator('aside')).toBeHidden();
+      await expect(page.getByRole('complementary')).toBeHidden();
       const more = page.getByRole('button', { name: /more/i });
       await more.click();
       await expect(page.locator('#admin-more')).toBeVisible();
@@ -64,7 +64,7 @@ test.describe('admin route coverage and responsive shell', () => {
 
     await page.setViewportSize({ width: 820, height: 900 });
     await expect(page.getByRole('navigation', { name: 'Admin shortcuts' })).toBeHidden();
-    await expect(page.locator('aside')).toBeVisible();
+    await expect(page.getByRole('complementary')).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Admin' }).getByRole('link', { name: 'Site settings' })).toBeAttached();
 
     await page.setViewportSize({ width: 1280, height: 900 });

@@ -2,14 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { dialogs } from '@shared/lib/dialogs';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { Translate } from './userManagementShared';
 import { ButtonGroup } from '@shared/components/dialogs/ButtonGroup';
 import { DataTable, type DataColumn } from '../../../components/admin/DataTable';
-import { FilterBar } from '../../../components/admin/FilterBar';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Badge } from '@shared/components/ui/Badge';
 import { Button } from '@shared/components/ui/Button';
-import { Field } from '@shared/components/ui/Field';
-import { Checkbox } from '@shared/components/ui/Checkbox';
 import { apiClient } from '@shared/lib/api/client';
 import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
@@ -24,12 +22,11 @@ import type {
   UserUpdate,
 } from './types';
 
-const DELIVERIES: Delivery[] = ['email', 'sms', 'temp_password'];
-function toggle(list: Delivery[], item: Delivery, on: boolean): Delivery[] {
-  return on ? [...list.filter((d) => d !== item), item] : list.filter((d) => d !== item);
-}
-import styles from './UsersPage.module.css';
 import { LoadingNote } from '../../../components/admin/LoadingNote';
+import { IssuedCredentialsPanel } from './IssuedCredentialsPanel';
+import { PasswordResetPanel } from './PasswordResetPanel';
+import { UserAccessEditorPanel } from './UserAccessEditorPanel';
+import { UserInvitePanel } from './UserInvitePanel';
 /** The server's message plus the fields it rejected, e.g. "Please check the highlighted fields. (scopes: List should have at most 64 items)". */
 function describeError(error: unknown, fallback: string): string {
   if (!(error instanceof Error) || !error.message) return fallback;
@@ -42,6 +39,7 @@ function listItems<T>(data: T[] | { items: T[] } | undefined): T[] {
 }
 export function UsersPage() {
   const { t } = useTranslation('admin');
+  const tr: Translate = (...args) => String((t as unknown as (...a: unknown[]) => unknown)(...args));
   const { user: current } = useAuth();
   const client = useQueryClient();
   const canWrite = hasScopes(current, ['users:write']);
@@ -272,340 +270,86 @@ export function UsersPage() {
         />
       )}
       {issued && (
-        <section className={styles.editor} aria-live="polite">
-          <h2>{t('users.issuedHeading', { name: issued.name })}</h2>
-          {Object.entries(issued.delivered ?? {}).map(([channel, state]) => (
-            <p key={channel} role={state === 'failed' ? 'alert' : undefined}>
-              {t(`users.delivery.${channel}`)}: {t(`users.outcome.${state}`)}
-            </p>
-          ))}
-          {issued.temp_password ? (
-            <>
-              <Field
-                label={t('users.issuedTemp')}
-                value={issued.temp_password}
-                readOnly
-                onFocus={(event) => event.currentTarget.select()}
-              />
-              <p>{t('users.issuedTempNote')}</p>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  void navigator.clipboard?.writeText(issued.temp_password ?? '').then(() => setCopied(true));
-                }}
-              >
-                {copied ? t('users.copied') : t('users.copy')}
-              </Button>
-            </>
-          ) : null}
-          <ButtonGroup>
-            <Button type="button" onClick={() => setIssued(null)}>
-              {t('users.dismiss')}
-            </Button>
-          </ButtonGroup>
-        </section>
+        <IssuedCredentialsPanel
+          issued={issued}
+          copied={copied}
+          t={tr}
+          onCopied={() => setCopied(true)}
+          onDismiss={() => setIssued(null)}
+        />
       )}
       {resetting && canWrite && (
-        <section className={styles.editor}>
-          <h2>{t('users.resetHeading', { name: resetting.name })}</h2>
-          <fieldset>
-            <legend>{t('users.deliveryLegend')}</legend>
-            {DELIVERIES.map((d) => (
-              <Checkbox
-                key={d}
-                label={t(`users.delivery.${d}`)}
-                checked={resetDelivery.includes(d)}
-                onChange={(event) => setResetDelivery((old) => toggle(old, d, event.target.checked))}
-              />
-            ))}
-          </fieldset>
-          {reset.isError && <p role="alert">{reset.error instanceof Error && reset.error.message ? reset.error.message : t('users.updateError')}</p>}
-          <ButtonGroup>
-            <Button
-              type="button"
-              disabled={reset.isPending || resetDelivery.length === 0}
-              onClick={() => reset.mutate({ id: resetting.id, channels: resetDelivery })}
-            >
-              {t('users.resetSend')}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => setResetting(null)}>
-              {t('common.cancel')}
-            </Button>
-          </ButtonGroup>
-        </section>
+        <PasswordResetPanel
+          resetting={resetting}
+          resetDelivery={resetDelivery}
+          setResetDelivery={setResetDelivery}
+          isPending={reset.isPending}
+          errorText={
+            reset.isError
+              ? reset.error instanceof Error && reset.error.message
+                ? reset.error.message
+                : t('users.updateError')
+              : null
+          }
+          t={tr}
+          onSubmit={() => reset.mutate({ id: resetting.id, channels: resetDelivery })}
+          onCancel={() => setResetting(null)}
+        />
       )}
       {openInvite && canWrite && (
-        <section className={styles.editor}>
-          <h2>{t('users.inviteHeading')}</h2>
-          <form
-            className={styles.form}
-            onSubmit={(event) => {
-              event.preventDefault();
-              const presetMatches = matchesInvitePreset(chosen, invitePreset);
-              invite.mutate({
-                name: name.trim(),
-                email: email.trim(),
-                scopes: presetMatches ? [] : chosen,
-                ...(presetMatches
-                  ? { preset: invitePreset as NonNullable<UserInvite['preset']> }
-                  : {}),
-                kind: inviteKind,
-                reach: inviteReach,
-                delivery,
-                ...(phone.trim() ? { phone: phone.trim() } : {}),
-              });
-            }}
-          >
-            <Field
-              label={t('users.name')}
-              required
-              requiredLabel={t('common.required')}
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              maxLength={100}
-            />
-            <Field
-              label={t('users.email')}
-              type="email"
-              required
-              requiredLabel={t('common.required')}
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-            <Field
-              label={t('users.phone')}
-              type="tel"
-              inputMode="tel"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              maxLength={32}
-              autoComplete="off"
-            />
-            <fieldset className={styles.fullRow}>
-              <legend>{t('users.deliveryLegend')}</legend>
-              {DELIVERIES.map((d) => (
-                <Checkbox
-                  key={d}
-                  label={t(`users.delivery.${d}`)}
-                  checked={delivery.includes(d)}
-                  onChange={(event) => setDelivery((old) => toggle(old, d, event.target.checked))}
-                />
-              ))}
-            </fieldset>
-            <Field kind="select" label="Account type"
-                value={inviteKind}
-                onChange={(event) => setInviteKind(event.target.value as typeof inviteKind)}
-              >
-                <option value="staff">Staff</option>
-                <option value="nurse">Nurse</option>
-                <option value="supervisor">Supervisor</option>
-                <option value="admin">Admin</option>
-                <option value="executive">Executive</option>
-                <option value="lawyer">Lawyer</option>
-              </Field>
-            <Field kind="select" label="Data reach"
-                value={inviteReach}
-                onChange={(event) => setInviteReach(event.target.value as typeof inviteReach)}
-              >
-                <option value="own">Own</option>
-                <option value="team">Team</option>
-                <option value="all">All</option>
-              </Field>
-            <FilterBar label="Access preset" className={styles.fullRow} actions={<Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setChosen(applyPreset(invitePreset));
-                  if (invitePreset !== 'staff') {
-                    setInviteKind(
-                      invitePreset === 'super_admin'
-                        ? 'admin'
-                        : (invitePreset as typeof inviteKind),
-                    );
-                    setInviteReach(
-                      invitePreset === 'nurse'
-                        ? 'own'
-                        : invitePreset === 'supervisor'
-                          ? 'team'
-                          : 'all',
-                    );
-                  }
-                }}
-              >
-                Apply preset
-              </Button>}>
-              <Field kind="select" label="Access preset"
-                  value={invitePreset}
-                  onChange={(event) => setInvitePreset(event.target.value)}
-                >
-                  <option value="nurse">Nurse</option>
-                  <option value="supervisor">Supervisor</option>
-                  <option value="admin">Admin</option>
-                  <option value="executive">Executive</option>
-                  <option value="lawyer">Lawyer</option>
-                  {current?.is_superadmin && <option value="super_admin">Super admin</option>}
-                </Field>
-</FilterBar>
-            <fieldset className={styles.scopeFieldset}>
-              <legend>{t('users.grantScopes')}</legend>
-              {Object.entries(
-                scopeRows.reduce<Record<string, ScopeInfo[]>>((groups, scope) => {
-                  (groups[scope.group] ??= []).push(scope);
-                  return groups;
-                }, {}),
-              ).map(([group, items]) => (
-                <div key={group} className={styles.scopeGroup}>
-                  <h3>{group}</h3>
-                  {items.map((scope) => (
-                    <Checkbox
-                      key={scope.id}
-                      label={scope.label || scope.id}
-                      checked={chosen.includes(scope.id)}
-                      disabled={
-                        (scope.id === 'system:manage' || scope.id === 'carecfg:write') &&
-                        !current?.is_superadmin
-                      }
-                      onChange={(event) =>
-                        setChosen((old) =>
-                          event.target.checked
-                            ? [...old, scope.id]
-                            : old.filter((id) => id !== scope.id),
-                        )
-                      }
-                    />
-                  ))}
-                </div>
-              ))}
-            </fieldset>
-            {delivery.length === 0 && <p role="alert">{t('users.deliveryNone')}</p>}
-            {invite.isError && <p role="alert" ref={(el) => el?.scrollIntoView({ block: 'center' })}>{describeError(invite.error, t('users.inviteError'))}</p>}
-            <ButtonGroup className={styles.fullRow}>
-              <Button type="submit" disabled={
-                  invite.isPending ||
-                  !name.trim() ||
-                  !email.trim() ||
-                  delivery.length === 0 ||
-                  (delivery.includes('sms') && !phone.trim())
-                }>
-                {t('users.sendInvite')}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => setOpenInvite(false)}>
-                {t('common.cancel')}
-              </Button>
-            </ButtonGroup>
-          </form>
-        </section>
+        <UserInvitePanel
+          t={tr}
+          name={name}
+          setName={setName}
+          email={email}
+          setEmail={setEmail}
+          phone={phone}
+          setPhone={setPhone}
+          delivery={delivery}
+          setDelivery={setDelivery}
+          chosen={chosen}
+          setChosen={setChosen}
+          inviteKind={inviteKind}
+          setInviteKind={setInviteKind}
+          inviteReach={inviteReach}
+          setInviteReach={setInviteReach}
+          invitePreset={invitePreset}
+          setInvitePreset={setInvitePreset}
+          scopeRows={scopeRows}
+          isSuperAdmin={Boolean(current?.is_superadmin)}
+          isPending={invite.isPending}
+          errorText={invite.isError ? describeError(invite.error, t('users.inviteError')) : null}
+          applyPreset={applyPreset}
+          matchesInvitePreset={matchesInvitePreset}
+          onSubmit={(body) => invite.mutate(body)}
+          onCancel={() => setOpenInvite(false)}
+        />
       )}
       {editing && (
-        <section className={styles.editor}>
-          <h2>{t('users.editHeading', { name: editing.name })}</h2>
-          {editing.id === current?.id && <p>{t('users.selfEditNotice')}</p>}
-          <Field kind="select" label="Account type"
-              value={editingKind}
-              disabled={!canWrite || editing.id === current?.id}
-              onChange={(event) => setEditingKind(event.target.value as typeof editingKind)}
-            >
-              <option value="staff">Staff</option>
-              <option value="nurse">Nurse</option>
-              <option value="supervisor">Supervisor</option>
-              <option value="admin">Admin</option>
-              <option value="executive">Executive</option>
-              <option value="lawyer">Lawyer</option>
-            </Field>
-          <Field kind="select" label="Data reach"
-              value={editingReach}
-              disabled={!canWrite || editing.id === current?.id}
-              onChange={(event) => setEditingReach(event.target.value as typeof editingReach)}
-            >
-              <option value="own">Own</option>
-              <option value="team">Team</option>
-              <option value="all">All</option>
-            </Field>
-          <FilterBar label="Access preset" className={styles.fullRow} actions={<Button
-              type="button"
-              variant="outline"
-              disabled={!canWrite || editing.id === current?.id}
-              onClick={() => setEditingScopes(applyPreset(editingPreset))}
-            >
-              Apply preset
-            </Button>}>
-            <Field kind="select" label="Access preset"
-                value={editingPreset}
-                onChange={(event) => setEditingPreset(event.target.value)}
-              >
-                <option value="nurse">Nurse</option>
-                <option value="supervisor">Supervisor</option>
-                <option value="admin">Admin</option>
-                <option value="executive">Executive</option>
-                <option value="lawyer">Lawyer</option>
-                {current?.is_superadmin && <option value="super_admin">Super admin</option>}
-              </Field>
-</FilterBar>
-          <fieldset className={styles.scopeFieldset}>
-            <legend>{t('users.grantScopes')}</legend>
-            {Object.entries(
-              scopeRows.reduce<Record<string, ScopeInfo[]>>((groups, scope) => {
-                (groups[scope.group] ??= []).push(scope);
-                return groups;
-              }, {}),
-            ).map(([group, items]) => (
-              <div key={group} className={styles.scopeGroup}>
-                <h3>{group}</h3>
-                {items.map((scope) => (
-                  <Checkbox
-                    key={scope.id}
-                    label={scope.label || scope.id}
-                    checked={editingScopes.includes(scope.id)}
-                    disabled={
-                      !canWrite ||
-                      editing.id === current?.id ||
-                      ((scope.id === 'system:manage' || scope.id === 'carecfg:write') &&
-                        !current?.is_superadmin)
-                    }
-                    onChange={(event) =>
-                      setEditingScopes((old) =>
-                        event.target.checked
-                          ? [...old, scope.id]
-                          : old.filter((id) => id !== scope.id),
-                      )
-                    }
-                  />
-                ))}
-              </div>
-            ))}
-          </fieldset>
-          {update.isError && <p role="alert">{t('users.updateError')}</p>}
-          <ButtonGroup className={styles.fullRow}>
-            <Button
-              disabled={!canWrite || editing.id === current?.id || update.isPending}
-              onClick={() =>
-                update.mutate({
-                  id: editing.id,
-                  body: { scopes: editingScopes, kind: editingKind, reach: editingReach },
-                })
-              }
-            >
-              {t('users.saveScopes')}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setEditing(null);
-                setEditingScopes([]);
-              }}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => update.mutate({ id: editing.id, body: { active: !editing.active } })}
-              disabled={!canWrite || editing.id === current?.id}
-            >
-              {editing.active ? t('users.deactivate') : t('users.activate')}
-            </Button>
-          </ButtonGroup>
-        </section>
+        <UserAccessEditorPanel
+          editing={editing}
+          currentUserId={current?.id}
+          isSuperAdmin={Boolean(current?.is_superadmin)}
+          canWrite={canWrite}
+          editingKind={editingKind}
+          setEditingKind={setEditingKind}
+          editingReach={editingReach}
+          setEditingReach={setEditingReach}
+          editingPreset={editingPreset}
+          setEditingPreset={setEditingPreset}
+          editingScopes={editingScopes}
+          setEditingScopes={setEditingScopes}
+          scopeRows={scopeRows}
+          updatePending={update.isPending}
+          updateError={update.isError}
+          t={tr}
+          applyPreset={applyPreset}
+          onUpdate={(body) => update.mutate({ id: editing.id, body })}
+          onCancel={() => {
+            setEditing(null);
+            setEditingScopes([]);
+          }}
+        />
       )}
     </>
   );

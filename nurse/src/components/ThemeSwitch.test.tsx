@@ -5,12 +5,12 @@ import { ThemeSwitch } from './ThemeSwitch';
 afterEach(() => { window.localStorage.clear(); document.documentElement.removeAttribute('data-theme'); });
 
 describe('nurse ThemeSwitch', () => {
-  it('offers accessible Light and Dark buttons and persists selection', () => {
+  it('is one button that names the mode it switches to and persists the choice', () => {
     render(<ThemeSwitch />);
-    expect(screen.getByRole('group', { name: /choose colour theme/i })).toBeInTheDocument();
-    const dark = screen.getByRole('button', { name: 'Dark' });
-    fireEvent.click(dark);
-    expect(dark).toHaveAttribute('aria-pressed', 'true');
+    const toggle = screen.getByRole('button', { name: /choose colour theme: dark/i });
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
     expect(window.localStorage.getItem('nest-theme')).toBe('dark');
     expect(document.documentElement.dataset.theme).toBe('dark');
   });

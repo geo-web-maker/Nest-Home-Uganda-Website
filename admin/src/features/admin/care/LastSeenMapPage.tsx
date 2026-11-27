@@ -38,7 +38,7 @@ export function LastSeenMapPage() {
   const mapMarker = focused ?? points[0];
   const mapUrl = bounds ? `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(`${bounds.west},${bounds.south},${bounds.east},${bounds.north}`)}&layer=mapnik${mapMarker ? `&marker=${encodeURIComponent(`${Number(mapMarker.lat)},${Number(mapMarker.lng)}`)}` : ''}` : '';
   return <div className="stage-page">
-    <PageHeader title="Last-seen staff positions" actions={<Button variant="outline" disabled={loading} onClick={() => void load()}>Refresh</Button>} />
+    <PageHeader title="Last-seen staff positions" actions={<Button variant="outline" loading={loading} disabled={loading} onClick={() => void load()}>Refresh</Button>} />
     <div className="stage-callout"><strong>Privacy notice</strong><p>Positions come from a recorded visit event, not continuous background tracking. Map tiles are not loaded until you select “Load map”; loading them sends the displayed coordinate area to OpenStreetMap. Coordinates are never sent to a third-party map automatically.</p></div>
     {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}
     <section className="stage-panel"><SectionHeader title="Recorded positions" note={<>{loading ? <LoadingNote inline>Loading…</LoadingNote> : `${points.length} position${points.length === 1 ? '' : 's'} returned by the server`}</>} actions={<ButtonGroup><Button variant="outline" disabled={!points.length} onClick={() => { setMapRequested(false); setFocusNurse(''); }}>Clear map selection</Button><Button disabled={!points.length} onClick={() => setMapRequested(true)}>Load map</Button></ButtonGroup>} />

@@ -15,14 +15,11 @@ import { TotpGate } from '@shared/components/security/TotpGate';
 import { apiClient } from '@shared/lib/api/client';
 import { useAuth } from '../auth/useAuth';
 import { hasScopes } from '../auth/hasScopes';
-import { ServiceDateField } from './ServiceDateField';
 import {
   composeServiceDate,
-  emptyService,
   parseServiceDate,
   serviceFromAgreement,
   serviceProblem,
-  type ServiceValue,
 } from './serviceDate';
 import {
   billingBase,
@@ -31,84 +28,14 @@ import {
   type DocKind,
   type DocRef,
 } from './downloadOptions';
+import { BillingInvoiceEditor } from './BillingInvoiceEditor';
+import { newInvoiceItem, type AgreementOption, type EditorItem, type Invoice, type Payment } from './billingTypes';
+import { BillingInvoiceDetail } from './BillingInvoiceDetail';
+import { useBillingAgreementOptions } from './useBillingAgreementOptions';
 import styles from './BillingPage.module.css';
 
-type Item = {
-  description: string;
-  quantity: number;
-  unit_price_ugx: number;
-  amount_ugx?: number;
-  service_date_text?: string;
-};
-type Payment = {
-  id: string;
-  reference: string;
-  invoice_id?: string;
-  invoice_reference: string;
-  status: string;
-  amount_ugx: number;
-  method: string;
-  paid_on: string;
-  balance_after_ugx: number;
-  payer_reference?: string;
-  invoice_total_ugx?: number;
-  paid_before_ugx?: number;
-};
-type Invoice = {
-  id: string;
-  reference?: string | null;
-  status: string;
-  is_test?: boolean;
-  agreement_reference?: string | null;
-  bill_to: { name: string; address: string; phone: string; email: string };
-  care_recipient?: { name: string; program: string };
-  items: Item[];
-  total_ugx: number;
-  paid_ugx: number;
-  balance_ugx: number;
-  issue_date: string;
-  due_date: string;
-  payment_instructions: string;
-  notes: string;
-  payments?: Payment[];
-  events?: Array<{ type: string; at: string; actor: string; detail?: Record<string, unknown> }>;
-  sealed?: { content_hash?: string };
-};
 type PageResult<T> = { items: T[]; total: number };
-/** One row of the invoice form; the service date is edited as a mode plus dates and saved as text. */
-type EditorItem = {
-  description: string;
-  quantity: number;
-  unit_price_ugx: number;
-  service: ServiceValue;
-};
-type AgreementOption = {
-  reference: string;
-  status: string;
-  client_name: string;
-  client_email: string;
-  client_phone: string;
-  client_address: string;
-  patient_name: string;
-  program: string;
-  service_start: string;
-  service_end: string;
-  payment_instructions: string;
-};
-const PROGRAMS = [
-  'Nest Mama Program',
-  'Postnatal and newborn care',
-  'Postoperative care',
-  'Wound care',
-  'Elderly nursing',
-];
 const today = new Date().toISOString().slice(0, 10);
-const newItem = (): EditorItem => ({
-  description: '',
-  quantity: 1,
-  unit_price_ugx: 0,
-  service: emptyService(),
-});
 const fmt = (value: number) => `UGX ${value.toLocaleString('en-UG')}`;
 
 export function BillingPage() {
@@ -146,10 +73,7 @@ export function BillingPage() {
   const [issueDate, setIssueDate] = useState(today);
   const [dueDate, setDueDate] = useState(today);
   const [instructions, setInstructions] = useState(t('billing.clientToSupply'));
-  const [items, setItems] = useState<EditorItem[]>([newItem()]);
-  const [agreements, setAgreements] = useState<AgreementOption[]>([]);
-  const [agreementError, setAgreementError] = useState(false);
-  const [agreementNote, setAgreementNote] = useState('');
+  const [items, setItems] = useState<EditorItem[]>([newInvoiceItem()]);
   const [showEditor, setShowEditor] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('mtn_momo');
@@ -229,36 +153,9 @@ export function BillingPage() {
   const itemsInvalid = items.some((item) => serviceProblem(item.service) !== '');
 
   // The agreement dropdown lists real agreements (practice ones for a practice invoice).
-  useEffect(() => {
-    if (!showEditor || !canWrite) return;
-    let cancelled = false;
-    setAgreementError(false);
-    apiClient
-      .get<{ items: AgreementOption[] }>('/admin/billing/agreement-options', {
-        params: { practice: isTest },
-      })
-      .then((result) => {
-        if (!cancelled) setAgreements(result.items ?? []);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setAgreements([]);
-          setAgreementError(true);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [showEditor, canWrite, isTest]);
-
-  /** Picking an agreement fills in the client, care recipient, payment details and item dates. */
-  function chooseAgreement(reference: string) {
+  const applyAgreement = useCallback((reference: string, agreement?: AgreementOption) => {
     setAgreementReference(reference);
-    const agreement = agreements.find((entry) => entry.reference === reference);
-    if (!agreement) {
-      setAgreementNote('');
-      return;
-    }
+    if (!agreement) return;
     setBillName(agreement.client_name);
     setBillEmail(agreement.client_email);
     setBillPhone(agreement.client_phone);
@@ -268,14 +165,21 @@ export function BillingPage() {
     if (agreement.payment_instructions) setInstructions(agreement.payment_instructions);
     const period = serviceFromAgreement(agreement.service_start, agreement.service_end);
     if (period.mode !== 'none') {
-      setItems((current) =>
-        current.map((item) =>
-          item.service.mode === 'none' && !item.service.legacy ? { ...item, service: period } : item,
-        ),
-      );
+      setItems((current) => current.map((item) =>
+        item.service.mode === 'none' && !item.service.legacy ? { ...item, service: period } : item,
+      ));
     }
-    setAgreementNote(t('billing.agreementFilled', { reference }));
-  }
+  }, []);
+  const formatAgreementSelected = useCallback(
+    (reference: string) => t('billing.agreementFilled', { reference }),
+    [t],
+  );
+  const { agreements, agreementError, agreementNote, setAgreementNote, chooseAgreement } = useBillingAgreementOptions({
+    enabled: showEditor && canWrite,
+    practice: isTest,
+    onSelected: applyAgreement,
+    formatSelectedMessage: formatAgreementSelected,
+  });
 
   const openInvoice = useCallback(
     async (id: string) => {
@@ -311,7 +215,7 @@ export function BillingPage() {
     setIssueDate(today);
     setDueDate(today);
     setInstructions(t('billing.clientToSupply'));
-    setItems([newItem()]);
+    setItems([newInvoiceItem()]);
     setAgreementNote('');
     setShowEditor(true);
   }
@@ -800,308 +704,75 @@ export function BillingPage() {
         }}
       />
       {showEditor ? (
-        <div className={styles.panel}>
-          <h2>{t('billing.editorTitle')}</h2>
-          <div className={styles.formGrid}>
-            <Field
-              label={t('billing.clientName')}
-              value={billName}
-              onChange={(event) => setBillName(event.target.value)}
-            />
-            <Field
-              label={t('billing.clientEmail')}
-              value={billEmail}
-              onChange={(event) => setBillEmail(event.target.value)}
-            />
-            <Field
-              label={t('billing.clientPhone')}
-              value={billPhone}
-              onChange={(event) => setBillPhone(event.target.value)}
-            />
-            <Field
-              label={t('billing.clientAddress')}
-              value={billAddress}
-              onChange={(event) => setBillAddress(event.target.value)}
-            />
-            <Field
-              label={t('billing.careRecipient')}
-              value={careName}
-              onChange={(event) => setCareName(event.target.value)}
-            />
-            <Field
-              label={t('billing.careProgram')}
-              value={careProgram}
-              list="care-programs"
-              onChange={(event) => setCareProgram(event.target.value)}
-            />
-            <datalist id="care-programs">
-              {PROGRAMS.map((name) => (
-                <option key={name} value={name} />
-              ))}
-            </datalist>
-            <Field
-              kind="select"
-              label={t('billing.agreementReference')}
-              value={agreementReference}
-              onChange={(event) => chooseAgreement(event.target.value)}
-            >
-              <option value="">{t('billing.agreementNone')}</option>
-              {agreementReference && !agreements.some((entry) => entry.reference === agreementReference) ? (
-                <option value={agreementReference}>{agreementReference}</option>
-              ) : null}
-              {agreements.map((entry) => (
-                <option key={entry.reference} value={entry.reference}>
-                  {t('billing.agreementOption', {
-                    reference: entry.reference,
-                    client: entry.client_name || '-',
-                    status: entry.status.replace(/_/g, ' '),
-                  })}
-                </option>
-              ))}
-            </Field>
-            <Field
-              label={t('billing.issueDate')}
-              type="date"
-              value={issueDate}
-              onChange={(event) => setIssueDate(event.target.value)}
-            />
-            <Field
-              label={t('billing.dueDate')}
-              type="date"
-              value={dueDate}
-              onChange={(event) => setDueDate(event.target.value)}
-            />
-            <Field
-              label={t('billing.paymentInstructions')}
-              value={instructions}
-              onChange={(event) => setInstructions(event.target.value)}
-            />
-            <Field
-              label={t('billing.notes')}
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-            />
-          </div>
-          {agreementError ? <p className={styles.muted}>{t('billing.agreementLoadError')}</p> : null}
-          {agreementNote ? (
-            <p className={styles.muted} role="status">
-              {agreementNote} {t('billing.agreementHelp')}
-            </p>
-          ) : null}
-          <Checkbox
-            className={styles.practiceFilter}
-            checked={isTest}
-            onChange={(event) => setIsTest(event.target.checked)}
-            label={t('billing.practiceDocument')}
-          />
-          <h3>{t('billing.items')}</h3>
-          {items.map((item, index) => (
-            <div className={styles.itemRow} key={index}>
-              <Field
-                label={t('billing.description')}
-                value={item.description}
-                onChange={(event) =>
-                  setItems((current) =>
-                    current.map((row, i) =>
-                      i === index ? { ...row, description: event.target.value } : row,
-                    ),
-                  )
-                }
-              />
-              <ServiceDateField
-                value={item.service}
-                onChange={(service) =>
-                  setItems((current) =>
-                    current.map((row, i) => (i === index ? { ...row, service } : row)),
-                  )
-                }
-              />
-              <Field
-                label={t('billing.quantity')}
-                type="number"
-                min={1}
-                max={10000}
-                value={String(item.quantity)}
-                onChange={(event) =>
-                  setItems((current) =>
-                    current.map((row, i) =>
-                      i === index ? { ...row, quantity: Number(event.target.value) } : row,
-                    ),
-                  )
-                }
-              />
-              <Field
-                label={t('billing.unitPrice')}
-                type="number"
-                min={0}
-                max={2000000000}
-                value={String(item.unit_price_ugx)}
-                onChange={(event) =>
-                  setItems((current) =>
-                    current.map((row, i) =>
-                      i === index ? { ...row, unit_price_ugx: Number(event.target.value) } : row,
-                    ),
-                  )
-                }
-              />
-              <Button
-                variant="outline"
-                onClick={() => setItems((current) => current.filter((_, i) => i !== index))}
-              >
-                {t('billing.remove')}
-              </Button>
-            </div>
-          ))}
-          <Button
-            variant="outline"
-            onClick={() => setItems((current) => [...current, newItem()])}
-            disabled={items.length >= 60}
-          >
-            {t('billing.addItem')}
-          </Button>
-          <p className={styles.total}>
-            {t('billing.total')}: {fmt(total)}
-          </p>
-          <div className={styles.actions}>
-            <Button
-              onClick={() => void saveDraft()}
-              disabled={busy || !billName.trim() || dueDate < issueDate || itemsInvalid}
-            >
-              {t('billing.saveDraft')}
-            </Button>
-            <Button variant="outline" onClick={() => setShowEditor(false)}>
-              {t('billing.cancel')}
-            </Button>
-          </div>
-        </div>
+        <BillingInvoiceEditor
+          billName={billName}
+          billEmail={billEmail}
+          billPhone={billPhone}
+          billAddress={billAddress}
+          careName={careName}
+          careProgram={careProgram}
+          agreementReference={agreementReference}
+          agreements={agreements}
+          agreementError={agreementError}
+          agreementNote={agreementNote}
+          issueDate={issueDate}
+          dueDate={dueDate}
+          instructions={instructions}
+          notes={notes}
+          isTest={isTest}
+          items={items}
+          total={total}
+          itemsInvalid={itemsInvalid}
+          busy={busy}
+          onBillNameChange={setBillName}
+          onBillEmailChange={setBillEmail}
+          onBillPhoneChange={setBillPhone}
+          onBillAddressChange={setBillAddress}
+          onCareNameChange={setCareName}
+          onCareProgramChange={setCareProgram}
+          onChooseAgreement={chooseAgreement}
+          onIssueDateChange={setIssueDate}
+          onDueDateChange={setDueDate}
+          onInstructionsChange={setInstructions}
+          onNotesChange={setNotes}
+          onPracticeChange={setIsTest}
+          onItemChange={(index, patch) => {
+            setItems((current) => current.map((item, itemIndex) =>
+              itemIndex === index ? { ...item, ...patch } : item,
+            ));
+          }}
+          onAddItem={() => setItems((current) => [...current, newInvoiceItem()])}
+          onRemoveItem={(index) => setItems((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+          onSave={() => void saveDraft()}
+          onCancel={() => setShowEditor(false)}
+        />
       ) : null}
       {selected && !showEditor ? (
-        <div className={styles.panel}>
-          <div className={styles.detailHead}>
-            <h2>{selected.reference || t('billing.draft')}</h2>
-            <strong>{t(`billing.statuses.${selected.status}`)}</strong>
-          </div>
-          <p>{selected.bill_to.name}</p>
-          <p>
-            {fmt(selected.total_ugx)} · {t('billing.balance')}: {fmt(selected.balance_ugx)}
-          </p>
-          {selected.events?.length ? (
-            <section className={styles.timeline} aria-label={t('billing.timeline')}>
-              <h3>{t('billing.timeline')}</h3>
-              <ol>
-                {[...selected.events].reverse().map((event, index) => {
-                  const detail = event.detail || {};
-                  const reason = typeof detail.reason === 'string' ? detail.reason : '';
-                  const actor =
-                    event.actor === 'system'
-                      ? t('billing.systemActor')
-                      : `${t('billing.staffActor')} ${event.actor.slice(-4)}`;
-                  return (
-                    <li key={`${event.type}-${event.at}-${index}`}>
-                      <div>
-                        <strong>
-                          {t(`billing.events.${event.type}`, {
-                            defaultValue: event.type.replaceAll('_', ' '),
-                          })}
-                        </strong>{' '}
-                        <time dateTime={event.at}>{new Date(event.at).toLocaleString()}</time>
-                      </div>
-                      <small>{actor}</small>
-                      {reason ? <p>{reason}</p> : null}
-                    </li>
-                  );
-                })}
-              </ol>
-            </section>
-          ) : null}
-          {selected.status === 'draft' && canWrite ? (
-            <div className={styles.actions}>
-              <Button variant="outline" onClick={startEdit}>
-                {t('billing.editDraft')}
-              </Button>
-              <Button variant="outline" onClick={() => void deleteDraft()} disabled={busy}>
-                {t('billing.deleteDraft')}
-              </Button>
-              <Button disabled={busy} onClick={() => void issue()}>
-                {t('billing.issue')}
-              </Button>
-            </div>
-          ) : null}
-          {selected.sealed?.content_hash ? (
-            <div className={styles.actions}>
-              <Button variant="outline" onClick={() => openDownload('invoice', selected)}>
-                {t('billing.download')}
-              </Button>
-              {canWrite && selected.status !== 'void' ? (
-                <Button
-                  variant="outline"
-                  onClick={() => void emailDocument(`/admin/billing/invoices/${selected.id}/email`)}
-                >
-                  {t('billing.email')}
-                </Button>
-              ) : null}
-            </div>
-          ) : null}
-          {['issued', 'part_paid'].includes(selected.status) && canWrite ? (
-            <Button onClick={startPayment}>{t('billing.recordPayment')}</Button>
-          ) : null}
-          {selected.payments?.length ? (
-            <div>
-              <h3>{t('billing.payments')}</h3>
-              {selected.payments.map((payment) => (
-                <div className={styles.paymentRow} key={payment.id}>
-                  <span>
-                    {payment.reference} - {fmt(payment.amount_ugx)} -{' '}
-                    {t(`billing.statuses.${payment.status}`)}
-                  </span>
-                  {canVoid && payment.status === 'valid' ? (
-                    <Button
-                      variant="outline"
-                      size="compact"
-                      onClick={() => {
-                        setSelectedPayment(payment);
-                        setVoidReason('');
-                        setShowVoidPayment(true);
-                      }}
-                    >
-                      {t('billing.voidReceipt')}
-                    </Button>
-                  ) : null}
-                  {canVoid ? (
-                    <Button
-                      variant="outline"
-                      size="compact"
-                      onClick={() => openDelete('receipt', payment)}
-                    >
-                      {t('billing.deleteRecord')}
-                    </Button>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          ) : null}
-          {selected.status === 'void' && canWrite ? (
-            <Button variant="outline" onClick={() => void reissue()}>
-              {t('billing.reissue')}
-            </Button>
-          ) : null}
-          {selected.status === 'issued' && canVoid ? (
-            <Button
-              variant="outline"
-              onClick={() => {
-                setVoidReason('');
-                setShowVoidInvoice(true);
-              }}
-            >
-              {t('billing.void')}
-            </Button>
-          ) : null}
-          {canVoid && canDeleteRecord('invoice', selected.status) ? (
-            <Button variant="outline" onClick={() => openDelete('invoice', selected)}>
-              {t('billing.deleteRecord')}
-            </Button>
-          ) : null}
-        </div>
+        <BillingInvoiceDetail
+          invoice={selected}
+          canWrite={canWrite}
+          canVoid={canVoid}
+          canDelete={canDeleteRecord('invoice', selected.status)}
+          busy={busy}
+          onEditDraft={startEdit}
+          onDeleteDraft={() => void deleteDraft()}
+          onIssue={() => void issue()}
+          onDownload={(invoice) => openDownload('invoice', invoice)}
+          onEmail={(invoice) => void emailDocument(`/admin/billing/invoices/${invoice.id}/email`)}
+          onStartPayment={startPayment}
+          onVoidReceipt={(payment) => {
+            setSelectedPayment(payment);
+            setVoidReason('');
+            setShowVoidPayment(true);
+          }}
+          onDeleteReceipt={(payment) => openDelete('receipt', payment)}
+          onReissue={() => void reissue()}
+          onVoidInvoice={() => {
+            setVoidReason('');
+            setShowVoidInvoice(true);
+          }}
+          onDeleteInvoice={(invoice) => openDelete('invoice', invoice)}
+        />
       ) : null}
       {downloadTarget ? (
         <Modal

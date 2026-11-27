@@ -15,6 +15,7 @@ import { AdminIcon } from './icons';
 import { ButtonSizeProvider } from '@shared/components/ui/Button';
 import { ThemeSwitch } from '@shared/components/ui/ThemeSwitch';
 import { LogoMark } from '@shared/components/brand/Logo';
+import { useOpenSosCount } from './care/useOpenSosCount';
 import { bottomNav, navItemFor, visibleNav, type AdminNavItem } from './nav';
 import styles from './AdminLayout.module.css';
 import { InstallHint } from '../../pwa/InstallHint';
@@ -62,10 +63,15 @@ export function AdminLayout() {
 
   const mailUnread = useMailUnread(hasScopes(user, ['mail:use']));
   useAdminPwa(hasScopes(user, ['mail:use']));
+  const openSos = useOpenSosCount(hasScopes(user, ['alerts:read']));
   const badgeFor = (item: AdminNavItem) =>
     item.path === '/mail' && mailUnread > 0 ? (
       <span className={styles.badge} role="img" aria-label={t('mail.unreadCount', { count: mailUnread })}>
         {mailUnread > 99 ? '99+' : mailUnread}
+      </span>
+    ) : item.path === '/care/sos' && openSos > 0 ? (
+      <span className={`${styles.badge} ${styles.badgeUrgent ?? ''}`} role="img" aria-label={t('layout.sosOpenCount', { count: openSos })}>
+        {openSos > 99 ? '99+' : openSos}
       </span>
     ) : null;
   const items = visibleNav(user);
@@ -86,14 +92,15 @@ export function AdminLayout() {
     return () => { document.removeEventListener('pointerdown', away); document.removeEventListener('keydown', esc); };
   }, [accountOpen]);
 
+  const userId = user?.id;
   useEffect(() => {
-    if (!user) { setAppAccess(null); return; }
+    if (!userId) { setAppAccess(null); return; }
     let live = true;
     void fetchAppAccess(<T,>(path: string) => apiClient.get<T>(path))
       .then((access) => { if (live) setAppAccess(access); })
       .catch(() => { if (live) setAppAccess(null); });
     return () => { live = false; };
-  }, [user?.id]);
+  }, [userId]);
 
   async function openNurseAppFromMenu() {
     setAccountOpen(false);
@@ -173,13 +180,13 @@ export function AdminLayout() {
             <LogoMark variant="admin" />
             <span className={styles.brandName}>Bloomwell</span>
           </Link>
+          <div className={styles.topActions}>
           <ThemeSwitch
             compact
             label={t('layout.themeLabel')}
             lightLabel={t('layout.light')}
             darkLabel={t('layout.dark')}
           />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <div className={styles.user} ref={accountRef}>
             <button
               type="button"

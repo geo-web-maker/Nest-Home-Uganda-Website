@@ -34,8 +34,9 @@ describe('admin pages use the shared components', () => {
 
   it('builds buttons from the shared Button, not raw <button>, outside the navigation shell and two icon-style triggers', () => {
     // AdminLayout: sidebar and drawer controls. The other two are a photo thumbnail that opens its
-    // viewer and an inline text action in the alerts table; neither is a pill button.
-    const allowed = new Set(['AdminLayout.tsx', 'care/VisitListAndPhotosPages.tsx', 'care/AlertAndTimesheetPages.tsx']);
+    // viewer and an inline text action in the alerts table; neither is a pill button. MapPicker: the
+    // satellite toggle floats over the map canvas as a small overlay control.
+    const allowed = new Set(['AdminLayout.tsx', 'care/VisitListAndPhotosPages.tsx', 'care/AlertAndTimesheetPages.tsx', 'care/components/MapPicker.tsx']);
     expect(offenders(tsx, /<button[\s>]/).filter((file) => !allowed.has(file))).toEqual([]);
   });
 
@@ -47,9 +48,9 @@ describe('admin pages use the shared components', () => {
 
   it('keeps the list of pages that still draw their own <table> from growing', () => {
     // Debt list. Move each page onto DataTable and delete it from here; never add to it.
-    // GovernancePages: the read-only scope matrix is a real two-way grid. CareWorkspace: columns come from
+    // GovernancePages: the read-only scope matrix is a real two-way grid. CareRecordsTable (moved out of CareWorkspace): columns come from
     // the data. VisitSchedulePage: the day table shares its row renderer with the week view.
-    const stillHandDrawn = ['GovernancePages.tsx', 'care/CareWorkspace.tsx', 'care/VisitSchedulePage.tsx'];
+    const stillHandDrawn = ['GovernancePages.tsx', 'care/CareRecordsTable.tsx', 'care/VisitSchedulePage.tsx'];
     const found = offenders(tsx, /<table[\s>]/);
     expect(found.filter((file) => !stillHandDrawn.includes(file))).toEqual([]);
   });

@@ -6,6 +6,7 @@ import { Button } from '../../../components/ui/Button';
 import { Checkbox } from '../../../components/ui/Checkbox';
 import type { JobPublic } from './types';
 import styles from './ApplicationForm.module.css';
+import { ApplicationHoneypot, ApplicationUploadFields } from './ApplicationUploadFields';
 
 type ApplicationValues = {
   job_id: string;
@@ -203,15 +204,12 @@ export function ApplicationForm({ jobs, selectedJobId = null }: ApplicationFormP
         maxLength={300}
         rows={3}
       />
-      <Field
+      <ApplicationUploadFields
         label={t('careers.form.cv')}
-        required
         requiredLabel={t('careers.form.required')}
-        type="file"
-        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+        hint={t('careers.form.cvHint')}
+        onFileChange={setFile}
       />
-      <p className={styles.hint}>{t('careers.form.cvHint')}</p>
       <Field
         kind="textarea"
         label={t('careers.form.coverNote')}
@@ -220,19 +218,11 @@ export function ApplicationForm({ jobs, selectedJobId = null }: ApplicationFormP
         maxLength={1000}
         rows={4}
       />
-      <div className={styles.honeypot} aria-hidden="true">
-        <label>
-          {t('careers.form.website')}
-          <input
-            type="text"
-            name="website"
-            tabIndex={-1}
-            autoComplete="off"
-            value={honeypot}
-            onChange={(event) => setHoneypot(event.target.value)}
-          />
-        </label>
-      </div>
+      <ApplicationHoneypot
+        label={t('careers.form.website')}
+        value={honeypot}
+        onChange={setHoneypot}
+      />
       <Checkbox
         className={styles.consent}
         checked={values.consent}

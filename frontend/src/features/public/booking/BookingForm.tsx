@@ -323,7 +323,7 @@ export function BookingForm({
         </div>
       ) : null}
 
-      <Button type="submit" fullWidth disabled={busy} aria-busy={busy}>
+      <Button type="submit" fullWidth loading={busy}>
         {busy ? copy.sending : copy.send}
       </Button>
     </form>

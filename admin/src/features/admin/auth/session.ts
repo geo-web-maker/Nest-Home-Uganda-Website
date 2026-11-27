@@ -37,7 +37,7 @@ async function withRefreshTimeout<T>(request: (signal: AbortSignal) => Promise<T
 async function trustStoredSession(): Promise<boolean> {
   const user = authStore.getUserSnapshot();
   if (!user || authStore.getState().status !== 'loading') return false;
-  let hasCredential = false;
+  let hasCredential: boolean;
   try {
     hasCredential = Capacitor.isNativePlatform()
       ? Boolean(await withRefreshTimeout(() => readNativeRefreshToken()))

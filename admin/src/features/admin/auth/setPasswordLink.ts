@@ -36,7 +36,7 @@ const CODES: Record<string, string> = {
   malformed: 'S1', not_found: 'S2', used: 'S3', expired: 'S4', superseded: 'S5', wrong_kind: 'S6', inactive: 'S7',
 };
 
-const INVISIBLE = /[\u200b\u200c\u200d\u2060\ufeff\u00a0]/g;
+const INVISIBLE = /\u200b|\u200c|\u200d|\u2060|\ufeff|\u00a0/g;
 const TRIM = /^[\s.,;:!?()[\]<>"'\u201c\u201d\u2018\u2019]+|[\s.,;:!?()[\]<>"'\u201c\u201d\u2018\u2019]+$/g;
 
 /** Undo copy/paste damage in a link token (spaces, line breaks, zero-width characters, a whole pasted URL). */

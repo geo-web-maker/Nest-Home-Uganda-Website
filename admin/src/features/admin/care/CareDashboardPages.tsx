@@ -36,7 +36,7 @@ function useDashboardData() {
 export function CareLiveDashboardPage() {
   const { data, loading, error, load } = useDashboardData();
   return <div className="stage-page">
-    <PageHeader title="Live care dashboard" actions={<Button variant="outline" onClick={() => void load()} disabled={loading}>Refresh</Button>} />
+    <PageHeader title="Live care dashboard" actions={<Button variant="outline" loading={loading} onClick={() => void load()}>Refresh</Button>} />
     {error && <Notice tone="error">{error}</Notice>}
     <div className="stage-summary-strip">
       <div><strong>{loading ? <Spinner /> : Number(data?.visit_counts?.scheduled ?? 0)}</strong><span>Scheduled visits</span></div>
@@ -60,7 +60,7 @@ export function CareExecutiveDashboardPage() {
   const total = useMemo(() => rows.reduce((sum, row) => sum + Math.max(0, row.count), 0), [rows]);
   const max = Math.max(1, ...rows.map((row) => row.count));
   return <div className="stage-page">
-    <PageHeader title="Executive care overview" actions={<Button variant="outline" onClick={() => void load()} disabled={loading}>Refresh</Button>} />
+    <PageHeader title="Executive care overview" actions={<Button variant="outline" loading={loading} onClick={() => void load()}>Refresh</Button>} />
     {error && <Notice tone="error">{error}</Notice>}
     <div className="stage-summary-strip"><div><strong>{loading ? <Spinner /> : total}</strong><span>Visits across returned statuses</span></div><div><strong>{loading ? <Spinner /> : Number(data?.visit_counts?.completed ?? 0)}</strong><span>Completed visits</span></div><div><strong>{loading ? <Spinner /> : Number(data?.open_alerts ?? 0)}</strong><span>Open alerts</span></div><div><strong>{loading ? <Spinner /> : Number(data?.critical_alerts ?? 0)}</strong><span>Critical alerts</span></div><div><strong>{loading ? <Spinner /> : Number(data?.on_call_now ?? 0)}</strong><span>On-call recipients now</span></div></div>
     {data?.on_call_schedule_gap && <Notice tone="error">Approved on-call schedule gap: no scheduled contact matches the current time. Check configured fallback contacts and the roster.</Notice>}

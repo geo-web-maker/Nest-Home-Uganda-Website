@@ -33,7 +33,7 @@ export function NotificationLogPage() {
   }, []);
   useEffect(() => { void load(); }, [load]);
   return <div className="stage-page">
-    <PageHeader title="Notification delivery log" actions={<Button variant="outline" onClick={() => void load()} disabled={loading}>Refresh</Button>} />
+    <PageHeader title="Notification delivery log" actions={<Button variant="outline" loading={loading} onClick={() => void load()}>Refresh</Button>} />
     {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}
     <section className="stage-panel"><SectionHeader title="Recent attempts" note={<>{loading ? <LoadingNote inline>Loading…</LoadingNote> : `${rows.length} attempt records (maximum 100)`}</>} />
       {rows.length === 0 && !loading ? <p className="stage-empty">No notification attempts have been recorded for the current log window.</p> : <DataTable
@@ -107,7 +107,7 @@ export function SmsSettingsPage() {
   }
 
   return <div className="stage-page">
-    <PageHeader title="SMS provider & limits" actions={<Button variant="outline" onClick={() => void load()} disabled={loading || saving}>Refresh</Button>} />
+    <PageHeader title="SMS provider & limits" actions={<Button variant="outline" loading={loading} onClick={() => void load()} disabled={saving}>Refresh</Button>} />
     {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}{notice && <Notice floating onDismiss={() => setNotice('')}>{notice}</Notice>}
     {loading ? <section className="stage-panel"><LoadingNote>Loading SMS configuration…</LoadingNote></section> : <>
       <div className="stage-summary-strip"><div><strong>{snapshot?.provider === 'mambosms' ? 'MamboSMS' : 'Console'}</strong><span>Provider from deployment config</span></div><div><strong>{snapshot?.provider === 'mambosms' ? 'Provider-backed' : 'Dry-run'}</strong><span>Send behavior</span></div><div><strong>{snapshot?.delivery_receipts_supported ? 'Supported' : 'Not supported'}</strong><span>Delivery receipts</span></div><div><strong>{snapshot?.monthly_cap ?? '—'}</strong><span>Configured monthly cap</span></div></div>

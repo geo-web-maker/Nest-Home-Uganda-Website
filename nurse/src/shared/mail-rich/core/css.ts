@@ -52,5 +52,4 @@ export function isHiddenStyle(value: string): boolean {
 }
 
 /** Invisible filler that senders append to the preview line (combining grapheme joiner, zero-width space, soft hyphen, BOM). */
-// eslint-disable-next-line no-misleading-character-class -- these characters are exactly what is being removed
 export const INVISIBLE_FILLER = /[\u034f\u200b\u2060\ufeff\u00ad]|\u200c{2,}/g;

@@ -148,6 +148,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   color: inherit;
   text-decoration: none;
 }
@@ -160,6 +161,17 @@
 
 .brandName {
   font: 700 1.05rem var(--serif);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Theme switch and account sit together on the right so neither can sit on top of the brand. */
+.topActions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 8px;
 }
 
 .user {
@@ -596,3 +608,5 @@
   inset-inline-start: calc(50% + 0.35rem);
   margin: 0;
 }
+
+.badgeUrgent { background: var(--danger, #b3261e); color: #fff; }

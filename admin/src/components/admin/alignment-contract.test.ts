@@ -91,9 +91,9 @@ describe('admin pages do not draw their own filter rows', () => {
       'care/FlagsAndTeamPages.tsx',
       'care/VisitListAndPhotosPages.tsx',
       'care/CareScreenPage.tsx',
-      'care/components/MapPicker.tsx',
       'GovernancePages.tsx',
-      'users/UsersPage.tsx',
+      'users/UserAccessEditorPanel.tsx',
+      'users/UserInvitePanel.tsx',
     ];
     const using = adminTsx.filter((f) => /<(FilterBar|SearchBar)[\s>]/.test(readFileSync(f, 'utf8'))).map(rel);
     for (const page of pages) expect(using).toContain(page);

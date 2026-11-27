@@ -43,7 +43,28 @@ function navIsCurrent(pathname: string, to: string) {
   return pathname === to || pathname.startsWith(`${to}/`);
 }
 
-export function AppShell({ children, online, queued, authenticated, message, syncing: syncingNow = false, sosEnabled, smsHref, emergencyNumbers = [], supervisorPhone, liveFollowEnabled = false, liveFollowMinutes = 30, liveFollowIntervalSeconds = 30, sosHoldSeconds = 2, sosCancelWindowSeconds = 5, onSendSos, onStartSosFollow, onPingSosFollow, onSafeNow, onDismissMessage }: Props) {
+export function AppShell({
+  children,
+  online,
+  queued,
+  authenticated,
+  message,
+  syncing: syncingNow = false,
+  sosEnabled,
+  smsHref,
+  emergencyNumbers = [],
+  supervisorPhone,
+  liveFollowEnabled = false,
+  liveFollowMinutes = 30,
+  liveFollowIntervalSeconds = 30,
+  sosHoldSeconds = 2,
+  sosCancelWindowSeconds = 5,
+  onSendSos,
+  onStartSosFollow,
+  onPingSosFollow,
+  onSafeNow,
+  onDismissMessage,
+}: Props) {
   const location = useLocation();
   const previousOnline = useRef(online);
   const backOnline = online && !previousOnline.current;
@@ -69,11 +90,22 @@ export function AppShell({ children, online, queued, authenticated, message, syn
   const collapsed = authenticated && showConnection && minimized;
   const level = !online ? 'offline' : syncProblem || queued > 0 ? 'issue' : 'ok';
   const chipText = !online ? copy.shell.offlineLabel : syncProblem ? 'Needs attention' : queued > 0 ? `${queued} ${copy.shell.waiting}` : syncing ? 'Syncing' : copy.shell.onlineLabel;
-  const navigation = (className: string) => <nav className={className} aria-label={copy.shell.mainNavigation}>
-    {NAV.map((item) => <Link key={item.to} to={item.to} aria-label={item.label} aria-current={navIsCurrent(location.pathname, item.to) ? 'page' : undefined}>
-      <Icon name={item.icon} /><span className="nav-label" aria-hidden="true">{item.label}</span><span className="nav-short" aria-hidden="true">{item.short}</span>
-    </Link>)}
-  </nav>;
+  const navigation = (className: string) => (
+    <nav className={className} aria-label={copy.shell.mainNavigation}>
+      {NAV.map((item) => (
+        <Link
+          key={item.to}
+          to={item.to}
+          aria-label={item.label}
+          aria-current={navIsCurrent(location.pathname, item.to) ? 'page' : undefined}
+        >
+          <Icon name={item.icon} />
+          <span className="nav-label" aria-hidden="true">{item.label}</span>
+          <span className="nav-short" aria-hidden="true">{item.short}</span>
+        </Link>
+      ))}
+    </nav>
+  );
 
   return <div className={authenticated ? 'nurse-app' : 'nurse-app nurse-app--guest'}>
     {authenticated
@@ -89,12 +121,31 @@ export function AppShell({ children, online, queued, authenticated, message, syn
             <path className="shell-mark-leaf" d={MARK_LEAVES} />
             <path className="shell-mark-cross" d={MARK_CROSS} />
           </svg>
-          {collapsed && <button type="button" className={`shell-conn-chip is-${level}`} aria-label={`${chipText}. ${bannerText}. Show details`} aria-expanded="false"
-            onClick={() => { setMinimized(false); setExpandTick((t) => t + 1); }}>
-            <span className="shell-conn-chip__dot" aria-hidden="true" /><span className="shell-conn-chip__text">{chipText}</span>
-          </button>}
+          {collapsed && (
+            <button
+              type="button"
+              className={`shell-conn-chip is-${level}`}
+              aria-label={`${chipText}. ${bannerText}. Show details`}
+              aria-expanded="false"
+              onClick={() => {
+                setMinimized(false);
+                setExpandTick((tick) => tick + 1);
+              }}
+            >
+              <span className="shell-conn-chip__dot" aria-hidden="true" />
+              <span className="shell-conn-chip__text">{chipText}</span>
+            </button>
+          )}
           <div className="shell-topbar__actions">
-            <Link to="/app-center" className="shell-topbar__link" aria-label="App Center" aria-current={location.pathname === '/app-center' ? 'page' : undefined}><Icon name="download" /><span>App Center</span></Link>
+            <Link
+              to="/app-center"
+              className="shell-topbar__link"
+              aria-label="App Center"
+              aria-current={location.pathname === '/app-center' ? 'page' : undefined}
+            >
+              <Icon name="download" />
+              <span>App Center</span>
+            </Link>
             <ThemeToggle />
           </div>
         </div>
@@ -102,7 +153,17 @@ export function AppShell({ children, online, queued, authenticated, message, syn
     <InstallHint />
     <div className="mk-toast-region">
       <UpdatePrompt />
-      {showToast && <Banner className="mk-toast" floating onDismiss={onDismissMessage ?? (() => undefined)} tone={syncProblem ? 'warn' : isProblemMessage(message ?? '') ? 'bad' : 'info'} role={isProblemMessage(message ?? '') ? 'alert' : 'status'}>{message}</Banner>}
+      {showToast && (
+        <Banner
+          className="mk-toast"
+          floating
+          onDismiss={onDismissMessage ?? (() => undefined)}
+          tone={syncProblem ? 'warn' : isProblemMessage(message ?? '') ? 'bad' : 'info'}
+          role={isProblemMessage(message ?? '') ? 'alert' : 'status'}
+        >
+          {message}
+        </Banner>
+      )}
     </div>
     {showConnection && <div className={`mk-status-stack${collapsed ? ' is-collapsed' : ''}`} aria-hidden={collapsed || undefined}>
       <div className={`connection-banner mk-connection-banner${online ? ' is-online' : ' is-offline'}`} role="status" aria-live="polite">
@@ -114,8 +175,24 @@ export function AppShell({ children, online, queued, authenticated, message, syn
     {authenticated && navigation('desktop-rail')}
     <main className="app-shell">{children}</main>
     {authenticated && navigation('bottom-tabs')}
-    {authenticated && sosEnabled && <aside className="sos-dock" aria-label={copy.shell.safetyAlert}>
-      <SosControl enabled={sosEnabled} smsHref={smsHref} emergencyNumbers={emergencyNumbers} supervisorPhone={supervisorPhone} liveFollowEnabled={liveFollowEnabled} liveFollowMinutes={liveFollowMinutes} liveFollowIntervalSeconds={liveFollowIntervalSeconds} holdSeconds={sosHoldSeconds} cancelWindowSeconds={sosCancelWindowSeconds} onSend={onSendSos} onStartFollow={onStartSosFollow} onPingFollow={onPingSosFollow} onSafeNow={onSafeNow} />
-    </aside>}
+    {authenticated && sosEnabled && (
+      <aside className="sos-dock" aria-label={copy.shell.safetyAlert}>
+        <SosControl
+          enabled={sosEnabled}
+          smsHref={smsHref}
+          emergencyNumbers={emergencyNumbers}
+          supervisorPhone={supervisorPhone}
+          liveFollowEnabled={liveFollowEnabled}
+          liveFollowMinutes={liveFollowMinutes}
+          liveFollowIntervalSeconds={liveFollowIntervalSeconds}
+          holdSeconds={sosHoldSeconds}
+          cancelWindowSeconds={sosCancelWindowSeconds}
+          onSend={onSendSos}
+          onStartFollow={onStartSosFollow}
+          onPingFollow={onPingSosFollow}
+          onSafeNow={onSafeNow}
+        />
+      </aside>
+    )}
   </div>;
 }

@@ -21,6 +21,8 @@ import { NurseMailUiProvider } from './mailUiKit';
 import '../../shared/mail-rich/react/mail-rich.css';
 import { Sheet, SheetActions } from '../../ui/Sheet';
 import { listDrafts, putDraft, readMailCache, recoverInterruptedDrafts, removeDraft, writeMailCache, type CachedBox, type CachedMessage, type MailDraft } from './mailStore';
+import { useNurseMailDraftAutosave } from './useNurseMailDraftAutosave';
+import { useNurseMailUndoSend } from './useNurseMailUndoSend';
 
 type Folder = keyof typeof copy.mail.folders;
 const FOLDERS = Object.keys(copy.mail.folders) as Folder[];
@@ -144,21 +146,7 @@ export function MailScreen() {
     if (boxes.length > 0) void writeMailCache({ boxes, boxId: activeBoxId, folder, messages });
   }, [boxes, messages, activeBoxId, folder]);
 
-  useEffect(() => {
-    if (!composer || !ownerId) return;
-    const handle = window.setTimeout(() => {
-      void putDraft({
-        id: composer.id, ownerId, mailboxId: composer.mailboxId,
-        to: parseAddresses(composer.to), cc: parseAddresses(composer.cc), bcc: parseAddresses(composer.bcc),
-        subject: composer.subject, body: composer.body, bodyHtml: composer.bodyHtml,
-        bodyFormat: composer.bodyFormat ?? 'plain', quotedHtml: composer.quotedHtml,
-        removeQuote: composer.removeQuote, inReplyTo: composer.inReplyTo, quote: composer.quote,
-        serverDraftId: composer.serverDraftId, attachments: composer.attachments,
-        state: 'draft', savedAt: new Date().toISOString(),
-      }).then(() => reloadDrafts()).catch(() => setProblem(copy.mail.draftStoreError));
-    }, 750);
-  return () => window.clearTimeout(handle);
-  }, [composer, ownerId, reloadDrafts]);
+  useNurseMailDraftAutosave(composer, ownerId, reloadDrafts, setProblem);
 
 
   const flush = useCallback(async () => {
@@ -344,39 +332,18 @@ export function MailScreen() {
     if (state === 'draft') setNotice(copy.mail.draftSaved);
   };
 
-  // Undo send: hold the stored draft for a few seconds before it is queued.
-  const [undo, setUndo] = useState<{ record: MailDraft; snapshot: ComposeState } | null>(null);
-  const undoRef = useRef<{ record: MailDraft; snapshot: ComposeState } | null>(null);
-  const undoTimer = useRef<number | undefined>(undefined);
-  const releaseSend = async (record: MailDraft) => {
+  // The hook owns the timed undo window; this callback performs the existing queue transition.
+  const releaseSend = useCallback(async (record: MailDraft) => {
     await putDraft({ ...record, state: 'queued', savedAt: new Date().toISOString() });
     await reloadDrafts();
     if (navigator.onLine) void flush();
     else setNotice(copy.mail.queued);
+  }, [reloadDrafts, flush]);
+  const { undo, startUndoWindow, flushUndo, undoSend } = useNurseMailUndoSend(releaseSend);
+  const restoreUndo = () => {
+    const snapshot = undoSend();
+    if (snapshot) setComposer(snapshot);
   };
-  const flushUndo = () => {
-    window.clearTimeout(undoTimer.current);
-    const item = undoRef.current;
-    undoRef.current = null;
-    setUndo(null);
-    if (item) void releaseSend(item.record);
-  };
-  const startUndoWindow = (record: MailDraft, snapshot: ComposeState) => {
-    window.clearTimeout(undoTimer.current);
-    if (undoRef.current) void releaseSend(undoRef.current.record);
-    undoRef.current = { record, snapshot };
-    setUndo(undoRef.current);
-    undoTimer.current = window.setTimeout(flushUndo, 8000);
-  };
-  const undoSend = () => {
-    window.clearTimeout(undoTimer.current);
-    const item = undoRef.current;
-    undoRef.current = null;
-    setUndo(null);
-    if (item) setComposer(item.snapshot);
-  };
-  // Leaving the screen inside the window sends the message rather than leaving it as a draft.
-  useEffect(() => () => { window.clearTimeout(undoTimer.current); const item = undoRef.current; undoRef.current = null; if (item) void putDraft({ ...item.record, state: 'queued' }); }, []);
 
   const editDraft = (draft: MailDraft) => {
     setProblem('');
@@ -581,7 +548,7 @@ export function MailScreen() {
         </SheetActions>
       </Sheet>
     ) : null}
-    {undo && <div className="mail-undo-bar" role="status" aria-live="polite"><span>Sending…</span><PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={undoSend}>Undo</PillButton><PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={flushUndo}>Send now</PillButton></div>}
+    {undo && <div className="mail-undo-bar" role="status" aria-live="polite"><span>Sending…</span><PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={restoreUndo}>Undo</PillButton><PillButton type="button" tone="ghost" size="sm" showArrow={false} onClick={flushUndo}>Send now</PillButton></div>}
     {composer && <MailComposeSheet value={composer} problem={problem} online={online} attaching={attaching} onDismissProblem={() => setProblem('')} onAttach={(files) => void attach(files)} onPasteImage={pasteImage} onRemoveAttachment={(id) => void removeAttachment(id)} onChange={(next) => { setComposer(next); setProblem(''); }} onSend={() => void save('queued')} onSaveDraft={() => void save('draft')} onCancel={() => setComposer(null)} onDiscard={(value) => { void (async () => { await removeDraft(value.id); if (value.serverDraftId && navigator.onLine) { try { await apiRequest(`/mail/drafts/${value.serverDraftId}`, { method: 'DELETE' }); } catch { /* Local discard must still succeed. */ } } setComposer(null); await reloadDrafts(); })(); }} />}
   </section>;
 }

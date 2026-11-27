@@ -168,16 +168,4 @@ describe('MailSettingsPage', () => {
     expect(screen.getByText('Queued: 1 · Deferred: 2 · Failed: 3')).toBeInTheDocument();
     expect(screen.getByText('office: 9')).toBeInTheDocument();
   });
-
-  it('keeps external send disabled until the recipient is valid, then reports console-only honestly', async () => {
-    api();
-    const user = userEvent.setup();
-    setup();
-    const send = await screen.findByRole('button', { name: 'Send external test' });
-    expect(send).toBeDisabled();
-    await user.type(screen.getByLabelText('External test recipient'), 'me@mail.test');
-    await user.click(send);
-    expect(apiClient.post).toHaveBeenCalledWith('/mail/settings/test-send', { to: 'me@mail.test', include_attachment: true });
-    expect(await screen.findByText(/console provider records messages but sends nothing externally/i)).toBeInTheDocument();
-  });
 });

@@ -1,23 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from 'react';
-import { pickDevice, pickNurse, pickSupervisor } from './pickers';
-import { dialogs } from '@shared/lib/dialogs';
-import { cellText, headerFor } from '@shared/lib/tableText';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { apiClient, takeQueuedFlag } from '@shared/lib/api/client';
 import { useCachedGet, savedLabel } from '../../../admin-native/cachedGet';
 import { friendlyError } from '../../../admin-native/connection';
-import type { DataColumn } from '../../../components/admin/DataTable';
 import { CareTable } from './components/CareTable';
 import { CareSheet } from './components/CareSheet';
+import { CareSettingsPanel, CareReadinessPanel, CareDataRequestPanel } from './components/CareScreenPanels';
+import { buildCareScreenColumns } from './components/CareScreenColumns';
+import { CARE_SCREEN_PATHS, CARE_SCREEN_SCOPES, endpoint, titles, type ScreenKey } from './careScreenConfig';
 import { CreateNurseSheet } from './nurses/CreateNurseSheet';
 import { InviteNurseSheet } from './nurses/InviteNurseSheet';
 import { FilterBar } from '../../../components/admin/FilterBar';
 import { PageHeader } from '../../../components/admin/PageHeader';
 import { Button } from '@shared/components/ui/Button';
 import { Field } from '@shared/components/ui/Field';
-import { Checkbox } from '@shared/components/ui/Checkbox';
 import { MapPicker } from './components/MapPicker';
 import { VisitReviewPage } from './VisitReviewPage';
 import { VisitListPage } from './VisitListAndPhotosPages';
@@ -27,95 +25,11 @@ import { hasScopes } from '../auth/hasScopes';
 import './care.css';
 import './care-screen.css';
 import { Notice } from '@shared/components/dialogs/Notice';
-import { ButtonGroup } from '@shared/components/dialogs/ButtonGroup';
 import { TotpGate } from '@shared/components/security/TotpGate';
-import { CareFormsCopyLog } from './settings/CareFormsCopyLog';
+
+export { CARE_SCREEN_PATHS, CARE_SCREEN_SCOPES };
 
 type Row = Record<string, any>;
-type ScreenKey =
-  | 'nurses'
-  | 'clients'
-  | 'places'
-  | 'visits'
-  | 'flags'
-  | 'team'
-  | 'photos'
-  | 'alerts'
-  | 'timesheets'
-  | 'sos'
-  | 'reports'
-  | 'settings'
-  | 'readiness'
-  | 'data'
-  | 'audit';
-export const CARE_SCREEN_PATHS: Record<ScreenKey, string> = {
-  nurses: 'nurses',
-  clients: 'clients',
-  places: 'places',
-  visits: 'visits',
-  flags: 'flags',
-  team: 'team',
-  photos: 'photos',
-  alerts: 'alerts',
-  timesheets: 'timesheets',
-  sos: 'sos',
-  reports: 'reports/visits',
-  settings: 'settings',
-  readiness: 'readiness',
-  data: 'data-requests',
-  audit: 'audit',
-};
-export const CARE_SCREEN_SCOPES: Record<ScreenKey, string[]> = {
-  nurses: ['nurses:read'],
-  clients: ['clients:read'],
-  places: ['places:read'],
-  visits: ['visits:read'],
-  flags: ['flags:read'],
-  team: ['visits:read'],
-  photos: ['photos:read'],
-  alerts: ['alerts:read'],
-  timesheets: ['timesheets:read'],
-  sos: ['alerts:read'],
-  reports: ['care-reports:read'],
-  settings: ['carecfg:read'],
-  readiness: ['carecfg:read'],
-  data: ['system:manage'],
-  audit: ['activity:read'],
-};
-const endpoint: Record<ScreenKey, string> = {
-  nurses: '/admin/care/nurses',
-  clients: '/admin/care/clients',
-  places: '/admin/care/clients',
-  visits: '/admin/care/visits',
-  flags: '/admin/care/flags',
-  team: '/admin/care/team',
-  photos: '/admin/care/photos',
-  alerts: '/admin/care/alerts',
-  timesheets: '/admin/care/timesheets',
-  sos: '/admin/care/sos',
-  reports: '/admin/care/reports/visits',
-  settings: '/admin/care/settings',
-  readiness: '/admin/care/readiness',
-  data: '/admin/care/data-requests',
-  audit: '/admin/activity',
-};
-const titles: Record<ScreenKey, string> = {
-  nurses: 'Nurses',
-  clients: 'Clients',
-  places: 'Places & stays',
-  visits: 'Visit schedule & review',
-  flags: 'Flags queue',
-  team: 'Team status',
-  photos: 'Photo review',
-  alerts: 'Alerts dashboard',
-  timesheets: 'Timesheets',
-  sos: 'SOS & on-call',
-  reports: 'Care reports',
-  settings: 'Care settings',
-  readiness: 'Care readiness',
-  data: 'Data requests',
-  audit: 'Audit history',
-};
 function CareScreenContent({ screen }: { screen: ScreenKey }) {
   const { t } = useTranslation('admin');
   const { user } = useAuth();
@@ -248,300 +162,17 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
         : rows,
     [rows, filter, screen],
   );
-  const columns: DataColumn<Row>[] = (() => {
-    const keys = visibleRows
-      .slice(0, 8)
-      .flatMap((r) => Object.keys(r))
-      .filter((k) => screen !== 'nurses' || (k !== 'user_id' && k !== 'supervisor_id'))
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .slice(0, 5);
-    const base: DataColumn<Row>[] = screen === 'audit'
-      ? (['at', 'severity', 'action', 'message', 'user_name', 'source', 'http_status', 'request_id'] as const).map((key) => ({
-          key,
-          header: headerFor(key),
-          cell: (r: Row) => cellText(key, r[key]),
-        }))
-      : (keys.length ? keys : ['id', 'status', 'name', 'created_at']).map((key) => ({
-          key,
-          header: headerFor(key),
-          cell: (r: Row) => cellText(key, r[key]),
-        }));
-    if (screen === 'audit') {
-      base.push({
-        key: 'details',
-        header: 'Details',
-        cell: (r: Row) => <Button type="button" variant="outline" onClick={() => setSelected(r)}>Inspect</Button>,
-      });
-    }
-    if (['nurses', 'clients', 'visits', 'flags', 'photos', 'alerts', 'timesheets', 'sos'].includes(screen))
-      base.push({
-        key: 'actions',
-        header: 'Actions',
-        cell: (r: Row) => (
-          <ButtonGroup size="compact">
-            {screen === 'clients' && (
-              <Button type="button" variant="outline" onClick={() => navigate(`/care/clients/${encodeURIComponent(String(r.id ?? ''))}`)}>
-                Details
-              </Button>
-            )}
-            {screen === 'nurses' && (
-              <>
-                <Button type="button" variant="outline" onClick={() => navigate(`/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}`)}>
-                  Details
-                </Button>
-                {Boolean(r.dual_account) && <small>Also an admin</small>}
-                {hasScopes(user, ['nurses:write']) && (
-                  <>
-                    {!r.dual_account && <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() =>
-                        act(`/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}/invite`)
-                      }
-                    >
-                      Resend invite
-                    </Button>}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={async () => {
-                        const device = await pickDevice(String(r.user_id ?? ''));
-                        if (device)
-                          void act(
-                            `/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}/revoke-device`,
-                            { device_id: device },
-                          );
-                      }}
-                    >
-                      Revoke device
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() =>
-                        void act(
-                          `/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}`,
-                          { active: !r.active },
-                          'patch',
-                        )
-                      }
-                    >
-                      {r.active ? 'Deactivate nurse access' : 'Activate nurse access'}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={async () => {
-                        const supervisor = await pickSupervisor();
-                        if (supervisor === null) return;
-                        void act(
-                          `/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}/supervisor`,
-                          { supervisor_id: supervisor || null },
-                          'patch',
-                        );
-                      }}
-                    >
-                      Supervisor
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={async () => {
-                        if (!await dialogs.confirm(r.dual_account ? 'Remove this person’s nurse access? Their existing staff account will remain. This cannot be undone.' : 'Delete this nurse permanently? This cannot be undone.')) return;
-                        try {
-                          setNotice('');
-                          await apiClient.delete(`/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}`);
-                          setNotice(r.dual_account ? 'Nurse access removed. The staff account remains.' : 'Nurse deleted.');
-                          await load();
-                        } catch (e) {
-                          setError(e instanceof Error ? e.message : 'Delete failed');
-                        }
-                      }}
-                    >
-                      {r.dual_account ? 'Remove nurse access' : 'Delete'}
-                    </Button>
-                  </>
-                )}
-              </>
-            )}
-            {screen === 'visits' && (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    navigate(`/care/visits/${encodeURIComponent(String(r.id ?? ''))}`)
-                  }
-                >
-                  Review
-                </Button>
-                {hasScopes(user, ['visits:write']) && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={async () => {
-                      const nurse = await pickNurse('Choose the replacement nurse', String(r.nurse_id ?? ''));
-                      if (nurse)
-                        void act(
-                          `/admin/care/visits/${encodeURIComponent(String(r.id ?? ''))}`,
-                          { nurse_id: nurse },
-                          'patch',
-                        );
-                    }}
-                  >
-                    Reassign
-                  </Button>
-                )}
-              </>
-            )}
-            {screen === 'flags' && hasScopes(user, ['flags:write']) && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={async () => {
-                  const note = await dialogs.prompt('Resolution note', '', { minLength: 3, multiline: true, confirmLabel: 'Resolve' });
-                  if (note && note.trim().length >= 3)
-                    void act(
-                      `/admin/care/flags/${encodeURIComponent(String(r.id ?? ''))}/resolve`,
-                      { reason: note.trim() },
-                    );
-                }}
-              >
-                Resolve
-              </Button>
-            )}
-            {screen === 'photos' && (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={async () => {
-                    try {
-                      const result: any = await apiClient.get(
-                        `/admin/care/visits/${encodeURIComponent(String(r.visit_id ?? ''))}/photos`,
-                      );
-                      const photo = (result.items ?? []).find((x: any) => x.id === r.id);
-                      setSelected(photo ?? r);
-                    } catch (e) {
-                      setError(e instanceof Error ? e.message : 'Photo could not be opened.');
-                    }
-                  }}
-                >
-                  View
-                </Button>
-                {hasScopes(user, ['photos:hide']) && (
-                  <Button
-                  type="button"
-                  variant="outline"
-                  onClick={async () => {
-                    const note = await dialogs.prompt('Reason for hiding this photo', '', { minLength: 3, multiline: true, confirmLabel: 'Hide photo' });
-                    if (note && note.trim().length >= 3)
-                      void act(
-                        `/admin/care/photos/${encodeURIComponent(String(r.id ?? ''))}/hide`,
-                        { note: note.trim() },
-                      );
-                  }}
-                  >
-                    Hide
-                  </Button>
-                )}
-              </>
-            )}
-            {screen === 'alerts' && hasScopes(user, ['alerts:write']) && (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    void act(
-                      `/admin/care/alerts/${encodeURIComponent(String(r.id ?? ''))}/acknowledge`,
-                    )
-                  }
-                >
-                  Acknowledge
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={async () => {
-                    const note = await dialogs.prompt('Resolution note', '', { minLength: 3, multiline: true, confirmLabel: 'Resolve' });
-                    if (note && note.trim().length >= 3)
-                      void act(
-                        `/admin/care/alerts/${encodeURIComponent(String(r.id ?? ''))}/resolve`,
-                        { note: note.trim() },
-                      );
-                  }}
-                >
-                  Resolve
-                </Button>
-              </>
-            )}
-            {screen === 'timesheets' && hasScopes(user, ['timesheets:write']) && (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    void act(
-                      `/admin/care/timesheets/${encodeURIComponent(String(r.id ?? ''))}/approve`,
-                    )
-                  }
-                >
-                  Approve
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={async () => {
-                    const note = await dialogs.prompt('Reason for sending back', '', { minLength: 3, multiline: true, confirmLabel: 'Send back' });
-                    if (note && note.trim().length >= 3)
-                      void act(
-                        `/admin/care/timesheets/${encodeURIComponent(String(r.id ?? ''))}/send-back`,
-                        { note: note.trim() },
-                      );
-                  }}
-                >
-                  Send back
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={async () => {
-                    const answers = await dialogs.form(
-                      'Adjust this timesheet',
-                      [
-                        { name: 'minutes', label: 'Adjustment minutes (use a minus sign to remove time)', type: 'number', required: true },
-                        { name: 'reason', label: 'Reason', type: 'textarea', minLength: 3 },
-                      ],
-                      'Apply adjustment',
-                    );
-                    if (answers)
-                      void act(
-                        `/admin/care/timesheets/${encodeURIComponent(String(r.id ?? ''))}/adjust`,
-                        { minutes: Number(answers.minutes), reason: answers.reason },
-                      );
-                  }}
-                >
-                  Adjust
-                </Button>
-              </>
-            )}
-            {screen === 'sos' && hasScopes(user, ['alerts:write']) && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  void act(`/admin/care/sos/${encodeURIComponent(String(r.id ?? ''))}/acknowledge`)
-                }
-              >
-                Acknowledge
-              </Button>
-            )}
-          </ButtonGroup>
-        ),
-      } as any);
-    return base as DataColumn<Row>[];
-  })();
+  const columns = buildCareScreenColumns({
+    screen,
+    visibleRows,
+    user,
+    navigate,
+    setSelected,
+    setNotice,
+    setError,
+    load,
+    act,
+  });
   async function act(path: string, body: Row = {}, method: 'post' | 'patch' | 'put' = 'post') {
     try {
       setNotice('');
@@ -581,7 +212,14 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
           </Field>
           {hasScopes(user, ['agreements:read']) && <Field kind="select" label="Completed agreement" name="agreement_id" defaultValue="">
             <option value="">No linked agreement</option>
-            {agreementOptions.map((agreement) => <option key={agreement.id} value={agreement.id}>{agreement.reference ?? agreement.id}{agreement.patient_name || agreement.client_name ? ` · ${agreement.patient_name ?? agreement.client_name}` : ''}</option>)}
+            {agreementOptions.map((agreement) => (
+            <option key={agreement.id} value={agreement.id}>
+              {agreement.reference ?? agreement.id}
+              {agreement.patient_name || agreement.client_name
+                ? ` · ${agreement.patient_name ?? agreement.client_name}`
+                : ''}
+            </option>
+          ))}
           </Field>}
           <Button type="submit">Create client</Button>
         </form>
@@ -876,85 +514,57 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
               value={auditFilters.to}
               onChange={(e) => setAuditFilters({ ...auditFilters, to: e.target.value, cursor: '' })}
             />
-            <Field label="Severity" value={auditFilters.severity} onChange={(e) => setAuditFilters({ ...auditFilters, severity: e.target.value, cursor: '' })} placeholder="info / warning / error / critical" />
-            <Field label="Event type" value={auditFilters.eventType} onChange={(e) => setAuditFilters({ ...auditFilters, eventType: e.target.value, cursor: '' })} placeholder="activity / error / security / system" />
-            <Field label="Source" value={auditFilters.source} onChange={(e) => setAuditFilters({ ...auditFilters, source: e.target.value, cursor: '' })} placeholder="user / api / scheduler / integration" />
-            <Field label="Outcome" value={auditFilters.outcome} onChange={(e) => setAuditFilters({ ...auditFilters, outcome: e.target.value, cursor: '' })} placeholder="success / failure / blocked" />
+            <Field
+              label="Severity"
+              value={auditFilters.severity}
+              onChange={(e) => setAuditFilters({ ...auditFilters, severity: e.target.value, cursor: '' })}
+              placeholder="info / warning / error / critical"
+            />
+            <Field
+              label="Event type"
+              value={auditFilters.eventType}
+              onChange={(e) => setAuditFilters({ ...auditFilters, eventType: e.target.value, cursor: '' })}
+              placeholder="activity / error / security / system"
+            />
+            <Field
+              label="Source"
+              value={auditFilters.source}
+              onChange={(e) => setAuditFilters({ ...auditFilters, source: e.target.value, cursor: '' })}
+              placeholder="user / api / scheduler / integration"
+            />
+            <Field
+              label="Outcome"
+              value={auditFilters.outcome}
+              onChange={(e) => setAuditFilters({ ...auditFilters, outcome: e.target.value, cursor: '' })}
+              placeholder="success / failure / blocked"
+            />
         </FilterBar>
       );
     if (screen === 'settings')
       return (
-        <div className="care-settings">
-          {settings.map((s) => (
-            <form
-              key={s.id}
-              className="care-setting"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!hasScopes(user, ['carecfg:write'])) return;
-                const input = e.currentTarget.elements.namedItem('value') as HTMLInputElement;
-                let value: any = input.value;
-                if (s.type === 'boolean') value = input.checked;
-                if (s.type === 'integer') value = Number(input.value);
-                await act(`/admin/care/settings/${encodeURIComponent(s.id)}`, { value }, 'put');
-              }}
-            >
-              <Field
-                label={s.id}
-                name="value"
-                defaultValue={s.type === 'boolean' ? undefined : s.value}
-                type={s.type === 'integer' ? 'number' : 'text'}
-                disabled={!hasScopes(user, ['carecfg:write'])}
-              />
-              {s.type === 'boolean' && (
-                <Checkbox
-                  label={`${s.id} enabled`}
-                  hideLabel
-                  name="value"
-                  defaultChecked={Boolean(s.value)}
-                  disabled={!hasScopes(user, ['carecfg:write'])}
-                />
-              )}
-              <small>
-                Source: {s.source}; group: {s.group}
-              </small>
-              {hasScopes(user, ['carecfg:write']) && <Button type="submit">Save</Button>}
-            </form>
-          ))}
-          {hasScopes(user, ['carecfg:read']) && <CareFormsCopyLog />}
-        </div>
+        <CareSettingsPanel
+          settings={settings}
+          canWrite={hasScopes(user, ['carecfg:write'])}
+          canRead={hasScopes(user, ['carecfg:read'])}
+          onSave={(id, value) => act(`/admin/care/settings/${encodeURIComponent(id)}`, { value }, 'put')}
+        />
       );
     if (screen === 'readiness')
-      return (
-        <div className="care-readiness">
-          <strong>{readiness?.ready ? 'Ready' : 'Not ready'}</strong>
-          {(readiness?.items ?? []).map((item: any) => (
-            <div key={item.id} className="care-check">
-              <b>{item.status}</b>
-              <span>{item.label}</span>
-              {item.detail && <small>{item.detail}</small>}
-            </div>
-          ))}
-        </div>
-      );
+      return <CareReadinessPanel readiness={readiness} />;
     if (screen === 'data')
       return (
-        <>
-          <FilterBar
-            label="Client data export"
-            onSubmit={async () => {
-              const r: any = await apiClient.get(
-                `/admin/care/data-requests/clients/${encodeURIComponent(clientId)}/export`,
-              );
-              setSelected(r);
-              setNotice('Client data export prepared and audited.');
-            }}
-            actions={<Button type="submit">Preview export</Button>}
-          >
-            <Field label="Client ID" value={clientId} onChange={(e) => setClientId(e.target.value)} />
-          </FilterBar>
-          {selected && <pre className="care-data-export">{JSON.stringify(selected, null, 2)}</pre>}
-        </>
+        <CareDataRequestPanel
+          clientId={clientId}
+          selected={selected}
+          onClientIdChange={setClientId}
+          onPreview={async () => {
+            const result: any = await apiClient.get(
+              `/admin/care/data-requests/clients/${encodeURIComponent(clientId)}/export`,
+            );
+            setSelected(result);
+            setNotice('Client data export prepared and audited.');
+          }}
+        />
       );
     return null;
   }

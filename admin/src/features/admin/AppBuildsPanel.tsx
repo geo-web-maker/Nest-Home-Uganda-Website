@@ -190,7 +190,7 @@ export function AppBuildsPanel() {
               labels={{ caption: 'Recent app builds', loading: 'Loading…', empty: 'Nothing to show.' }}
             />
             </div>
-            <Button variant="outline" onClick={() => void builds.refetch()} disabled={builds.isFetching}>{builds.isFetching ? 'Refreshing…' : 'Refresh'}</Button>
+            <Button variant="outline" loading={builds.isFetching} onClick={() => void builds.refetch()}>Refresh</Button>
           </>
         ) : null}
       </div>

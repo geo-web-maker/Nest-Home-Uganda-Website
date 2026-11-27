@@ -24,9 +24,7 @@ import { AdminMailUiProvider } from './mailUiKit';
 import '../../../shared/mail-rich/react/mail-rich.css';
 import styles from './MailPage.module.css';
 import { LoadingNote } from '../../../components/admin/LoadingNote';
-
-const UNDO_SEND_MS = 8000;
-type PendingSend = { draftId: string; mailboxId: string; seed: ComposeSeed };
+import { useUndoSend } from './useUndoSend';
 const EMPTY_SEED: ComposeSeed = { to: [], cc: [], bcc: [], subject: '', body: '' };
 
 function isTyping(target: EventTarget | null): boolean {
@@ -63,7 +61,7 @@ export function MailPage() {
     queryKey: ['mail', 'mailboxes'],
     queryFn: () => apiClient.get<{ items: Mailbox[] }>('/mail/mailboxes'),
   });
-  const mailboxes = boxes.data?.items ?? [];
+  const mailboxes = useMemo(() => boxes.data?.items ?? [], [boxes.data]);
   useEffect(() => {
     if (boxes.data) window.dispatchEvent(new Event(MAIL_CHANGED_EVENT));
   }, [boxes.data]);
@@ -291,65 +289,14 @@ export function MailPage() {
     void refreshAll();
   };
 
-  // Undo send: the message is already saved as a draft; it is only sent once the undo window passes.
-  const [pending, setPending] = useState<PendingSend | null>(null);
-  const pendingRef = useRef<PendingSend | null>(null);
-  const timer = useRef<number | undefined>(undefined);
-  const dispatchSend = async (item: PendingSend) => {
-    try {
-      // Sending is idempotent on the server (a draft already sent answers "already_sent"), so a dropped
-      // connection is retried instead of failing a message that may have gone through.
-      let attempt = 0;
-      for (;;) {
-        try {
-          await apiClient.post(`/mail/drafts/${item.draftId}/send`, { mailbox_id: item.mailboxId });
-          break;
-        } catch (failure) {
-          const dropped = failure instanceof Error && 'status' in failure && (failure as { status?: number }).status === 0;
-          if (!dropped || attempt >= 2) throw failure;
-          attempt += 1;
-          await new Promise((resolve) => window.setTimeout(resolve, 1500 * attempt));
-        }
-      }
-      setNotice({ tone: 'success', text: t('mail.sent') });
-      void refreshAll();
-    } catch (cause) {
-      // The message stays in Drafts; the reason is shown on the page (the composer is closed).
-      const dropped = cause instanceof Error && (cause as { status?: number }).status === 0;
-      const reason = dropped ? 'The server did not answer the send request, so the message may not have been sent.' : cause instanceof Error && cause.message ? cause.message : t('mail.sendError');
-      setNotice({ tone: 'error', text: `${reason} Your message is saved in Drafts.` });
-      void refreshAll();
-    }
-  };
-  const flushPending = () => {
-    window.clearTimeout(timer.current);
-    const item = pendingRef.current;
-    pendingRef.current = null;
-    setPending(null);
-    if (item) void dispatchSend(item);
-  };
-  const startSend = (item: PendingSend) => {
-    window.clearTimeout(timer.current);
-    if (pendingRef.current) void dispatchSend(pendingRef.current);
-    pendingRef.current = item;
-    setSeed(null);
-    setNotice(null);
-    setPending(item);
-    timer.current = window.setTimeout(flushPending, UNDO_SEND_MS);
-  };
-  const undoSend = () => {
-    window.clearTimeout(timer.current);
-    const item = pendingRef.current;
-    pendingRef.current = null;
-    setPending(null);
-    if (item) setSeed(item.seed);
-  };
-  // Leaving the page or closing the tab inside the window sends the message instead of stranding it.
-  useEffect(() => {
-    const leave = () => { const item = pendingRef.current; if (item) { pendingRef.current = null; void apiClient.post(`/mail/drafts/${item.draftId}/send`, { mailbox_id: item.mailboxId }); } };
-    window.addEventListener('pagehide', leave);
-    return () => { window.removeEventListener('pagehide', leave); window.clearTimeout(timer.current); leave(); };
-  }, []);
+  // Sending waits briefly so the user can undo; the hook owns timers and page-exit flushing.
+  const { pending, startSend, undoSend, flushPending } = useUndoSend({
+    setSeed,
+    setNotice,
+    refreshAll,
+    sentMessage: t('mail.sent'),
+    sendErrorMessage: t('mail.sendError'),
+  });
 
   const push = useMailPush(true);
   const loadFailed = boxes.isError || list.isError;
@@ -365,7 +312,7 @@ export function MailPage() {
             <Button onClick={() => compose(EMPTY_SEED)} disabled={!mailboxId}>
               {t('mail.compose')}
             </Button>
-            <Button variant="outline" onClick={() => void refreshAll()}>
+            <Button variant="outline" loading={list.isFetching} onClick={() => void refreshAll()}>
               {t('mail.refresh')}
             </Button>
             {push.available ? (

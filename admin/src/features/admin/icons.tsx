@@ -90,6 +90,7 @@ const PATHS: Record<string, ReactNode> = {
   appCenter: <><path d="M12 3v11M7.5 10 12 14.5 16.5 10" /><path d="M4 15v3.5A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5V15" /></>,
   release: <><rect x="6" y="2.5" width="12" height="19" rx="2.5" /><path d="M12 8v6M9.5 11.5 12 14l2.5-2.5M10.5 18.5h3" /></>,
   permissions: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3M12 15v2" /></>,
+  crossApp: <><path d="M4 8h13M13 4l4 4-4 4" /><path d="M20 16H7M11 12l-4 4 4 4" /></>,
   executive: <><path d="M3 3v18h18" /><path d="m7 15 4-4 3 3 5-6" /><path d="M15 8h4v4" /></>,
   signOut: <path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M16 8l4 4-4 4M20 12H9" />,
 };

@@ -1,15 +1,17 @@
 .wrap { display: grid; gap: 12px; min-width: 0; }
-.search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.placeSearch { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
 .results { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surf); }
 .results li + li { border-top: 1px solid var(--line); }
 .resultButton { width: 100%; justify-content: flex-start; text-align: left; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; min-height: 44px; }
 .resultButton:hover, .resultButton:focus-visible { background: color-mix(in srgb, var(--leaf) 14%, transparent); }
 .map { position: relative; height: 340px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; isolation: isolate; background: var(--surf); }
+/* Leaflet's attribution link is colour-only; underline it so it passes axe link-in-text-block (WCAG 1.4.1). */
+.map :global(.leaflet-control-attribution a) { text-decoration: underline; }
 .canvas { position: absolute; inset: 0; z-index: 0; }
 .overlay, .hint { position: absolute; z-index: 500; margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--surf); color: var(--mut); font-size: .88rem; box-shadow: 0 1px 6px rgb(0 0 0 / 18%); }
 .overlay { inset: 50% auto auto 50%; transform: translate(-50%, -50%); text-align: center; max-width: 80%; }
-.hint { left: 12px; right: 12px; bottom: 12px; text-align: center; pointer-events: none; }
+.hint { left: 8px; top: 8px; max-width: calc(100% - 9.5rem); padding: 5px 9px; font-size: .78rem; text-align: left; pointer-events: none; }
 .radius { display: grid; gap: 6px; }
 .radius input { width: 100%; min-height: 32px; accent-color: var(--forest); }
 .radius small, .status { color: var(--mut); font-size: .85rem; }
@@ -21,3 +23,8 @@
 .pinIcon span { display: block; width: 28px; height: 28px; margin: 2px 2px 0; border: 3px solid #fff; border-radius: 50% 50% 50% 0; background: var(--forest, #1f6b4a); box-shadow: 0 2px 6px rgb(0 0 0 / 40%); transform: rotate(-45deg); }
 @media (min-width: 960px) { .map { height: clamp(420px, 58vh, 620px); } }
 @media (max-width: 700px) { .fields { grid-template-columns: minmax(0, 1fr); } .map { height: 300px; } }
+
+.searchButton { align-self: end; height: 48px; min-height: 48px; padding-block: 0; margin: 0; }
+.layerToggle { position: absolute; z-index: 600; top: 8px; right: 8px; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surf); color: var(--ink); font: inherit; font-size: .82rem; font-weight: 700; box-shadow: 0 1px 6px rgb(0 0 0 / 18%); cursor: pointer; }
+.layerToggle[aria-pressed='true'] { background: var(--forest); color: #fff; border-color: var(--forest); }
+.layerToggle:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }

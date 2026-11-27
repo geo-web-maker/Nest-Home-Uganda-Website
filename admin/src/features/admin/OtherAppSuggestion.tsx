@@ -74,7 +74,7 @@ export function OtherAppSuggestion({ userId, access, visibleOnThisPage = false, 
       sessionStorage.setItem('nhc.suggest.shown', '1');
     } catch { /* Storage failures should not block the admin screens. */ }
     setVisible(true);
-  }, [access?.handoff_enabled, access?.suggestions_allowed, canDetectNativeApp, entry?.allowed, entry?.apk_available, entry?.url, installed, snoozeKey, userId, visibleOnThisPage, permanent]);
+  }, [access?.handoff_enabled, access?.suggestions_allowed, canDetectNativeApp, entry?.allowed, entry?.apk_available, entry?.url, installed, native, snoozeKey, userId, visibleOnThisPage, permanent]);
 
   useEffect(() => {
     if (!installOpen || offer) return;

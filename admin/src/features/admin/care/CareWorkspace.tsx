@@ -2,37 +2,23 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { LoadingNote } from '../../../components/admin/LoadingNote';
 import { pickNurse } from './pickers';
 import { dialogs } from '@shared/lib/dialogs';
-import { cellText, headerFor } from '@shared/lib/tableText';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@shared/components/ui/Button';
 import { FilterTabs } from '../../../components/admin/FilterTabs';
 import { ApiError, apiClient } from '@shared/lib/api/client';
 import './care.css';
+import { CARE_TABS, CARE_TAB_LABELS, type CareTab } from './careWorkspaceConfig';
 import { PlacesPanel } from './places/PlacesPanel';
 import { ScheduleVisitPanel } from './visits/ScheduleVisitPanel';
 import { VisitReviewPanel } from './visits/VisitReviewPanel';
 import { CreateClientPanel } from './clients/CreateClientPanel';
 import { ResolveFlagPanel } from './flags/ResolveFlagPanel';
 import { DataToolsPanel } from './data/DataToolsPanel';
-import { ButtonGroup } from '@shared/components/dialogs/ButtonGroup';
+import { useCareClientDataTools } from './data/useCareClientDataTools';
 import { requestTotp } from '@shared/lib/totpPrompt';
+import { CareRecordsTable, type CareRecordRow } from './CareRecordsTable';
 
-type CareTab =
-  | 'nurses'
-  | 'clients'
-  | 'visits'
-  | 'places'
-  | 'flags'
-  | 'team'
-  | 'photos'
-  | 'alerts'
-  | 'timesheets'
-  | 'sos'
-  | 'reports'
-  | 'settings'
-  | 'readiness'
-  | 'data';
-type RecordRow = Record<string, unknown>;
+type RecordRow = CareRecordRow;
 type ListResponse = { items?: RecordRow[]; total?: number; ready?: boolean };
 type VisitReview = {
   visit?: RecordRow;
@@ -43,6 +29,12 @@ type VisitReview = {
   annotations?: RecordRow[];
   audit?: RecordRow[];
 };
+
+function printable(value: unknown): string {
+  if (value === null || value === undefined || value === '') return 'Not provided';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
 const paths: Record<CareTab, string> = {
   nurses: '/admin/care/nurses',
   clients: '/admin/care/clients',
@@ -60,11 +52,6 @@ const paths: Record<CareTab, string> = {
   data: '/admin/care/data-requests',
 };
 
-function printable(value: unknown): string {
-  if (value === null || value === undefined || value === '') return 'Not provided';
-  if (typeof value === 'object') return JSON.stringify(value);
-  return String(value);
-}
 
 export function CareWorkspace() {
   const { t } = useTranslation('admin');
@@ -78,9 +65,6 @@ export function CareWorkspace() {
   const [notes, setNotes] = useState('');
   const [resolution, setResolution] = useState('');
   const [selectedFlag, setSelectedFlag] = useState('');
-  const [dataClientId, setDataClientId] = useState('');
-  const [exportedData, setExportedData] = useState<RecordRow | null>(null);
-  const [dataActionMessage, setDataActionMessage] = useState('');
   const [actionMessage, setActionMessage] = useState('');
   const [placeClientId, setPlaceClientId] = useState('');
   const [placeItems, setPlaceItems] = useState<RecordRow[]>([]);
@@ -124,6 +108,16 @@ export function CareWorkspace() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const clientDataTools = useCareClientDataTools({ load, setBusy, setError });
+  const {
+    clientId: dataClientId,
+    setClientId: setDataClientId,
+    exportedData,
+    message: dataActionMessage,
+    exportClientData,
+    anonymiseClientData,
+  } = clientDataTools;
 
   const loadClientPlaces = useCallback(async () => {
     if (!placeClientId) {
@@ -334,89 +328,58 @@ export function CareWorkspace() {
     }
   }
 
-  async function exportClientData() {
-    setBusy(true);
-    setError('');
-    setDataActionMessage('');
-    setExportedData(null);
-    try {
-      const result = await apiClient.get<RecordRow>(
-        `/admin/care/data-requests/clients/${encodeURIComponent(dataClientId.trim())}/export`,
-      );
-      setExportedData(result);
-      setDataActionMessage('Client data export loaded. Access has been recorded in the audit log.');
-    } catch (reason) {
-      setError(
-        reason instanceof Error ? reason.message : 'The client data export could not be loaded.',
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
 
-  async function anonymiseClientData() {
-    const clientId = dataClientId.trim();
-    if (!clientId) {
-      setError('Enter a client ID first.');
-      return;
-    }
-    if (
-      !await dialogs.confirm(
-        'Anonymise this client and delete associated photo assets? This action cannot be undone.',
-        { confirmLabel: 'Anonymise client', danger: true },
-      )
-    )
-      return;
-    setBusy(true);
-    setError('');
-    setDataActionMessage('');
-    setExportedData(null);
-    try {
-      const result = await apiClient.post<{ status: string; photos_deleted: number }>(
-        `/admin/care/data-requests/clients/${encodeURIComponent(clientId)}/anonymise`,
-        {},
-      );
-      setDataActionMessage(`Client anonymised. Photos deleted: ${result.photos_deleted}.`);
-      await load();
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'The client could not be anonymised.');
-    } finally {
-      setBusy(false);
-    }
-  }
 
-  const tabs: CareTab[] = [
-    'nurses',
-    'clients',
-    'visits',
-    'places',
-    'flags',
-    'team',
-    'photos',
-    'alerts',
-    'timesheets',
-    'sos',
-    'reports',
-    'settings',
-    'readiness',
-    'data',
-  ];
-  const tabLabels: Record<CareTab, string> = {
-    nurses: 'Nurses',
-    clients: 'Clients',
-    visits: 'Visits',
-    places: 'Places',
-    flags: 'Flags',
-    team: 'Team',
-    photos: 'Photo review',
-    alerts: 'Alerts',
-    timesheets: 'Timesheets',
-    sos: 'SOS cases',
-    reports: 'Visit reports',
-    settings: 'Settings',
-    readiness: 'Readiness',
-    data: 'Data and retention',
+  const reassignVisit = async (item: RecordRow) => {
+    const nurseId = await pickNurse('Choose the new nurse', String(item.nurse_id ?? ''));
+    if (!nurseId?.trim()) return;
+    setBusy(true);
+    void apiClient
+      .patch(`/admin/care/visits/${encodeURIComponent(String(item.id ?? ''))}`, { nurse_id: nurseId.trim() })
+      .then(async () => {
+        setActionMessage('Visit reassigned.');
+        await load();
+      })
+      .catch((failure) => setError(failure instanceof Error ? failure.message : 'Visit could not be reassigned.'))
+      .finally(() => setBusy(false));
   };
+
+  const cancelVisit = async (item: RecordRow) => {
+    const reason = await dialogs.prompt('Reason for cancelling this visit', '', {
+      minLength: 3, multiline: true, confirmLabel: 'Cancel visit',
+    });
+    if (reason?.trim()) {
+      void runRowAction(`/admin/care/visits/${encodeURIComponent(String(item.id ?? ''))}/cancel`, { reason: reason.trim() });
+    }
+  };
+
+  const hidePhoto = async (item: RecordRow) => {
+    const reason = await dialogs.prompt('Reason for hiding this photo', '', {
+      minLength: 3, multiline: true, confirmLabel: 'Hide photo',
+    });
+    if (reason?.trim()) {
+      void runRowAction(`/admin/care/photos/${encodeURIComponent(String(item.id ?? ''))}/hide`, { note: reason.trim() });
+    }
+  };
+
+  const resolveAlert = async (item: RecordRow) => {
+    const note = await dialogs.prompt('Resolution note', '', {
+      minLength: 3, multiline: true, confirmLabel: 'Resolve',
+    });
+    if (note?.trim()) {
+      void runRowAction(`/admin/care/alerts/${encodeURIComponent(String(item.id ?? ''))}/resolve`, { note: note.trim() });
+    }
+  };
+
+  const sendBackTimesheet = async (item: RecordRow) => {
+    const note = await dialogs.prompt('Reason for sending back', '', {
+      minLength: 3, multiline: true, confirmLabel: 'Send back',
+    });
+    if (note?.trim()) {
+      void runRowAction(`/admin/care/timesheets/${encodeURIComponent(String(item.id ?? ''))}/send-back`, { note: note.trim() });
+    }
+  };
+
 
   return (
     <section className="admin-page" aria-labelledby="care-title">
@@ -433,9 +396,9 @@ export function CareWorkspace() {
         label="Care sections"
         value={tab}
         onChange={(value) => setTab(value as CareTab)}
-        tabs={tabs.map((value) => ({
+        tabs={CARE_TABS.map((value) => ({
           value,
-          label: String((copy.tabs as Record<string, unknown> | undefined)?.[value] ?? tabLabels[value]),
+          label: String((copy.tabs as Record<string, unknown> | undefined)?.[value] ?? CARE_TAB_LABELS[value]),
         }))}
       />
       {error && <p role="alert">{error}</p>}
@@ -513,200 +476,22 @@ export function CareWorkspace() {
 
       {items.length === 0 && !loading && tab !== 'data' && tab !== 'places' ? (
         <p>{String(copy.empty ?? 'No records are available for this view.')}</p>
-      ) : tab !== 'data' && tab !== 'places' ? (
-        <div className="care-table-wrap">
-          <table>
-            <caption>
-              {String((copy.tabs as Record<string, unknown> | undefined)?.[tab] ?? tabLabels[tab])}
-            </caption>
-            <thead>
-              <tr>
-                {Object.keys(items[0] ?? {})
-                  .filter(
-                    (key) =>
-                      !['_id', 'created_at', 'updated_at', 'place_snapshot', 'details'].includes(
-                        key,
-                      ),
-                  )
-                  .slice(0, 7)
-                  .map((key) => (
-                    <th key={key} scope="col">
-                      {headerFor(key)}
-                    </th>
-                  ))}
-                {['visits', 'flags', 'photos', 'alerts', 'timesheets', 'sos'].includes(tab) && (
-                  <th scope="col">Actions</th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, index) => (
-                <tr key={String(item.id ?? item.user_id ?? index)}>
-                  {Object.entries(item)
-                    .filter(
-                      ([key]) =>
-                        !['_id', 'created_at', 'updated_at', 'place_snapshot', 'details'].includes(
-                          key,
-                        ),
-                    )
-                    .slice(0, 7)
-                    .map(([key, value]) => (
-                      <td key={key}>{typeof value === 'object' && value !== null ? printable(value) : cellText(key, value)}</td>
-                    ))}
-                  {['visits', 'flags', 'photos', 'alerts', 'timesheets', 'sos'].includes(tab) && (
-                    <td><ButtonGroup size="compact">
-                      {tab === 'visits' && (
-                        <Button variant="outline"
-                          type="button"
-                          onClick={() => void openVisitReview(String(item.id ?? ''))}
-                        >
-                          Review visit
-                        </Button>
-                      )}
-                      {tab === 'visits' && item.status === 'scheduled' && (
-                        <>
-                          <Button variant="outline"
-                            type="button"
-                            onClick={async () => {
-                              const nurseId = await pickNurse('Choose the new nurse', String(item.nurse_id ?? ''));
-                              if (nurseId?.trim()) {
-                                setBusy(true);
-                                void apiClient
-                                  .patch(
-                                    `/admin/care/visits/${encodeURIComponent(String(item.id ?? ''))}`,
-                                    { nurse_id: nurseId.trim() },
-                                  )
-                                  .then(async () => {
-                                    setActionMessage('Visit reassigned.');
-                                    await load();
-                                  })
-                                  .catch((failure) =>
-                                    setError(
-                                      failure instanceof Error
-                                        ? failure.message
-                                        : 'Visit could not be reassigned.',
-                                    ),
-                                  )
-                                  .finally(() => setBusy(false));
-                              }
-                            }}
-                          >
-                            Reassign
-                          </Button>
-                          <Button variant="outline"
-                            type="button"
-                            onClick={async () => {
-                              const reason = await dialogs.prompt('Reason for cancelling this visit', '', { minLength: 3, multiline: true, confirmLabel: 'Cancel visit' });
-                              if (reason?.trim())
-                                void runRowAction(
-                                  `/admin/care/visits/${encodeURIComponent(String(item.id ?? ''))}/cancel`,
-                                  { reason: reason.trim() },
-                                );
-                            }}
-                          >
-                            Cancel visit
-                          </Button>
-                        </>
-                      )}
-                      {tab === 'flags' && (
-                        <Button variant="outline"
-                          type="button"
-                          onClick={() => setSelectedFlag(String(item.id ?? ''))}
-                        >
-                          Resolve
-                        </Button>
-                      )}
-                      {tab === 'photos' &&
-                        item.status !== 'hidden' &&
-                        item.status !== 'expired' && (
-                          <Button variant="outline"
-                            type="button"
-                            onClick={async () => {
-                              const id = String(item.id ?? '');
-                              const reason = await dialogs.prompt('Reason for hiding this photo', '', { minLength: 3, multiline: true, confirmLabel: 'Hide photo' });
-                              if (reason?.trim())
-                                void runRowAction(
-                                  `/admin/care/photos/${encodeURIComponent(id)}/hide`,
-                                  { note: reason.trim() },
-                                );
-                            }}
-                          >
-                            Hide photo
-                          </Button>
-                        )}
-                      {tab === 'alerts' && item.status === 'open' && (
-                        <>
-                          <Button variant="outline"
-                            type="button"
-                            onClick={() =>
-                              void runRowAction(
-                                `/admin/care/alerts/${encodeURIComponent(String(item.id ?? ''))}/acknowledge`,
-                              )
-                            }
-                          >
-                            Acknowledge
-                          </Button>
-                          <Button variant="outline"
-                            type="button"
-                            onClick={async () => {
-                              const note = await dialogs.prompt('Resolution note', '', { minLength: 3, multiline: true, confirmLabel: 'Resolve' });
-                              if (note?.trim())
-                                void runRowAction(
-                                  `/admin/care/alerts/${encodeURIComponent(String(item.id ?? ''))}/resolve`,
-                                  { note: note.trim() },
-                                );
-                            }}
-                          >
-                            Resolve
-                          </Button>
-                        </>
-                      )}
-                      {tab === 'timesheets' && item.status === 'submitted' && (
-                        <>
-                          <Button variant="outline"
-                            type="button"
-                            onClick={() =>
-                              void runRowAction(
-                                `/admin/care/timesheets/${encodeURIComponent(String(item.id ?? ''))}/approve`,
-                              )
-                            }
-                          >
-                            Approve
-                          </Button>
-                          <Button variant="outline"
-                            type="button"
-                            onClick={async () => {
-                              const note = await dialogs.prompt('Reason for sending back', '', { minLength: 3, multiline: true, confirmLabel: 'Send back' });
-                              if (note?.trim())
-                                void runRowAction(
-                                  `/admin/care/timesheets/${encodeURIComponent(String(item.id ?? ''))}/send-back`,
-                                  { note: note.trim() },
-                                );
-                            }}
-                          >
-                            Send back
-                          </Button>
-                        </>
-                      )}
-                      {tab === 'sos' && item.status === 'sent' && (
-                        <Button variant="outline"
-                          type="button"
-                          onClick={() =>
-                            void runRowAction(
-                              `/admin/care/sos/${encodeURIComponent(String(item.id ?? ''))}/acknowledge`,
-                            )
-                          }
-                        >
-                          Acknowledge SOS
-                        </Button>
-                      )}
-                    </ButtonGroup></td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      ) : items.length > 0 && tab !== 'data' && tab !== 'places' ? (
+        <CareRecordsTable
+          tab={tab}
+          items={items}
+          caption={String((copy.tabs as Record<string, unknown> | undefined)?.[tab] ?? CARE_TAB_LABELS[tab])}
+          onReviewVisit={(item) => void openVisitReview(String(item.id ?? ''))}
+          onReassignVisit={(item) => void reassignVisit(item)}
+          onCancelVisit={(item) => void cancelVisit(item)}
+          onSelectFlag={(item) => setSelectedFlag(String(item.id ?? ''))}
+          onHidePhoto={(item) => void hidePhoto(item)}
+          onAcknowledgeAlert={(item) => void runRowAction(`/admin/care/alerts/${encodeURIComponent(String(item.id ?? ''))}/acknowledge`)}
+          onResolveAlert={(item) => void resolveAlert(item)}
+          onApproveTimesheet={(item) => void runRowAction(`/admin/care/timesheets/${encodeURIComponent(String(item.id ?? ''))}/approve`)}
+          onSendBackTimesheet={(item) => void sendBackTimesheet(item)}
+          onAcknowledgeSos={(item) => void runRowAction(`/admin/care/sos/${encodeURIComponent(String(item.id ?? ''))}/acknowledge`)}
+        />
       ) : null}
     </section>
   );

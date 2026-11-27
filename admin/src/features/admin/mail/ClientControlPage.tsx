@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { LoadingNote } from '../../../components/admin/LoadingNote';
 import { useTranslation } from 'react-i18next';
 import { ButtonGroup } from '@shared/components/dialogs/ButtonGroup';
 import { Notice } from '@shared/components/dialogs/Notice';
@@ -152,7 +153,7 @@ export function ClientControlPage() {
       <PageHeader
         title={t('clientControl.title')}
         subtitle={t('clientControl.intro')}
-        actions={<Button variant="outline" onClick={() => void reload()}>{t('clientControl.refresh')}</Button>}
+        actions={<Button variant="outline" loading={policy.isFetching || traffic.isFetching} onClick={() => void reload()}>{t('clientControl.refresh')}</Button>}
       />
       {policy.isError || traffic.isError ? <Notice tone="error">{t('clientControl.loadError')}</Notice> : null}
       {message ? <Notice tone={message.tone} floating onDismiss={() => setMessage(null)}>{message.text}</Notice> : null}
@@ -160,18 +161,21 @@ export function ClientControlPage() {
       <div className={styles.settingsStack}>
         <section className={styles.panel} aria-label={t('clientControl.policyTitle')}>
           <SectionHeader title={t('clientControl.policyTitle')} />
-          <div className={styles.settingRow}>
-            <Field type="number" min={0} max={86_400} label={t('clientControl.intervalLabel')} value={intervalText} onChange={(event) => setIntervalText(event.target.value)} />
-            <p className={styles.settingHelp}>{t('clientControl.intervalHelp')}</p>
-          </div>
-          <div className={styles.settingRow}>
-            <Field type="number" min={0} label={t('clientControl.minBuildLabel')} value={minBuild} onChange={(event) => setMinBuild(event.target.value)} />
-            <p className={styles.settingHelp}>{t('clientControl.minBuildHelp', { build: current })}</p>
-          </div>
-          <div className={styles.settingRow}>
-            <Checkbox label={t('clientControl.blockUnversionedLabel')} checked={blockUnversioned} onChange={(event) => setBlockUnversioned(event.target.checked)} />
-            <p className={styles.settingHelp}>{t('clientControl.blockUnversionedHelp')}</p>
-          </div>
+          {policy.data ? <>
+            <div className={styles.settingRow}>
+              <Field type="number" min={0} max={86_400} label={t('clientControl.intervalLabel')} value={intervalText} onChange={(event) => setIntervalText(event.target.value)} />
+              <p className={styles.settingHelp}>{t('clientControl.intervalHelp')}</p>
+            </div>
+            <div className={styles.settingRow}>
+              <Field type="number" min={0} label={t('clientControl.minBuildLabel')} value={minBuild} onChange={(event) => setMinBuild(event.target.value)} />
+              <p className={styles.settingHelp}>{t('clientControl.minBuildHelp', { build: current })}</p>
+            </div>
+            <div className={styles.settingRow}>
+              <Checkbox label={t('clientControl.blockUnversionedLabel')} checked={blockUnversioned} onChange={(event) => setBlockUnversioned(event.target.checked)} />
+              <p className={styles.settingHelp}>{t('clientControl.blockUnversionedHelp')}</p>
+            </div>
+          </>
+          : policy.isError ? null : <LoadingNote>{t('clientControl.loadingRules', 'Loading the current rules…')}</LoadingNote>}
           <ButtonGroup size="compact">
             <Button disabled={save.isPending || !policy.data} onClick={submitRules}>{save.isPending ? t('clientControl.saving') : t('clientControl.save')}</Button>
           </ButtonGroup>
@@ -219,7 +223,7 @@ export function ClientControlPage() {
           <p>{t('clientControl.riskBody')}</p>
           <ButtonGroup>
             <Button variant="outline" onClick={() => setPending(null)}>{t('clientControl.cancel')}</Button>
-            <Button onClick={() => void commitRules(pending.values)}>{t('clientControl.riskConfirm')}</Button>
+            <Button variant="danger" onClick={() => void commitRules(pending.values)}>{t('clientControl.riskConfirm')}</Button>
           </ButtonGroup>
         </ConfirmPopup>
       ) : null}
@@ -229,7 +233,7 @@ export function ClientControlPage() {
           <p>{t('clientControl.pauseConfirmBody')}</p>
           <ButtonGroup>
             <Button variant="outline" onClick={() => setPending(null)}>{t('clientControl.cancel')}</Button>
-            <Button onClick={() => void changePaused([...blocked, pending.userId], t('clientControl.paused', { name: pending.name }))}>{t('clientControl.pauseConfirm')}</Button>
+            <Button variant="danger" onClick={() => void changePaused([...blocked, pending.userId], t('clientControl.paused', { name: pending.name }))}>{t('clientControl.pauseConfirm')}</Button>
           </ButtonGroup>
         </ConfirmPopup>
       ) : null}

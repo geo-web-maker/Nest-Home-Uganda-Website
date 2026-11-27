@@ -31,9 +31,9 @@
   color: var(--on-wa);
 }
 .forest {
-  --btn-hover: color-mix(in srgb, var(--moss) 88%, var(--onf));
-  background: var(--moss);
-  border-color: var(--moss);
+  --btn-hover: color-mix(in srgb, var(--btn-moss, var(--moss)) 88%, var(--onf));
+  background: var(--btn-moss, var(--moss));
+  border-color: var(--btn-moss, var(--moss));
   color: var(--onf);
 }
 .danger {
@@ -64,7 +64,7 @@
   white-space: nowrap; /* a wrapped label would make the button taller than the input beside it */
 }
 .compact {
-  min-height: 36px;
+  min-height: 44px;
   padding-inline: 14px;
   gap: 6px;
   border-width: 1px;

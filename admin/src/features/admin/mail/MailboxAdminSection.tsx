@@ -94,7 +94,7 @@ export function MailboxAdminSection() {
     <section className={pageStyles.panel} aria-label="Mailboxes and addresses">
       <SectionHeader
         title="Mailboxes and addresses"
-        actions={unlocked ? <Button variant="outline" size="compact" onClick={() => void list.refetch()}>Refresh</Button> : undefined}
+        actions={unlocked ? <Button variant="outline" size="compact" loading={list.isFetching} onClick={() => void list.refetch()}>Refresh</Button> : undefined}
       />
       {!unlocked ? (
         <Button variant="outline" onClick={() => setUnlocked(true)}>Manage mailboxes</Button>

@@ -65,7 +65,7 @@ export function VisitListPage() {
   useEffect(() => { void load(); }, [load]);
   const visible = useMemo(() => rows.filter((row) => !status || row.status === status), [rows, status]);
   return <div className="stage-page">
-    <PageHeader title="Visits" actions={<><Button variant="outline" onClick={() => void load()}>Refresh</Button>{canSchedule && <Button onClick={() => navigate('/care/schedule')}>Open schedule</Button>}</>} />
+    <PageHeader title="Visits" actions={<><Button variant="outline" loading={loading} onClick={() => void load()}>Refresh</Button>{canSchedule && <Button onClick={() => navigate('/care/schedule')}>Open schedule</Button>}</>} />
     <FilterBar label="Filter visits" meta={`${visible.length} visit${visible.length === 1 ? '' : 's'} shown`}><Field label="Status" kind="select" value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option><option value="scheduled">Scheduled</option><option value="in_progress">In progress</option><option value="completed">Completed</option><option value="missed">Missed</option><option value="cancelled">Cancelled</option></Field></FilterBar>
     {staleAt && <Notice role={null}>{savedLabel(staleAt)}</Notice>}
     {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}
@@ -135,7 +135,7 @@ export function VisitPhotosPage() {
     finally { setSaving(false); }
   }
   return <div className="stage-page">
-    <PageHeader title="Visit photos" actions={<Button variant="outline" onClick={() => void load()}>Refresh gallery</Button>} />
+    <PageHeader title="Visit photos" actions={<Button variant="outline" loading={loading} onClick={() => void load()}>Refresh gallery</Button>} />
     <Notice role={null}>Every image open is audited. Hidden and expired items are excluded. The gallery does not expose permanent storage URLs.</Notice>
     <FilterBar label="Search photos"><Field label="Search by visit or photo type" type="search" value={filter} onChange={(event) => setFilter(event.target.value)} /></FilterBar>
     {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}{notice && <Notice floating onDismiss={() => setNotice('')}>{notice}</Notice>}

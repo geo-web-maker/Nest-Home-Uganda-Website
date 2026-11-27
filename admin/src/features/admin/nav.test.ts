@@ -24,9 +24,9 @@ describe('mockup-aligned admin navigation', () => {
   });
 
   it('declares implemented screens in the reference information architecture', () => {
-    expect(ADMIN_NAV).toHaveLength(46);
-    expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 12, careOperations: 10, monitoring: 8, safety: 4, setup: 12 });
-    expect(paths(visibleNav(user([], true)))).toHaveLength(46);
+    expect(ADMIN_NAV).toHaveLength(47);
+    expect(Object.fromEntries(['website', 'careOperations', 'monitoring', 'safety', 'setup'].map((group) => [group, ADMIN_NAV.filter((item) => item.group === group).length]))).toEqual({ website: 12, careOperations: 10, monitoring: 8, safety: 4, setup: 13 });
+    expect(paths(visibleNav(user([], true)))).toHaveLength(47);
     expect(visibleNav(user([], true)).some((item) => item.path.includes('/care/patients'))).toBe(false);
   });
 
@@ -43,7 +43,13 @@ describe('mockup-aligned admin navigation', () => {
   it('lets system managers reach system controls and data requests without general settings access', () => {
     const systemManager = user(['system:manage']);
     expect(paths(visibleNav(systemManager))).toEqual(['/app-center', '/settings', '/care/data-requests', '/app-releases', '/backups', '/diagnostics']);
+    expect(paths(visibleNav(systemManager))).not.toContain('/cross-app-auth');
     expect(firstReachablePath(systemManager)).toBe('/settings');
+  });
+
+  it('offers cross-app authentication to Superadmins only, matching the page', () => {
+    expect(paths(visibleNav(user(['system:manage'])))).not.toContain('/cross-app-auth');
+    expect(paths(visibleNav(user([], true)))).toContain('/cross-app-auth');
   });
 
   it('shows only the care routes granted by the assigned read scopes', () => {
@@ -71,7 +77,7 @@ describe('mockup-aligned admin navigation', () => {
       '/care/alerts',
       '/care/sos',
     ]);
-    expect(bottomNav(all).more).toHaveLength(42);
+    expect(bottomNav(all).more).toHaveLength(43);
     expect(paths(bottomNav(user(['content:read'])).primary)).toEqual(['/app-center', '/content']);
     expect(bottomNav(user(['content:read'])).more).toEqual([]);
   });

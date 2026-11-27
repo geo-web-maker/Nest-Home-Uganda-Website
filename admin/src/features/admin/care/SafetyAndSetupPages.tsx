@@ -43,7 +43,7 @@ export function SOSConsolePage() {
     setLoading(true); setError('');
     try {
       const result = await apiClient.get('/admin/care/sos');
-      const items = listItems(result); setRows(items);
+      const items = listItems(result); setRows(items); window.dispatchEvent(new Event('nest:sos-changed'));
       if (id) {
         const selected = items.find((row: Row) => String(row.id) === id);
         if (!selected) { setError('SOS case was not found in the records you can access.'); setFollow(null); }
@@ -74,7 +74,7 @@ export function SOSConsolePage() {
   }
   const isClosed = Boolean(selected && ['resolved', 'closed', 'cancelled'].includes(String(selected.status)));
   return <div className="stage-page">
-    <PageHeader title={id ? 'SOS case detail' : 'SOS response console'} actions={<ButtonGroup size="compact"><Button variant="outline" onClick={() => void load()} disabled={loading}>Refresh</Button>{id && <Button variant="outline" onClick={() => navigate('/care/sos')}>Back to console</Button>}</ButtonGroup>} />
+    <PageHeader title={id ? 'SOS case detail' : 'SOS response console'} actions={<ButtonGroup size="compact"><Button variant="outline" loading={loading} onClick={() => void load()}>Refresh</Button>{id && <Button variant="outline" onClick={() => navigate('/care/sos')}>Back to console</Button>}</ButtonGroup>} />
     {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}{notice && <Notice floating onDismiss={() => setNotice('')}>{notice}</Notice>}
     {!id ? <section className="stage-panel"><SectionHeader title="Current and recent SOS cases" />{rows.length === 0 && !loading ? <p className="stage-empty">No SOS cases are available within your permitted reach.</p> : <DataTable
     columns={[
@@ -140,7 +140,7 @@ function SOSHistoryPageContent() {
     finally { setBusy(false); }
   }
   return <div className="stage-page">
-    <PageHeader title="SOS history & drills" actions={<ButtonGroup size="compact"><Button variant="outline" disabled={loading} onClick={() => void load()}>Refresh</Button>{canCareWrite && <Button onClick={() => setDrillOpen(true)}>Record drill</Button>}</ButtonGroup>} />
+    <PageHeader title="SOS history & drills" actions={<ButtonGroup size="compact"><Button variant="outline" loading={loading} disabled={loading} onClick={() => void load()}>Refresh</Button>{canCareWrite && <Button onClick={() => setDrillOpen(true)}>Record drill</Button>}</ButtonGroup>} />
     {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}{notice && <Notice floating onDismiss={() => setNotice('')}>{notice}</Notice>}
     <section className="stage-panel"><SectionHeader title="SOS case history" note={<>{loading ? <LoadingNote inline>Loading…</LoadingNote> : `${cases.length} cases within your permitted reach`}</>} />
       {cases.length === 0 && !loading ? <p className="stage-empty">No SOS cases have been recorded in your permitted reach.</p> : <DataTable
@@ -225,7 +225,7 @@ export function OnCallRosterPage() {
     finally { setSaving(false); }
   }
   return <div className="stage-page">
-    <PageHeader title="On-call roster" actions={<Button variant="outline" onClick={() => void load()} disabled={loading || saving}>Refresh</Button>} />
+    <PageHeader title="On-call roster" actions={<Button variant="outline" loading={loading} onClick={() => void load()} disabled={loading || saving}>Refresh</Button>} />
     {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}{notice && <Notice floating onDismiss={() => setNotice('')}>{notice}</Notice>}
     <div className="stage-callout"><strong>Routing safety</strong><p>{enabled && approved ? 'Scheduled routing is enabled. If no scheduled entry matches the current time, the dispatcher fails safe to all configured legacy contacts.' : 'Scheduled routing is not both enabled and approved. All configured contact numbers remain the fallback recipients for SOS and critical-care SMS.'} Verify phone numbers and shift coverage before enabling this schedule. These settings do not replace calling local emergency services.</p></div>
     <div className="stage-summary-strip"><div><strong>{configuredContacts}</strong><span>Legacy fallback contacts saved</span></div><div><strong>{entries.length}</strong><span>Roster entries</span></div><div><strong>{enabled ? 'Enabled' : 'Disabled'}</strong><span>Scheduled routing</span></div><div><strong>{approved ? 'Approved' : 'Not approved'}</strong><span>Activation approval</span></div></div>
@@ -298,7 +298,7 @@ export function SOSProcedurePage() {
   }
   function update<K extends keyof typeof procedureDefaults>(key: K, value: string) { setForm((old) => ({ ...old, [key]: value })); }
   return <div className="stage-page">
-    <PageHeader title="SOS procedure" actions={<Button variant="outline" onClick={() => void load()} disabled={loading || saving}>Refresh</Button>} />
+    <PageHeader title="SOS procedure" actions={<Button variant="outline" loading={loading} onClick={() => void load()} disabled={loading || saving}>Refresh</Button>} />
     {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}{notice && <Notice floating onDismiss={() => setNotice('')}>{notice}</Notice>}
     <div className="stage-callout"><strong>{currentlyApproved ? 'Approval text recorded' : 'Not approved for live use'}</strong><p>Approval text alone does not mean the entire system is ready. Verify emergency numbers, responsibilities, response times, contact availability, test delivery, retention, and organisational sign-off outside this screen.</p></div>
     <form className="stage-panel stage-form" onSubmit={(event) => void save(false, event)}>

@@ -128,17 +128,16 @@ describe('AdminLayout current item', () => {
 });
 
 describe('AdminLayout top bar', () => {
-  it('provides a labelled Light/Dark theme switch in the top bar', async () => {
+  it('provides a labelled theme toggle button in the top bar', async () => {
     const user = userEvent.setup();
     setup('', ['dashboard:view']);
     const header = screen.getByRole('banner');
-    const group = within(header).getByRole('group', { name: 'Theme' });
-    const light = within(group).getByRole('button', { name: 'Light' });
-    const dark = within(group).getByRole('button', { name: 'Dark' });
+    const toggle = within(header).getByRole('button', { name: 'Theme: Dark' });
 
-    expect(light).toHaveAttribute('aria-pressed', 'true');
-    await user.click(dark);
-    expect(dark).toHaveAttribute('aria-pressed', 'true');
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    expect(toggle).toHaveAccessibleName('Theme: Light');
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(window.localStorage.getItem('nest-theme')).toBe('dark');
   });
@@ -218,6 +217,7 @@ describe('AdminLayout phone navigation', () => {
       'Data requests',
       'App releases',
       'Backups and hosting',
+      'Cross-app authentication',
       'Shared mailboxes',
       'Mail settings',
       'Client control',

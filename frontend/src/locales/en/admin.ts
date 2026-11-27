@@ -492,6 +492,7 @@ export const adminEn = {
   layout: {
     sidebarLabel: 'Admin',
     shortcutsLabel: 'Admin shortcuts',
+    sosOpenCount: '{{count}} open SOS cases',
     more: 'More',
     closeMore: 'Close menu',
     signOut: 'Sign out',

@@ -20,6 +20,11 @@ describe('mockup-parity component kit', () => {
   it('keeps buttons semantic and renders line icons as decorative SVGs', () => {
     render(<PillButton tone="gold">Continue</PillButton>);
     expect(screen.getByRole('button', { name: 'Continue' })).toHaveClass('mk-btn--gold');
+    render(<PillButton variant="outline" loading>Saving</PillButton>);
+    const busy = screen.getByRole('button', { name: /saving/i });
+    expect(busy).toHaveClass('mk-btn--ghost');
+    expect(busy).toBeDisabled();
+    expect(busy).toHaveAttribute('aria-busy', 'true');
     render(<Icon name="pin" />);
     expect(document.querySelector('svg[aria-hidden="true"]')).toBeInTheDocument();
   });

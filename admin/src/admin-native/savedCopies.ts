@@ -46,7 +46,7 @@ export function installSavedCopies(): () => void {
     save(key, data) {
       const userId = authStore.getUserSnapshot()?.id;
       if (!userId || data === undefined) return;
-      let size = 0;
+      let size: number;
       try { size = JSON.stringify(data).length; } catch { return; }
       if (size > MAX_ROW_CHARS) return;
       void store.copies
