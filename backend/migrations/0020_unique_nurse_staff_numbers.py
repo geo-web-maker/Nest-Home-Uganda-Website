@@ -4,6 +4,8 @@ This migration intentionally fails without changing data if duplicate staff numb
 The error includes only the duplicate staff number and user/profile ids, not names or emails.
 It runs against the care database.
 """
+import inspect
+
 from pymongo import ASCENDING
 
 INDEX_NAME = "uq_nurse_profiles_staff_number_ci"
@@ -12,7 +14,7 @@ COLLATION = {"locale": "en", "strength": 2}
 
 async def up(db) -> None:
     collection = db["nurse_profiles"]
-    duplicates = await collection.aggregate([
+    cursor = collection.aggregate([
         {"$match": {"staff_number": {"$type": "string"}}},
         {"$group": {
             "_id": {"$toLower": {"$trim": {"input": "$staff_number"}}},
@@ -21,7 +23,11 @@ async def up(db) -> None:
         }},
         {"$match": {"count": {"$gt": 1}}},
         {"$limit": 20},
-    ]).to_list(length=20)
+    ])
+    # PyMongo async: aggregate() is a coroutine that resolves to the cursor.
+    if inspect.isawaitable(cursor):
+        cursor = await cursor
+    duplicates = await cursor.to_list(length=20)
     if duplicates:
         summary = [
             {
