@@ -1,15 +1,20 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@shared/components/ui/Button';
 import { NativeUpdater } from '../../admin-native/nativeUpdater';
 import { WebBundle } from '../../admin-native/webBundle';
 import { formatSize, isNewerVersion, useAppCenter, type AppCenterPlugins } from '../../admin-native/appCenter';
 import { useUpgradeRequired } from '../../admin-native/useUpgradeRequired';
 import { CLIENT_BUILD } from '@shared/lib/api/clientBuild';
+import { fetchAppAccess, type AppAccess } from '../../admin-native/appSwitch';
+import { OtherAppSuggestion } from './OtherAppSuggestion';
+import { apiClient } from '@shared/lib/api/client';
 
 const CHANNEL_LABEL = { native: 'Android app', pwa: 'Installed web app', browser: 'Web browser' } as const;
 
 /** The small in-app store for the admin app: what is installed, what is newer, one button to get it. */
 export function AppCenterPanel() {
+  const [appAccess, setAppAccess] = useState<AppAccess | null>(null);
+  useEffect(() => { let live = true; void fetchAppAccess(<T,>(path: string) => apiClient.get<T>(path)).then((value) => { if (live) setAppAccess(value); }).catch(() => { if (live) setAppAccess(null); }); return () => { live = false; }; }, []);
   const plugins = useMemo<AppCenterPlugins>(() => ({ nativeUpdater: NativeUpdater, webBundle: WebBundle }), []);
   const { channel, installed, apk, apkIsNewer, bundle, webLatest, pwa, phase, checkedAt, check, installApk, installBundle, updatePwa } = useAppCenter('admin', plugins);
   const busy = phase.kind === 'checking' || phase.kind === 'downloading' || phase.kind === 'installing';
@@ -19,6 +24,7 @@ export function AppCenterPanel() {
 
   return <article className="care-form" aria-labelledby="app-center-title">
     <h2 id="app-center-title">App Center</h2>
+    {appAccess && <OtherAppSuggestion access={appAccess} permanent />}
     {upgradeRequired && <p role="alert">The server needs a newer version of this app. Install the update below, then open the app again.</p>}
     <dl className="nurse-facts">
       <div><dt>Running as</dt><dd>{CHANNEL_LABEL[channel]}</dd></div>

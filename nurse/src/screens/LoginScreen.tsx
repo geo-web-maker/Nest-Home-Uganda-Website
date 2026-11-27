@@ -5,8 +5,8 @@ import { Card } from '../ui/Card';
 import { PillButton } from '../ui/PillButton';
 import { MARK_CROSS, MARK_LEAVES, MARK_PETALS, MARK_VIEWBOX } from '../ui/markPaths';
 
-type Props = { identifier: string; password: string; busy: boolean; online: boolean; errorMessage?: string; onIdentifier: (value: string) => void; onPassword: (value: string) => void; onSubmit: (event: FormEvent) => void };
-export function LoginScreen({ identifier, password, busy, online, errorMessage, onIdentifier, onPassword, onSubmit }: Props) {
+type Props = { identifier: string; password: string; busy: boolean; online: boolean; errorMessage?: string; showContinueWithAdmin?: boolean; onContinueWithAdmin?: () => void; onIdentifier: (value: string) => void; onPassword: (value: string) => void; onSubmit: (event: FormEvent) => void };
+export function LoginScreen({ identifier, password, busy, online, errorMessage, showContinueWithAdmin, onContinueWithAdmin, onIdentifier, onPassword, onSubmit }: Props) {
   return <section className="login-screen" aria-labelledby="login-heading">
     <Card className="login-panel mk-login-panel">
       <div className="login-mark" aria-hidden="true"><svg viewBox={MARK_VIEWBOX} width="48" height="53" focusable="false">
@@ -25,6 +25,7 @@ export function LoginScreen({ identifier, password, busy, online, errorMessage, 
         <input id="password" type="password" autoComplete="current-password" value={password} onChange={(event) => onPassword(event.target.value)} required />
         <PillButton type="submit" tone="gold" disabled={busy || !online} size="full">{busy ? copy.login.working : copy.login.submit}</PillButton>
       </form>
+      {showContinueWithAdmin && onContinueWithAdmin && <PillButton type="button" tone="ghost" onClick={onContinueWithAdmin}>{copy.login.continueWithAdmin}</PillButton>}
       <p className="forgot-password"><span>{copy.login.forgotPassword}</span><small>{copy.login.forgotPasswordHelp}</small></p>
     </Card>
   </section>;

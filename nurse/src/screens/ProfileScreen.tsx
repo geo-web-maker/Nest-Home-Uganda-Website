@@ -1,7 +1,7 @@
 import { ProfileCareSection } from '../features/careforms/ProfileCareSection';
 import { LoadingNote } from '../ui/Loading';
 import { Link } from 'react-router-dom';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { FieldProfile } from '../app/useFieldProfile';
 import type { CachedVisit } from '../offline/db';
 import { UpdateNotice } from '../features/update/UpdateNotice';
@@ -95,6 +95,24 @@ export function ProfileScreen(props: Props) {
   const platform = typeof navigator === 'undefined' ? copy.profile.unknown : /Android/i.test(navigator.userAgent) ? copy.profile.android : /iPhone|iPad/i.test(navigator.userAgent) ? copy.profile.ios : copy.profile.web;
   const name = props.profile?.display_name?.trim() || copy.profile.account;
   const activeVisits = props.visits.filter((visit) => visit.status === 'in_progress').length;
+  const [autoSso, setAutoSso] = useState<{ master_enabled: boolean; user_enabled: boolean; admin_allowed: boolean; effective_enabled: boolean } | null>(null);
+  const [autoSsoLoading, setAutoSsoLoading] = useState(true);
+  const [autoSsoSaving, setAutoSsoSaving] = useState(false);
+  const [autoSsoError, setAutoSsoError] = useState('');
+  useEffect(() => {
+    let live = true;
+    apiRequest<typeof autoSso>('/auth/auto-sso')
+      .then((result) => { if (live) setAutoSso(result); })
+      .catch((error) => { if (live) setAutoSsoError(error instanceof Error ? error.message : 'Automatic sign-in settings could not be loaded.'); })
+      .finally(() => { if (live) setAutoSsoLoading(false); });
+    return () => { live = false; };
+  }, [props.profile?.user_id]);
+  async function saveAutoSso(enabled: boolean) {
+    setAutoSsoSaving(true); setAutoSsoError('');
+    try { setAutoSso(await apiRequest<typeof autoSso>('/auth/auto-sso', { method: 'PATCH', body: JSON.stringify({ enabled }) })); }
+    catch (error) { setAutoSsoError(error instanceof Error ? error.message : 'Automatic sign-in preference could not be saved.'); }
+    finally { setAutoSsoSaving(false); }
+  }
   return <section className="screen mk-profile-screen" aria-labelledby="profile-heading">
     <header className="screen-heading"><div><p className="eyebrow">{copy.profile.eyebrow}</p><h2 id="profile-heading">{copy.profile.title}</h2></div></header>
     <Card className="mk-profile-identity">
@@ -129,6 +147,17 @@ export function ProfileScreen(props: Props) {
         {props.profile?.team_id && <Row label={copy.profile.teamRef} value={props.profile.team_id} />}
       </div>
     </details>
+
+    <Card className="mk-profile-section" id="profile-auto-sso">
+      <h3>Automatic sign-in between apps</h3>
+      <p><strong>Disabled by default.</strong> When enabled and permitted by Superadmin, an eligible automatic handoff may sign you into the other authorised Nest app. Only enable this on devices you trust. It never grants additional app permissions.</p>
+      {autoSsoLoading ? <LoadingNote>Loading automatic sign-in preference…</LoadingNote> : autoSso ? <>
+        <label className="mk-profile-auto-sso-toggle"><input type="checkbox" checked={autoSso.user_enabled} disabled={autoSsoSaving || !autoSso.admin_allowed} onChange={(event) => void saveAutoSso(event.target.checked)} /> Allow automatic sign-in between the admin and nurse apps</label>
+        <p>{autoSso.master_enabled ? 'The Superadmin master switch is ON.' : 'The Superadmin master switch is OFF. Your preference is saved, but automatic sign-in cannot become active until Superadmin enables it.'}</p>
+        <p>Effective status: <strong>{autoSso.effective_enabled ? 'ON' : 'OFF'}</strong>.</p>
+      </> : <p>Automatic sign-in settings are unavailable.</p>}
+      {autoSsoError ? <p role="alert">{autoSsoError}</p> : null}
+    </Card>
 
     <Card className="mk-profile-section"><h3>{copy.profile.reminders}</h3><p>{copy.profile.reminderPrivacy}</p>
       {props.remindersEnabled ? <PillButton tone="ghost" onClick={props.onDisableReminders}>{copy.profile.disableReminders}</PillButton> : <PillButton onClick={props.onEnableReminders}>{copy.profile.enableReminders}</PillButton>}
@@ -179,7 +208,7 @@ export function ProfileScreen(props: Props) {
     </Card>
 
     <Card className="mk-profile-section"><h3>{copy.profile.savedWork}</h3><Row icon={<Icon name="clock" />} label={copy.profile.cachedActiveLabel} value={`${activeVisits} ${copy.profile.activeCached}`} /><PillButton tone="ghost" onClick={props.onSync} disabled={props.busy}>{props.busy ? copy.today.syncing : copy.profile.syncNow}</PillButton></Card>
-    <ProfileCareSection profile={props.profile} />
+    <ProfileCareSection profile={props.profile} suppressSuggestion={activeVisits > 0} />
     <ThemeSwitch />
     {props.sosEnabled === false && <Card className="mk-profile-section"><h3>{copy.shell.safetyAlert}</h3><p>{copy.shell.sosDisabled}</p></Card>}
     <Card className="mk-profile-section mk-profile-logout"><h3>{copy.profile.signOutHeading}</h3><p>{copy.profile.signOutHint}</p><PillButton tone="ghost" size="full" onClick={props.onLogout} showArrow={false}>{copy.profile.signOut}</PillButton></Card>

@@ -3,7 +3,7 @@
 import logging
 from functools import lru_cache
 
-from pydantic import Field, model_validator
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -40,12 +40,17 @@ class Settings(BaseSettings):
     cors_origins: str = ""
     frontend_url: str = ""
     # Admin application origin; falls back to frontend_url until ADMIN_URL is configured.
-    admin_url: str = ""
+    admin_url: str = Field("", validation_alias=AliasChoices("NEST_ADMIN_URL", "ADMIN_URL"))
     # WebAuthn (device biometric signing). Empty = derive from frontend_url.
     webauthn_rp_id: str = ""
     webauthn_origins: str = ""  # comma-separated; empty = frontend_url
     # Optional. Base URL put in nurse invite and reset emails; empty falls back to frontend_url.
-    nurse_frontend_url: str = ""
+    nurse_frontend_url: str = Field("", validation_alias=AliasChoices("NEST_NURSE_FRONTEND_URL", "NURSE_FRONTEND_URL"))
+    # Cross-app sign-in is independent of the normal rotating refresh-token sessions.
+    handoff_enabled: bool = True
+    handoff_code_seconds: int = Field(default=60, ge=15, le=120)
+    android_package_admin: str = "ug.nesthomecare.admin"
+    android_package_nurse: str = "ug.nesthomecare.nurse"
     ip_hash_salt: str = ""
     trust_proxy: bool = False
     trusted_proxy_ips: str = ""  # comma-separated IPs/CIDRs allowed to supply forwarding headers

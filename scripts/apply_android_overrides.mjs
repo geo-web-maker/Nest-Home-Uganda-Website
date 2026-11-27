@@ -77,6 +77,40 @@ export function mergeManifest(generated, override) {
   return result;
 }
 
+export function patchCrossAppManifest(manifest, appId, otherAppId, scheme) {
+  if (!/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(appId) || !/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(otherAppId)) {
+    throw new Error('Invalid Android application id for cross-app visibility.');
+  }
+  if (!['nhc-nurse', 'nhc-admin'].includes(scheme)) throw new Error('Invalid cross-app URL scheme.');
+  if (!manifest.includes(`<package android:name="${otherAppId}" />`)) {
+    const query = `  <queries>\n    <package android:name="${otherAppId}" />\n  </queries>\n`;
+    manifest = manifest.replace(/(<manifest\b[^>]*>)/, `$1\n${query}`);
+  }
+  const activity = manifest.match(/<activity\b(?=[^>]*android:name="[^"]*MainActivity")[^>]*>/s);
+  if (!activity) throw new Error('Generated AndroidManifest.xml has no MainActivity declaration.');
+  let tag = activity[0];
+  if (!/android:exported=/.test(tag)) tag = tag.replace(/>$/, ' android:exported="true">');
+  else tag = tag.replace(/android:exported="[^"]*"/, 'android:exported="true"');
+  if (!/android:launchMode=/.test(tag)) tag = tag.replace(/>$/, ' android:launchMode="singleTask">');
+  else tag = tag.replace(/android:launchMode="[^"]*"/, 'android:launchMode="singleTask"');
+  manifest = manifest.replace(activity[0], tag);
+  const filters = [
+    `<intent-filter>\n        <action android:name="android.intent.action.VIEW" />\n        <category android:name="android.intent.category.DEFAULT" />\n        <category android:name="android.intent.category.BROWSABLE" />\n        <data android:scheme="${scheme}" android:host="handoff" />\n      </intent-filter>`,
+    `<intent-filter>\n        <action android:name="android.intent.action.VIEW" />\n        <category android:name="android.intent.category.DEFAULT" />\n        <category android:name="android.intent.category.BROWSABLE" />\n        <data android:scheme="${scheme}" android:host="request-handoff" />\n      </intent-filter>`,
+  ];
+  const activityStart = manifest.indexOf(tag);
+  let activityEnd = manifest.indexOf('</activity>', activityStart);
+  if (activityEnd < 0) throw new Error('MainActivity declaration is not closed in AndroidManifest.xml.');
+  for (const filter of filters) {
+    const host = filter.includes('host="handoff"') && !filter.includes('host="request-handoff"') ? 'handoff' : 'request-handoff';
+    if (!manifest.includes(`android:scheme="${scheme}" android:host="${host}"`)) {
+      activityEnd = manifest.indexOf('</activity>', activityStart);
+      manifest = `${manifest.slice(0, activityEnd)}      ${filter}\n    ${manifest.slice(activityEnd)}`;
+    }
+  }
+  return manifest;
+}
+
 export function patchGradleVersion(gradle, versionCode, versionName) {
   if (!/versionCode\s+\d+/.test(gradle) || !/versionName\s+"[^"]*"/.test(gradle)) {
     throw new Error('app/build.gradle does not contain versionCode and versionName in the expected form.');
@@ -86,7 +120,7 @@ export function patchGradleVersion(gradle, versionCode, versionName) {
     .replace(/versionName\s+"[^"]*"/, `versionName "${versionName}"`);
 }
 
-export function applyAndroidOverrides({ androidDir, overridesDir, versionCode, versionName }) {
+export function applyAndroidOverrides({ androidDir, overridesDir, versionCode, versionName, appId = process.env.CAP_APP_ID_NURSE ?? 'ug.nesthomecare.nurse', otherAppId = process.env.CAP_APP_ID_ADMIN ?? 'ug.nesthomecare.admin' }) {
   if (!Number.isInteger(versionCode) || versionCode < 1) {
     throw new Error(`versionCode must be a positive integer, got ${versionCode}`);
   }
@@ -105,10 +139,9 @@ export function applyAndroidOverrides({ androidDir, overridesDir, versionCode, v
     if (!fs.existsSync(file)) throw new Error(`Missing override file ${file}`);
   }
 
-  fs.writeFileSync(
-    manifestPath,
-    mergeManifest(fs.readFileSync(manifestPath, 'utf8'), fs.readFileSync(overrideManifest, 'utf8')),
-  );
+  let mergedManifest = mergeManifest(fs.readFileSync(manifestPath, 'utf8'), fs.readFileSync(overrideManifest, 'utf8'));
+  mergedManifest = patchCrossAppManifest(mergedManifest, appId, otherAppId, 'nhc-nurse');
+  fs.writeFileSync(manifestPath, mergedManifest);
   fs.mkdirSync(path.join(main, 'res', 'xml'), { recursive: true });
   fs.copyFileSync(networkConfig, path.join(main, 'res', 'xml', 'network_security_config.xml'));
   fs.mkdirSync(path.join(main, 'res', 'drawable'), { recursive: true });
@@ -122,9 +155,8 @@ export function applyAndroidOverrides({ androidDir, overridesDir, versionCode, v
   }
 
   // Website updates (WebBundle) and full-APK updates (NativeUpdater), both Java: the Capacitor template has no Kotlin.
-  const appId = process.env.CAP_APP_ID_NURSE ?? 'ug.nesthomecare.nurse';
   const sharedDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'android-shared');
-  installNativePlugins({ mainDir: main, appId, sharedDir, visitTracker: true });
+  installNativePlugins({ mainDir: main, appId, sharedDir, visitTracker: true, adminPackage: process.env.CAP_APP_ID_ADMIN ?? 'ug.nesthomecare.admin', nursePackage: appId });
   applyBranding({ mainDir: main, sharedDir, app: 'nurse' });
 
   return { manifestPath, gradlePath, versionCode, versionName };

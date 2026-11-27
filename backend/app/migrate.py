@@ -169,6 +169,7 @@ async def run_mongo_migrations(settings: Any | None = None) -> tuple[list[str], 
         "0011_visit_sync_cursor",
         "0012_care_track_c",
         "0013_partial_id_indexes",
+        "0020_unique_nurse_staff_numbers",
     }
     try:
         main_ran = await run_migrations(client[settings.mongodb_db], exclude=care_names)

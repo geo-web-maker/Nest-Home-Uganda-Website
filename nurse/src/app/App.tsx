@@ -9,7 +9,8 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { registerForPush, type StopPushRegistration } from '../platform/push';
 import { enableVisitReminders, scheduleVisitReminders } from '../platform/notify';
 import { compressPhotoBundle, PHOTO_MAX_BYTES } from '../features/photos/compress';
-import { readRefreshToken } from '../platform/secureTokenStorage';
+import { readRefreshToken, saveRefreshToken } from '../platform/secureTokenStorage';
+import { saveWebCredential } from '../lib/api/webCredential';
 import { kampalaDateKey } from '../lib/time';
 import { clearMailCache } from '../features/mail/mailStore';
 import { applySyncPullPage, cacheClients, cacheVisits, cacheHistory, clearSyncCursor, enqueueOperation, enqueuePhoto, getSyncCursor, listCachedClients, listCachedHistory, listCachedVisits, listQueuedPhotos, nurseDb, recoverInterruptedOperations, recoverInterruptedPhotos, removeLocalPhoto, updateCachedVisit, updateLocalPhoto, type CachedClient, type CachedHistoryVisit, type CachedVisit, type LocalPhoto, type OutboxOperation } from '../offline/db';
@@ -56,6 +57,10 @@ import { Card } from '../ui/Card';
 import { CareFormsProvider, useCareForms } from '../features/careforms/useCareForms';
 import { DocumentsScreen } from '../features/careforms/DocumentsScreen';
 import { PillButton } from '../ui/PillButton';
+import { SsoRelay } from './SsoRelay';
+import { fetchAppAccess, startPull, redeem } from '../platform/appSwitch';
+import { isNativeAppSwitchAvailable, readNativeHandoffCode, requestOtherAppHandoff } from '../platform/nativeAppSwitch';
+import { ADMIN_NATIVE_APP_ID } from '../platform/identity';
 
 type ConsentRequirement = FieldConsentRequirement;
 function makeId() { return globalThis.crypto?.randomUUID?.() ?? `op-${Date.now()}-${Math.random().toString(36).slice(2)}`; }
@@ -275,6 +280,19 @@ function NurseWorkspace() {
     }
   }, [applyProfile, loadProfile, refreshLocal, wifiOnlyUpload]);
   useEffect(() => {
+    const notice = sessionStorage.getItem('nhc.handoff.notice');
+    if (notice) {
+      setMessage(notice);
+      sessionStorage.removeItem('nhc.handoff.notice');
+    }
+  }, [setMessage]);
+  useEffect(() => {
+    // Establish the non-sensitive dual-access hint after session restore/sign-in so the
+    // login screen can offer the optional PKCE pull flow on the next visit.
+    if (!signedIn || !navigator.onLine) return;
+    void fetchAppAccess(<T,>(path: string) => apiRequest<T>(path)).catch(() => undefined);
+  }, [signedIn]);
+  useEffect(() => {
     let active = true;
     const onOnline = () => { setOnline(true); void sync(); };
     const onOffline = () => setOnline(false);
@@ -362,7 +380,7 @@ function NurseWorkspace() {
     return () => { active = false; window.removeEventListener('online', attempt); window.clearInterval(timer); void handle?.remove(); };
   }, [session.offlineTrusted, restoreLiveSession]);
   useEffect(() => () => { void stopPushRegistration.current?.(); }, []);
-  async function registerPushIfOptedIn(userId = currentUserId) {
+  const registerPushIfOptedIn = useCallback(async (userId = currentUserId) => {
     if (!Capacitor.isNativePlatform() || !sessionStorage.getItem('nurse_access_token') || !userId) return;
     const deviceKey = `nest.nurse.device-id:${userId}`;
     const legacyDeviceId = localStorage.getItem('nest.nurse.device-id');
@@ -387,7 +405,60 @@ function NurseWorkspace() {
     } catch {
       setMessage(copy.messages.pushUnavailable);
     }
-  }
+  }, [currentUserId, sync, setMessage, navigate]);
+
+  const completeSignIn = useCallback(async () => {
+    // Keep password and cross-app sign-in on the same profile hydration, push and sync path.
+    const profile = await loadProfile();
+    await applyProfile(profile);
+    if (visitRemindersEnabled) void registerPushIfOptedIn(profile.user_id);
+    setMessage(copy.messages.signedIn);
+    if ((profile.consents_required ?? []).length === 0) await sync();
+  }, [loadProfile, applyProfile, visitRemindersEnabled, registerPushIfOptedIn, setMessage, sync]);
+
+  const acceptNativeHandoff = useCallback(async (code: string) => {
+    const pending = (await nurseDb.outbox.count()) + (await nurseDb.photos.count());
+    if (pending > 0) {
+      setMessage('This device still has unsent nurse data. Sync or resolve those items before switching accounts.');
+      return;
+    }
+    try {
+      const body = await redeem(code, 'nurse', {
+        native: Capacitor.isNativePlatform(),
+        post: <T,>(path: string, payload: unknown, headers?: Record<string, string>) => apiRequest<T>(path, { method: 'POST', body: JSON.stringify(payload), headers }),
+      });
+      if (!body.access_token || !body.user?.id) throw new Error('Incomplete handoff response');
+      const previousUserId = localStorage.getItem('nest.nurse.cache-user-id');
+      if (previousUserId && previousUserId !== body.user.id) {
+        await session.signOutLocal();
+        clearProfile();
+      }
+      sessionStorage.setItem('nurse_access_token', body.access_token);
+      if (Capacitor.isNativePlatform()) {
+        if (!body.refresh_token) throw new Error('Missing native refresh token');
+        await saveRefreshToken(body.refresh_token);
+      } else {
+        if (!body.csrf_token) throw new Error('Missing web CSRF token');
+        sessionStorage.setItem('nurse_csrf_token', body.csrf_token);
+        saveWebCredential(body.csrf_token);
+      }
+      setToken(body.access_token);
+      session.setOfflineTrusted(false);
+      setLoginError('');
+      await completeSignIn();
+    } catch {
+      setMessage('We could not sign you in automatically. Please sign in.');
+    }
+  }, [session, clearProfile, setToken, setLoginError, completeSignIn, setMessage]);
+
+  useEffect(() => {
+    const onNativeHandoff = (event: Event) => {
+      const detail = (event as CustomEvent<{ code?: string }>).detail;
+      if (detail?.code && /^[A-Za-z0-9_-]{20,100}$/.test(detail.code)) void acceptNativeHandoff(detail.code);
+    };
+    window.addEventListener('nhc:native-handoff', onNativeHandoff);
+    return () => window.removeEventListener('nhc:native-handoff', onNativeHandoff);
+  }, [acceptNativeHandoff]);
 
   async function signIn(event: FormEvent) {
     event.preventDefault();
@@ -397,12 +468,7 @@ function NurseWorkspace() {
       await session.signIn(identifier, password);
       setPassword('');
       setLoginError('');
-      // A prior explicit notification choice is the only reason to re-register push at sign-in.
-      const profile = await loadProfile();
-      await applyProfile(profile);
-      if (visitRemindersEnabled) void registerPushIfOptedIn(profile.user_id);
-      setMessage(copy.messages.signedIn);
-      if ((profile.consents_required ?? []).length === 0) await sync();
+      await completeSignIn();
     } catch (error: unknown) {
       if (error instanceof PasswordChangeRequiredError) {
         // Temporary password accepted: choose a real one before signing in.
@@ -413,7 +479,8 @@ function NurseWorkspace() {
         return;
       }
       const status = typeof error === 'object' && error !== null && 'status' in error ? Number((error as { status?: unknown }).status) : -1;
-      setLoginError(status === 0 ? copy.login.offlineServer : status === 401 ? copy.login.invalidCredentials : status === 403 || status === 404 ? copy.login.notNurse : status === 429 ? copy.login.tooManyAttempts : status >= 500 ? copy.login.serverError : copy.login.failed);
+      const code = typeof error === 'object' && error !== null && 'code' in error ? String((error as { code?: unknown }).code ?? '') : '';
+      setLoginError(status === 0 ? copy.login.offlineServer : status === 401 ? copy.login.invalidCredentials : code === 'nurse_profile_inactive' ? copy.login.nurseProfileInactive : status === 403 || status === 404 ? copy.login.notNurse : status === 429 ? copy.login.tooManyAttempts : status >= 500 ? copy.login.serverError : copy.login.failed);
     } finally {
       setBusy(false);
     }
@@ -909,7 +976,7 @@ function NurseWorkspace() {
   const canAddRequiredPhoto = Boolean(photosEnabled && actionVisit?.photo_rules?.allowed);
   const views = {
     setPassword: <SetPasswordScreen />,
-    login: <LoginScreen identifier={identifier} password={password} busy={busy} online={online} errorMessage={loginError} onIdentifier={(value) => { setIdentifier(value); setLoginError(''); }} onPassword={(value) => { setPassword(value); setLoginError(''); }} onSubmit={signIn} />,
+    login: <LoginScreen identifier={identifier} password={password} busy={busy} online={online} errorMessage={loginError} showContinueWithAdmin={localStorage.getItem('nhc.dual_access') === '1' || import.meta.env.VITE_SHOW_PULL_SSO === 'true'} onContinueWithAdmin={() => { void startPull('admin', 'nurse', import.meta.env.VITE_ADMIN_APP_URL as string | undefined, isNativeAppSwitchAvailable() ? { packageName: (import.meta.env.VITE_ADMIN_ANDROID_PACKAGE as string | undefined) || ADMIN_NATIVE_APP_ID, request: requestOtherAppHandoff } : undefined).catch(() => setLoginError(copy.appSwitch.unavailable)); }} onIdentifier={(value) => { setIdentifier(value); setLoginError(''); }} onPassword={(value) => { setPassword(value); setLoginError(''); }} onSubmit={signIn} />,
     today: <TodayScreen visits={visits} clients={clients} adhocAllowed={adhocAllowed} adhocOpen={adhocOpen} adhocClientId={adhocClientId} photosEnabled={photosEnabled} pendingPhotoCount={pendingPhotoCount} loading={busy} displayName={fieldProfile?.display_name} staffNumber={fieldProfile?.staff_number} onAdhocOpen={() => setAdhocOpen((open) => !open)} onAdhocClient={setAdhocClientId} onStartAdhoc={startAdhocVisit} onSync={() => void sync()} onArrive={(visit) => requestVisitAction(visit, 'check_in')} onLeave={(visit) => requestVisitAction(visit, 'check_out')} onNote={openNote} onPhoto={openPhoto} />,
     onboarding: <Onboarding accepted={locationDisclosureAccepted} onAccept={acceptLocationDisclosure} onContinue={continueOnboarding} onEnableNotifications={() => void enableReminders()} showNotifications={Capacitor.isNativePlatform()} notificationsEnabled={visitRemindersEnabled} />,
     history: <HistoryScreen history={history} loading={historyLoading} hasMore={historyHasMore} onLoadMore={() => void loadMoreHistory()} pendingVisitIds={pendingHistoryVisitIds} />,
@@ -926,6 +993,7 @@ function NurseWorkspace() {
   const updateBlocked = preLoginBlocked || Boolean(versionInfo && isForcedUpdate(appVersion, versionInfo.min_supported));
 
   refreshLocalRef.current = refreshLocal; syncRef.current = sync;
+  if (window.location.pathname === '/sso') return <SsoRelay ready={bootChecked} signedIn={signedIn} />;
   return <CareFormsProvider value={careForms}><AppShell onDismissMessage={() => setMessage('')} online={online} queued={queued} authenticated={signedIn} message={message} syncing={busy} sosEnabled={sosEnabled} smsHref={sosSmsHref} emergencyNumbers={fieldProfile?.settings?.emergency_numbers ?? []} supervisorPhone={fieldProfile?.supervisor_phone} liveFollowEnabled={Boolean(fieldProfile?.settings?.live_follow_enabled)} liveFollowMinutes={fieldProfile?.settings?.live_follow_minutes ?? 30} liveFollowIntervalSeconds={fieldProfile?.settings?.live_follow_interval_seconds ?? 30} sosHoldSeconds={fieldProfile?.settings?.sos_hold_seconds ?? 2} sosCancelWindowSeconds={fieldProfile?.settings?.sos_cancel_window_s ?? 5} onSendSos={sendSos} onStartSosFollow={startSosFollow} onPingSosFollow={pingSosFollow} onSafeNow={reportSafeNow}>
     {/* Pre-login update gate: block before the user can enter credentials */}
     {!bootChecked ? <LoadingScreen />

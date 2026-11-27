@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { applyAndroidOverrides, mergeManifest, patchGradleVersion } from '../apply_android_overrides.mjs';
+import { applyAndroidOverrides, mergeManifest, patchCrossAppManifest, patchGradleVersion } from '../apply_android_overrides.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const realOverrides = path.join(repoRoot, 'nurse', 'android-overrides');
@@ -144,4 +144,23 @@ test('the notification icon referenced by capacitor.config.ts is the one this sc
   const config = fs.readFileSync(path.join(repoRoot, 'nurse', 'capacitor.config.ts'), 'utf8');
   assert.match(config, /smallIcon: 'ic_stat_nest'/);
   assert.doesNotMatch(config, /bundledWebRuntime/);
+});
+
+
+test('cross-app manifest declares package visibility, exported singleTask activity and a private deep link', () => {
+  const patched = patchCrossAppManifest(GENERATED_MANIFEST, 'ug.nesthomecare.nurse', 'ug.nesthomecare.admin', 'nhc-nurse');
+  assert.match(patched, /<queries>[\s\S]*<package android:name="ug\.nesthomecare\.admin" \/>/);
+  assert.match(patched, /android:exported="true"/);
+  assert.match(patched, /android:launchMode="singleTask"/);
+  assert.match(patched, /android:scheme="nhc-nurse" android:host="handoff"/);
+  assert.match(patched, /android:scheme="nhc-nurse" android:host="request-handoff"/);
+  const mainActivity = patched.match(/<activity[^>]*android:name="\.MainActivity"[\s\S]*?<\/activity>/)?.[0] ?? '';
+  assert.match(mainActivity, /<intent-filter>[\s\S]*android:scheme="nhc-nurse"[\s\S]*<\/intent-filter>/);
+  assert.match(mainActivity, /android:host="request-handoff"/);
+  assert.equal(patchCrossAppManifest(patched, 'ug.nesthomecare.nurse', 'ug.nesthomecare.admin', 'nhc-nurse'), patched);
+});
+
+test('cross-app manifest rejects unknown schemes and package ids', () => {
+  assert.throws(() => patchCrossAppManifest(GENERATED_MANIFEST, 'bad', 'ug.nesthomecare.admin', 'nhc-nurse'), /application id/);
+  assert.throws(() => patchCrossAppManifest(GENERATED_MANIFEST, 'ug.nesthomecare.nurse', 'ug.nesthomecare.admin', 'other'), /URL scheme/);
 });

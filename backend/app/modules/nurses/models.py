@@ -11,6 +11,9 @@ from app.core.sandbox import hide_test_data
 class NurseProfile(Document):
     user_id: str = Field(index=True, unique=True)
     staff_number: str
+    staff_number_provisional: bool = False
+    provisioned_source: str | None = None
+    provisioned_at: datetime | None = None
     supervisor_id: str | None = None
     team_id: str | None = None
     active: bool = True

@@ -1,9 +1,11 @@
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from pydantic import BaseModel, ConfigDict
 
 from app.core.deps import Principal, ReachContext, get_care_actor, require_scopes
-from app.core.errors import ValidationFailed
+from app.core.errors import Conflict, ValidationFailed
+from app.core.totp_guard import assert_totp_session
 from app.modules.audit import service as audit
 from app.modules.auth import repository as auth_repo
 from app.modules.auth.models import PasswordReset, User
@@ -22,6 +24,7 @@ from app.modules.nurses.schemas import (
     NurseProfileResponse,
     SupervisorPatch,
 )
+from app.modules.nurses.deps import get_active_nurse_profile
 from app.modules.nurses.service import (
     delete_nurse,
     add_nurse_profile_to_user,
@@ -31,10 +34,17 @@ from app.modules.nurses.service import (
     profile_for_user,
     register_user_device,
     set_nurse_password,
+    is_dual_account,
+    ensure_nurse_profile,
 )
 
 router = APIRouter(prefix="/admin/care/nurses", tags=["care-nurses"])
 field_router = APIRouter(prefix="/field", tags=["field"])
+
+
+class RepairProfilesBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    dry_run: bool = True
 
 
 def _nurse_is_in_reach(user_id: str, ctx: ReachContext) -> bool:
@@ -45,6 +55,31 @@ def _nurse_is_in_reach(user_id: str, ctx: ReachContext) -> bool:
     if ctx.reach == "team":
         return user_id == ctx.user_id or user_id in ctx.team_nurse_ids
     return False
+
+
+async def _profile_out(profile: NurseProfile) -> NurseProfileResponse:
+    """Build a complete roster response, including whether this belongs to a dual account."""
+    user = await auth_repo.user_by_id(profile.user_id)
+    supervisor = await auth_repo.user_by_id(profile.supervisor_id) if profile.supervisor_id else None
+    return NurseProfileResponse(
+        user_id=profile.user_id,
+        name=user.name if user else None,
+        supervisor_name=supervisor.name if supervisor and supervisor.is_active else None,
+        staff_number=profile.staff_number,
+        staff_number_provisional=profile.staff_number_provisional,
+        dual_account=is_dual_account(user, profile),
+        supervisor_id=profile.supervisor_id,
+        team_id=profile.team_id,
+        active=profile.active,
+        phone_e164=profile.phone_e164,
+        last_seen_at=profile.last_seen_at,
+        app_version=profile.app_version,
+        unmc_number=profile.unmc_number,
+        unmc_category=profile.unmc_category,
+        unmc_licence_expiry=profile.unmc_licence_expiry,
+        unmc_verified_by=profile.unmc_verified_by,
+        unmc_verified_at=profile.unmc_verified_at,
+    )
 
 
 @router.get("", response_model=list[NurseProfileResponse])
@@ -68,13 +103,15 @@ async def list_nurses(
             except Exception:  # noqa: BLE001 - a malformed id just has no name
                 pass
     people = await User.find({"_id": {"$in": ids}}).to_list() if ids else []
-    names = {str(u.id): u.name for u in people}
+    users_by_id = {str(u.id): u for u in people}
     return [
         NurseProfileResponse(
             user_id=p.user_id,
-            name=names.get(p.user_id),
-            supervisor_name=names.get(p.supervisor_id) if p.supervisor_id else None,
+            name=users_by_id[p.user_id].name if p.user_id in users_by_id else None,
+            supervisor_name=users_by_id[p.supervisor_id].name if p.supervisor_id and p.supervisor_id in users_by_id else None,
             staff_number=p.staff_number,
+            staff_number_provisional=p.staff_number_provisional,
+            dual_account=is_dual_account(users_by_id.get(p.user_id), p),
             supervisor_id=p.supervisor_id,
             team_id=p.team_id,
             active=p.active,
@@ -104,7 +141,8 @@ async def create_nurse(
             )
         if not (ctx.is_superadmin or ctx.reach == "all") and payload.supervisor_id != ctx.user_id:
             raise HTTPException(status_code=404, detail="Supervisor not found")
-    return await invite_nurse(principal, payload)
+    profile = await invite_nurse(principal, payload)
+    return await _profile_out(profile)
 
 
 @router.post("/direct", response_model=NurseProfileResponse, status_code=201)
@@ -122,7 +160,8 @@ async def create_nurse_with_password(
                 "No active user was found with that supervisor ID. Use the supervisor's user ID.",
                 {"supervisor_id": "not_found_or_inactive"},
             )
-    return await create_nurse_direct(principal, payload)
+    profile = await create_nurse_direct(principal, payload)
+    return await _profile_out(profile)
 
 
 @router.post("/from-user", response_model=NurseProfileResponse, status_code=201)
@@ -133,7 +172,8 @@ async def add_nurse_profile_for_existing_user(
     """Superadmin only: make an existing account (such as an admin who is also a nurse) a nurse."""
     if not principal.is_superadmin:
         raise HTTPException(status_code=403, detail="Super administrator access required")
-    return await add_nurse_profile_to_user(principal, payload)
+    profile = await add_nurse_profile_to_user(principal, payload)
+    return await _profile_out(profile)
 
 
 @router.post("/{user_id}/password")
@@ -156,15 +196,9 @@ async def supervisor_options(
     """Active accounts that can be assigned as a nurse's supervisor, within the caller's reach."""
     users = await User.find(User.is_active == True).to_list()  # noqa: E712
     if ctx.is_superadmin or ctx.reach == "all":
-        users = [
-            u for u in users
-            if u.kind != "nurse"
-            and (
-                u.is_superadmin
-                or u.kind in {"supervisor", "admin", "executive"}
-                or "nurses:write" in u.scopes
-            )
-        ]
+        # Supervisor eligibility is permission-based. User.kind is a display label,
+        # not an authorization primitive.
+        users = [u for u in users if u.is_superadmin or "nurses:write" in u.scopes]
     else:
         users = [u for u in users if str(u.id) == ctx.user_id]
     users.sort(key=lambda u: (u.name or "").lower())
@@ -194,7 +228,7 @@ async def get_nurse_profile(
         and profile.user_id != ctx.user_id
     ):
         raise HTTPException(status_code=404, detail="Nurse profile not found")
-    return profile
+    return await _profile_out(profile)
 
 
 @router.get("/{user_id}/details", response_model=NurseDetailsResponse)
@@ -218,14 +252,16 @@ async def get_nurse_details(
     consents = await CareConsent.find(CareConsent.user_id == user_id).sort("-accepted_at").to_list()
     return {
         "person": {
-            "name": user.name if user and user.kind == "nurse" else None,
-            "email": user.email if user and user.kind == "nurse" else None,
-            "phone_e164": user.phone_e164 if user and user.kind == "nurse" else profile.phone_e164,
-            "is_active": user.is_active if user and user.kind == "nurse" else False,
+            "name": user.name if user else None,
+            "email": user.email if user else None,
+            "phone_e164": user.phone_e164 if user else profile.phone_e164,
+            "is_active": user.is_active if user else False,
+            "dual_account": is_dual_account(user, profile),
         },
         "profile": {
             "user_id": profile.user_id,
             "staff_number": profile.staff_number,
+            "staff_number_provisional": profile.staff_number_provisional,
             "supervisor_id": profile.supervisor_id,
             "team_id": profile.team_id,
             "active": profile.active,
@@ -273,7 +309,8 @@ async def update_nurse(
 ):
     if not _nurse_is_in_reach(user_id, ctx):
         raise HTTPException(status_code=404, detail="Nurse profile not found")
-    return await patch_nurse(principal, user_id, payload)
+    profile = await patch_nurse(principal, user_id, payload)
+    return await _profile_out(profile)
 
 
 @router.delete("/{user_id}", status_code=204)
@@ -323,7 +360,7 @@ async def change_supervisor(
         before=before,
         after={"supervisor_id": profile.supervisor_id},
     )
-    return profile
+    return await _profile_out(profile)
 
 
 @router.patch("/{user_id}/adhoc-override", response_model=NurseProfileResponse)
@@ -350,7 +387,7 @@ async def set_adhoc_override(
         before=before,
         after={"adhoc_override": profile.adhoc_override},
     )
-    return profile
+    return await _profile_out(profile)
 
 
 @router.post("/{user_id}/revoke-device")
@@ -390,8 +427,13 @@ async def resend_nurse_invite(
         raise HTTPException(status_code=404, detail="Nurse profile not found")
     user = await auth_repo.user_by_id(user_id)
     profile = await NurseProfile.find_one(NurseProfile.user_id == user_id)
-    if not user or not profile or user.kind != "nurse":
+    if not user or not profile:
         raise HTTPException(status_code=404, detail="Nurse profile not found")
+    if is_dual_account(user, profile):
+        raise HTTPException(
+            status_code=409,
+            detail="This is an existing staff account. It already has its own sign-in, so there is no nurse invite to send. Use Users > Reset password if they are locked out.",
+        )
     if not user.is_active or (
         user.last_login_at is not None or user.invite_accepted_at is not None
     ):
@@ -427,8 +469,13 @@ async def revoke_nurse_invite(
         raise HTTPException(status_code=404, detail="Nurse profile not found")
     user = await auth_repo.user_by_id(user_id)
     profile = await NurseProfile.find_one(NurseProfile.user_id == user_id)
-    if not user or not profile or user.kind != "nurse":
+    if not user or not profile:
         raise HTTPException(status_code=404, detail="Nurse profile not found")
+    if is_dual_account(user, profile):
+        raise HTTPException(
+            status_code=409,
+            detail="This is an existing staff account. It already has its own sign-in, so there is no nurse invite to revoke. Use Users to manage the account.",
+        )
     if user.last_login_at is not None or user.invite_accepted_at is not None:
         raise HTTPException(
             status_code=409, detail="An accepted invite cannot be revoked through this endpoint"
@@ -457,6 +504,9 @@ async def revoke_nurse_invite(
 async def register_device(
     payload: DeviceRegistration, principal: Principal = Depends(require_scopes("field:use"))
 ):
+    # The scope guard has a superadmin bypass; a nurse device still requires an explicitly
+    # stored field:use scope and an active NurseProfile.
+    await get_active_nurse_profile(principal)
     existing = await Device.find_one(Device.device_id == payload.device_id)
     if existing and existing.revoked_at:
         raise HTTPException(401, detail="device_revoked")
@@ -473,3 +523,53 @@ async def register_device(
             raise HTTPException(status_code=401, detail="device_revoked") from exc
         raise
     return {"device_id": device.device_id, "registered": True}
+
+
+@router.post("/repair-profiles")
+async def repair_missing_nurse_profiles(
+    body: RepairProfilesBody,
+    response: Response,
+    principal: Principal = Depends(require_scopes("nurses:write")),
+    mail_totp: str | None = Cookie(default=None),
+):
+    """Superadmin-only repair for active field-scope users missing their NurseProfile."""
+    if not principal.is_superadmin:
+        raise HTTPException(status_code=403, detail="Super administrator access required")
+    await assert_totp_session(principal, mail_totp)
+    response.headers["Cache-Control"] = "no-store"
+    from app.modules.push.diagnostics import nurse_access_problems
+
+    diagnostics = await nurse_access_problems()
+    missing = [
+        row for row in diagnostics.get("problems", [])
+        if "no nurse profile" in str(row.get("problem", "")).lower()
+    ]
+    created: list[dict] = []
+    skipped: list[dict] = []
+    for row in missing:
+        user = None
+        user_id = row.get("user_id") or row.get("id")
+        if user_id:
+            user = await auth_repo.user_by_id(str(user_id))
+        if user is None and row.get("email"):
+            user = await auth_repo.user_by_email(str(row.get("email")))
+        if user is None:
+            skipped.append({"user_id": str(user_id) if user_id else None, "name": row.get("user"), "reason": "user_not_found"})
+            continue
+        if user.is_test or not user.is_active or "field:use" not in user.scopes:
+            skipped.append({"user_id": str(user.id), "name": user.name, "reason": "not_eligible"})
+            continue
+        if body.dry_run:
+            created.append({"user_id": str(user.id), "name": user.name, "staff_number": None, "status": "would_create"})
+            continue
+        try:
+            profile, did_create = await ensure_nurse_profile(
+                user, actor=principal, source="repair", reactivate=False
+            )
+            if profile is not None and did_create:
+                created.append({"user_id": str(user.id), "name": user.name, "staff_number": profile.staff_number, "status": "created"})
+            else:
+                skipped.append({"user_id": str(user.id), "name": user.name, "reason": "not_eligible_or_already_exists"})
+        except Exception:
+            skipped.append({"user_id": str(user.id), "name": user.name, "reason": "provisioning_failed"})
+    return {"dry_run": body.dry_run, "created": created, "skipped": skipped}

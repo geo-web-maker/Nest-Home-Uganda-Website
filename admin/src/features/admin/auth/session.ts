@@ -184,6 +184,32 @@ export async function restoreSession(client: ApiClient = apiClient): Promise<voi
   await refreshSession(client);
 }
 
+/** Apply a normal login-shaped response produced by the cross-app handoff endpoint. */
+export async function applyHandoffSession(session: NativeSession | TokenResponse): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    if (!(session as NativeSession).refresh_token) throw new Error('The native handoff response did not contain a refresh token.');
+    await saveNativeRefreshToken((session as NativeSession).refresh_token);
+    authStore.setSession({ access_token: session.access_token, csrf_token: '', user: session.user });
+    return;
+  }
+  if (!('csrf_token' in session) || !session.csrf_token) throw new Error('The web handoff response did not contain a CSRF token.');
+  authStore.setSession(session as TokenResponse);
+}
+
+export async function loginWithHandoff(
+  code: string,
+  verifier?: string,
+  client: ApiClient = apiClient,
+): Promise<void> {
+  const headers = Capacitor.isNativePlatform() ? { 'X-Client': 'native' } : undefined;
+  const session = await client.post<NativeSession | TokenResponse>(
+    '/auth/handoff/redeem',
+    { code, app: 'admin', ...(verifier ? { verifier } : {}) },
+    { retryOn401: false, headers },
+  );
+  await applyHandoffSession(session);
+}
+
 export async function login(
   email: string,
   password: string,

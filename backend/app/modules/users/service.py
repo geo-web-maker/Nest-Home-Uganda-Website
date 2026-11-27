@@ -264,6 +264,24 @@ async def invite(principal: Principal, body: UserInvite, ip_hash: str | None) ->
         raise Conflict(
             "A user with this email already exists.", {"email": "already in use"}
         ) from exc
+    if "field:use" in user.scopes:
+        try:
+            from app.modules.nurses.service import ensure_nurse_profile
+            await ensure_nurse_profile(user, actor=principal, source="scope_grant", reactivate=True, ip_hash=ip_hash)
+        except Exception:
+            log.exception("nurse profile provisioning deferred for invited user %s", str(user.id))
+            try:
+                await audit.record(
+                    principal,
+                    "user.nurse_profile.provision_failed",
+                    "user",
+                    str(user.id),
+                    user.email,
+                    after={"source": "scope_grant", "reason": "provisioning_failed"},
+                    ip_hash=ip_hash,
+                )
+            except Exception:
+                log.exception("could not audit deferred nurse profile provisioning for user %s", str(user.id))
     try:
         from app.modules.mail.core_service import ensure_default_mailbox_if_configured
         await ensure_default_mailbox_if_configured(user)
@@ -288,6 +306,7 @@ async def update(
     if changes.get("active") is None:
         changes.pop("active", None)
     before = _snapshot(user)
+    before_scopes = set(user.scopes)
     scopes_changed = False
     if "scopes" in changes:
         new_scopes = set(changes["scopes"])
@@ -324,6 +343,58 @@ async def update(
         user.is_active = changes["active"]
     if scopes_changed or active_changed or profile_changed:
         await user.save()
+        if scopes_changed:
+            had_field = "field:use" in before_scopes
+            has_field = "field:use" in user.scopes
+            if not had_field and has_field:
+                try:
+                    from app.modules.nurses.service import ensure_nurse_profile
+                    await ensure_nurse_profile(user, actor=principal, source="scope_grant", reactivate=True, ip_hash=ip_hash)
+                except Exception:
+                    log.exception("nurse profile provisioning deferred for user %s", str(user.id))
+                    try:
+                        await audit.record(
+                            principal,
+                            "user.nurse_profile.provision_failed",
+                            "user",
+                            str(user.id),
+                            user.email,
+                            after={"source": "scope_grant", "reason": "provisioning_failed"},
+                            ip_hash=ip_hash,
+                        )
+                    except Exception:
+                        log.exception("could not audit deferred nurse profile provisioning for user %s", str(user.id))
+            elif had_field and not has_field:
+                from app.modules.nurses.models import Device, NurseProfile
+                profile = await NurseProfile.find_one(NurseProfile.user_id == str(user.id))
+                if profile is not None:
+                    old_active = profile.active
+                    profile.active = False
+                    await profile.save()
+                    now = datetime.now(UTC)
+                    await Device.get_pymongo_collection().update_many(
+                        {
+                            "user_id": str(user.id),
+                            "revoked_at": None,
+                            "$or": [
+                                {"app": "nurse"},
+                                {"app": None},
+                                {"app": {"$exists": False}},
+                                {"app": ""},
+                            ],
+                        },
+                        {"$set": {"revoked_at": now, "push_token": None}},
+                    )
+                    await audit.record(
+                        principal,
+                        "nurse.profile.deactivate_scope_removed",
+                        "nurse_profile",
+                        str(user.id),
+                        user.name,
+                        before={"active": old_active, "scope_present": True},
+                        after={"active": False, "scope_present": False, "nurse_devices_revoked": True},
+                        ip_hash=ip_hash,
+                    )
         if active_changed:
             try:
                 from app.modules.mail.core_service import close_personal_mailbox
@@ -435,18 +506,34 @@ async def delete(principal: Principal, user_id: str, ip_hash: str | None) -> Non
     _guard_superadmin_target(principal, user)
     if str(user.id) == principal.user_id:
         raise Conflict("You cannot delete your own account.")
-    if user.kind == "nurse":
-        from app.modules.nurses.models import NurseProfile
-        from app.modules.nurses.service import delete_nurse
-
-        if await NurseProfile.find_one(NurseProfile.user_id == user_id):
-            await delete_nurse(principal, user_id, ip_hash)
-            return
     auth_service.ensure_not_last_superadmin(
         await auth_repo.count_active_superadmins(),
         was_superadmin=user.is_superadmin and user.is_active,
         stays_active_superadmin=False,
     )
+    from app.modules.nurses.models import Device, NurseProfile
+    from app.modules.nurses.service import is_dual_account
+    profile = await NurseProfile.find_one(NurseProfile.user_id == user_id)
+    if profile is not None and not is_dual_account(user, profile):
+        from app.modules.nurses.service import delete_nurse
+        await delete_nurse(principal, user_id, ip_hash)
+        return
+    if profile is not None and is_dual_account(user, profile):
+        from app.modules.visits.models import Visit
+        if await Visit.find_one(Visit.nurse_id == user_id):
+            raise Conflict("This nurse has visit history and cannot be deleted. Deactivate them instead.")
+        await Device.get_pymongo_collection().delete_many({"user_id": user_id})
+        await profile.delete()
+        await audit.record(
+            principal,
+            "user.delete_dual_account_nurse_profile",
+            "nurse_profile",
+            user_id,
+            user.email,
+            before={"staff_number": profile.staff_number},
+            after={"profile_removed": True, "user_deleted": True},
+            ip_hash=ip_hash,
+        )
     await RefreshToken.find(RefreshToken.user_id == user.id).delete()
     await PasswordReset.find(PasswordReset.user_id == user.id).delete()
     await user.delete()

@@ -16,6 +16,12 @@ Values are owner-supplied at deployment time. Never commit secrets or production
 | `VITE_SITE_URL` | Public site origin (canonical and og:url). Set to the new domain; no domain is hardcoded. |
 | `FRONTEND_URL` | Public site origin used for public-facing links; also the fallback for `ADMIN_URL` when the latter is empty. |
 | `ADMIN_URL` | Standalone admin origin (`https://admin.bhcug.com`). Used for staff set-password, SOS, alert and agreement links. Defaults to `FRONTEND_URL` when unset/empty. |
+| `NURSE_FRONTEND_URL` / `NEST_NURSE_FRONTEND_URL` | Standalone nurse PWA origin (`https://nurse.bhcug.com`). Both names are accepted; `/auth/app-access` and cross-app switching use it. `ADMIN_URL` and `NEST_ADMIN_URL` are likewise accepted for the admin origin. |
+| `NEST_HANDOFF_ENABLED` | Cross-app one-time sign-in kill switch (default `true`). Set `false` to make handoff issue/redeem return 404 while leaving normal password sign-in available. |
+| `NEST_HANDOFF_CODE_SECONDS` | One-time handoff expiry in seconds (default `60`; allowed range 15–120). |
+| `NEST_ANDROID_PACKAGE_ADMIN`, `NEST_ANDROID_PACKAGE_NURSE` | Android package IDs used by the native cross-app launcher; defaults are `ug.nesthomecare.admin` and `ug.nesthomecare.nurse`. Keep these aligned with the APK application IDs. |
+| `VITE_ADMIN_APP_URL`, `VITE_NURSE_APP_URL` | Build-time configured origins for the admin and nurse PWAs. Used for the public login-screen relay and validated against `/auth/app-access`; never accept a return URL from the browser query string. |
+| `VITE_SHOW_PULL_SSO` | Optional build-time `true` flag to show the “Continue with the other app” PKCE sign-in action even before the browser has stored a dual-access hint. Defaults to hidden. |
 | `SITE_REBUILD_HOOK_URL` | Optional Cloudflare Pages or Vercel deploy hook URL. The backend POSTs to it after an admin edits public content so the pre-rendered pages are rebuilt. Secret; empty disables it. |
 | `SITE_REBUILD_DEBOUNCE_SECONDS` | Quiet time after the last public edit before the hook is called (default 300). Several edits in that window cause one build. |
 | `BUSINESS_EMAIL` | Default public contact email (seeds `business.email`). Set to an address on the new domain; editable later in admin Settings. |

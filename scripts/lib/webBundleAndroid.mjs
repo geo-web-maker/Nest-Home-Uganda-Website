@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const PLUGINS = ['WebBundlePlugin', 'NativeUpdaterPlugin'];
+const PLUGINS = ['WebBundlePlugin', 'NativeUpdaterPlugin', 'AppSwitchPlugin'];
 // Nurse app only: foreground stopwatch notification and work-time location samples for the visit audit.
 const TRACKER_PLUGIN = 'VisitTrackerPlugin';
 const TRACKER_SERVICE = 'VisitTrackerService';
@@ -26,13 +26,16 @@ export const UPDATE_FILE_PATHS = `<?xml version="1.0" encoding="utf-8"?>
 </paths>
 `;
 
-export function installNativePlugins({ mainDir, appId, sharedDir, visitTracker = false }) {
+export function installNativePlugins({ mainDir, appId, sharedDir, visitTracker = false, adminPackage = 'ug.nesthomecare.admin', nursePackage = 'ug.nesthomecare.nurse' }) {
   const pkgDir = path.join(mainDir, 'java', ...appId.split('.'));
   fs.mkdirSync(pkgDir, { recursive: true });
   const plugins = visitTracker ? [...PLUGINS, TRACKER_PLUGIN] : PLUGINS;
   const files = visitTracker ? [...plugins, TRACKER_SERVICE] : plugins;
   for (const name of files) {
-    const source = fs.readFileSync(path.join(sharedDir, `${name}.java`), 'utf8').replaceAll('__PACKAGE__', appId);
+    const source = fs.readFileSync(path.join(sharedDir, `${name}.java`), 'utf8')
+      .replaceAll('__PACKAGE__', appId)
+      .replaceAll('__ADMIN_PACKAGE__', adminPackage)
+      .replaceAll('__NURSE_PACKAGE__', nursePackage);
     fs.writeFileSync(path.join(pkgDir, `${name}.java`), source);
   }
 

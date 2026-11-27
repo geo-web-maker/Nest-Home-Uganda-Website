@@ -44,6 +44,11 @@ Generated from `backend/app/modules/settings/care_keys.py`. Empty values use the
 | `CARE_PHOTOS_MAX_MB` | `photos.max_mb` | integer | `5` | No | photos |
 | `CARE_PHOTOS_MAX_PER_VISIT` | `photos.max_per_visit` | integer | `5` | No | photos |
 | `CARE_PHOTOS_REQUIRED` | `photos.required` | choice | `'none'` | No | photos |
+| `CARE_PUSH_URGENCY_CARE_ALERT` | `push.urgency.care_alert` | choice | `'default'` | No | push |
+| `CARE_PUSH_URGENCY_MAIL` | `push.urgency.mail` | choice | `'default'` | No | push |
+| `CARE_PUSH_URGENCY_SOS` | `push.urgency.sos` | choice | `'default'` | No | push |
+| `CARE_PUSH_URGENCY_TIMESHEET` | `push.urgency.timesheet` | choice | `'default'` | No | push |
+| `CARE_PUSH_URGENCY_VISIT` | `push.urgency.visit` | choice | `'default'` | No | push |
 | `CARE_SMS_ENABLED` | `sms.enabled` | boolean | `False` | No | sms |
 | `CARE_SMS_MONTHLY_CAP` | `sms.monthly_cap` | integer | `1000` | No | sms |
 | `CARE_SMS_TEST_NUMBER` | `sms.test_number` | text | `''` | No | sms |

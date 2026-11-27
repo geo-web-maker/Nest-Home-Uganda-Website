@@ -4,6 +4,7 @@ import { AuthProvider } from './auth/useAuth';
 import { RequireAuth, RequireScopes } from './auth/guards';
 import { LoginPage } from './auth/LoginPage';
 import { SetPasswordPage } from './auth/SetPasswordPage';
+import { SsoRelay } from './auth/SsoRelay';
 import { ApplicantDetailPage } from './applications/ApplicantDetailPage';
 import { ClientDetailPage } from './care/clients/ClientDetailPage';
 import { NurseDetailPage } from './care/nurses/NurseDetailPage';
@@ -22,6 +23,7 @@ export function Component() {
       <Routes>
         <Route path="login" element={<LoginPage />} />
         <Route path="set-password" element={<SetPasswordPage />} />
+        <Route path="sso" element={<SsoRelay />} />
         <Route element={<RequireAuth />}>
           <Route element={<AdminLayout />}>
             {ADMIN_NAV.map((item) => {

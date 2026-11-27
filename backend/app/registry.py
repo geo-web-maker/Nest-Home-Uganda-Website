@@ -25,7 +25,9 @@ from app.modules.articles import router as articles_router
 from app.modules.articles.models import Article
 from app.modules.audit.models import AuditLog, ContentVersion
 from app.modules.auth import router as auth_router
-from app.modules.auth.models import PasswordReset, RefreshToken, User
+from app.modules.auth import handoff_router as auth_handoff_router
+from app.modules.auth import auto_sso_router
+from app.modules.auth.models import AppHandoff, PasswordReset, RefreshToken, User
 from app.modules.care_admin import router as care_admin_router
 from app.modules.care_clients.models import CareClient
 from app.modules.care_forms import router as care_forms_router
@@ -102,6 +104,7 @@ DOCUMENT_MODELS: list[type[Document]] = [
     User,
     RefreshToken,
     PasswordReset,
+    AppHandoff,
     AuditLog,
     ContentVersion,
     Service,
@@ -161,6 +164,9 @@ CARE_DOCUMENT_MODELS: list[type[Document]] = [
 ROUTERS: list[APIRouter] = [
     auth_router.router,
     auth_router.admin_router,
+    auth_handoff_router.router,
+    auto_sso_router.router,
+    auto_sso_router.admin_router,
     app_releases_api_router,
     app_bundles_public_router,
     services_router.public_router,

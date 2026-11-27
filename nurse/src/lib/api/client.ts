@@ -22,7 +22,7 @@ function assertApiConfigured(): void {
 }
 
 /** Browser (PWA): exchange the HttpOnly refresh cookie for a new access token, using the stored CSRF twin. */
-async function restoreWebSession(): Promise<string | null> {
+export async function restoreWebSession(): Promise<string | null> {
   const csrf = localStorage.getItem(WEB_CSRF_KEY);
   if (!csrf) return null;
   const controller = new AbortController();
@@ -78,7 +78,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   if (token) headers.set('Authorization', `Bearer ${token}`);
   if (token) headers.set(BUILD_HEADER, String(CLIENT_BUILD));
-  if (Capacitor.isNativePlatform() && path.startsWith('/auth/native/')) headers.set('X-Client','native');
+  if (Capacitor.isNativePlatform() && (path.startsWith('/auth/native/') || path === '/auth/handoff/redeem')) headers.set('X-Client','native');
   assertApiConfigured();
   let response: Response;
   try {

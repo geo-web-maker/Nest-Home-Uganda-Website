@@ -79,3 +79,12 @@
   scroll-padding: 8px;
 }
 .scrollBox:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; border-radius: 16px; }
+
+.masterRow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.userList { display: grid; gap: 0; margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.userRow { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.userRow:last-child { border-bottom: 0; }
+.userRow > div:first-child { display: grid; gap: 3px; min-width: 0; }
+.userRow small { color: var(--mut); overflow-wrap: anywhere; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+@media (max-width: 640px) { .userRow { align-items: flex-start; flex-direction: column; } }

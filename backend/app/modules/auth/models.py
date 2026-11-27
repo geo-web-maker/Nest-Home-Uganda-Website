@@ -20,6 +20,9 @@ class User(TimestampedDocument):
     last_login_at: datetime | None = None
     invite_accepted_at: datetime | None = None
     preferred_language: str = "en"
+    # User opt-in is separate from Superadmin permission; both and the master switch must be ON.
+    auto_sso_enabled: bool = False
+    auto_sso_allowed: bool = False
     kind: str = "staff"
     is_test: bool = False  # sandbox test account: mail stays between test accounts, data is purgeable
     reach: str = "all"
@@ -52,3 +55,21 @@ class PasswordReset(TimestampedDocument):
 
     class Settings:
         name = "password_resets"
+
+
+class AppHandoff(TimestampedDocument):
+    """Short-lived, single-use bridge between two independent application sessions."""
+
+    code_hash: str
+    user_id: PydanticObjectId
+    source_app: str
+    target_app: str
+    challenge: str | None = None
+    mode: str = "manual"  # manual explicit switch or automatic cross-app SSO
+    expires_at: datetime
+    used_at: datetime | None = None
+    ip_hash: str | None = None
+    user_agent: str | None = None
+
+    class Settings:
+        name = "app_handoffs"

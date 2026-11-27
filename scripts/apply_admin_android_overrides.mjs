@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { UPDATE_FILE_PATHS, installNativePlugins } from './lib/webBundleAndroid.mjs';
+import { patchCrossAppManifest } from './apply_android_overrides.mjs';
 import { applyBranding } from './lib/androidBranding.mjs';
 
 const androidDir = path.resolve('admin/android');
@@ -35,6 +36,9 @@ if (!manifest.includes('.fileprovider')) {
   </application>`,
   );
 }
+const adminPackage = process.env.CAP_APP_ID_ADMIN ?? 'ug.nesthomecare.admin';
+const nursePackage = process.env.CAP_APP_ID_NURSE ?? 'ug.nesthomecare.nurse';
+manifest = patchCrossAppManifest(manifest, adminPackage, nursePackage, 'nhc-admin');
 fs.writeFileSync(manifestPath, manifest);
 
 fs.mkdirSync(path.join(main, 'res', 'xml'), { recursive: true });
@@ -52,8 +56,10 @@ fs.writeFileSync(gradlePath, gradle);
 
 installNativePlugins({
   mainDir: main,
-  appId: process.env.CAP_APP_ID_ADMIN ?? 'ug.nesthomecare.admin',
+  appId: adminPackage,
   sharedDir: path.resolve('android-shared'),
+  adminPackage,
+  nursePackage,
 });
 
 applyBranding({ mainDir: main, sharedDir: path.resolve('android-shared'), app: 'admin' });

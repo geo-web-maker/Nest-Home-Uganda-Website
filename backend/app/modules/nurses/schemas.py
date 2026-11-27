@@ -23,7 +23,7 @@ class NurseInvite(BaseModel):
 class NurseProfileForUser(BaseModel):
     """Superadmin-only: give an EXISTING account (for example an admin who is also a nurse) a nurse profile."""
     user: str = Field(min_length=3, max_length=200, description="The account's e-mail address or user id")
-    staff_number: str = Field(min_length=2, max_length=40)
+    staff_number: str | None = Field(default=None, min_length=2, max_length=40)
     supervisor_id: str | None = Field(default=None, min_length=8, max_length=160)
     team_id: str | None = None
 
@@ -48,6 +48,7 @@ class NurseDirectCreate(BaseModel):
 class NursePatch(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=80)
     phone: str | None = Field(default=None, min_length=9, max_length=24)
+    staff_number: str | None = Field(default=None, min_length=2, max_length=40)
     active: bool | None = None
 
 
@@ -64,6 +65,8 @@ class NurseProfileResponse(BaseModel):
     name: str | None = None
     supervisor_name: str | None = None
     staff_number: str
+    staff_number_provisional: bool = False
+    dual_account: bool = False
     supervisor_id: str | None
     team_id: str | None
     active: bool
@@ -86,11 +89,13 @@ class NurseDetailsPerson(BaseModel):
     email: str | None = None
     phone_e164: str | None = None
     is_active: bool | None = None
+    dual_account: bool = False
 
 
 class NurseDetailsProfile(BaseModel):
     user_id: str
     staff_number: str
+    staff_number_provisional: bool = False
     supervisor_id: str | None = None
     team_id: str | None = None
     active: bool

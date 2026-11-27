@@ -5,6 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { cx } from '@shared/lib/cx';
 import { useAuth } from './auth/useAuth';
+import { apiClient } from '@shared/lib/api/client';
+import { fetchAppAccess, pushToApp, type AppAccess } from '../../admin-native/appSwitch';
+import { isNativeAppSwitchAvailable, isOtherAppInstalled, launchOtherApp } from '../../admin-native/nativeAppSwitch';
 import { hasScopes } from './auth/hasScopes';
 import { useMailUnread } from './mail/useMailUnread';
 import { useAdminPwa } from './mail/useMailPush';
@@ -18,6 +21,7 @@ import { InstallHint } from '../../pwa/InstallHint';
 import { ApkUpdateBanner } from '../../admin-native/ApkUpdateBanner';
 import { AvatarStatusDot } from '../../admin-native/AvatarStatusDot';
 import { PushNotifier } from './PushNotifier';
+import { OtherAppSuggestion } from './OtherAppSuggestion';
 import './admin-spacing.css';
 
 const GROUPS = ['website', 'careOperations', 'monitoring', 'safety', 'setup'] as const;
@@ -33,6 +37,7 @@ export function AdminLayout() {
   const previousPath = useRef(pathname);
   const [moreOpen, setMoreOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [appAccess, setAppAccess] = useState<AppAccess | null>(null);
   const accountRef = useRef<HTMLDivElement>(null);
 
   // On a route change: close the More list, go to the top and focus <main> for screen readers.
@@ -80,6 +85,32 @@ export function AdminLayout() {
     document.addEventListener('keydown', esc);
     return () => { document.removeEventListener('pointerdown', away); document.removeEventListener('keydown', esc); };
   }, [accountOpen]);
+
+  useEffect(() => {
+    if (!user) { setAppAccess(null); return; }
+    let live = true;
+    void fetchAppAccess(<T,>(path: string) => apiClient.get<T>(path))
+      .then((access) => { if (live) setAppAccess(access); })
+      .catch(() => { if (live) setAppAccess(null); });
+    return () => { live = false; };
+  }, [user?.id]);
+
+  async function openNurseAppFromMenu() {
+    setAccountOpen(false);
+    try {
+      const outcome = await pushToApp('nurse', {
+        currentApp: 'admin',
+        get: <T,>(path: string) => apiClient.get<T>(path),
+        post: <T,>(path: string, body: unknown, headers?: Record<string, string>) => apiClient.post<T>(path, body, { headers }),
+        fallbackUrl: appAccess?.nurse.url ?? undefined,
+        native: isNativeAppSwitchAvailable() ? { isInstalled: isOtherAppInstalled, launch: launchOtherApp } : undefined,
+      });
+      if (outcome === 'denied') {
+        const refreshed = await fetchAppAccess(<T,>(path: string) => apiClient.get<T>(path));
+        setAppAccess(refreshed);
+      }
+    } catch { /* The Profile screen remains available if a switch is unavailable. */ }
+  }
 
   const signOut = () => {
     setAccountOpen(false);
@@ -176,6 +207,11 @@ export function AdminLayout() {
                 </div>
                 <Link to="/profile" role="menuitem" className={styles.accountItem}>My profile</Link>
                 <Link to="/app-center" role="menuitem" className={styles.accountItem}>App Center</Link>
+                {appAccess?.nurse.allowed && appAccess.nurse.url && (
+                  <button type="button" role="menuitem" className={styles.accountItem} onClick={() => void openNurseAppFromMenu()}>
+                    {t('layout.openNurseApp')}
+                  </button>
+                )}
                 <button type="button" role="menuitem" className={cx(styles.accountItem, styles.accountSignOut)} onClick={signOut}>
                   {t('layout.signOut')}
                 </button>
@@ -186,6 +222,9 @@ export function AdminLayout() {
         </header>
         <main id="admin-main" ref={mainRef} tabIndex={-1} className={styles.main}>
           <ButtonSizeProvider value="control">
+            {user?.id && (pathname === '/' || pathname === '/profile') && (
+              <OtherAppSuggestion key={user.id} userId={user.id} access={appAccess} visibleOnThisPage />
+            )}
             <Outlet />
             <DialogHost />
             <TotpPromptHost />

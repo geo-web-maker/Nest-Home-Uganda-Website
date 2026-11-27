@@ -13,9 +13,9 @@ import { MIN_PASSWORD_LENGTH, isWeakPassword } from '@shared/lib/passwordStrengt
 import { LoadingNote } from '../../../../components/admin/LoadingNote';
 
 type NurseDetails = {
-  person: { name?: string | null; email?: string | null; phone_e164?: string | null; is_active?: boolean };
+  person: { name?: string | null; email?: string | null; phone_e164?: string | null; is_active?: boolean; dual_account?: boolean };
   profile: {
-    user_id: string; staff_number: string; supervisor_id?: string | null; team_id?: string | null;
+    user_id: string; staff_number: string; staff_number_provisional?: boolean; supervisor_id?: string | null; team_id?: string | null;
     active: boolean; phone_e164?: string | null; last_seen_at?: string | null; app_version?: string | null;
     battery_pct?: number | null; adhoc_override?: boolean | null; consent_versions?: Record<string, string>;
     unmc_number?: string | null; unmc_category?: string | null; unmc_licence_expiry?: string | null;
@@ -39,6 +39,7 @@ export function NurseDetailPage() {
   const canWriteCareSettings = hasScopes(user, ['carecfg:write']);
   const [details, setDetails] = useState<NurseDetails | null>(null);
   const [supervisorId, setSupervisorId] = useState('');
+  const [staffNumber, setStaffNumber] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -51,6 +52,7 @@ export function NurseDetailPage() {
       const result = await apiClient.get<NurseDetails>(`/admin/care/nurses/${encodeURIComponent(userId)}/details`);
       setDetails(result);
       setSupervisorId(result.profile.supervisor_id ?? '');
+      setStaffNumber(result.profile.staff_number ?? '');
     } catch (reason) {
       setDetails(null);
       setError(reason instanceof ApiError ? reason.message : reason instanceof Error ? reason.message : 'Nurse details could not be loaded.');
@@ -63,6 +65,14 @@ export function NurseDetailPage() {
     try { await action(); setNotice(success); await load(); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'The action could not be completed.'); }
     finally { setBusy(false); }
+  }
+
+  async function saveStaffNumber(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await runAction(
+      () => apiClient.patch(`/admin/care/nurses/${encodeURIComponent(userId)}`, { staff_number: staffNumber.trim() }),
+      'Staff number updated and audited.',
+    );
   }
 
   async function saveSupervisor(event: FormEvent<HTMLFormElement>) {
@@ -87,17 +97,19 @@ export function NurseDetailPage() {
   return (
     <section className="admin-page nurse-detail" aria-labelledby="nurse-detail-title">
       <header className="page-header">
-        <div><p className="eyebrow">Nurse profile</p><h1 id="nurse-detail-title">{details.person.name ?? nurse.staff_number}</h1><p>{nurse.staff_number} · {details.person.email ?? 'No email recorded'}</p></div>
-        <div className="nurse-header-actions"><Button variant="outline" onClick={() => navigate('/care/nurses')}>Back to nurses</Button>{canWriteNurse && <Button type="button" disabled={busy} onClick={() => void runAction(() => apiClient.post(`/admin/care/nurses/${encodeURIComponent(userId)}/invite`, {}), 'Invitation resent.')}>Resend invite</Button>}{canWriteNurse && <Button type="button" variant="outline" disabled={busy} onClick={async () => { const pw = await dialogs.prompt('Set a password for this nurse (at least 8 characters). Share it with them privately.', '', { minLength: MIN_PASSWORD_LENGTH, secret: true, confirmLabel: 'Set password' }); if (!pw) return; if (isWeakPassword(pw)) { void dialogs.alert('That password is too easy to guess. Choose something less common.'); return; } void runAction(() => apiClient.post(`/admin/care/nurses/${encodeURIComponent(userId)}/password`, { password: pw }), 'Password set. The nurse can sign in now.'); }}>Set password</Button>}</div>
+        <div><p className="eyebrow">Nurse profile</p><h1 id="nurse-detail-title">{details.person.name ?? nurse.staff_number}</h1><p>{nurse.staff_number} · {details.person.email ?? 'No email recorded'}{details.person.dual_account ? ' · Also an admin' : ''}</p></div>
+        <div className="nurse-header-actions"><Button variant="outline" onClick={() => navigate('/care/nurses')}>Back to nurses</Button>{canWriteNurse && !details.person.dual_account && <Button type="button" disabled={busy} onClick={() => void runAction(() => apiClient.post(`/admin/care/nurses/${encodeURIComponent(userId)}/invite`, {}), 'Invitation resent.')}>Resend invite</Button>}{canWriteNurse && !details.person.dual_account && <Button type="button" variant="outline" disabled={busy} onClick={async () => { const pw = await dialogs.prompt('Set a password for this nurse (at least 8 characters). Share it with them privately.', '', { minLength: MIN_PASSWORD_LENGTH, secret: true, confirmLabel: 'Set password' }); if (!pw) return; if (isWeakPassword(pw)) { void dialogs.alert('That password is too easy to guess. Choose something less common.'); return; } void runAction(() => apiClient.post(`/admin/care/nurses/${encodeURIComponent(userId)}/password`, { password: pw }), 'Password set. The nurse can sign in now.'); }}>Set password</Button>}</div>
       </header>
       {error && <Notice tone="error" floating onDismiss={() => setError('')}>{error}</Notice>}
       {notice && <Notice floating onDismiss={() => setNotice('')}>{notice}</Notice>}
 
+      {nurse.staff_number_provisional && <Notice tone="warning"><p>Provisional staff number, please confirm. Replace this generated number with the organisation's official staff number.</p></Notice>}
+      {details.person.dual_account && <Notice tone="info"><p>This nurse profile belongs to an existing staff account. Sign-in, password, name and phone are managed under Users.</p></Notice>}
       <section className="nurse-detail-grid">
         <article className="care-form">
           <h2>Account and assignment</h2>
           <dl className="nurse-facts">
-            <div><dt>Account</dt><dd>{details.person.is_active ? 'Active' : 'Inactive'}</dd></div>
+            <div><dt>Account</dt><dd>{details.person.is_active ? 'Active' : 'Inactive'}{details.person.dual_account ? ' · Also an admin' : ''}</dd></div>
             <div><dt>Nurse profile</dt><dd>{nurse.active ? 'Active' : 'Inactive'}</dd></div>
             <div><dt>Phone</dt><dd>{details.person.phone_e164 ?? nurse.phone_e164 ?? 'Not recorded'}</dd></div>
             <div><dt>Team</dt><dd>{nurse.team_id ?? 'Not assigned'}</dd></div>
@@ -105,7 +117,8 @@ export function NurseDetailPage() {
             <div><dt>App version</dt><dd>{nurse.app_version ?? 'Not reported'}</dd></div>
             <div><dt>Battery</dt><dd>{nurse.battery_pct == null ? 'Not reported' : `${nurse.battery_pct}%`}</dd></div>
           </dl>
-          {canWriteNurse && <Button type="button" variant="outline" disabled={busy} onClick={() => void runAction(() => apiClient.patch(`/admin/care/nurses/${encodeURIComponent(userId)}`, { active: !nurse.active }), nurse.active ? 'Nurse profile deactivated.' : 'Nurse profile activated.')}>{nurse.active ? 'Deactivate nurse' : 'Activate nurse'}</Button>}
+          {canWriteNurse && <Button type="button" variant="outline" disabled={busy} onClick={() => void runAction(() => apiClient.patch(`/admin/care/nurses/${encodeURIComponent(userId)}`, { active: !nurse.active }), nurse.active ? 'Nurse access deactivated.' : 'Nurse access activated.')}>{nurse.active ? 'Deactivate nurse access' : 'Activate nurse access'}</Button>}
+          {canWriteNurse && <form className="care-form nurse-supervisor-form" onSubmit={saveStaffNumber}><h3>Staff number</h3><Field label="Staff number" value={staffNumber} onChange={(event) => setStaffNumber(event.target.value)} maxLength={40} /><Button type="submit" loading={busy} disabled={staffNumber.trim().length < 2 || staffNumber.trim() === nurse.staff_number}>Save staff number</Button></form>}
           {canWriteNurse && <form className="care-form nurse-supervisor-form" onSubmit={saveSupervisor}>
             <h3>Supervisor assignment</h3>
             <Field label="Supervisor user ID" value={supervisorId} onChange={(event) => setSupervisorId(event.target.value)} maxLength={160} />

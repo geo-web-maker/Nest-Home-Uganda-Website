@@ -435,10 +435,10 @@ async def nurse_access_problems() -> dict[str, Any]:
         if profile is not None and profile.active and "field:use" in user.scopes:
             nurses_ok += 1
         elif profile is not None and profile.active and not wants_field:
-            problems.append({"user": user.name, "email": user.email, "problem": "Has an active nurse profile but is missing the field:use permission (403 in the nurse app)."})
+            problems.append({"user_id": str(user.id), "user": user.name, "email": user.email, "problem": "Has an active nurse profile but is missing the field:use permission (403 in the nurse app)."})
         elif profile is not None and not profile.active and "field:use" in user.scopes:
-            problems.append({"user": user.name, "email": user.email, "problem": "Nurse profile is inactive (404 in the nurse app)."})
+            problems.append({"user_id": str(user.id), "user": user.name, "email": user.email, "problem": "Nurse profile is inactive (404 in the nurse app)."})
         elif profile is None and "field:use" in user.scopes:
-            problems.append({"user": user.name, "email": user.email, "problem": "Has the nurse permission but no nurse profile (404 in the nurse app)."})
+            problems.append({"user_id": str(user.id), "user": user.name, "email": user.email, "problem": "Has the nurse permission but no nurse profile (404 in the nurse app)."})
     return {"ok_count": nurses_ok, "problems": problems,
             "note": "Accounts without field:use and without a nurse profile (for example office staff) are not listed: they are not meant to use the nurse app."}

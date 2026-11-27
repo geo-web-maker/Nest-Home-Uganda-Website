@@ -289,9 +289,10 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
                 <Button type="button" variant="outline" onClick={() => navigate(`/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}`)}>
                   Details
                 </Button>
+                {Boolean(r.dual_account) && <small>Also an admin</small>}
                 {hasScopes(user, ['nurses:write']) && (
                   <>
-                    <Button
+                    {!r.dual_account && <Button
                       type="button"
                       variant="outline"
                       onClick={() =>
@@ -299,7 +300,7 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
                       }
                     >
                       Resend invite
-                    </Button>
+                    </Button>}
                     <Button
                       type="button"
                       variant="outline"
@@ -325,7 +326,7 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
                         )
                       }
                     >
-                      {r.active ? 'Deactivate' : 'Activate'}
+                      {r.active ? 'Deactivate nurse access' : 'Activate nurse access'}
                     </Button>
                     <Button
                       type="button"
@@ -346,18 +347,18 @@ function CareScreenContent({ screen }: { screen: ScreenKey }) {
                       type="button"
                       variant="outline"
                       onClick={async () => {
-                        if (!await dialogs.confirm('Delete this nurse permanently? This cannot be undone.')) return;
+                        if (!await dialogs.confirm(r.dual_account ? 'Remove this person’s nurse access? Their existing staff account will remain. This cannot be undone.' : 'Delete this nurse permanently? This cannot be undone.')) return;
                         try {
                           setNotice('');
                           await apiClient.delete(`/admin/care/nurses/${encodeURIComponent(String(r.user_id ?? ''))}`);
-                          setNotice('Nurse deleted.');
+                          setNotice(r.dual_account ? 'Nurse access removed. The staff account remains.' : 'Nurse deleted.');
                           await load();
                         } catch (e) {
                           setError(e instanceof Error ? e.message : 'Delete failed');
                         }
                       }}
                     >
-                      Delete
+                      {r.dual_account ? 'Remove nurse access' : 'Delete'}
                     </Button>
                   </>
                 )}

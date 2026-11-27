@@ -19,6 +19,7 @@ from app.core.photo_store import (
 )
 from app.modules.audit.models import AuditLog
 from app.modules.auth.models import User
+from app.modules.auth.app_access import admin_app_allowed
 from app.modules.care_clients.models import CareClient
 from app.modules.care_ops.models import CareConsent, CareInboxNotification, CareTimesheet
 from app.modules.field.adhoc_rules import active_stay_for_date, is_adhoc_allowed
@@ -27,6 +28,7 @@ from app.modules.field.service import record_event, record_note, require_current
 from app.modules.flags.models import VisitFlag
 from app.modules.geo.rules import verify
 from app.modules.nurses.models import Device, NurseProfile
+from app.modules.nurses.deps import get_active_nurse_profile
 from app.modules.places.models import CarePlace, PlaceStay
 from app.modules.settings.care_service import care_values
 from app.modules.settings.rules import resolve_sos_enabled
@@ -209,9 +211,7 @@ async def own_timesheets(principal: Principal = CanUseBasic):
     the explicit timesheets:read scope and the admin reach check. Do not accept nurse_id from
     query parameters or a request body: the principal is the sole ownership authority.
     """
-    profile = await NurseProfile.find_one(NurseProfile.user_id == principal.user_id)
-    if profile is None or not profile.active:
-        raise HTTPException(404, detail="Nurse profile not found")
+    profile = await get_active_nurse_profile(principal, inactive_status=404)
 
     rows = (
         await CareTimesheet.find(CareTimesheet.nurse_id == profile.user_id)
@@ -223,9 +223,7 @@ async def own_timesheets(principal: Principal = CanUseBasic):
 
 @router.get("/me")
 async def me(principal: Principal = CanUseBasic):
-    profile = await NurseProfile.find_one(NurseProfile.user_id == principal.user_id)
-    if profile is None or not profile.active:
-        raise HTTPException(404, detail="Nurse profile not found")
+    profile = await get_active_nurse_profile(principal, inactive_status=404)
     values = await care_values()
     sos_enabled, reason = resolve_sos_enabled(values)
     sos_enabled = bool(values.get("care.module_c_enabled")) and sos_enabled
@@ -265,8 +263,8 @@ async def me(principal: Principal = CanUseBasic):
         ),
         "supervisor_phone": supervisor_phone,
         # Dual-scope accounts get a "Switch app" link; the apps stay separate sessions (scopes only, no roles).
-        "can_switch_app": bool(principal.is_superadmin or any(sc.endswith(":write") and not sc.startswith("field") for sc in principal.scopes)),
-        "admin_app_url": get_settings().admin_url,
+        "can_switch_app": admin_app_allowed(principal.scopes, principal.is_superadmin),
+        "admin_app_url": get_settings().admin_url.strip().rstrip("/") or None,
         "settings": {
             "sos_enabled": sos_enabled,
             "sos_disabled_reason": reason,
@@ -301,9 +299,7 @@ async def me(principal: Principal = CanUseBasic):
 
 @router.post("/consents", status_code=201)
 async def consent(payload: ConsentIn, principal: Principal = CanUseBasic):
-    profile = await NurseProfile.find_one(NurseProfile.user_id == principal.user_id)
-    if profile is None or not profile.active:
-        raise HTTPException(401, detail="nurse_inactive")
+    profile = await get_active_nurse_profile(principal, inactive_status=401)
     profile.consent_versions[payload.type] = payload.version
     await profile.save()
     consent_id = f"{principal.user_id}:{payload.type}:{payload.version}"
@@ -372,9 +368,7 @@ async def create_adhoc_visit(payload: AdhocVisitIn, principal: Principal = CanUs
         if existing_event.nurse_id != principal.user_id or existing_event.visit_id != payload.id:
             raise HTTPException(409, detail="idempotency_key_conflict")
         return {"status": "duplicate", "visit_id": existing_event.visit_id}
-    profile = await NurseProfile.find_one(NurseProfile.user_id == principal.user_id)
-    if profile is None or not profile.active:
-        raise HTTPException(401, detail="nurse_inactive")
+    profile = await get_active_nurse_profile(principal, inactive_status=401)
     values = await care_values()
     enabled = is_adhoc_allowed(
         profile.adhoc_override,
@@ -709,7 +703,11 @@ async def stream_field_visit_photo(
 
 
 @router.post("/heartbeat")
-async def heartbeat(payload: HeartbeatIn, principal: Principal = CanUse):
+async def heartbeat(
+    payload: HeartbeatIn,
+    principal: Principal = CanUse,
+    profile: NurseProfile = Depends(get_active_nurse_profile),
+):
     device = await Device.find_one(Device.device_id == payload.device_id)
     if device and device.revoked_at:
         raise HTTPException(401, detail="device_revoked")
@@ -723,12 +721,10 @@ async def heartbeat(payload: HeartbeatIn, principal: Principal = CanUse):
         await device.save()
     else:
         await device.insert()
-    profile = await NurseProfile.find_one(NurseProfile.user_id == principal.user_id)
-    if profile:
-        profile.last_seen_at = datetime.now(UTC)
-        profile.app_version = payload.app_version
-        profile.battery_pct = payload.battery_pct
-        await profile.save()
+    profile.last_seen_at = datetime.now(UTC)
+    profile.app_version = payload.app_version
+    profile.battery_pct = payload.battery_pct
+    await profile.save()
     return {"accepted": True, "server_time": datetime.now(UTC)}
 
 

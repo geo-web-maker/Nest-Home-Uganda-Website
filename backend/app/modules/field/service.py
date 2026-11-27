@@ -7,6 +7,7 @@ from app.modules.field.rules import clock_offset_s, verification_label
 from app.modules.flags.models import VisitFlag
 from app.modules.geo.rules import verify
 from app.modules.nurses.models import NurseProfile
+from app.modules.nurses.deps import get_active_nurse_profile
 from app.modules.visits.models import Visit, VisitEvent, VisitNote, VisitPhoto
 from app.modules.visits.photo_rules import missing_required_photo_evidence
 from app.modules.visits.rules import VisitRuleError, flags_for_event, next_status
@@ -201,9 +202,7 @@ from app.modules.settings.care_service import care_values  # noqa: E402
 async def require_current_consent(
     principal: Principal = Depends(require_scopes("field:use")),
 ) -> Principal:
-    profile = await NurseProfile.find_one(NurseProfile.user_id == principal.user_id)
-    if profile is None or not profile.active:
-        raise HTTPException(401, detail="nurse_inactive")
+    profile = await get_active_nurse_profile(principal, inactive_status=401)
     values = await care_values()
     required = {
         "privacy_notice": values.get("privacy.notice_version", ""),

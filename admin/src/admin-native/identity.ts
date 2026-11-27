@@ -2,3 +2,4 @@
 export const ADMIN_NATIVE_APP_ID = 'ug.nesthomecare.admin';
 export const ADMIN_NATIVE_APP_NAME = 'Bloomwell Home Care Uganda Admin';
 export const ADMIN_NATIVE_WEB_DIR = 'dist';
+export const NURSE_NATIVE_APP_ID = 'ug.nesthomecare.nurse';

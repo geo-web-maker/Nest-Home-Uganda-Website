@@ -110,6 +110,10 @@ async def admin_entries(
     entries: list[SettingEntry] = []
     for key in sorted(values):
         current_group = setting_group(key)
+        # Private security controls (including the auto-SSO master switch) are never surfaced
+        # through the generic settings catalogue or editable settings UI.
+        if current_group not in _GROUPS:
+            continue
         if group is not None and current_group != group:
             continue
         if current_group in {"sms", "system"} and not principal.has("system:manage"):

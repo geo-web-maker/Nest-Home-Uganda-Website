@@ -79,6 +79,7 @@ async def mongo() -> AsyncIterator[object]:
         "0011_visit_sync_cursor",
         "0012_care_track_c",
         "0013_partial_id_indexes",
+        "0020_unique_nurse_staff_numbers",
     }
     await run_migrations(database, exclude=care_migrations)
     await run_migrations(care_database, only=care_migrations)

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card } from '../ui/Card';
 import { Chip } from '../ui/Chip';
 import { Row } from '../ui/Row';
@@ -10,11 +10,16 @@ import { WebBundle } from '../platform/webBundle';
 import { formatSize, isNewerVersion, useAppCenter, type AppCenterPlugins } from '../platform/appCenter';
 import { useUpgradeRequired } from '../lib/useUpgradeRequired';
 import { CLIENT_BUILD } from '../lib/clientBuild';
+import { fetchAppAccess, type AppAccess } from '../platform/appSwitch';
+import { apiRequest } from '../lib/api/client';
+import { OtherAppSuggestion } from '../features/careforms/OtherAppSuggestion';
 
 const CHANNEL_LABEL = { native: 'Android app', pwa: 'Installed web app', browser: 'Web browser' } as const;
 
 /** The small in-app store: what is installed, what is newer, and one button to get it. */
 export function AppCenterScreen() {
+  const [appAccess, setAppAccess] = useState<AppAccess | null>(null);
+  useEffect(() => { let live = true; void fetchAppAccess(<T,>(path: string) => apiRequest<T>(path)).then((value) => { if (live) setAppAccess(value); }).catch(() => { if (live) setAppAccess(null); }); return () => { live = false; }; }, []);
   const plugins = useMemo<AppCenterPlugins>(() => ({ nativeUpdater: NativeUpdater, webBundle: WebBundle }), []);
   const { channel, installed, apk, apkIsNewer, bundle, webLatest, pwa, phase, checkedAt, check, installApk, installBundle, updatePwa } = useAppCenter('nurse', plugins);
   const busy = phase.kind === 'checking' || phase.kind === 'downloading' || phase.kind === 'installing';
@@ -24,6 +29,7 @@ export function AppCenterScreen() {
 
   return <section className="screen" aria-labelledby="appcenter-heading">
     <header className="screen-heading"><div><p className="eyebrow">APP CENTER</p><h2 id="appcenter-heading">Get and update the app</h2><p>See which version you have and install updates yourself.</p></div></header>
+    {appAccess && <OtherAppSuggestion access={appAccess} permanent />}
 
     <Card>
       <div className="mk-profile-section__heading"><h3>This device</h3><Chip kind={nothingNew && phase.kind !== 'error' ? 'ok' : 'rv'}>{nothingNew ? 'Up to date' : 'Update ready'}</Chip></div>

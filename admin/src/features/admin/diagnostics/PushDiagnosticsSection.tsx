@@ -24,6 +24,7 @@ type SendResult = { ok: boolean; stage?: string; error?: string; detail?: string
 type ScenarioResult = { ok: boolean; mode: string; note: string | null; to?: string; critical?: boolean; results: { device_id: string; status: string; error?: string | null; help?: string }[] };
 type Urgency = { category: string; label: string; value: 'default' | 'urgent' | 'normal' };
 type NurseAccess = { ok_count: number; problems: { user: string; email: string; problem: string }[]; note: string };
+type NurseRepair = { dry_run: boolean; created: { user_id?: string; email?: string; name?: string; staff_number?: string | null; status?: string }[]; skipped: { user_id?: string; email?: string; name?: string; reason?: string }[] };
 type Pipeline = { mode: string; note: string | null; results: { device_id: string; status: string }[] };
 
 const BASE = '/admin/push/diagnostics';
@@ -73,6 +74,7 @@ export function PushDiagnosticsSection() {
   const [app, setApp] = useState<App>('any');
   const [urgency, setUrgency] = useState<Urgency[] | null>(null);
   const [nurseAccess, setNurseAccess] = useState<NurseAccess | null>(null);
+  const [nurseRepair, setNurseRepair] = useState<NurseRepair | null>(null);
   const [addEmail, setAddEmail] = useState('');
   const [addStaff, setAddStaff] = useState('');
   const [addSupervisor, setAddSupervisor] = useState('');
@@ -98,14 +100,29 @@ export function PushDiagnosticsSection() {
     if (out.devices) setDevices(out.devices);
   });
   const addNurseProfile = async () => {
-    if (!(await dialogs.confirm(`Make ${addEmail} a nurse with staff number ${addStaff}? They keep every permission they have and gain the nurse app permissions.`))) return;
+    if (!(await dialogs.confirm(`Make ${addEmail} a nurse${addStaff.trim() ? ` with staff number ${addStaff.trim()}` : ' and assign a provisional staff number'}? They keep every permission they have and gain the nurse app permissions.`))) return;
     await act('add-nurse', async () => {
-      await apiClient.post('/admin/care/nurses/from-user', { user: addEmail.trim(), staff_number: addStaff.trim(), ...(addSupervisor.trim() ? { supervisor_id: addSupervisor.trim() } : {}) });
+      await apiClient.post('/admin/care/nurses/from-user', { user: addEmail.trim(), staff_number: addStaff.trim() || null, ...(addSupervisor.trim() ? { supervisor_id: addSupervisor.trim() } : {}) });
       setAddDone(`${addEmail.trim()} now has a nurse profile. Ask them to sign out and in again in the nurse app.`);
       setAddStaff(''); setAddSupervisor('');
     });
   };
   const loadNurseAccess = () => act('nurse-access', async () => setNurseAccess(await apiClient.get<NurseAccess>(`${BASE}/nurse-access`)));
+  const repairNurseProfiles = async () => {
+    let preview: NurseRepair | undefined;
+    await act('nurse-repair-preview', async () => {
+      preview = await apiClient.post<NurseRepair>('/admin/care/nurses/repair-profiles', { dry_run: true });
+      setNurseRepair(preview);
+    });
+    if (!preview?.created.length) return;
+    const summary = preview.created.map((row) => row.name ?? row.email ?? row.user_id ?? 'Unknown account').join(', ');
+    if (!(await dialogs.confirm(`Create missing nurse profiles for: ${summary}? Provisional staff numbers will be assigned. Existing inactive profiles and test accounts will not be changed.`))) return;
+    await act('nurse-repair-apply', async () => {
+      const applied = await apiClient.post<NurseRepair>('/admin/care/nurses/repair-profiles', { dry_run: false });
+      setNurseRepair(applied);
+      setNurseAccess(await apiClient.get<NurseAccess>(`${BASE}/nurse-access`));
+    });
+  };
   const loadUrgency = () => act('urgency', async () => setUrgency((await apiClient.get<{ items: Urgency[] }>(`${BASE}/urgency`)).items));
   const saveUrgency = (item: Urgency, value: Urgency['value']) => act('urgency-save', async () => {
     await apiClient.put(`${BASE}/urgency`, { category: item.category, value });
@@ -169,16 +186,18 @@ export function PushDiagnosticsSection() {
             <p>{nurseAccess.ok_count} nurse account(s) are set up correctly. {nurseAccess.problems.length ? `${nurseAccess.problems.length} need attention:` : 'None need attention.'}</p>
             {nurseAccess.problems.map((row) => <p key={row.email}><strong>{row.user}</strong> ({row.email}): {row.problem}</p>)}
             <p>{nurseAccess.note}</p>
+            {nurseAccess.problems.some((row) => row.problem.toLowerCase().includes('no nurse profile')) ? <div className={styles.actions}><Button variant="outline" disabled={busy !== ''} onClick={() => void repairNurseProfiles()}>{busy.startsWith('nurse-repair') ? 'Repairing…' : 'Create the missing profiles'}</Button></div> : null}
           </Notice>
         ) : null}
+        {nurseRepair ? <Notice tone={nurseRepair.dry_run ? 'info' : nurseRepair.skipped.length ? 'warning' : 'success'}><p>{nurseRepair.dry_run ? `${nurseRepair.created.length} profile(s) would be created.` : `${nurseRepair.created.length} profile(s) created.`}</p>{nurseRepair.created.map((row) => <p key={row.user_id ?? row.email}><strong>{row.name ?? row.email ?? row.user_id}</strong>{row.staff_number ? ` · ${row.staff_number}` : ''}</p>)}{nurseRepair.skipped.map((row) => <p key={row.user_id ?? row.email}>Skipped {row.name ?? row.email ?? row.user_id}: {row.reason}</p>)}</Notice> : null}
         <h4>Add a nurse profile to an existing account</h4>
         <p className={styles.help}>For an admin who is also a nurse. Super administrator only. The account keeps its admin permissions and gains the nurse app permissions.</p>
         <div className={styles.fields}>
           <label className={styles.field}>Account e-mail<input value={addEmail} onChange={(event) => setAddEmail(event.target.value)} autoComplete="off" /></label>
-          <label className={styles.field}>Staff number<input value={addStaff} onChange={(event) => setAddStaff(event.target.value)} autoComplete="off" /></label>
+          <label className={styles.field}>Staff number (leave blank to assign one)<input value={addStaff} onChange={(event) => setAddStaff(event.target.value)} autoComplete="off" /></label>
           <label className={styles.field}>Supervisor user id (optional)<input value={addSupervisor} onChange={(event) => setAddSupervisor(event.target.value)} autoComplete="off" /></label>
         </div>
-        <div className={styles.actions}><Button disabled={!addEmail.trim() || addStaff.trim().length < 2 || busy !== ''} onClick={() => void addNurseProfile()}>{busy === 'add-nurse' ? 'Adding…' : 'Add nurse profile'}</Button></div>
+        <div className={styles.actions}><Button disabled={!addEmail.trim() || (addStaff.trim().length > 0 && addStaff.trim().length < 2) || busy !== ''} onClick={() => void addNurseProfile()}>{busy === 'add-nurse' ? 'Adding…' : 'Add nurse profile'}</Button></div>
         {addDone ? <Notice tone="success"><p>{addDone}</p></Notice> : null}
       </div>
 

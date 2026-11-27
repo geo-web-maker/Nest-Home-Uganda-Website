@@ -36,3 +36,7 @@ inside the APK), and, in a browser or installed web app, *Newest web version* wi
 * Cloudflare builds the site from GitHub on its own, so after each web update the workflow saves the number in `admin/version.json` or
   `nurse/version.json` (a small automatic commit to `main`) and Cloudflare's next build shows it. Version order used by the build:
   `APP_VERSION` (release workflows) -> `version.json` -> `package.json`. If `main` is protected, allow `github-actions[bot]` to push to it.
+
+## Cross-app sign-in native changes
+
+The `AppSwitch` Capacitor plugin and the `nhc-admin://handoff` / `nhc-nurse://handoff` intent filters are native Android changes. Publish new APKs for **both** apps to deliver package visibility, deep-link registration and explicit-package launching. The web code feature-detects `AppSwitch`, so an older installed APK can continue using the HTTPS web handoff; do not raise `min_native_version_code` solely for this optional feature. Android cold-start/warm-start delivery and package visibility must be verified on a real device using the cross-app acceptance checklist.

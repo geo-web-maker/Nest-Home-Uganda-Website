@@ -68,6 +68,7 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { path: '/care/data-requests', labelKey: 'dataRequests', scopes: ['system:manage'], icon: 'dataRequest', group: 'setup' },
   { path: '/app-releases', labelKey: 'appReleases', scopes: ['system:manage'], icon: 'release', group: 'setup' },
   { path: '/backups', labelKey: 'backupsHealth', scopes: ['system:manage'], icon: 'backup', group: 'setup' },
+  { path: '/cross-app-auth', labelKey: 'crossAppAuth', scopes: ['system:manage'], icon: 'permissions', group: 'setup' },
   { path: '/mail/shared', labelKey: 'mailShared', scopes: ['mail:shared:manage'], icon: 'sharedMail', group: 'setup' },
   { path: '/mail/settings', labelKey: 'mailSettings', scopes: ['mail:settings:manage'], icon: 'mailSettings', group: 'setup' },
   { path: '/mail/clients', labelKey: 'clientControl', scopes: ['mail:settings:manage'], icon: 'clientControl', group: 'setup' },

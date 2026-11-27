@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LoadingScreen } from '../../../components/admin/LoadingScreen';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
@@ -14,6 +14,9 @@ import styles from './LoginPage.module.css';
 import { firstReachablePath, navItemFor, visibleNav } from '../nav';
 import { PasswordChangeRequiredError } from './session';
 import { useAuth } from './useAuth';
+import { startPull } from '../../../admin-native/appSwitch';
+import { isNativeAppSwitchAvailable, requestOtherAppHandoff } from '../../../admin-native/nativeAppSwitch';
+import { NURSE_NATIVE_APP_ID } from '../../../admin-native/identity';
 
 const DEFAULT_LANDING = '/';
 
@@ -42,6 +45,13 @@ export function LoginPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [formError, setFormError] = useState<string | null>(null);
+  useEffect(() => {
+    const notice = window.sessionStorage.getItem('nhc.handoff.notice');
+    if (notice) {
+      setFormError(notice);
+      window.sessionStorage.removeItem('nhc.handoff.notice');
+    }
+  }, []);
 
   const schema = z.object({
     email: z
@@ -64,6 +74,13 @@ export function LoginPage() {
     const { onChange, onBlur, ref, name: fieldName } = register(name);
     return { onChange, onBlur, ref, name: fieldName };
   };
+
+  const showPull = window.localStorage.getItem('nhc.dual_access') === '1' || import.meta.env.VITE_SHOW_PULL_SSO === 'true';
+  async function continueWithNurseApp() {
+    const sourceUrl = import.meta.env.VITE_NURSE_APP_URL as string | undefined;
+    try { await startPull('nurse', 'admin', sourceUrl, isNativeAppSwitchAvailable() ? { packageName: (import.meta.env.VITE_NURSE_ANDROID_PACKAGE as string | undefined) || NURSE_NATIVE_APP_ID, request: requestOtherAppHandoff } : undefined); }
+    catch { setFormError(t('login.errors.handoffUnavailable')); }
+  }
 
   const onValid = async ({ email, password }: LoginValues) => {
     setFormError(null);
@@ -138,6 +155,7 @@ export function LoginPage() {
         <Button type="submit" fullWidth arrow disabled={isSubmitting}>
           {isSubmitting ? t('login.submitting') : t('login.submit')}
         </Button>
+        {showPull && <Button type="button" fullWidth variant="outline" onClick={() => void continueWithNurseApp()}>{t('login.continueWithNurseApp')}</Button>}
         <p className={styles.forgot}>
           <span>{t('login.forgot')}</span>
           <small>{t('login.forgotHelp')}</small>
